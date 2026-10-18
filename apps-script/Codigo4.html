@@ -1,0 +1,742 @@
+<script>
+/*@parte Codigo4*/ (window.__partes = window.__partes || {})['Codigo4'] = true;
+
+/* =========================================================
+   TABLAS
+   ========================================================= */
+function celdasDe(id){ return canvas.getObjects().filter(o => o.tabla === id); }
+// Acomoda las celdas en filas y columnas; cada fila toma la altura de su celda con más texto
+function reorganizarTabla(id){
+  const cs = celdasDe(id); if (!cs.length || cs.some(c => c.group)) return;
+  const pad = PAD() * 0.55, sep = cs[0].sepTabla || 0;
+  const x0 = Math.min(...cs.map(c => c.getCenterPoint().x - c.width * c.scaleX / 2));
+  const y0 = Math.min(...cs.map(c => c.getCenterPoint().y - c.height * c.scaleY / 2));
+  const anchos = [], altos = [];
+  cs.forEach(c => { anchos[c.col] = Math.max(anchos[c.col] || 0, c.anchoBase || c.width); });
+  cs.forEach(c => {
+    let nec = c.altoBase || 60; const t = porId(c.formaTexto);
+    if (t){ t.set('width', Math.max(30, anchos[c.col] - 2 * pad)); t.initDimensions(); nec = Math.max(nec, t.height * t.scaleY + 2 * pad); }
+    altos[c.fila] = Math.max(altos[c.fila] || 0, nec);
+  });
+  const xs = [], ys = []; let acc = x0;
+  for (let i = 0; i < anchos.length; i++){ xs[i] = acc; acc += (anchos[i] || 0) + sep; }
+  acc = y0;
+  for (let i = 0; i < altos.length; i++){ ys[i] = acc; acc += (altos[i] || 0) + sep; }
+  cs.forEach(c => {
+    c.set({ width: anchos[c.col] / c.scaleX, height: altos[c.fila] / c.scaleY });
+    c.setPositionByOrigin(new fabric.Point(xs[c.col] + anchos[c.col] / 2, ys[c.fila] + altos[c.fila] / 2), 'center', 'center');
+    c.setCoords();
+    const t = porId(c.formaTexto); if (t) centrarTexto(t, c);
+  });
+}
+function crearTabla(cx, cy, filas, cols, est, textos = []){
+  const id = nuevoId(), sep = est.sep || 0;
+  const total = est.ancho || cols * 300;
+  const anchos = est.anchos ? est.anchos.slice() : Array(cols).fill((total - (cols - 1) * sep) / cols);
+  while (anchos.length < cols) anchos.push(anchos[anchos.length - 1]);
+  const alto = est.alto || 80, altoEnc = est.altoEnc || alto;
+  for (let f = 0; f < filas; f++) for (let c = 0; c < cols; c++){
+    const enc = f === 0 && est.enc != null, col1 = c === 0 && f > 0;
+    let fill = est.celda || '#ffffff';
+    if (enc) fill = Array.isArray(est.enc) ? est.enc[c % est.enc.length] : est.enc;
+    else if (col1 && (est.filasColores || est.col1)) fill = est.filasColores ? est.filasColores[(f - 1) % est.filasColores.length] : est.col1;
+    else if (f > 0 && est.celdasFila) fill = est.celdasFila[(f - 1) % est.celdasFila.length];
+    const cel = new fabric.Rect({ originX:'center', originY:'center', left:cx, top:cy, width:anchos[c], height: f === 0 ? altoEnc : alto,
+      rx: est.rx || 0, ry: est.rx || 0, fill, stroke: est.borde || null, strokeWidth: est.borde ? (est.grosor || 2) : 0, strokeUniform:true,
+      tabla:id, fila:f, col:c, sepTabla:sep, anchoBase:anchos[c], altoBase: f === 0 ? altoEnc : alto, id:nuevoId(), name:'Celda' });
+    canvas.add(cel);
+    const def = enc ? 'Título ' + (c + 1) : (col1 ? 'Fila ' + f : '');
+    const txt = textos[f] && textos[f][c] != null ? textos[f][c] : def;
+    const t = crearTextoVinculado(cel, txt, {
+      fontSize: enc ? (est.tamEnc || 28) : (est.tam || 24),
+      fontFamily: enc ? (est.fuenteEnc || est.fuente || 'Poppins') : (est.fuente || 'Poppins'),
+      fontWeight: (enc || col1) ? '700' : '400',
+      fill: enc && est.encTexto ? est.encTexto : (esOscuro(fill) ? '#ffffff' : '#1f2330') });
+    canvas.add(t);
+  }
+  reorganizarTabla(id);
+  const cs = celdasDe(id), rs = cs.map(c => cajaAbs(c));
+  const L = Math.min(...rs.map(r => r.left)), R = Math.max(...rs.map(r => r.left + r.width));
+  const T0 = Math.min(...rs.map(r => r.top)), B = Math.max(...rs.map(r => r.top + r.height));
+  const dx = cx - (L + R) / 2, dy = cy - (T0 + B) / 2;
+  cs.forEach(c => { c.set({ left: c.left + dx, top: c.top + dy }); c.setCoords(); const t = porId(c.formaTexto); if (t) centrarTexto(t, c); });
+  ordenarVinculos();
+  return id;
+}
+function seleccionarTabla(id){
+  const objs = celdasDe(id).flatMap(c => [c, porId(c.formaTexto)].filter(Boolean));
+  if (!objs.length) return;
+  const sel = new fabric.ActiveSelection(objs, { canvas });
+  sel.set({ lockScalingX:true, lockScalingY:true, lockRotation:true, hasControls:false });
+  sel.esTabla = id;
+  canvas.setActiveObject(sel); canvas.requestRenderAll();
+}
+function editarCelda(c){
+  editandoCelda = true;
+  canvas.discardActiveObject();
+  const t = porId(c.formaTexto); if (!t){ editandoCelda = false; return; }
+  canvas.setActiveObject(t); t.enterEditing(); t.selectAll(); canvas.requestRenderAll();
+}
+canvas.on('text:editing:exited', () => { editandoCelda = false; });
+function tablaActual(){
+  const a = activo(); if (!a) return null;
+  if (a.esTabla) return a.esTabla;
+  const f = nodoBase(a.type === 'activeSelection' ? a.getObjects()[0] : a);
+  return (f && f.tabla) || null;
+}
+function editarTabla(fn){
+  const id = tablaActual(); if (!id) return;
+  canvas.discardActiveObject();
+  restaurando = true; fn(id, celdasDe(id)); reorganizarTabla(id); ordenarVinculos(); restaurando = false;
+  seleccionarTabla(id); renderCapas(); guardarEstado(); revisarAuto();
+}
+function quitarCeldas(lista){ lista.forEach(c => { const t = porId(c.formaTexto); if (t) canvas.remove(t); canvas.remove(c); }); }
+function copiarCelda(base, cambios){
+  const bt = porId(base.formaTexto);
+  base.clone(n => {
+    n.set({ ...cambios, id: nuevoId(), formaTexto: null });
+    canvas.add(n);
+    canvas.add(crearTextoVinculado(n, '', bt ? { fontSize:bt.fontSize, fontFamily:bt.fontFamily, fontWeight:bt.fontWeight, fill:bt.fill } : {}));
+  }, EXTRA);
+}
+function tablaFila(d){
+  editarTabla((id, cs) => {
+    const n = Math.max(...cs.map(c => c.fila)) + 1;
+    if (d > 0) cs.filter(c => c.fila === n - 1).forEach(b => copiarCelda(b, { fila: n }));
+    else if (n > 1) quitarCeldas(cs.filter(c => c.fila === n - 1));
+  });
+}
+function tablaCol(d){
+  editarTabla((id, cs) => {
+    const n = Math.max(...cs.map(c => c.col)) + 1;
+    if (d > 0) cs.filter(c => c.col === n - 1).forEach(b => copiarCelda(b, { col: n }));
+    else if (n > 1) quitarCeldas(cs.filter(c => c.col === n - 1));
+  });
+}
+function tablaAncho(f){ editarTabla((id, cs) => cs.forEach(c => { c.anchoBase = (c.anchoBase || c.width) * f; })); }
+function colorTabla(cual, color){
+  const id = tablaActual(); if (!id) return;
+  celdasDe(id).forEach(c => {
+    const ok = cual === 'enc' ? c.fila === 0 : cual === 'col1' ? (c.col === 0 && c.fila > 0) : (c.fila > 0 && c.col > 0);
+    if (!ok) return;
+    c.set('fill', color);
+    const t = porId(c.formaTexto); if (t) t.set('fill', esOscuro(color) ? '#ffffff' : '#1f2330');
+  });
+  const a = activo(); if (a) a.dirty = true;
+  canvas.requestRenderAll();
+}
+[['tColEnc','enc'],['tColCol1','col1'],['tColCeldas','celdas']].forEach(([id, cual]) => {
+  $(id).addEventListener('input', e => colorTabla(cual, e.target.value));
+  $(id).addEventListener('change', guardarEstado);
+});
+const ESTILOS_TABLA = {
+  'Clásica':  { sep:0,  rx:0,  borde:'#334155', grosor:2, enc:'#1e3a8a', encTexto:'#ffffff', col1:'#e0e7ff', celda:'#ffffff', fuente:'Inter' },
+  'Tarjetas': { sep:10, rx:14, enc:'#7c3aed', encTexto:'#ffffff', col1:'#ede9fe', celda:'#f5f3ff', fuente:'Poppins' },
+  'Pastel a mano': { sep:10, rx:10, borde:'#1f2330', grosor:2.5, enc:['#c4b5fd','#fbcfe8','#bbf7d0','#fde68a','#a5f3fc'], encTexto:'#1f2330', col1:'#fef3c7', celda:'#ffffff', fuente:'Patrick Hand', fuenteEnc:'Fredoka' },
+  'Por categorías': { sep:8, rx:12, enc:'#f3f4f6', encTexto:'#1f2330', filasColores:['#fbcfe8','#bbf7d0','#bfdbfe','#ddd6fe','#fde68a'], celdasFila:['#fdf2f8','#f0fdf4','#eff6ff','#f5f3ff','#fefce8'], fuente:'Poppins', fuenteEnc:'Fredoka' }
+};
+Object.entries(ESTILOS_TABLA).forEach(([nombre, est]) => {
+  const b = document.createElement('button'); b.className = 'bigbtn'; b.style.margin = '0';
+  const muestra = [0,1,2].map(i => {
+    const enc = Array.isArray(est.enc) ? est.enc[i] : est.enc;
+    return `<span style="display:inline-block;width:22px;height:10px;margin-right:2px;border-radius:${est.rx ? 3 : 0}px;background:${enc};border:1px solid ${est.borde || 'transparent'}"></span>`;
+  }).join('');
+  b.innerHTML = `${muestra}<span style="margin-left:6px">${esc(nombre)}</span>`;
+  b.onclick = () => insertarTabla(est);
+  $('estilosTabla').appendChild(b);
+});
+function insertarTabla(est){
+  const f = Math.max(1, Math.min(20, +$('tFilas').value || 4)), c = Math.max(1, Math.min(10, +$('tCols').value || 3)), k = s();
+  restaurando = true;
+  const id = crearTabla(W/2, H/2, f, c, { ...est, ancho: Math.min(W * 0.85, c * 300 * k), alto: 80 * k, tam: 24 * k, tamEnc: 28 * k,
+    sep: (est.sep || 0) * k, rx: (est.rx || 0) * k, grosor: (est.grosor || 2) * k });
+  restaurando = false;
+  seleccionarTabla(id); renderCapas(); guardarEstado(); revisarAuto();
+}
+
+/* =========================================================
+   DECORACIONES (estilo dibujado a mano)
+   ========================================================= */
+function pathLlave(alto, ancho){
+  const a = ancho, hh = alto;
+  return `M ${a} 0 C ${a*0.45} 0 ${a*0.5} ${hh*0.04} ${a*0.5} ${hh*0.12} L ${a*0.5} ${hh*0.4} C ${a*0.5} ${hh*0.47} ${a*0.3} ${hh*0.5} 0 ${hh*0.5} ` +
+         `C ${a*0.3} ${hh*0.5} ${a*0.5} ${hh*0.53} ${a*0.5} ${hh*0.6} L ${a*0.5} ${hh*0.88} C ${a*0.5} ${hh*0.96} ${a*0.45} ${hh} ${a} ${hh}`;
+}
+const pathFlor = (() => {
+  const circ = (x, y, r) => `M ${x - r} ${y} A ${r} ${r} 0 1 0 ${x + r} ${y} A ${r} ${r} 0 1 0 ${x - r} ${y} Z `;
+  return [[50,22],[78,42],[67,75],[33,75],[22,42]].map(([x, y]) => circ(x, y, 17)).join('') + circ(50, 52, 12);
+})();
+const pathEstrella5 = 'M ' + puntosEstrella(5, 50, 21).map(q => `${(q.x + 50).toFixed(1)} ${(q.y + 50).toFixed(1)}`).join(' L ') + ' Z';
+const DECOS = {
+  destello:  { n:'Destello', d:'M50 0 C53 35 65 47 100 50 C65 53 53 65 50 100 C47 65 35 53 0 50 C35 47 47 35 50 0 Z' },
+  estrella:  { n:'Estrella', d:pathEstrella5 },
+  corazon:   { n:'Corazón', d:'M50 88 C20 66 6 50 6 32 C6 18 17 8 30 8 C40 8 47 14 50 22 C53 14 60 8 70 8 C83 8 94 18 94 32 C94 50 80 66 50 88 Z' },
+  flor:      { n:'Flor', d:pathFlor },
+  nube:      { n:'Nube', d:PATH_NUBE },
+  mancha:    { n:'Mancha', d:PATH_BLOB },
+  foco:      { n:'Foco', d:'M12 2 C8.1 2 5 5.1 5 9 C5 11.4 6.2 13.5 8 14.7 L8 17 L16 17 L16 14.7 C17.8 13.5 19 11.4 19 9 C19 5.1 15.9 2 12 2 Z M9 18 L15 18 L15 20 L9 20 Z M10 21 L14 21 L14 22 L10 22 Z' },
+  confeti:   { n:'Confeti', d:'M10 10 L18 10 L18 18 L10 18 Z M40 5 L46 15 L34 15 Z M65 15 A5 5 0 1 0 75 15 A5 5 0 1 0 65 15 Z M25 40 L35 40 L35 44 L25 44 Z M60 45 L68 49 L60 53 Z M85 35 L89 31 L93 35 L89 39 Z' },
+  flecha:    { n:'Flecha dibujada', trazo:true, d:'M5 60 C30 15 70 10 92 42 M80 40 L92 42 L90 29' },
+  rizo:      { n:'Flecha con rizo', trazo:true, d:'M5 70 C25 70 40 55 35 40 C30 25 10 35 20 48 C30 60 60 60 75 35 M66 35 L76 33 L78 43' },
+  subrayado: { n:'Subrayado', trazo:true, d:'M0 10 Q10 0 20 10 T40 10 T60 10 T80 10 T100 10' },
+  marcador:  { n:'Círculo de marcador', trazo:true, d:'M50 8 C80 6 98 22 96 42 C94 62 70 72 45 70 C18 68 2 52 6 34 C9 18 30 6 58 10' },
+  llave:     { n:'Llave', trazo:true, d:pathLlave(100, 30) },
+  enfasis:   { n:'Énfasis', trazo:true, d:'M10 30 L2 16 M22 24 L19 4 M34 28 L42 12' },
+  espiral:   { n:'Espiral', trazo:true, d:'M50 50 C50 44 58 44 58 50 C58 60 42 60 42 50 C42 36 66 36 66 50 C66 68 34 68 34 50 C34 28 74 28 74 50' },
+  cinta:     { n:'Cinta adhesiva', rect:true }
+};
+function crearDeco(tipo, o = {}){
+  const def = DECOS[tipo], color = o.c || $('colorDeco').value, w = o.w || 200 * s();
+  let obj;
+  if (def.rect) obj = new fabric.Rect({ width:w, height:w * 0.27, fill:color, opacity: o.op ?? 0.6, angle: o.ang ?? -6, originX:'center', originY:'center' });
+  else {
+    obj = new fabric.Path(def.d, { originX:'center', originY:'center', fill: def.trazo ? null : color, stroke: def.trazo ? color : null,
+      strokeWidth: def.trazo ? (o.sw || 5 * s()) : 0, strokeLineCap:'round', strokeLineJoin:'round', strokeUniform:true,
+      opacity: o.op ?? 1, angle: o.ang || 0 });
+    obj.scaleToWidth(w);
+  }
+  obj.set({ name: def.n, esDeco: true });
+  return obj;
+}
+Object.entries(DECOS).forEach(([tipo, def]) => {
+  const b = document.createElement('button'); b.className = 'forma'; b.title = def.n;
+  let svg;
+  if (def.rect) svg = '<svg viewBox="0 0 100 100"><rect x="8" y="36" width="84" height="26" transform="rotate(-8 50 50)" style="fill:#f9a8d4;opacity:.8"/></svg>';
+  else {
+    const tmp = new fabric.Path(def.d);
+    const vb = `${(tmp.pathOffset.x - tmp.width/2 - 8).toFixed(1)} ${(tmp.pathOffset.y - tmp.height/2 - 8).toFixed(1)} ${(tmp.width + 16).toFixed(1)} ${(tmp.height + 16).toFixed(1)}`;
+    const est = def.trazo ? `fill:none;stroke:#6d6f7b;stroke-width:${Math.max(tmp.width, tmp.height) / 18};stroke-linecap:round;stroke-linejoin:round` : 'fill:#6d6f7b';
+    svg = `<svg viewBox="${vb}"><path d="${def.d}" style="${est}"/></svg>`;
+  }
+  b.innerHTML = svg;
+  b.onclick = () => { const d = crearDeco(tipo); d.setPositionByOrigin(new fabric.Point(W/2, H/2), 'center', 'center'); agregar(d, def.n); };
+  $('gridDecos').appendChild(b);
+});
+
+/* ---------- Fondos de papel ---------- */
+function fondoPapel(tipo, base){
+  base = base || $('colorFondo').value || '#ffffff';
+  const k = s(), t = Math.max(12, Math.round(40 * k));
+  const cv = document.createElement('canvas'); cv.width = cv.height = t;
+  const g = cv.getContext('2d');
+  g.fillStyle = base; g.fillRect(0, 0, t, t);
+  g.strokeStyle = esOscuro(base) ? 'rgba(255,255,255,.18)' : 'rgba(30,58,138,.15)'; g.lineWidth = Math.max(1, k);
+  if (tipo === 'cuadros'){ g.beginPath(); g.moveTo(0, 0.5); g.lineTo(t, 0.5); g.moveTo(0.5, 0); g.lineTo(0.5, t); g.stroke(); }
+  if (tipo === 'rayas'){ g.beginPath(); g.moveTo(0, t - 0.5); g.lineTo(t, t - 0.5); g.stroke(); }
+  if (tipo === 'puntos'){ g.fillStyle = esOscuro(base) ? 'rgba(255,255,255,.3)' : 'rgba(30,41,59,.25)'; g.beginPath(); g.arc(t/2, t/2, Math.max(1.5, 2.2 * k), 0, Math.PI * 2); g.fill(); }
+  const antes = restaurando;
+  restaurando = true; quitarRectFondo();
+  canvas.backgroundColor = base;
+  fijarFondo(new fabric.Rect({ left:0, top:0, width:W, height:H, fill: new fabric.Pattern({ source: cv, repeat: 'repeat' }) }));
+  restaurando = antes;
+  if (!antes){ guardarEstado(); renderCapas(); }
+}
+
+/* =========================================================
+   ORGANIZADORES ESCOLARES (plantillas)
+   ========================================================= */
+// utilidades para armar plantillas
+function T(texto, x, y, o = {}){
+  const t = new fabric.Textbox(texto, { left:x, top:y, originX:'center', originY:'center', width:o.w || 600,
+    fontFamily:o.f || 'Poppins', fontSize:o.s || 32, fontWeight:o.b || '400', fill:o.c || '#1f2330', textAlign:o.al || 'center',
+    lineHeight:o.lh || 1.2, charSpacing:o.cs || 0, angle:o.ang || 0, fontStyle:o.it ? 'italic' : 'normal' });
+  t.id = nuevoId(); t.name = 'Texto'; canvas.add(t); return t;
+}
+function DECO(tipo, x, y, w, o = {}){
+  const d = crearDeco(tipo, { ...o, w }); d.setPositionByOrigin(new fabric.Point(x, y), 'center', 'center'); d.setCoords();
+  d.id = nuevoId(); canvas.add(d); return d;
+}
+function LLAVE(x, y, alto, ancho, color, grosor){
+  const p = new fabric.Path(pathLlave(alto, ancho), { left:x, top:y, fill:null, stroke:color, strokeWidth:grosor,
+    strokeLineCap:'round', strokeLineJoin:'round', strokeUniform:true, esDeco:true, name:'Llave', id:nuevoId() });
+  canvas.add(p); return p;
+}
+function FONDO(c){ canvas.backgroundColor = c; }
+function DEGRADADO(a, b){ fijarFondo(new fabric.Rect({ left:0, top:0, width:W, height:H, fill: crearDegradado(a, b) })); }
+
+const ORGANIZADORES = [
+  { nombre:'Análisis FODA', tam:[1920,1080], prev:'linear-gradient(135deg,#fdf4ff,#ddd6fe)', txt:'FODA', f:'Fredoka', c:'#6b21a8', crear(){
+    DEGRADADO('#fdf4ff', '#ede9fe');
+    T('ANÁLISIS FODA', 960, 105, { f:'Fredoka', s:96, b:'700', c:'#3b0764', w:1400, cs:60 });
+    DECO('subrayado', 960, 172, 440, { c:'#c026d3', sw:6 });
+    [['F','#a855f7',820,440],['O','#ec4899',1100,440],['D','#c026d3',820,720],['A','#f472b6',1100,720]].forEach(([l, c, x, y]) => {
+      const n = nodo('circulo', l, x, y, { w:300, h:300, fill:c, color:'#ffffff', tam:130, peso:'700', fuente:'Fredoka' });
+      n.set('opacity', 0.9);
+    });
+    [['FORTALEZAS','¿Qué hacemos bien?\n¿Qué recursos y habilidades nos distinguen?',360,360,'left'],
+     ['OPORTUNIDADES','¿Qué tendencias o apoyos externos podemos aprovechar?',1560,360,'right'],
+     ['DEBILIDADES','¿Qué podemos mejorar?\n¿Qué nos hace falta?',360,790,'left'],
+     ['AMENAZAS','¿Qué obstáculos externos enfrentamos?\n¿Qué riesgos hay en el entorno?',1560,790,'right']].forEach(([tit, txt, x, y, al]) => {
+      T(tit, x, y - 70, { f:'Montserrat', s:34, b:'800', c:'#6b21a8', w:480, al, cs:150 });
+      T(txt, x, y + 40, { f:'Poppins', s:26, c:'#374151', w:480, al, lh:1.35 });
+    });
+    DECO('destello', 1730, 150, 90, { c:'#ffffff' }); DECO('destello', 1650, 230, 45, { c:'#c084fc' });
+    DECO('destello', 230, 960, 70, { c:'#c084fc' }); DECO('estrella', 1700, 960, 56, { c:'#7c3aed' });
+    DECO('confeti', 230, 140, 120, { c:'#f472b6' });
+  }},
+  { nombre:'Ciclo de 4 pasos', tam:[1920,1080], prev:'#f0fdfa', txt:'Ciclo ↻', f:'Caveat', c:'#0f766e', crear(){
+    FONDO('#f0fdfa'); fondoPapel('puntos', '#f0fdfa');
+    T('Ciclo de', 960, 450, { f:'Caveat', s:72, c:'#0f766e', w:400 });
+    T('aprendizaje', 960, 545, { f:'Fredoka', s:80, b:'700', c:'#0d9488', w:540 });
+    DECO('subrayado', 960, 615, 380, { c:'#5eead4', sw:7 });
+    const datos = [
+      ['Planea\nDefine tu meta y organiza tus tiempos.', 960, 175, '#ccfbf1', '1'],
+      ['Investiga\nBusca fuentes confiables y toma notas.', 1530, 540, '#e0e7ff', '2'],
+      ['Practica\nAplica lo aprendido con ejercicios.', 960, 905, '#fce7f3', '3'],
+      ['Evalúa\nRevisa qué funcionó y qué mejorar.', 390, 540, '#fef9c3', '4']];
+    const n = datos.map(([txt, x, y, col, num]) => {
+      const f = nodo('redondo', txt, x, y, { anchoMax:420, w:500, h:160, fill:col, color:'#134e4a', tam:30, fuente:'Poppins' });
+      T(num, x > 960 ? x + 310 : x - 310, y, { f:'Amatic SC', s:130, b:'700', c:'#0f766e', w:90 });
+      return f;
+    });
+    const op = { estilo:'curva', fin:'flecha', color:'#5eead4', ancho:7 };
+    unir(n[0], n[1], { ...op, lados:['der','arr'] }); unir(n[1], n[2], { ...op, lados:['aba','der'] });
+    unir(n[2], n[3], { ...op, lados:['izq','aba'] }); unir(n[3], n[0], { ...op, lados:['arr','izq'] });
+    DECO('destello', 1700, 160, 70, { c:'#2dd4bf' }); DECO('destello', 220, 930, 60, { c:'#a78bfa' });
+  }},
+  { nombre:'Tabla comparativa', tam:[1920,1080], prev:'#fefce8', txt:'Tabla comparativa', f:'Caveat', c:'#1f2330', crear(){
+    FONDO('#fefce8'); fondoPapel('cuadros', '#fefce8');
+    T('Tabla comparativa', 960, 110, { f:'Caveat', s:110, b:'700', w:1200 });
+    DECO('foco', 520, 105, 80, { c:'#facc15' }); DECO('enfasis', 470, 55, 60, { c:'#1f2330', sw:4 });
+    DECO('estrella', 1410, 85, 60, { c:'#facc15' }); DECO('estrella', 1480, 145, 34, { c:'#facc15' });
+    crearTabla(960, 600, 5, 4, { ...ESTILOS_TABLA['Pastel a mano'], anchos:[300,430,430,430], alto:120, tam:28, tamEnc:34 },
+      [['Aspecto','Opción A','Opción B','Opción C'], ['Definición'], ['Características'], ['Ventajas'], ['Desventajas']]);
+    DECO('destello', 150, 980, 60, { c:'#a3e635' }); DECO('flecha', 1790, 960, 120, { c:'#1f2330', sw:4, ang:-20 });
+  }},
+  { nombre:'Cuadro sinóptico', tam:[1920,1080], prev:'#fffbeb', txt:'{ Sinóptico', f:'Playfair Display', c:'#92400e', crear(){
+    FONDO('#fffbeb'); fondoPapel('rayas', '#fffbeb');
+    T('Cuadro sinóptico', 230, 120, { f:'Caveat', s:58, c:'#92400e', w:380 });
+    T('Tema\nprincipal', 230, 540, { f:'Playfair Display', s:66, b:'700', c:'#78350f', w:360 });
+    LLAVE(420, 130, 820, 60, '#92400e', 6);
+    [220, 420, 640, 860].forEach((y, i) => {
+      T('Subtema ' + (i + 1), 615, y, { f:'Fredoka', s:40, b:'600', c:'#b45309', w:300 });
+      LLAVE(790, y - 75, 150, 34, '#d97706', 4);
+      T('• Idea o característica importante\n• Ejemplo o dato que lo explique', 1240, y, { f:'Patrick Hand', s:34, al:'left', w:760 });
+    });
+    DECO('destello', 1760, 110, 70, { c:'#f59e0b' }); DECO('flor', 1790, 980, 90, { c:'#fcd34d' });
+  }},
+  { nombre:'Mapa conceptual', tam:[1920,1080], prev:'#ffffff', txt:'Mapa conceptual', f:'Gochi Hand', c:'#db2777', crear(){
+    FONDO('#ffffff'); fondoPapel('cuadros', '#ffffff');
+    DECO('cinta', 960, 105, 640, { c:'#f9a8d4', op:0.55, ang:-2 });
+    T('Mapa conceptual', 960, 105, { f:'Gochi Hand', s:80, w:900 });
+    const est = { stroke:'#1f2330', grosor:3, color:'#1f2330', fuente:'Fredoka', peso:'600' };
+    const main = nodo('redondo', 'Concepto principal', 960, 290, { ...est, w:460, h:110, fill:'#fbcfe8', tam:40 });
+    const cols = ['#fde68a', '#bbf7d0', '#bae6fd'], enl = ['se define como', 'incluye', 'permite'];
+    [420, 960, 1500].forEach((x, i) => {
+      const n2 = nodo('redondo', 'Idea ' + (i + 1), x, 560, { ...est, w:320, h:100, fill:cols[i], tam:34 });
+      unir(main, n2, { estilo:'codo', fin:'flecha', color:'#1f2330', ancho:4, etiqueta:enl[i] });
+      const n3 = nodo('nota', 'Explica aquí la idea con tus propias palabras.', x, 855, { anchoMax:300, w:380, h:150, fill:'#ffffff', stroke:'#1f2330', grosor:2, color:'#374151', tam:28, fuente:'Patrick Hand' });
+      unir(n2, n3, { estilo:'recta', fin:'flecha', color:'#1f2330', ancho:3 });
+    });
+    DECO('estrella', 1700, 120, 60, { c:'#facc15' }); DECO('destello', 220, 140, 70, { c:'#f472b6' });
+    DECO('foco', 1760, 900, 90, { c:'#facc15' }); DECO('enfasis', 1700, 830, 70, { c:'#1f2330', sw:4 });
+  }},
+  { nombre:'Mapa mental de nubes', tam:[1920,1080], prev:'#ffffff', txt:'MAPA MENTAL', f:'Fredoka', c:'#1f2330', crear(){
+    FONDO('#ffffff'); fondoPapel('puntos', '#ffffff');
+    const centro = nodo('blob', 'MAPA\nMENTAL', 960, 540, { w:480, h:370, fill:'#fef3c7', color:'#1f2330', tam:96, peso:'700', fuente:'Fredoka' });
+    const nombres = ['Idea creativa','Idea genial','Idea práctica','Idea fantástica','Idea técnica','Idea brillante'];
+    const cols = ['#ddd6fe','#bbf7d0','#fbcfe8','#bae6fd','#fde68a','#fecaca'];
+    [[290,210],[290,540],[290,870],[1630,210],[1630,540],[1630,870]].forEach(([x, y], i) => {
+      const n = nodo('nube', nombres[i], x, y, { w:400, h:230, fill:cols[i], color:'#1f2330', tam:36, peso:'700', fuente:'Fredoka' });
+      unir(centro, n, { estilo:'curva', fin:'abierta', color:'#1f2330', ancho:4 });
+    });
+    DECO('destello', 960, 150, 70, { c:'#a78bfa' }); DECO('destello', 960, 940, 60, { c:'#f472b6' });
+  }},
+  { nombre:'Planeación de proyecto', tam:[1920,1080], prev:'#f5f0e6', txt:'Planeación', f:'Bebas Neue', c:'#1f2330', crear(){
+    FONDO('#f5f0e6');
+    nodo('redondo', 'Planeación\nde proyecto', 250, 540, { w:330, h:150, fill:'#ffffff', stroke:'#1f2330', grosor:3, color:'#1f2330', tam:46, fuente:'Bebas Neue' });
+    LLAVE(450, 150, 780, 50, '#1f2330', 5);
+    const etapas = ['Planteamiento','Investigación','Ejecución','Gestión','Seguimiento'];
+    const cols = ['#fde68a','#bbf7d0','#c7d2fe','#a5f3fc','#fbcfe8'];
+    etapas.forEach((e, i) => {
+      const y = 180 + i * 180;
+      const a = nodo('pildora', e, 690, y, { w:300, h:90, fill:cols[i], stroke:'#1f2330', grosor:3, color:'#1f2330', tam:36, fuente:'Bebas Neue' });
+      const d = nodo('redondo', 'Describe qué harás en esta etapa, quién participa y en qué fecha.', 1320, y, { anchoMax:660, w:760, h:120, fill:'#ffffff', stroke:'#1f2330', grosor:2, color:'#374151', tam:26, fuente:'Poppins' });
+      unir(a, d, { estilo:'recta', inicio:'circulo', fin:'flecha', color:'#1f2330', ancho:3 });
+    });
+  }},
+  { nombre:'Portada de proyecto', tam:[1240,1754], prev:'linear-gradient(135deg,#ede9fe,#fdf2f8)', txt:'PROYECTO', f:'Permanent Marker', c:'#7c3aed', crear(){
+    FONDO('#fffdf8');
+    DECO('mancha', 120, 150, 460, { c:'#c4b5fd', op:0.75 }); DECO('mancha', 1160, 280, 320, { c:'#fde68a', op:0.85 });
+    DECO('mancha', 1110, 1620, 520, { c:'#fbcfe8', op:0.8 }); DECO('mancha', 140, 1600, 340, { c:'#a5f3fc', op:0.8 });
+    DECO('flor', 1120, 1450, 110, { c:'#f472b6' }); DECO('flor', 230, 1430, 80, { c:'#a78bfa' });
+    DECO('destello', 1050, 520, 60, { c:'#7c3aed' }); DECO('destello', 200, 470, 44, { c:'#ec4899' });
+    nodo('pildora', 'Fecha de entrega', 620, 560, { w:340, h:70, fill:'#ec4899', color:'#ffffff', tam:28, fuente:'Poppins', peso:'600' });
+    T('PORTADA DE', 620, 700, { f:'Fredoka', s:80, b:'600', w:1000, cs:100 });
+    T('PROYECTO', 620, 830, { f:'Permanent Marker', s:150, c:'#7c3aed', w:1100 });
+    T('Escribe aquí una breve descripción del proyecto o el nombre de la asignatura.', 620, 990, { f:'Poppins', s:30, c:'#6b7280', w:820, lh:1.4 });
+    T('Nombre del alumno(a)', 620, 1160, { f:'Caveat', s:60, w:800 });
+    DECO('subrayado', 620, 1210, 400, { c:'#ec4899', sw:5 });
+    T('Grupo · Docente · Escuela', 620, 1275, { f:'Poppins', s:28, c:'#6b7280', w:800 });
+  }},
+  { nombre:'Tabla por categorías', tam:[1920,1080], prev:'#ffffff', txt:'Categorías', f:'Fredoka', c:'#7c3aed', crear(){
+    FONDO('#ffffff');
+    T('Clasificación por categorías', 960, 100, { f:'Fredoka', s:66, b:'700', w:1500 });
+    DECO('rizo', 1590, 110, 140, { c:'#a78bfa', sw:5 }); DECO('destello', 330, 95, 60, { c:'#f472b6' });
+    crearTabla(960, 600, 6, 4, { ...ESTILOS_TABLA['Por categorías'], anchos:[320,420,420,420], alto:115, tam:26, tamEnc:32 },
+      [['Categoría','Características','Elementos','Ejemplo'], ['Categoría 1'], ['Categoría 2'], ['Categoría 3'], ['Categoría 4'], ['Categoría 5']]);
+  }}
+];
+function usarOrganizador(p){
+  if (canvas.getObjects().length && !confirm('Esto reemplazará el contenido de esta página. ¿Continuar?')) return;
+  fijarTamano(p.tam[0], p.tam[1]);
+  restaurando = true;
+  canvas.clear(); canvas.backgroundColor = '#ffffff';
+  p.crear(); ordenarVinculos();
+  restaurando = false;
+  canvas.discardActiveObject(); canvas.requestRenderAll(); renderCapas(); guardarEstado();
+}
+function ICONO(nombre, x, y, w, color){
+  const pth = new fabric.Path(ICONOS[nombre], { fill:color, fillRule:'evenodd', originX:'center', originY:'center', esDeco:true, name:nombre, id:nuevoId() });
+  pth.scaleToWidth(w); pth.setPositionByOrigin(new fabric.Point(x, y), 'center', 'center'); canvas.add(pth); return pth;
+}
+function LINEA(x1, y1, x2, y2, color, grosor){
+  const l = new fabric.Line([x1, y1, x2, y2], { stroke:color, strokeWidth:grosor, strokeLineCap:'round', name:'Línea', id:nuevoId() });
+  canvas.add(l); return l;
+}
+const CAT_MAPAS = 'Mapas conceptuales y mentales', CAT_TABLAS = 'Tablas y cuadros', CAT_PROC = 'Procesos y análisis', CAT_PORT = 'Portadas, carteles y redes';
+const CATEGORIA_ORG = { 'Análisis FODA':CAT_PROC, 'Ciclo de 4 pasos':CAT_PROC, 'Tabla comparativa':CAT_TABLAS, 'Cuadro sinóptico':CAT_TABLAS,
+  'Mapa conceptual':CAT_MAPAS, 'Mapa mental de nubes':CAT_MAPAS, 'Planeación de proyecto':CAT_PROC, 'Portada de proyecto':CAT_PORT, 'Tabla por categorías':CAT_TABLAS };
+ORGANIZADORES.forEach(o => { o.cat = o.cat || CATEGORIA_ORG[o.nombre] || CAT_MAPAS; });
+
+ORGANIZADORES.push(
+  { nombre:'Mapa conceptual jerárquico', cat:CAT_MAPAS, tam:[1920,1080], crear(){
+    FONDO('#f5f3ff'); fondoPapel('cuadros', '#f5f3ff');
+    const borde = { stroke:'#1f2330', grosor:3, color:'#1f2330' };
+    const tit = nodo('redondo', 'Título aquí', 960, 95, { ...borde, w:420, h:90, fill:'#ecfccb', tam:40, fuente:'Fredoka', peso:'700' });
+    const def = nodo('redondo', 'Escribe aquí la definición del tema principal con tus propias palabras, de forma breve y clara.', 960, 300,
+      { anchoMax:880, w:1000, h:130, fill:'#ffffff', stroke:'#1f2330', grosor:2, color:'#374151', tam:28, fuente:'Poppins' });
+    unir(tit, def, { estilo:'recta', fin:'flecha', color:'#1f2330', ancho:3, etiqueta:'¿Qué es?' });
+    [390, 770, 1150, 1530].forEach((x, i) => {
+      const idea = nodo('redondo', 'Idea ' + (i + 1), x, 500, { ...borde, w:280, h:80, fill:'#ecfccb', tam:32, fuente:'Fredoka', peso:'700' });
+      unir(def, idea, { estilo:'codo', fin:'flecha', color:'#1f2330', ancho:3 });
+      const d = nodo('redondo', 'Explica la idea en dos o tres renglones.', x, 690, { anchoMax:260, w:330, h:150, fill:'#ffffff', stroke:'#1f2330', grosor:2, color:'#374151', tam:24, fuente:'Poppins' });
+      unir(idea, d, { estilo:'recta', fin:'flecha', color:'#1f2330', ancho:3 });
+      const ej = nodo('pildora', 'ejemplo', x, 865, { w:170, h:54, fill:'#ddd6fe', color:'#4c1d95', tam:30, fuente:'Caveat', peso:'700' });
+      unir(d, ej, { estilo:'recta', fin:'nada', color:'#1f2330', ancho:2 });
+      T('Escribe un ejemplo concreto.', x, 960, { f:'Poppins', s:22, c:'#4b5563', w:300 });
+    });
+    DECO('destello', 1760, 90, 60, { c:'#a78bfa' }); DECO('destello', 160, 980, 50, { c:'#84cc16' });
+  }},
+  { nombre:'Mapa de 8 ideas', cat:CAT_MAPAS, tam:[1920,1080], crear(){
+    FONDO('#ffffff'); fondoPapel('cuadros', '#ffffff');
+    const centro = nodo('proceso', 'MAPA\nCONCEPTUAL', 960, 540, { w:300, h:150, fill:'#fde047', stroke:'#1f2330', grosor:3, color:'#1f2330', tam:46, fuente:'Bebas Neue' });
+    const nombres = ['NOVEDOSA','ECOLÓGICA','ECONÓMICA','EFICIENTE','TECNOLÓGICA','EDUCATIVA','MODERNA','SOSTENIBLE'];
+    const cols = ['#d9f99d','#fbcfe8','#fde68a','#bae6fd','#a7f3d0','#fecaca','#ddd6fe','#e5e7eb'];
+    [165, 415, 665, 915].forEach((y, i) => [0, 1].forEach(lado => {
+      const n = i + lado * 4, x = lado ? 1490 : 430;
+      const c = nodo('proceso', 'IDEA ' + nombres[n] + '\nEscribe aquí una breve explicación de esta idea.', x, y,
+        { anchoMax:560, w:640, h:190, fill:cols[n], stroke:'#1f2330', grosor:3, color:'#1f2330', tam:26, fuente:'Poppins' });
+      T(String(n + 1), lado ? 1860 : 60, y, { f:'Bebas Neue', s:96, w:80 });
+      unir(centro, c, { estilo:'curva', fin:'flecha', color:'#1f2330', ancho:3, lados: lado ? ['der','izq'] : ['izq','der'] });
+    }));
+  }},
+  { nombre:'Mapa de columnas de colores', cat:CAT_MAPAS, tam:[1920,1080], crear(){
+    FONDO('#fffdf7');
+    T('MAPA CONCEPTUAL', 960, 105, { f:'Fredoka', s:80, b:'700', w:1100 });
+    DECO('foco', 520, 95, 70, { c:'#facc15' }); DECO('rizo', 1400, 105, 120, { c:'#1f2330', sw:4 });
+    T('Escribe aquí una introducción breve que explique de qué trata el tema y por qué es importante.', 960, 215, { f:'Poppins', s:26, c:'#4b5563', w:1300 });
+    const fuertes = ['#bae6fd','#fed7aa','#fbcfe8','#ddd6fe','#bbf7d0'], suaves = ['#f0f9ff','#fff7ed','#fdf2f8','#f5f3ff','#f0fdf4'];
+    [260, 610, 960, 1310, 1660].forEach((x, i) => {
+      const pill = nodo('pildora', 'IDEA ' + (i + 1), x, 340, { w:300, h:72, fill:fuertes[i], stroke:'#1f2330', grosor:2, color:'#1f2330', tam:30, fuente:'Fredoka', peso:'700' });
+      const col = nodo('redondo', 'Desarrolla aquí la idea: qué es, cómo funciona y un ejemplo que la explique.', x, 630,
+        { anchoMax:240, w:300, h:400, fill:suaves[i], color:'#1f2330', tam:28, fuente:'Patrick Hand' });
+      unir(pill, col, { estilo:'recta', fin:'nada', color:'#1f2330', ancho:3 });
+    });
+    DECO('estrella', 160, 980, 46, { c:'#facc15' }); DECO('destello', 1760, 980, 54, { c:'#f472b6' });
+  }},
+  { nombre:'Mapa de burbujas', cat:CAT_MAPAS, tam:[1920,1080], crear(){
+    FONDO('#ffffff'); fondoPapel('puntos', '#ffffff');
+    const centro = nodo('circulo', 'MAPA\nCONCEPTUAL', 960, 540, { w:300, h:300, fill:'#ffffff', stroke:'#0f766e', grosor:6, color:'#0f766e', tam:40, fuente:'Fredoka', peso:'700' });
+    const nombres = ['SIMPLE','SENCILLA','CREATIVA','BONITA','BÁSICA','DIVERTIDA'];
+    const cols = ['#fbcfe8','#bbf7d0','#fde68a','#bae6fd','#ddd6fe','#fecaca'];
+    [[620,250],[1300,250],[420,560],[1500,560],[620,860],[1300,860]].forEach(([x, y], i) => {
+      const b = nodo('circulo', 'IDEA ' + nombres[i] + '\nUna frase corta que la explique.', x, y, { anchoMax:190, w:320, h:320, fill:cols[i], color:'#1f2330', tam:23, fuente:'Poppins' });
+      unir(centro, b, { estilo:'recta', fin:'nada', color:'#0f766e', ancho:4 });
+    });
+    DECO('destello', 960, 160, 60, { c:'#14b8a6' }); DECO('espiral', 960, 930, 90, { c:'#0f766e', sw:4 });
+  }},
+  { nombre:'Mapa conceptual con notas', cat:CAT_MAPAS, tam:[1920,1080], crear(){
+    FONDO('#fafaf9'); fondoPapel('cuadros', '#fafaf9');
+    DECO('cinta', 960, 95, 620, { c:'#a5f3fc', op:0.6, ang:-2 });
+    T('Mapa conceptual', 960, 95, { f:'Gochi Hand', s:76, w:900 });
+    const main = nodo('nota', 'Tema principal', 960, 265, { w:380, h:120, fill:'#fde68a', color:'#1f2330', tam:42, fuente:'Gochi Hand' });
+    const cols = ['#fbcfe8','#bbf7d0','#bae6fd'];
+    [430, 960, 1490].forEach((x, i) => {
+      const sub = nodo('nota', 'Subtema ' + (i + 1), x, 520, { w:320, h:110, fill:cols[i], color:'#1f2330', tam:38, fuente:'Gochi Hand' });
+      unir(main, sub, { estilo:'curva', fin:'abierta', color:'#1f2330', ancho:4 });
+      [-135, 135].forEach(dx => {
+        const det = nodo('nota', 'Detalle o ejemplo', x + dx, 820, { anchoMax:180, w:230, h:170, fill:'#ffffff', color:'#374151', tam:30, fuente:'Patrick Hand' });
+        unir(sub, det, { estilo:'codo', fin:'flecha', color:'#1f2330', ancho:3 });
+      });
+    });
+    DECO('estrella', 1720, 120, 56, { c:'#facc15' }); DECO('foco', 200, 130, 80, { c:'#facc15' }); DECO('espiral', 1780, 960, 90, { c:'#1f2330', sw:4 });
+  }},
+  { nombre:'Cuadro comparativo de ideas', cat:CAT_TABLAS, tam:[1920,1080], crear(){
+    FONDO('#fefce8'); fondoPapel('cuadros', '#fefce8');
+    T('CUADRO COMPARATIVO', 960, 95, { f:'Amatic SC', s:100, b:'700', w:1200 });
+    DECO('estrella', 1400, 80, 50, { c:'#1f2330' }); DECO('destello', 1460, 125, 40, { c:'#f472b6' }); DECO('destello', 470, 90, 50, { c:'#a78bfa' });
+    crearTabla(960, 590, 5, 4, { sep:12, rx:12, borde:'#1f2330', grosor:2.5, enc:['#ede9fe','#fed7aa','#bbf7d0','#bae6fd'], encTexto:'#1f2330',
+      filasColores:['#c7d2fe'], celda:'#ffffff', fuente:'Patrick Hand', fuenteEnc:'Amatic SC', anchos:[300,440,440,440], alto:130, altoEnc:110, tam:26, tamEnc:46 },
+      [['', 'IDEA GRANDIOSA', 'IDEA BRILLANTE', 'IDEA FANTÁSTICA'], ['DEFINICIÓN'], ['OBJETIVOS'], ['INDICADORES'], ['EJEMPLOS']]);
+  }},
+  { nombre:'Cuadro S·Q·A', cat:CAT_TABLAS, tam:[1920,1080], crear(){
+    FONDO('#ffffff'); fondoPapel('rayas', '#ffffff');
+    T('Cuadro S · Q · A', 960, 95, { f:'Fredoka', s:72, b:'700', w:1200 });
+    T('Tema: ______________________', 960, 175, { f:'Patrick Hand', s:38, c:'#4b5563', w:900 });
+    crearTabla(960, 620, 2, 3, { sep:16, rx:18, borde:'#cbd5e1', grosor:2, enc:['#bae6fd','#fde68a','#bbf7d0'], encTexto:'#1f2330', celda:'#ffffff',
+      fuente:'Patrick Hand', fuenteEnc:'Fredoka', anchos:[540,540,540], alto:560, altoEnc:130, tam:30, tamEnc:34 },
+      [['S · Lo que sé', 'Q · Lo que quiero saber', 'A · Lo que aprendí'], ['', '', '']]);
+    DECO('destello', 1760, 90, 56, { c:'#38bdf8' }); DECO('foco', 160, 100, 70, { c:'#facc15' });
+  }},
+  { nombre:'Pros y contras', cat:CAT_TABLAS, tam:[1920,1080], crear(){
+    FONDO('#f8fafc');
+    T('Pros y contras', 960, 95, { f:'Fredoka', s:72, b:'700', w:1200 });
+    T('Decisión o tema a analizar', 960, 175, { f:'Caveat', s:50, c:'#475569', w:900 });
+    [[520,'A FAVOR','#22c55e','#f0fdf4','#86efac','#14532d','Palomita','✓'],[1400,'EN CONTRA','#ef4444','#fef2f2','#fca5a5','#7f1d1d','Tache','✗']]
+      .forEach(([x, tit, fuerte, suave, borde, txtc, icono, marca]) => {
+        nodo('pildora', tit, x, 290, { w:320, h:84, fill:fuerte, color:'#ffffff', tam:38, fuente:'Fredoka', peso:'700' });
+        ICONO(icono, x - 230, 290, 60, fuerte);
+        const lista = nodo('redondo', `${marca} Primer punto\n${marca} Segundo punto\n${marca} Tercer punto\n${marca} Cuarto punto`, x, 640,
+          { anchoMax:600, w:720, h:520, fill:suave, stroke:borde, grosor:3, color:txtc, tam:46, fuente:'Patrick Hand' });
+        porId(lista.formaTexto).set('textAlign', 'left');
+      });
+  }},
+  { nombre:'Proceso en 5 pasos', cat:CAT_PROC, tam:[1920,1080], crear(){
+    FONDO('#ffffff');
+    T('Proceso en 5 pasos', 960, 115, { f:'Fredoka', s:72, b:'700', w:1200 });
+    DECO('subrayado', 960, 180, 360, { c:'#f97316', sw:6 });
+    const cols = ['#f97316','#eab308','#22c55e','#06b6d4','#8b5cf6'];
+    const c = [240, 600, 960, 1320, 1680].map((x, i) => {
+      const n = nodo('circulo', String(i + 1), x, 420, { w:150, h:150, fill:cols[i], color:'#ffffff', tam:64, fuente:'Fredoka', peso:'700' });
+      T('Paso ' + (i + 1), x, 560, { f:'Fredoka', s:38, b:'600', c:cols[i], w:300 });
+      T('Describe brevemente qué se hace en este paso.', x, 650, { f:'Poppins', s:24, c:'#4b5563', w:290 });
+      return n;
+    });
+    for (let i = 0; i < 4; i++) unir(c[i], c[i + 1], { estilo:'recta', fin:'flecha', color:'#cbd5e1', ancho:6, patron:'guiones' });
+    nodo('redondo', 'Resultado final: escribe aquí lo que se logra al terminar el proceso.', 960, 880, { anchoMax:1000, w:1100, h:110, fill:'#f1f5f9', color:'#1f2330', tam:28, fuente:'Poppins' });
+  }},
+  { nombre:'Diagrama de Venn', cat:CAT_PROC, tam:[1920,1080], crear(){
+    FONDO('#ffffff');
+    T('Diagrama de Venn', 960, 100, { f:'Fredoka', s:72, b:'700', w:1200 });
+    [[760,'#60a5fa'],[1160,'#f472b6']].forEach(([x, c]) => canvas.add(new fabric.Circle({ left:x, top:575, radius:330, originX:'center', originY:'center', fill:c, opacity:0.4, name:'Conjunto', id:nuevoId() })));
+    T('TEMA A', 650, 360, { f:'Fredoka', s:46, b:'700', c:'#1e40af', w:300 });
+    T('TEMA B', 1270, 360, { f:'Fredoka', s:46, b:'700', c:'#9d174d', w:300 });
+    T('Características que solo tiene A', 610, 580, { f:'Poppins', s:28, w:260 });
+    T('Lo que tienen en común', 960, 580, { f:'Poppins', s:28, b:'600', w:170 });
+    T('Características que solo tiene B', 1310, 580, { f:'Poppins', s:28, w:260 });
+    DECO('destello', 1760, 110, 60, { c:'#a78bfa' }); DECO('destello', 170, 960, 50, { c:'#60a5fa' });
+  }},
+  { nombre:'Causa y efecto (espina de pescado)', cat:CAT_PROC, tam:[1920,1080], crear(){
+    FONDO('#f8fafc');
+    T('Diagrama de causa y efecto', 820, 90, { f:'Fredoka', s:60, b:'700', w:1400 });
+    LINEA(180, 540, 1480, 540, '#1f2330', 8);
+    nodo('redondo', 'Problema o efecto', 1670, 540, { anchoMax:260, w:330, h:200, fill:'#ef4444', color:'#ffffff', tam:34, fuente:'Fredoka', peso:'700' });
+    const cats = ['Métodos','Materiales','Personas','Entorno','Tiempo','Recursos'];
+    const cols = ['#bae6fd','#fde68a','#bbf7d0','#fbcfe8','#ddd6fe','#fed7aa'];
+    [420, 820, 1220].forEach((x, i) => [0, 1].forEach(abajo => {
+      const n = i + abajo * 3, yE = abajo ? 820 : 260;
+      LINEA(x - 140, yE, x + 60, 540, '#1f2330', 5);
+      nodo('pildora', cats[n], x - 140, abajo ? 870 : 210, { w:230, h:62, fill:cols[n], color:'#1f2330', tam:28, fuente:'Fredoka', peso:'600' });
+      T('• Causa principal\n• Otra causa', x + 95, abajo ? 690 : 390, { f:'Patrick Hand', s:28, al:'left', w:200 });
+    }));
+  }}
+);
+
+ORGANIZADORES.forEach(p => {
+  const b = document.createElement('button'); b.className = 'plantilla';
+  b.innerHTML = `<div class="t">${esc(p.nombre)}</div>`;
+  b.onclick = () => usarOrganizador(p);
+  $('listaOrganizadores').appendChild(b);
+});
+
+const DIAGRAMAS = [
+  { nombre:'Mapa mental', desc:'Idea central con ramas de colores', tam:[1920, 1080], crear(){
+    const centro = nodo('elipse', 'Idea central', 960, 540, { w:460, h:230, fill:'#7c3aed', color:'#ffffff', tam:56, peso:'700', fuente:'Montserrat' });
+    const colores = ['#f97316','#06b6d4','#10b981','#ec4899','#eab308','#3b82f6'];
+    [[1480,230],[1520,540],[1480,850],[440,230],[400,540],[440,850]].forEach(([x, y], i) => {
+      const r = nodo('redondo', 'Idea ' + (i+1), x, y, { w:320, h:110, fill:colores[i], color:'#ffffff', tam:38, peso:'600' });
+      unir(centro, r, { estilo:'curva', flecha:false, color:colores[i], ancho:9, orient:'h', dir: x > 960 ? 'der' : 'izq' });
+    });
+  }},
+  { nombre:'Mapa conceptual', desc:'Conceptos unidos con palabras de enlace', tam:[1920, 1080], crear(){
+    const est = { fill:'#eef2ff', stroke:'#1e3a8a', grosor:4, color:'#1e3a8a', tam:34, peso:'600' };
+    const raiz = nodo('redondo', 'Concepto principal', 960, 130, { ...est, w:440, h:110, fill:'#1e3a8a', color:'#ffffff', tam:40, peso:'700' });
+    const n2 = [400, 960, 1520].map((x, i) => nodo('redondo', 'Concepto ' + (i+1), x, 470, { ...est, w:320, h:100 }));
+    const enlaces = ['se divide en', 'incluye', 'se relaciona con'];
+    n2.forEach((n, i) => unir(raiz, n, { etiqueta:enlaces[i], color:'#334155', ancho:4 }));
+    [[230, 0], [570, 0], [1350, 2], [1690, 2]].forEach(([x, i], j) => {
+      const h3 = nodo('redondo', 'Ejemplo', x, 840, { ...est, w:280, h:96, fill:'#ffffff' });
+      unir(n2[i], h3, { etiqueta: j % 2 ? 'como' : 'por ejemplo', color:'#334155', ancho:4 });
+    });
+  }},
+  { nombre:'Diagrama de flujo', desc:'Inicio, procesos, decisión y fin', tam:[1400, 1920], crear(){
+    const blanco = { color:'#ffffff', tam:38, peso:'600' };
+    const ini = nodo('pildora', 'Inicio', 600, 160, { ...blanco, w:340, h:110, fill:'#10b981' });
+    const p1 = nodo('proceso', 'Proceso', 600, 420, { ...blanco, w:380, h:130, fill:'#3b82f6' });
+    const dec = nodo('rombo', '¿Condición?', 600, 760, { ...blanco, w:440, h:260, fill:'#f59e0b', tam:34 });
+    const otra = nodo('proceso', 'Otra acción', 1170, 760, { ...blanco, w:300, h:120, fill:'#64748b' });
+    const p2 = nodo('proceso', 'Siguiente paso', 600, 1120, { ...blanco, w:380, h:130, fill:'#3b82f6' });
+    const dat = nodo('paralelo', 'Resultado', 600, 1420, { ...blanco, w:400, h:130, fill:'#8b5cf6' });
+    const fin = nodo('pildora', 'Fin', 600, 1720, { ...blanco, w:340, h:110, fill:'#ef4444' });
+    const lin = { estilo:'codo', color:'#1f2330', ancho:5 };
+    unir(ini, p1, { ...lin, orient:'v' }); unir(p1, dec, { ...lin, orient:'v' });
+    unir(dec, p2, { ...lin, orient:'v', etiqueta:'Sí' }); unir(dec, otra, { ...lin, orient:'h', etiqueta:'No' });
+    unir(otra, dat, { ...lin, lados:['aba','der'] });
+    unir(p2, dat, { ...lin, orient:'v' }); unir(dat, fin, { ...lin, orient:'v' });
+  }},
+  { nombre:'Organigrama / árbol', desc:'Jerarquía de arriba hacia abajo', tam:[1920, 1080], crear(){
+    const raiz = nodo('redondo', 'Dirección', 960, 150, { w:360, h:110, fill:'#0f172a', color:'#ffffff', tam:40, peso:'700' });
+    const cols = ['#2563eb', '#0891b2', '#7c3aed'];
+    [400, 960, 1520].forEach((x, i) => {
+      const n = nodo('redondo', 'Área ' + (i+1), x, 480, { w:300, h:100, fill:cols[i], color:'#ffffff', tam:34, peso:'600' });
+      unir(raiz, n, { estilo:'codo', flecha:false, orient:'v', color:'#475569', ancho:4 });
+      [-140, 140].forEach(dx => {
+        const m = nodo('redondo', 'Puesto', x + dx, 820, { w:250, h:92, fill:'#f1f5f9', stroke:cols[i], grosor:4, color:'#1f2330', tam:30 });
+        unir(n, m, { estilo:'codo', flecha:false, orient:'v', color:'#94a3b8', ancho:4 });
+      });
+    });
+  }},
+  { nombre:'Línea del tiempo', desc:'Acontecimientos en orden', tam:[1920, 1080], crear(){
+    agregar(new fabric.Rect({ left:960, top:540, originX:'center', originY:'center', width:1640, height:12, rx:6, ry:6, fill:'#334155' }), 'Línea');
+    [260, 610, 960, 1310, 1660].forEach((x, i) => {
+      const punto = nodo('circulo', String(2020 + i), x, 540, { w:130, h:130, fill:'#7c3aed', color:'#ffffff', tam:30, peso:'700' });
+      const y = i % 2 ? 820 : 260;
+      const caja = nodo('redondo', 'Acontecimiento importante', x, y, { w:300, h:130, fill:'#f1f5f9', stroke:'#cbd5e1', grosor:3, color:'#1f2330', tam:30 });
+      unir(punto, caja, { flecha:false, color:'#94a3b8', ancho:4 });
+    });
+  }}
+];
+DIAGRAMAS.forEach(d => {
+  const b = document.createElement('button'); b.className = 'bigbtn';
+  b.innerHTML = `<b>${esc(d.nombre)}</b><br><span style="color:#6b7280;font-size:12px">${esc(d.desc)}</span>`;
+  b.onclick = () => {
+    if (canvas.getObjects().length && !confirm('Esto reemplazará el contenido de esta página. ¿Continuar?')) return;
+    fijarTamano(d.tam[0], d.tam[1]);
+    restaurando = true;
+    canvas.clear(); canvas.backgroundColor = '#ffffff';
+    d.crear(); ordenarVinculos();
+    restaurando = false;
+    canvas.discardActiveObject(); canvas.requestRenderAll(); renderCapas(); guardarEstado();
+  };
+  $('listaDiagramas').appendChild(b);
+});
+canvas.targetFindTolerance = 8;
+
+function toggleFlecha(){
+  const o = conSel(); if (!o) return;
+  const fin = (o.fin || (o.flecha ? 'flecha' : 'nada')) === 'nada' ? 'flecha' : 'nada';
+  cambiarConector({ fin, flecha: fin !== 'nada' });
+}
+
+/* =========================================================
+   LIENZO FLEXIBLE
+   ========================================================= */
+let lienzoAuto = true;
+try { lienzoAuto = localStorage.getItem('disenador_auto2') !== '0'; } catch(e){}
+$('lienzoAuto').checked = lienzoAuto;
+$('bAuto').classList.toggle('on', lienzoAuto);
+$('bAuto').onclick = () => { $('lienzoAuto').checked = !lienzoAuto; $('lienzoAuto').onchange({ target:$('lienzoAuto') });
+  toast(lienzoAuto ? 'Lienzo automático: crece solo cuando algo se sale' : 'Lienzo automático apagado'); };
+$('lienzoAuto').onchange = e => {
+  lienzoAuto = e.target.checked;
+  $('bAuto').classList.toggle('on', lienzoAuto);
+  try { localStorage.setItem('disenador_auto2', lienzoAuto ? '1' : '0'); } catch(_){}
+  if (lienzoAuto) ajustarLienzoAContenido(true);
+};
+// Mientras arrastras algo hacia la derecha o hacia abajo, el lienzo crece contigo
+function crecerAlArrastrar(o){
+  if (!lienzoAuto || !o) return;
+  const r = cajaAbs(o), m = 40 * s();
+  let nw = W, nh = H;
+  if (r.left + r.width > W) nw = Math.ceil(r.left + r.width + m);
+  if (r.top + r.height > H) nh = Math.ceil(r.top + r.height + m);
+  if (nw === W && nh === H) return;
+  W = Math.min(8000, nw); H = Math.min(8000, nh);
+  canvas.setDimensions({ width: Math.round(W*zoom), height: Math.round(H*zoom) });
+  $('tamTxt').textContent = W + ' × ' + H;
+  const f = canvas.getObjects().find(x => x.esFondo); if (f) ajustarRectFondo(f);
+  miniaturas = []; crecioArrastrando = true;
+}
+let crecioArrastrando = false;
+// al soltar, se reajusta el zoom para ver todo el lienzo
+canvas.on('mouse:up', () => { if (crecioArrastrando){ crecioArrastrando = false; setTimeout(() => { ajustarZoom(); guardarEstado(); }, 320); } });
+function revisarAuto(){
+  if (!lienzoAuto || restaurando || generandoVista) return;
+  clearTimeout(revisarAuto._t);
+  revisarAuto._t = setTimeout(() => ajustarLienzoAContenido(true), 300);
+}
+function limitesContenido(){
+  const objs = canvas.getObjects().filter(o => !o.esFondo && o.visible);
+  if (!objs.length) return null;
+  const b = { x1:Infinity, y1:Infinity, x2:-Infinity, y2:-Infinity };
+  objs.forEach(o => {
+    const r = cajaAbs(o);
+    b.x1 = Math.min(b.x1, r.left); b.y1 = Math.min(b.y1, r.top);
+    b.x2 = Math.max(b.x2, r.left + r.width); b.y2 = Math.max(b.y2, r.top + r.height);
+  });
+  return b;
+}
+function moverTodo(dx, dy){
+  const a = activo();
+  if (a && a.type === 'activeSelection'){ a.set({ left: a.left + dx, top: a.top + dy }); a.setCoords(); }
+  canvas.getObjects().filter(o => !o.esFondo && !o.group).forEach(o => { o.set({ left: o.left + dx, top: o.top + dy }); o.setCoords(); });
+  actualizarTodasConexiones();
+}
+// soloCrecer = true: solo agranda si algo se sale. false: recorta/ajusta el lienzo justo al contenido con margen
+function ajustarLienzoAContenido(soloCrecer){
+  const b = limitesContenido();
+  if (!b){ if (!soloCrecer) toast('Agrega algo al diseño primero'); return; }
+  const m = Math.round(40 * s());
+  let dx = 0, dy = 0, nw, nh;
+  if (soloCrecer){
+    if (b.x1 < -1) dx = Math.ceil(-b.x1) + m;
+    if (b.y1 < -1) dy = Math.ceil(-b.y1) + m;
+    nw = b.x2 > W + 1 ? Math.ceil(b.x2 + dx + m) : W + dx;
+    nh = b.y2 > H + 1 ? Math.ceil(b.y2 + dy + m) : H + dy;
+  } else {
+    dx = Math.round(m - b.x1); dy = Math.round(m - b.y1);
+    nw = Math.ceil(b.x2 - b.x1 + 2*m); nh = Math.ceil(b.y2 - b.y1 + 2*m);
+  }
+  nw = Math.max(50, Math.min(8000, nw)); nh = Math.max(50, Math.min(8000, nh));
+  if (!dx && !dy && nw === W && nh === H) return;
+  if (dx || dy) moverTodo(dx, dy);
+  cambiarTamano(nw, nh);
+}
+// Asas para cambiar el tamaño del lienzo desde cualquier lado o esquina
+document.querySelectorAll('.asa').forEach(asa => {
+  let ini = null;
+  asa.addEventListener('pointerdown', e => {
+    e.preventDefault(); e.stopPropagation(); asa.setPointerCapture(e.pointerId);
+    canvas.discardActiveObject();
+    ini = { x:e.clientX, y:e.clientY, w:W, h:H, d:asa.dataset.d, ox:0, oy:0 };
+  });
+  asa.addEventListener('pointermove', e => {
+    if (!ini) return;
+    const dx = (e.clientX - ini.x) / zoom, dy = (e.clientY - ini.y) / zoom, d = ini.d;
+    let w = ini.w, hh = ini.h;
+    if (d.includes('e')) w = ini.w + dx;
+    if (d.includes('w')) w = ini.w - dx;
+    if (d.includes('s')) hh = ini.h + dy;
+    if (d.includes('n')) hh = ini.h - dy;
+    w = Math.round(Math.max(50, Math.min(8000, w))); hh = Math.round(Math.max(50, Math.min(8000, hh)));
+    // al jalar desde la izquierda o arriba, el contenido se queda en su lugar
+    ini.ox = d.includes('w') ? w - ini.w : 0;
+    ini.oy = d.includes('n') ? hh - ini.h : 0;
+    W = w; H = hh;
+    canvas.setDimensions({ width: Math.round(W*zoom), height: Math.round(H*zoom) });
+    canvas.setViewportTransform([zoom, 0, 0, zoom, ini.ox*zoom, ini.oy*zoom]);
+    $('tamTxt').textContent = W + ' × ' + H;
+  });
+  const soltar = () => {
+    if (!ini) return;
+    const { ox, oy } = ini; ini = null;
+    canvas.setViewportTransform([zoom, 0, 0, zoom, 0, 0]);
+    if (ox || oy) moverTodo(ox, oy);
+    cambiarTamano(W, H);
+  };
+  asa.addEventListener('pointerup', soltar);
+  asa.addEventListener('pointercancel', soltar);
+});
+
+</script>

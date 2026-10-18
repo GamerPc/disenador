@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<base target="_top">
+<script>
+// Si algo falla al cargar, se muestra aquí en vez de dejar la pantalla en blanco
+window.__erroresCarga = []; window.__lineasError = [];
+window.__esperado = {};
+function __mostrarErrorCarga(msg){
+  window.__erroresCarga.push(msg);
+  var pintar = function(){
+    var d = document.getElementById('avisoError');
+    if (!d){ d = document.createElement('div'); d.id = 'avisoError';
+      d.style.cssText = 'position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;background:#b91c1c;color:#fff;padding:12px 16px;border-radius:10px;font:13px/1.45 sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.3);white-space:pre-wrap;max-height:60vh;overflow:auto';
+      var x = document.createElement('button'); x.textContent = 'Cerrar'; x.style.cssText = 'float:right;margin-left:10px;border:0;border-radius:6px;padding:3px 10px';
+      x.onclick = function(){ d.style.display = 'none'; };
+      d.appendChild(x); d.appendChild(document.createElement('span'));
+      document.body.appendChild(d); }
+    d.lastChild.textContent = '⚠ La aplicación no pudo cargar bien. Toma una captura de este mensaje:\n\n' + window.__erroresCarga.join('\n');
+  };
+  if (document.body) pintar(); else document.addEventListener('DOMContentLoaded', pintar);
+}
+window.addEventListener('error', function(e){
+  if (e.lineno) window.__lineasError.push(e.lineno);
+  __mostrarErrorCarga((e.message || 'Error') + (e.lineno ? ' (línea ' + e.lineno + ')' : ''));
+});
+function __diagnostico(){
+  var partes = window.__partes || {}, msgs = [];
+  var scripts = Array.prototype.slice.call(document.getElementsByTagName('script'));
+  Object.keys(window.__esperado).forEach(function(n){
+    if (partes[n]) return;
+    var esp = window.__esperado[n];
+    var s = scripts.filter(function(x){ return (x.text || '').indexOf('/*@parte ' + n + '*/') >= 0; })[0];
+    if (!s){ msgs.push('• ' + n + ': no se encontró (¿falta el archivo, está vacío o le falta el inicio?).'); return; }
+    var t = s.text, lineas = t.split('\n');
+    var m = '• ' + n + ': no se pudo ejecutar. Tiene ' + t.length + ' caracteres y ' + (lineas.length - 1) + ' líneas (deberían ser ' + esp.chars + ' y ' + esp.lineas + ').';
+    var errTotal = null;
+    try { new Function(t); m += ' (el código se lee bien aquí)'; } catch (err){ errTotal = err.message; m += '\n   Error: ' + err.message; }
+    if (errTotal){                       // busca la primera línea donde aparece el error
+      var bajo = 1, alto = lineas.length;
+      var falla = function(k){ try { new Function(lineas.slice(0, k).join('\n')); return false; } catch (e2){ return e2.message === errTotal; } };
+      while (bajo < alto){ var med = (bajo + alto) >> 1; if (falla(med)) alto = med; else bajo = med + 1; }
+      m += '\n   Línea ' + bajo + ' del archivo ' + n + ': ' + (lineas[bajo - 1] || '').trim().slice(0, 200);
+      if (lineas[bajo - 2] !== undefined) m += '\n   (anterior: ' + lineas[bajo - 2].trim().slice(0, 120) + ')';
+    }
+    window.__lineasError.forEach(function(L){
+      if (L > 0 && L <= lineas.length) m += '\n   Línea ' + L + ' de ' + n + ': ' + lineas[L - 1].trim().slice(0, 160);
+    });
+    msgs.push(m);
+  });
+  return msgs;
+}
+window.addEventListener('load', function(){
+  setTimeout(function(){
+    if (typeof fabric === 'undefined'){ __mostrarErrorCarga('No se pudo descargar la librería de dibujo (fabric.js). Revisa tu conexión a internet y recarga la página.'); return; }
+    var d = __diagnostico();
+    if (d.length) __mostrarErrorCarga('Archivos con problema:\n' + d.join('\n'));
+    else if (!window.__appLista && !window.__erroresCarga.length) __mostrarErrorCarga('El programa no terminó de cargar.');
+  }, 1500);
+});
+</script>
+
+<meta charset="utf-8">
+<title>Diseñador · Apik-Desing</title>
+<link rel="icon" href="data:image/png;base64,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">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Inter:wght@400;600;700&family=Montserrat:ital,wght@0,400;0,700;0,900;1,400&family=Poppins:wght@400;600;700&family=Roboto:wght@400;700&family=Oswald:wght@400;700&family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lobster&family=Pacifico&family=Dancing+Script:wght@400;700&family=Raleway:wght@400;700&family=Anton&family=Fredoka:wght@400;600;700&family=Patrick+Hand&family=Caveat:wght@400;700&family=Gochi+Hand&family=Amatic+SC:wght@400;700&family=Permanent+Marker&family=Shadows+Into+Light&family=Gloria+Hallelujah&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+<script>window.fabric || document.write('<script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"><\/script>')</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --morado:#7c3aed; --morado2:#06b6d4; --fondo:#eef0f4; --panel:#ffffff;
+    --texto:#1f2330; --suave:#6b7280; --borde:#e3e5ea; --hover:#f3f0ff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;font-family:Inter,system-ui,sans-serif;color:var(--texto);background:var(--fondo);overflow:hidden}
+  button,select,input{font-family:inherit;font-size:13px}
+  button{cursor:pointer}
+
+  /* Barra superior */
+  #barra{height:52px;display:flex;align-items:center;gap:8px;padding:0 12px;
+    background:linear-gradient(90deg,var(--morado),var(--morado2));color:#fff}
+  #barra .logo{font-weight:700;font-size:16px;margin-right:8px;white-space:nowrap}
+  #barra input.nombre{background:rgba(255,255,255,.15);border:1px solid transparent;color:#fff;border-radius:6px;padding:6px 8px;width:170px}
+  #barra input.nombre:focus{outline:none;border-color:#fff;background:rgba(255,255,255,.25)}
+  .tb{background:rgba(255,255,255,.15);color:#fff;border:0;border-radius:6px;padding:7px 10px;white-space:nowrap}
+  .tb:hover{background:rgba(255,255,255,.28)}
+  .tb:disabled{opacity:.4;cursor:default}
+  .tb.blanco{background:#fff;color:var(--morado);font-weight:600}
+  .esp{flex:1}
+  #zoomTxt{min-width:46px;text-align:center;font-size:12px}
+
+  #app{display:flex;height:calc(100% - 52px)}
+
+  /* Menú lateral */
+  #pestanas{width:72px;background:#1f2330;display:flex;flex-direction:column;padding-top:6px}
+  #pestanas button{background:none;border:0;color:#c9ccd6;padding:10px 0;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:3px}
+  #pestanas button span{font-size:20px}
+  #pestanas button.activa,#pestanas button:hover{color:#fff;background:#2c3142}
+
+  #lateral{width:300px;background:var(--panel);border-right:1px solid var(--borde);overflow-y:auto;padding:14px}
+  #lateral h3{margin:4px 0 10px;font-size:14px}
+  #lateral h4{margin:16px 0 8px;font-size:12px;color:var(--suave);text-transform:uppercase;letter-spacing:.04em}
+  .panelTab{display:none}.panelTab.activa{display:block}
+  .bigbtn{width:100%;text-align:left;border:1px solid var(--borde);background:#fff;border-radius:8px;padding:10px 12px;margin-bottom:8px}
+  .bigbtn:hover{background:var(--hover);border-color:#d8cdfb}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .forma{aspect-ratio:1;border:1px solid var(--borde);background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center}
+  .forma:hover{background:var(--hover)}
+  .forma svg{width:60%;height:60%;fill:#6d6f7b}
+  .swatches{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+  .sw{aspect-ratio:1;border-radius:6px;border:1px solid rgba(0,0,0,.12);cursor:pointer}
+  .plantilla{border:1px solid var(--borde);border-radius:8px;padding:0;overflow:hidden;background:#fff;margin-bottom:10px;width:100%}
+  .plantilla .prev{height:90px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px}
+  .plantilla .t{padding:6px 8px;font-size:12px;text-align:left}
+  .drop{border:2px dashed #cfd3dc;border-radius:10px;padding:18px;text-align:center;color:var(--suave);font-size:12px;margin-bottom:10px}
+  #misImagenes{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+  #misImagenes img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--borde)}
+
+  /* Área del lienzo */
+  #centro{flex:1;display:flex;flex-direction:column;min-width:0}
+  #paginas{height:104px;flex:none;background:#fff;border-top:1px solid var(--borde);display:flex;align-items:center;gap:10px;padding:0 12px;overflow-x:auto}
+  .pag{position:relative;flex:none;height:76px;border:2px solid var(--borde);border-radius:6px;background:#f6f7f9;cursor:pointer;overflow:hidden}
+  .pag.act{border-color:var(--morado)}
+  .pag img{height:100%;width:100%;display:block;object-fit:contain}
+  .pag .num{position:absolute;left:4px;bottom:3px;font-size:10px;background:rgba(0,0,0,.55);color:#fff;border-radius:4px;padding:0 5px}
+  .pagAcc{display:flex;flex-direction:column;gap:4px;flex:none}
+  .misColores{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;align-items:center}
+  .misColores .sw{width:24px;height:24px}
+  #area{flex:1;overflow:auto;display:flex;position:relative;padding:30px;box-sizing:border-box}
+  #area.modoCon .upper-canvas{cursor:crosshair !important}
+  #envoltura{box-shadow:0 4px 24px rgba(0,0,0,.12);background:
+    repeating-conic-gradient(#e9e9e9 0% 25%, #fff 0% 50%) 50% / 20px 20px;margin:auto;flex:none}
+
+  #envoltura{position:relative}
+  .asa{position:absolute;background:#fff;border:2px solid var(--morado);box-shadow:0 1px 4px rgba(0,0,0,.25);z-index:5;touch-action:none}
+  .asa:hover{background:var(--morado)}
+  .asa[data-d=nw],.asa[data-d=ne],.asa[data-d=sw],.asa[data-d=se]{width:14px;height:14px;border-radius:50%}
+  .asa[data-d=nw]{left:-8px;top:-8px;cursor:nwse-resize}.asa[data-d=se]{right:-8px;bottom:-8px;cursor:nwse-resize}
+  .asa[data-d=ne]{right:-8px;top:-8px;cursor:nesw-resize}.asa[data-d=sw]{left:-8px;bottom:-8px;cursor:nesw-resize}
+  .asa[data-d=n],.asa[data-d=s]{width:36px;height:9px;border-radius:5px;left:calc(50% - 18px);cursor:ns-resize}
+  .asa[data-d=n]{top:-6px}.asa[data-d=s]{bottom:-6px}
+  .asa[data-d=e],.asa[data-d=w]{width:9px;height:36px;border-radius:5px;top:calc(50% - 18px);cursor:ew-resize}
+  .asa[data-d=e]{right:-6px}.asa[data-d=w]{left:-6px}
+  .nodoBtn{border:1px solid var(--borde);background:#fff;border-radius:8px;padding:8px 4px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10.5px;color:var(--suave)}
+  .nodoBtn:hover{background:var(--hover)}
+  .nodoBtn svg{width:46px;height:30px}
+  .fila input[type=text]{flex:1;padding:6px;border:1px solid var(--borde);border-radius:6px;min-width:0}
+  .puntoCon{position:absolute;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;background:#fff;border:2px solid var(--morado);
+    color:var(--morado);font:700 16px/20px Inter,sans-serif;text-align:center;cursor:crosshair;z-index:6;display:none;
+    box-shadow:0 1px 5px rgba(0,0,0,.2);user-select:none;touch-action:none;transition:transform .1s}
+  .puntoCon:hover{background:var(--morado);color:#fff;transform:scale(1.18)}
+  .puntoFin{position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:var(--morado);border:3px solid #fff;
+    box-shadow:0 1px 5px rgba(0,0,0,.35);cursor:grab;z-index:6;display:none;touch-action:none}
+  .conBtn{border:1px solid var(--borde);background:#fff;border-radius:8px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;color:var(--suave)}
+  .conBtn:hover{background:var(--hover)}
+  .conBtn.on{border-color:var(--morado);background:var(--hover);color:var(--morado)}
+  .conBtn svg{width:56px;height:30px;fill:none;stroke:#4b5563;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+  .tb.on{background:#fff;color:var(--morado);font-weight:600}
+  #modoAviso{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:var(--morado);color:#fff;padding:7px 14px;border-radius:20px;font-size:12.5px;display:none;z-index:8;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+  #modoAviso button{background:#fff;color:var(--morado);border:0;border-radius:12px;padding:2px 9px;margin-left:8px;font-weight:600}
+  #dibujoAviso{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:#0f766e;color:#fff;padding:7px 14px;border-radius:20px;font-size:12.5px;display:none;z-index:8;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+  #dibujoAviso button{background:#fff;color:#0f766e;border:0;border-radius:12px;padding:2px 9px;margin-left:8px;font-weight:600}
+  .emojiBtn{border:0;background:none;font-size:22px;line-height:1;padding:5px 0;border-radius:6px;font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif}
+  .emojiBtn:hover{background:var(--hover)}
+  textarea.datos{width:100%;padding:7px;border:1px solid var(--borde);border-radius:6px;font:13px/1.45 Inter,sans-serif;resize:vertical;margin:4px 0 8px}
+  .buscador{width:100%;padding:8px 10px;border:1px solid var(--borde);border-radius:8px;margin:0 0 8px}
+  .chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px}
+  .chip{border:1px solid var(--borde);background:#fff;border-radius:14px;padding:4px 10px;font-size:11.5px}
+  .chip.on{background:var(--morado);color:#fff;border-color:var(--morado)}
+  .gridPl{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .tarjetaPl{border:1px solid var(--borde);background:#fff;border-radius:8px;padding:0;overflow:hidden;text-align:left;display:flex;flex-direction:column}
+  .tarjetaPl:hover{border-color:var(--morado);box-shadow:0 2px 10px rgba(124,58,237,.2)}
+  .tarjetaPl .mini{aspect-ratio:4/3;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--suave)}
+  .tarjetaPl .mini img{width:100%;height:100%;object-fit:contain;display:block}
+  .tarjetaPl span{font-size:11px;padding:5px 7px;line-height:1.3;color:var(--texto)}
+  #presentacion{position:fixed;inset:0;background:#0b0b10;z-index:200;display:none;cursor:pointer;user-select:none}
+  #presEscenario{position:absolute;inset:0;overflow:hidden}
+  .diapo{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;transition:opacity .6s ease, transform .65s cubic-bezier(.2,.8,.2,1)}
+  .diapo canvas{box-shadow:0 0 60px rgba(0,0,0,.45)}
+  #presControles{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);background:rgba(20,20,30,.78);color:#fff;border-radius:24px;padding:6px 10px;display:flex;gap:4px;align-items:center;transition:opacity .35s;z-index:3;cursor:default;font-size:14px}
+  #presControles button{background:none;border:0;color:#fff;font-size:17px;padding:4px 11px;border-radius:14px}
+  #presControles button:hover{background:rgba(255,255,255,.15)}
+  #presControles.oculto{opacity:0}
+  #presFin{position:absolute;inset:0;display:none;align-items:center;justify-content:center;color:#fff;font:600 28px Fredoka,Poppins,sans-serif;flex-direction:column;gap:10px;z-index:2}
+  #presFin small{font:400 15px Poppins,sans-serif;opacity:.7}
+  .tarjetaPl{position:relative}
+  .tarjetaPl .borrar{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(0,0,0,.55);color:#fff;font-size:12px;line-height:22px;display:none}
+  .tarjetaPl:hover .borrar{display:block}
+  #vistaGrande{position:fixed;left:390px;z-index:40;background:#fff;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.25);padding:8px;display:none;pointer-events:none}
+  #vistaGrande img{display:block;max-width:440px;max-height:440px;border-radius:6px}
+  #vistaGrande div{font-size:12px;font-weight:600;padding:6px 2px 0}
+  /* Panel de propiedades */
+  #props{width:260px;background:var(--panel);border-left:1px solid var(--borde);overflow-y:auto;padding:14px}
+  #props h4{margin:14px 0 8px;font-size:12px;color:var(--suave);text-transform:uppercase;letter-spacing:.04em}
+  .fila{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .fila label{width:86px;font-size:12px;color:var(--suave)}
+  .fila input[type=range]{flex:1}
+  .fila input[type=number]{width:70px;padding:5px;border:1px solid var(--borde);border-radius:6px}
+  .fila select{flex:1;padding:6px;border:1px solid var(--borde);border-radius:6px}
+  input[type=color]{width:38px;height:30px;border:1px solid var(--borde);border-radius:6px;padding:2px;background:#fff}
+  .grupoBtns{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+  .pb{border:1px solid var(--borde);background:#fff;border-radius:6px;padding:6px 8px;min-width:32px}
+  .pb:hover{background:var(--hover)}
+  .pb.on{background:var(--morado);color:#fff;border-color:var(--morado)}
+  .pb.peligro{color:#dc2626}
+  .hint{color:var(--suave);font-size:13px;padding:8px 0}
+  #capas{list-style:none;padding:0;margin:0}
+  #capas li{display:flex;align-items:center;gap:4px;padding:6px;border-radius:6px;font-size:12px}
+  #capas li:hover{background:#f6f7f9}
+  #capas li.sel{background:var(--hover)}
+  #capas li .cn{flex:1;cursor:pointer;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  #capas li button{border:0;background:none;font-size:13px;padding:2px 4px}
+  #capas li .ic{width:18px;text-align:center;color:var(--suave);font-size:12px;flex:none}
+  #capas li.sub{padding-left:22px}
+  #capas li.grupoCapa{cursor:pointer;color:var(--suave);font-weight:600}
+  #capas li[draggable=true]{cursor:grab}
+  #capas li.arrastrando{opacity:.4}
+  #capas li.destino{box-shadow:inset 0 2px 0 var(--morado)}
+  .efectoBtn{border:1px solid var(--borde);background:#fff;border-radius:8px;padding:6px 0 4px;display:flex;flex-direction:column;align-items:center;font-size:10px;color:var(--suave);gap:1px}
+  .efectoBtn b{font:700 22px Fredoka,Poppins,sans-serif;color:#7c3aed;line-height:1.1}
+  .efectoBtn:hover{background:var(--hover)} .efectoBtn.on{border-color:var(--morado);background:var(--hover)}
+  .tituloBtn{width:100%;border:1px solid var(--borde);background:#fff;border-radius:8px;padding:10px 8px;margin-bottom:8px;line-height:1.05;text-align:center;overflow:hidden;white-space:nowrap}
+  .tituloBtn:hover{background:var(--hover);border-color:#d8cdfb}
+  .tabsProps{display:flex;gap:2px;background:#f1f2f5;border-radius:8px;padding:3px;margin:-4px 0 10px;position:sticky;top:-14px;z-index:3}
+  .tabsProps button{flex:1;border:0;background:none;border-radius:6px;padding:7px 2px;font-size:12px;color:var(--suave)}
+  .tabsProps button.on{background:#fff;color:var(--texto);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .ptab{display:none}.ptab.on{display:block}
+  #props h4.plegable{cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;padding:6px 0;margin:6px 0 6px;border-top:1px solid var(--borde)}
+  #props h4.plegable::after{content:'▾';font-size:12px;color:var(--suave)}
+  #props .plegado > h4.plegable::after{content:'▸'}
+  #props .plegado > :not(h4.plegable){display:none !important}
+  #estadoGuardado{font-size:11.5px;opacity:.85;white-space:nowrap;min-width:90px}
+
+  /* Modales */
+  .modal{position:fixed;inset:0;background:rgba(15,17,25,.55);display:none;align-items:center;justify-content:center;z-index:50}
+  .modal.abierto{display:flex}
+  .caja{background:#fff;border-radius:12px;padding:20px;width:min(460px,92vw);max-height:88vh;overflow:auto}
+  .caja h3{margin:0 0 14px}
+  .caja .acciones{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+  .btnP{background:var(--morado);color:#fff;border:0;border-radius:8px;padding:9px 14px;font-weight:600}
+  .btnS{background:#f1f2f5;color:var(--texto);border:0;border-radius:8px;padding:9px 14px}
+  .proy{display:flex;align-items:center;gap:8px;padding:8px;border-bottom:1px solid var(--borde)}
+  .proy .n{flex:1}.proy small{color:var(--suave);display:block}
+  #vista img{max-width:100%;border:1px solid var(--borde);background:
+    repeating-conic-gradient(#e9e9e9 0% 25%, #fff 0% 50%) 50% / 16px 16px}
+
+  #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1f2330;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:60}
+  #toast.ver{opacity:1}
+  #cargando{position:fixed;inset:0;background:rgba(255,255,255,.6);display:none;align-items:center;justify-content:center;z-index:70;font-weight:600}
+  /* ---------- Celular y tablet ---------- */
+  #accMovil{display:none;position:fixed;right:14px;bottom:18px;z-index:35;gap:8px}
+  #accMovil button{border:0;border-radius:24px;padding:11px 16px;font-size:15px;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,.25);background:#fff;color:var(--texto)}
+  #accMovil #fabEditar{background:var(--morado);color:#fff}
+  #accMovil #fabEditar.on{background:#1f2330}
+  .cerrarHoja{display:none}
+  body.tactil .asa[data-d=nw],body.tactil .asa[data-d=ne],body.tactil .asa[data-d=sw],body.tactil .asa[data-d=se]{width:22px;height:22px}
+  body.tactil .asa[data-d=nw]{left:-12px;top:-12px}body.tactil .asa[data-d=se]{right:-12px;bottom:-12px}
+  body.tactil .asa[data-d=ne]{right:-12px;top:-12px}body.tactil .asa[data-d=sw]{left:-12px;bottom:-12px}
+  body.tactil .puntoCon{width:34px;height:34px;margin:-17px 0 0 -17px;font-size:20px;line-height:30px}
+  body.tactil .puntoFin{width:26px;height:26px;margin:-13px 0 0 -13px}
+  body.tactil #area{touch-action:pan-x pan-y}
+  body.tactil .tarjetaPl .borrar{display:block}
+  @media (max-width:1180px){
+    #lateral{width:260px}
+    #barra{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}
+    #barra::-webkit-scrollbar{display:none}
+    #barra .tb,#barra .logo,#estadoGuardado{flex:none}
+    #props{position:fixed;top:52px;right:0;bottom:0;width:300px;z-index:31;box-shadow:-8px 0 30px rgba(0,0,0,.18);transform:translateX(105%);transition:transform .25s ease}
+    #props.abierto{transform:none}
+    #accMovil.ver{display:flex}
+    #vistaGrande{display:none !important}
+    .cerrarHoja{display:flex;justify-content:flex-end;position:sticky;top:-14px;z-index:4;background:var(--panel);margin:-14px -14px 6px;padding:8px 10px 4px}
+    .cerrarHoja button{border:0;background:#f1f2f5;border-radius:16px;padding:6px 14px;font-size:13px;font-weight:600}
+    #lateral .cerrarHoja{display:none}
+    #props .tabsProps{top:28px}
+    #accMovil.oculto{display:none !important}
+  }
+  @media (max-width:820px){
+    html,body{overscroll-behavior:none}
+    #barra{overflow-x:auto;flex-wrap:nowrap;gap:4px;padding:0 6px;scrollbar-width:none}
+    #barra::-webkit-scrollbar{display:none}
+    #barra .tb{flex:none;padding:6px 8px}
+    #barra input.nombre{width:110px;flex:none}
+    #barra .logo{display:none}
+    #estadoGuardado{min-width:0;font-size:10.5px;flex:none}
+    #zoomTxt{display:none}
+    #app{height:calc(100% - 52px - 62px)}
+    #pestanas{position:fixed;left:0;right:0;bottom:0;height:62px;width:auto;flex-direction:row;padding:0;z-index:40;overflow-x:auto;scrollbar-width:none}
+    #pestanas::-webkit-scrollbar{display:none}
+    #pestanas button{flex:1 0 62px;padding:6px 0;font-size:10px}
+    #pestanas button span{font-size:18px}
+    #lateral{position:fixed;left:0;right:0;bottom:62px;width:auto;height:58vh;z-index:30;border-radius:16px 16px 0 0;border-right:0;
+      box-shadow:0 -8px 30px rgba(0,0,0,.2);transform:translateY(110%);transition:transform .25s ease}
+    #lateral.abierto{transform:none}
+    #lateral .cerrarHoja{display:flex}
+    #props{top:auto;left:0;right:0;bottom:62px;width:auto;height:52vh;border-radius:16px 16px 0 0;border-left:0;transform:translateY(110%)}
+    #props.abierto{transform:none}
+    #accMovil{bottom:76px}
+    #toast{bottom:136px;max-width:90vw}
+    #paginas{height:74px;gap:8px;padding:0 8px}
+    .pag{height:54px}
+    .pagAcc{flex-direction:row;align-items:center}
+    #area{padding:14px}
+    .gridPl{grid-template-columns:1fr 1fr 1fr}
+    input,select,textarea{font-size:16px !important}
+    .caja{padding:16px}
+    #modoAviso,#dibujoAviso{font-size:12px;white-space:nowrap}
+  }
+  @media (max-width:520px){ .gridPl{grid-template-columns:1fr 1fr} }
+  /* ---------- Notas del presentador ---------- */
+  #barraNotas{flex:none;display:flex;align-items:center;gap:10px;padding:5px 12px;background:#fff;border-top:1px solid var(--borde);font-size:12px;color:var(--suave);min-width:0}
+  #barraNotas .pb{flex:none;font-size:12.5px}
+  #notasResumen{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-style:italic}
+  #notasPagina{flex:none;height:120px;resize:vertical;border:0;border-top:1px solid var(--borde);padding:10px 14px;font:14px/1.5 Inter,sans-serif;outline:none;background:#fffef5}
+  .pag .tieneNota{position:absolute;right:3px;top:2px;font-size:11px;background:rgba(255,255,255,.85);border-radius:4px;padding:0 3px}
+  #presNotas{position:absolute;left:16px;bottom:72px;width:min(680px,calc(100% - 32px));max-height:40%;overflow:auto;background:rgba(17,24,39,.93);color:#fff;
+    border-radius:12px;padding:12px 18px;z-index:4;display:none;cursor:default;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+  #presNotas .cab{display:flex;align-items:center;gap:12px;margin-bottom:6px;font-size:13px;opacity:.85}
+  #presNotas .cab b{font:700 20px ui-monospace,Menlo,Consolas,monospace}
+  #presNotas .cab span{flex:1}
+  #presNotas .cab button{background:rgba(255,255,255,.15);border:0;color:#fff;border-radius:8px;padding:3px 9px}
+  #pnTexto{white-space:pre-wrap;font-size:19px;line-height:1.45}
+  #pnTexto.vacio{opacity:.6;font-size:15px}
+  #gridIconosMateria h4{margin:14px 0 6px}
+  #recorteAviso{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:#7c3aed;color:#fff;padding:7px 10px 7px 14px;border-radius:20px;font-size:12.5px;display:none;align-items:center;gap:6px;z-index:8;box-shadow:0 2px 8px rgba(0,0,0,.2);max-width:calc(100% - 20px);flex-wrap:wrap;justify-content:center}
+  #recorteAviso button{background:#fff;color:#7c3aed;border:0;border-radius:12px;padding:3px 10px;font-weight:600}
+  #barra{overflow-x:auto;scrollbar-width:none}
+  #barra::-webkit-scrollbar{display:none}
+  #barra .tb,#barra .logo,#estadoGuardado{flex:none}
+  @media (max-width:1500px){ .txtLargo{display:none} #barra{gap:6px} #barra .tb{padding:7px 8px} #barra input.nombre{width:140px} }
+  .atajo{display:flex;gap:10px;align-items:center;padding:5px 0;border-bottom:1px solid var(--borde);font-size:13px}
+  .atajo kbd{flex:none;min-width:150px;font:600 12px Inter,sans-serif;background:#f1f2f5;border:1px solid #d6d8de;border-bottom-width:2px;border-radius:6px;padding:3px 7px}
+  .resBusq{padding:6px 8px;border-radius:6px;font-size:12.5px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .resBusq:hover{background:var(--hover)}
+  #recorrido{position:fixed;inset:0;z-index:90;display:none}
+  #recFoco{position:fixed;border-radius:12px;box-shadow:0 0 0 9999px rgba(15,17,25,.6);border:3px solid #a78bfa;transition:all .25s ease;pointer-events:none}
+  #recCaja{position:fixed;background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 12px 40px rgba(0,0,0,.35);font-size:14px;line-height:1.45;transition:left .25s,top .25s}
+  #recCaja .pie{display:flex;align-items:center;gap:8px;margin-top:12px}
+  #recCaja .pie span{flex:1;color:var(--suave);font-size:12px}
+  #bienvenida{position:fixed;left:16px;bottom:16px;z-index:45;background:#1f2330;color:#fff;border-radius:12px;padding:12px 14px;display:none;align-items:center;gap:10px;box-shadow:0 8px 30px rgba(0,0,0,.3);font-size:13.5px;max-width:calc(100% - 32px)}
+  #bienvenida button{border:0;border-radius:8px;padding:6px 10px;font-weight:600}
+  @media (max-width:820px){ #bienvenida{top:60px;bottom:auto;left:12px;right:12px;flex-wrap:wrap} }
+  /* =========================================================
+     TEMA APIK-DESING: oscuro, azul neón y rojo-naranja
+     ========================================================= */
+  :root{
+    --morado:#19c8ff; --morado2:#ff4b2b; --fondo:#0d0f15; --panel:#151821; --panel2:#1c202b;
+    --texto:#e9edf5; --suave:#99a2b4; --borde:#2a303d; --hover:#202634; --neon:#19c8ff; --rojo:#ff4b2b;
+  }
+  html,body{background:var(--fondo);color:var(--texto)}
+  ::selection{background:rgba(25,200,255,.35)}
+  input,select,textarea{color-scheme:dark}
+  input[type=range],input[type=checkbox],input[type=radio]{accent-color:var(--neon)}
+  *{scrollbar-color:#2c3342 transparent}
+  /* barra superior */
+  #barra{background:#090b10;color:var(--texto);border-bottom:1px solid #1d2230;position:relative}
+  #barra::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;background:linear-gradient(90deg,var(--neon),transparent 45%,transparent 60%,var(--rojo));opacity:.85}
+  #barra .logo{display:flex;align-items:center;gap:8px;margin-right:6px}
+  .logoImg{width:34px;height:34px;border-radius:50%;filter:drop-shadow(0 0 6px rgba(25,200,255,.55))}
+  .logoTxt{display:flex;flex-direction:column;line-height:1.05;font:800 15px Orbitron,Montserrat,sans-serif;letter-spacing:.06em;color:#fff}
+  .logoMarca{font:600 8.5px Orbitron,sans-serif;letter-spacing:.32em;color:var(--neon);text-shadow:0 0 6px rgba(25,200,255,.7)}
+  #barra .logo .ver{font:400 10px Inter,sans-serif;color:var(--suave);align-self:flex-start;margin-top:3px}
+  #barra input.nombre{background:#151821;border:1px solid var(--borde);color:var(--texto)}
+  #barra input.nombre:focus{border-color:var(--neon);background:#151821;box-shadow:0 0 0 3px rgba(25,200,255,.15)}
+  .tb{background:#151821;color:var(--texto);border:1px solid var(--borde);border-radius:8px}
+  .tb:hover{background:#1c2130;border-color:rgba(25,200,255,.55);color:#fff}
+  .tb.on,#bAuto.on{background:rgba(25,200,255,.14);color:var(--neon);border-color:rgba(25,200,255,.6)}
+  .tb.blanco{background:linear-gradient(135deg,#ff4b2b,#ff7a2b);color:#fff;border-color:transparent;box-shadow:0 2px 12px rgba(255,75,43,.35)}
+  .tb.blanco:hover{filter:brightness(1.08);color:#fff}
+  #estadoGuardado{color:var(--suave)}
+  /* menú de la izquierda */
+  #pestanas{background:#090b10;border-right:1px solid #1d2230}
+  #pestanas button{color:#8a93a6;position:relative}
+  #pestanas button:hover{color:#fff;background:#121620}
+  #pestanas button.activa{color:var(--neon);background:#121620}
+  #pestanas button.activa::before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--neon);box-shadow:0 0 8px var(--neon)}
+  #pestanas button.activa span{text-shadow:0 0 10px rgba(25,200,255,.6)}
+  /* paneles */
+  #lateral,#props{background:var(--panel);border-color:#1d2230}
+  #lateral h3{color:#fff;font-family:Montserrat,Inter,sans-serif;font-weight:800;letter-spacing:.01em}
+  #lateral h4,#props h4{color:var(--suave)}
+  .hint{color:var(--suave)}
+  .bigbtn,.forma,.nodoBtn,.conBtn,.pb,.chip,.tarjetaPl,.tituloBtn,.efectoBtn,.plantilla,.emojiBtn{background:var(--panel2);border-color:var(--borde);color:var(--texto)}
+  .bigbtn:hover,.forma:hover,.nodoBtn:hover,.conBtn:hover,.pb:hover,.chip:hover,.tituloBtn:hover,.efectoBtn:hover,.emojiBtn:hover{background:#232938;border-color:rgba(25,200,255,.5)}
+  .forma svg,.nodoBtn svg,.conBtn svg,#gridIconos svg,#gridIconosMateria svg{filter:brightness(2.1) saturate(.8)}
+  .nodoBtn,.conBtn{color:var(--suave)}
+  .pb.on,.conBtn.on,.efectoBtn.on{background:rgba(25,200,255,.14);border-color:var(--neon);color:var(--neon)}
+  .pb.peligro{color:#ff6b57}
+  .chip.on{background:var(--neon);border-color:var(--neon);color:#061018;font-weight:600}
+  .tarjetaPl:hover{border-color:var(--neon);box-shadow:0 0 0 1px rgba(25,200,255,.35),0 6px 18px rgba(0,0,0,.4)}
+  .tarjetaPl .mini{background:#0f1218;color:var(--suave)}
+  .tarjetaPl span{color:var(--texto)}
+  .efectoBtn b{color:var(--neon)}
+  .buscador,.fila input[type=text],.fila input[type=number],.fila select,#barra select,textarea.datos,.caja input[type=text],.caja input[type=number],.caja select,#lateral select,#props select,#props input[type=number]{background:#0f1218;border:1px solid var(--borde);color:var(--texto)}
+  .buscador:focus,.fila input:focus,.fila select:focus,textarea:focus{outline:none;border-color:var(--neon);box-shadow:0 0 0 3px rgba(25,200,255,.15)}
+  input[type=color]{background:#0f1218;border-color:var(--borde)}
+  select option{background:#151821;color:var(--texto)}
+  .drop{border-color:#333a49;color:var(--suave)}
+  .tabsProps{background:#0f1218}
+  .tabsProps button{color:var(--suave)}
+  .tabsProps button.on{background:#232938;color:#fff;box-shadow:0 0 0 1px rgba(25,200,255,.35)}
+  #props h4.plegable{border-top-color:var(--borde)}
+  #capas li:hover{background:#1c2130}
+  #capas li.sel{background:rgba(25,200,255,.12)}
+  #capas li button{color:var(--suave)}
+  .cerrarHoja{background:var(--panel) !important}
+  .cerrarHoja button{background:#232938 !important;color:var(--texto)}
+  /* lienzo y páginas */
+  #area{background:radial-gradient(circle,#1a1f2b 1px,transparent 1.2px) 0 0/24px 24px,var(--fondo)}
+  #envoltura{box-shadow:0 0 0 1px rgba(25,200,255,.18),0 18px 50px rgba(0,0,0,.65)}
+  #paginas,#barraNotas{background:#11141b;border-top-color:#1d2230}
+  .pag{border-color:var(--borde);background:#0f1218}
+  .pag.act{border-color:var(--neon);box-shadow:0 0 0 1px var(--neon),0 0 12px rgba(25,200,255,.35)}
+  .pag .tieneNota{background:rgba(15,18,24,.85)}
+  #notasPagina{background:#0f1218;color:var(--texto);border-top-color:#1d2230}
+  #notasResumen{color:var(--suave)}
+  /* ventanas */
+  .modal{background:rgba(3,5,9,.72);backdrop-filter:blur(4px)}
+  .caja{background:var(--panel);color:var(--texto);border:1px solid #232838;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+  .caja h3{color:#fff}
+  .btnP{background:linear-gradient(135deg,#ff4b2b,#ff7a2b);color:#fff;box-shadow:0 2px 12px rgba(255,75,43,.3)}
+  .btnP:hover{filter:brightness(1.08)}
+  .btnS{background:#232938;color:var(--texto)}
+  .btnS:hover{background:#2b3245}
+  .proy{border-bottom-color:var(--borde)}
+  .resBusq:hover{background:#1c2130}
+  .atajo{border-bottom-color:var(--borde)}
+  .atajo kbd{background:#0f1218;border-color:#333a49;color:var(--neon)}
+  #vistaGrande{background:var(--panel);color:var(--texto)}
+  #toast{background:#151821;color:#fff;border:1px solid rgba(25,200,255,.45);box-shadow:0 8px 24px rgba(0,0,0,.5)}
+  #cargando{background:rgba(5,7,11,.7);color:var(--neon);font-family:Orbitron,Inter,sans-serif;letter-spacing:.05em}
+  #modoAviso,#recorteAviso{background:#0f1218;color:#fff;border:1px solid var(--neon);box-shadow:0 0 14px rgba(25,200,255,.35)}
+  #modoAviso button,#recorteAviso button{background:var(--neon);color:#061018}
+  #recFoco{border-color:var(--neon);box-shadow:0 0 0 9999px rgba(3,5,9,.72),0 0 18px var(--neon)}
+  #recCaja{background:var(--panel);color:var(--texto);border:1px solid #232838}
+  #bienvenida{background:#0f1218;border:1px solid rgba(25,200,255,.5)}
+  #accMovil button{background:var(--panel2);color:var(--texto);border:1px solid var(--borde)}
+  #accMovil #fabEditar{background:linear-gradient(135deg,#ff4b2b,#ff7a2b);border-color:transparent}
+  .asa{background:#0f1218;border-color:var(--neon)}
+  .asa:hover{background:var(--neon)}
+  .puntoCon{background:#0f1218;border-color:var(--neon);color:var(--neon)}
+  .puntoCon:hover{background:var(--neon);color:#061018}
+  .puntoFin{background:var(--neon);border-color:#0f1218}
+  /* fondos claros escritos en el código */
+  [style*="background:#f5f3ff"],[style*="background:#f8f7fc"],[style*="background:#f3f4f6"],[style*="background:#f6f7f9"],[style*="background:#fffef5"]{background:#1c2130 !important;color:var(--texto)}
+  #tMarca [style*="color:var(--suave)"]{color:var(--suave)}
+  #vista img{background:repeating-conic-gradient(#20242f 0% 25%, #171a22 0% 50%) 50% / 16px 16px;border-color:var(--borde)}
+  .soloWeb{display:none}
+  .modoWeb .soloWeb{display:block}
+  .modoWeb [onclick="exportarDrive()"]{display:none}
+  .tb.donar{color:#ff6b57}
+  .donBtn{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:10px;border:1px solid var(--borde);background:var(--panel2);color:var(--texto);text-decoration:none;margin-bottom:8px}
+  .donBtn:hover{border-color:var(--rojo, #ff4b2b);box-shadow:0 0 0 1px rgba(255,75,43,.4)}
+  .donBtn span{font-size:12px;color:var(--suave)}
+</style>
+</head>
+<body>
+
+<!-- ====== BARRA SUPERIOR ====== -->
+<div id="barra">
+  <div class="logo"><img class="logoImg" src="data:image/png;base64,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" alt=""><span class="logoTxt">Diseñador<small class="logoMarca">APIK-DESING</small></span><small class="ver">v21</small></div>
+  <input class="nombre" id="nombreDiseno" value="Mi diseño" title="Nombre del diseño">
+  <span id="estadoGuardado" title="Estado del guardado en este navegador">No guardado en este navegador</span>
+  <button class="tb" onclick="nuevoDiseno()">Nuevo</button>
+  <button class="tb" onclick="abrirModal('mProyectos');listar()">📂 Abrir</button>
+  <button class="tb" onclick="guardarDrive()">💾 Guardar</button>
+  <button class="tb" id="bDeshacer" onclick="deshacer()" title="Deshacer (Ctrl+Z)">↶</button>
+  <button class="tb" id="bRehacer" onclick="rehacer()" title="Rehacer (Ctrl+Y)">↷</button>
+  <button class="tb" onclick="abrirBuscar()" title="Buscar y reemplazar texto (Ctrl+F)">🔍</button>
+  <button class="tb" onclick="abrirModal('mAyuda')" title="Ayuda y atajos de teclado (?)">?</button>
+  <div class="esp"></div>
+  <button class="tb" onclick="cambiarZoom(-0.1)">−</button>
+  <span id="zoomTxt">100%</span>
+  <button class="tb" onclick="cambiarZoom(0.1)">+</button>
+  <button class="tb" onclick="ajustarZoom()">Ajustar</button>
+  <button class="tb" onclick="ajustarLienzoAContenido(false)" title="Ajustar el lienzo a lo que hay en el diseño">⤢</button>
+  <button class="tb" id="bAuto" title="Agrandar el lienzo automáticamente cuando algo se sale">Auto</button>
+  <button class="tb" onclick="abrirModal('mTamano')" id="tamTxt">1080 × 1080</button>
+  <button class="tb donar" onclick="abrirDonaciones()" title="Apoya el proyecto con una donación">❤<span class="txtLargo"> Apoyar</span></button>
+  <button class="tb" onclick="abrirModal('mCompartir'); $('cResultado').hidden = true" title="Compartir: crear un enlace para que otra persona abra una copia">🔗<span class="txtLargo"> Compartir</span></button>
+  <button class="tb" onclick="abrirModal('mPresentar')" title="Presentar en pantalla completa con animaciones">▶ Presentar</button>
+  <button class="tb blanco" onclick="abrirModal('mExportar')">⬇ Exportar</button>
+</div>
+
+<div id="app">
+  <!-- ====== PESTAÑAS ====== -->
+  <nav id="pestanas">
+    <button class="activa" data-tab="tPlantillas"><span>▦</span>Plantillas</button>
+    <button data-tab="tTexto"><span>T</span>Texto</button>
+    <button data-tab="tFormas"><span>◆</span>Formas</button>
+    <button data-tab="tElementos"><span>✿</span>Elementos</button>
+    <button data-tab="tDibujar"><span>✎</span>Dibujar</button>
+    <button data-tab="tImagenes"><span>🖼</span>Imágenes</button>
+    <button data-tab="tDiagramas"><span>⎔</span>Diagramas</button>
+    <button data-tab="tFondo"><span>▧</span>Fondo</button>
+    <button data-tab="tMarca"><span>★</span>Mi marca</button>
+  </nav>
+
+  <!-- ====== PANEL LATERAL ====== -->
+  <aside id="lateral">
+    <div class="cerrarHoja"><button onclick="abrirLateral(false)">Cerrar ✕</button></div>
+    <div class="panelTab activa" id="tPlantillas">
+      <h3>Plantillas</h3>
+      <input type="text" id="buscarPlantilla" class="buscador" placeholder="Buscar: presentación, derecho, mapa…">
+      <button class="bigbtn" style="text-align:center;margin-bottom:8px" onclick="guardarComoPlantilla()">＋ Guardar esta página como mi plantilla</button>
+      <div class="chips" id="chipsCat"></div>
+      <div id="catalogo"></div>
+      <div id="listaOrganizadores" hidden></div>
+      <div id="listaPlantillas" hidden></div>
+    </div>
+
+    <div class="panelTab" id="tTexto">
+      <h3>Texto</h3>
+      <button class="bigbtn" style="font-size:22px;font-weight:700" onclick="agregarTexto('titulo')">Agregar un título</button>
+      <button class="bigbtn" style="font-size:16px;font-weight:600" onclick="agregarTexto('subtitulo')">Agregar un subtítulo</button>
+      <button class="bigbtn" onclick="agregarTexto('cuerpo')">Agregar texto normal</button>
+      <button class="bigbtn" onclick="agregarCuadroTexto()">▢ Cuadro de texto con fondo <span style="color:#6b7280">(crece solo)</span></button>
+      <p class="hint" style="font-size:12px">Tip: haz doble clic sobre cualquier forma para escribir dentro de ella. La forma se agranda sola cuando el texto no cabe.</p>
+      <h4>Estilos de título</h4>
+      <div id="estilosTitulo"></div>
+      <h4>Combinaciones de fuentes</h4>
+      <button class="bigbtn" style="font-family:'Bebas Neue';font-size:24px" onclick="agregarCombo('Bebas Neue','Inter')">GRAN ANUNCIO</button>
+      <button class="bigbtn" style="font-family:'Playfair Display';font-size:20px;font-style:italic" onclick="agregarCombo('Playfair Display','Raleway')">Elegante y clásico</button>
+      <button class="bigbtn" style="font-family:'Pacifico';font-size:20px" onclick="agregarCombo('Pacifico','Poppins')">Divertido</button>
+      <button class="bigbtn" style="font-family:'Anton';font-size:22px" onclick="agregarCombo('Anton','Roboto')">IMPACTO</button>
+    </div>
+
+    <div class="panelTab" id="tFormas">
+      <h3>Formas</h3>
+      <div class="grid">
+        <button class="forma" onclick="agregarForma('rect')" title="Rectángulo"><svg viewBox="0 0 10 10"><rect x="1" y="1" width="8" height="8"/></svg></button>
+        <button class="forma" onclick="agregarForma('redondo')" title="Rectángulo redondeado"><svg viewBox="0 0 10 10"><rect x="1" y="1" width="8" height="8" rx="2"/></svg></button>
+        <button class="forma" onclick="agregarForma('circulo')" title="Círculo"><svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="4"/></svg></button>
+        <button class="forma" onclick="agregarForma('triangulo')" title="Triángulo"><svg viewBox="0 0 10 10"><polygon points="5,1 9,9 1,9"/></svg></button>
+        <button class="forma" onclick="agregarForma('estrella')" title="Estrella"><svg viewBox="0 0 10 10"><polygon points="5,0.5 6.2,3.8 9.7,3.9 6.9,6 8,9.5 5,7.4 2,9.5 3.1,6 0.3,3.9 3.8,3.8"/></svg></button>
+        <button class="forma" onclick="agregarForma('hexagono')" title="Hexágono"><svg viewBox="0 0 10 10"><polygon points="5,0.7 8.8,2.9 8.8,7.1 5,9.3 1.2,7.1 1.2,2.9"/></svg></button>
+        <button class="forma" onclick="agregarForma('corazon')" title="Corazón"><svg viewBox="0 0 100 100"><path d="M50 88 C20 66 6 50 6 32 C6 18 17 8 30 8 C40 8 47 14 50 22 C53 14 60 8 70 8 C83 8 94 18 94 32 C94 50 80 66 50 88 Z"/></svg></button>
+        <button class="forma" onclick="agregarForma('flecha')" title="Flecha"><svg viewBox="0 0 10 10"><polygon points="0.5,3.5 6,3.5 6,1 9.5,5 6,9 6,6.5 0.5,6.5"/></svg></button>
+        <button class="forma" onclick="agregarForma('linea')" title="Línea"><svg viewBox="0 0 10 10"><rect x="0.5" y="4.4" width="9" height="1.2"/></svg></button>
+      </div>
+      <h4>Color para nuevas formas</h4>
+      <div class="fila"><input type="color" id="colorForma" value="#7c3aed"><span class="hint">Se aplica a lo que agregues</span></div>
+      <h4>Íconos</h4>
+      <input type="text" id="buscarIcono" class="buscador" placeholder="Buscar ícono: mazo, átomo, libro…">
+      <h4>Generales</h4>
+      <div class="grid" id="gridIconos"></div>
+      <div id="gridIconosMateria"></div>
+      <h4>Conectar figuras</h4>
+      <p class="hint" style="font-size:12px">Selecciona dos elementos (Shift + clic) y pulsa <b>🔗 Conectar</b> en el panel derecho. La línea los sigue cuando los mueves.</p>
+    </div>
+
+    <div class="panelTab" id="tElementos">
+      <h3>Elementos</h3>
+      <h4>Decoraciones</h4>
+      <div class="fila"><label>Color</label><input type="color" id="colorDeco" value="#7c3aed"></div>
+      <div class="grid" id="gridDecos"></div>
+      <h4>Gráficas</h4>
+      <div class="grid">
+        <button class="nodoBtn" onclick="insertarGrafica('barras')"><svg viewBox="0 0 46 30" style="fill:#6d6f7b"><rect x="6" y="14" width="7" height="13"/><rect x="17" y="6" width="7" height="21"/><rect x="28" y="10" width="7" height="17"/><rect x="39" y="18" width="5" height="9"/></svg>Barras</button>
+        <button class="nodoBtn" onclick="insertarGrafica('lineas')"><svg viewBox="0 0 46 30" style="fill:none;stroke:#6d6f7b;stroke-width:3;stroke-linecap:round;stroke-linejoin:round"><path d="M4 24 L15 14 L25 18 L42 5"/></svg>Líneas</button>
+        <button class="nodoBtn" onclick="insertarGrafica('pastel')"><svg viewBox="0 0 46 30"><circle cx="23" cy="15" r="12" style="fill:#c4c6ce"/><path d="M23 15 L23 3 A12 12 0 0 1 34 19 Z" style="fill:#6d6f7b"/></svg>Pastel</button>
+        <button class="nodoBtn" onclick="insertarGrafica('dona')"><svg viewBox="0 0 46 30"><circle cx="23" cy="15" r="10" style="fill:none;stroke:#c4c6ce;stroke-width:6"/><path d="M23 5 A10 10 0 0 1 32 19" style="fill:none;stroke:#6d6f7b;stroke-width:6"/></svg>Dona</button>
+      </div>
+      <h4>Marcos para fotos</h4>
+      <div class="grid" id="gridMarcos"></div>
+      <p class="hint" style="font-size:12px">Agrega un marco y <b>arrastra una foto encima</b>, o selecciónalo y pulsa “Subir foto”. También puedes hacer clic en una foto de la pestaña Imágenes con el marco seleccionado.</p>
+      <h4>Emojis</h4>
+      <div id="gridEmojis" style="display:grid;grid-template-columns:repeat(8,1fr);gap:2px"></div>
+      <h4>Tabla</h4>
+      <div class="fila"><label>Filas</label><input type="number" id="tFilas" value="4" min="1" max="20"></div>
+      <div class="fila"><label>Columnas</label><input type="number" id="tCols" value="3" min="1" max="10"></div>
+      <div id="estilosTabla" style="display:flex;flex-direction:column;gap:6px"></div>
+      <p class="hint" style="font-size:12px">Clic en la tabla para moverla; <b>doble clic en una celda</b> para escribir. Las filas crecen solas con el texto.</p>
+    </div>
+
+    <div class="panelTab" id="tDibujar">
+      <h3>Dibujar</h3>
+      <div class="grupoBtns" id="pinceles">
+        <button class="pb" data-p="lapiz">✏️ Lápiz</button>
+        <button class="pb" data-p="marcador">🖊 Marcador</button>
+        <button class="pb" data-p="resaltador">🖍 Resaltador</button>
+      </div>
+      <div class="fila"><label>Color</label><input type="color" id="colorPincel" value="#1f2330"></div>
+      <div class="swatches" id="swPincel" style="margin-bottom:10px"></div>
+      <div class="fila"><label>Grosor</label><input type="range" id="grosorPincel" min="1" max="40" value="6"></div>
+      <button class="bigbtn" onclick="activarDibujo(null)">✋ Dejar de dibujar</button>
+      <p class="hint" style="font-size:12px">Cada trazo queda como un elemento que puedes mover, recolorear o borrar. El resaltador deja ver lo que hay debajo. <b>Esc</b> para terminar.</p>
+    </div>
+
+    <div class="panelTab" id="tImagenes">
+      <h3>Imágenes</h3>
+      <button class="bigbtn" onclick="document.getElementById('archivoImg').click()">⬆ Subir imágenes</button>
+      <input type="file" id="archivoImg" accept="image/*" multiple hidden>
+      <div class="drop">También puedes arrastrar imágenes al lienzo o pegarlas con Ctrl+V</div>
+      <h4>Subidas en esta sesión</h4>
+      <div id="misImagenes"></div>
+    </div>
+
+    <div class="panelTab" id="tDiagramas">
+      <h3>Mapas y diagramas</h3>
+      <h4>Empieza con una plantilla</h4>
+      <div id="listaDiagramas"></div>
+      <h4>Conectores</h4>
+      <div class="grid" id="gridConectores"></div>
+      <p class="hint" style="font-size:12px;line-height:1.5">Elige uno y <b>arrastra de una forma a otra</b>. Si sueltas en un espacio vacío se crea una idea nueva ya conectada.</p>
+      <h4>Organizar automáticamente</h4>
+      <div class="grupoBtns">
+        <button class="pb" onclick="organizar('h')" title="Árbol de izquierda a derecha">⇉ Horizontal</button>
+        <button class="pb" onclick="organizar('v')" title="Árbol de arriba hacia abajo">⇊ Vertical</button>
+        <button class="pb" onclick="organizar('mental')" title="Ramas a ambos lados de la idea central">✺ Mapa mental</button>
+      </div>
+      <p class="hint" style="font-size:12px">Acomoda todas las formas conectadas en orden. Si tienes una forma seleccionada, se usa como la idea principal.</p>
+      <h4>Colores del diagrama</h4>
+      <div id="paletasDiagrama" style="display:flex;flex-direction:column;gap:6px"></div>
+      <h4>Formas para diagramas</h4>
+      <div class="grid" id="gridNodos"></div>
+      <h4>Cómo armar tu mapa rápido</h4>
+      <p class="hint" style="font-size:12px;line-height:1.5">
+        1. Selecciona una forma.<br>
+        2. Pulsa <b>＋→ ＋↓ ＋← ＋↑</b> en el panel derecho (o la tecla <b>Tab</b>) para crear una idea nueva ya conectada.<br>
+        3. Escribe; la forma crece sola. <b>Esc</b> para terminar de escribir.<br>
+        4. O arrastra cualquiera de los círculos <b>+</b> que aparecen alrededor de la forma: suéltalo sobre otra forma para unirlas, o en un espacio vacío para crear una idea nueva.<br>
+        5. Clic en una línea para cambiar su tipo, sus puntas, el trazo o escribirle una palabra de enlace. Arrastra los puntos de sus extremos para conectarla a otra forma.
+      </p>
+    </div>
+
+    <div class="panelTab" id="tMarca">
+      <h3>Mi kit de marca</h3>
+      <p class="hint" style="padding-top:0">Guarda tus colores, letras y logo, y aplícalos a cualquier diseño o plantilla con un clic. También aparece el tema “Mi marca” en Presentaciones.</p>
+      <h4>Colores</h4>
+      <div id="kitColores" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px"></div>
+      <h4>Letras</h4>
+      <div class="fila"><label>Títulos</label><select id="kitTitulo"></select></div>
+      <div class="fila"><label>Texto</label><select id="kitTexto"></select></div>
+      <h4>Logo</h4>
+      <div id="kitLogo" class="drop" style="min-height:60px">Sin logo</div>
+      <div class="grupoBtns">
+        <button class="pb" data-queda="1" onclick="$('archivoLogo').click()">Subir logo</button>
+        <button class="pb" onclick="agregarLogo()">Poner en el diseño</button>
+        <button class="pb peligro" data-queda="1" onclick="quitarLogoKit()">Quitar</button>
+      </div>
+      <input type="file" id="archivoLogo" accept="image/*" hidden>
+      <button class="btnP" style="width:100%;margin:12px 0 4px" onclick="guardarKitDrive()">💾 Guardar mi kit</button>
+      <p class="hint" id="kitEstado" style="font-size:12px;padding:2px 0 6px"></p>
+      <h4>Usar</h4>
+      <button class="bigbtn" onclick="aplicarKit(false)">✨ Aplicar a esta página</button>
+      <button class="bigbtn" onclick="aplicarKit(true)">✨ Aplicar a todas las páginas</button>
+      <button class="bigbtn" onclick="agregarTextoKit('titulo')">Agregar título con mi letra</button>
+      <button class="bigbtn" onclick="agregarTextoKit('texto')">Agregar texto con mi letra</button>
+    </div>
+    <div class="panelTab" id="tFondo">
+      <h3>Fondo</h3>
+      <div class="fila"><label>Color</label><input type="color" id="colorFondo" value="#ffffff"></div>
+      <div class="swatches" id="swFondo"></div>
+      <h4>Degradados</h4>
+      <div class="swatches" id="swDegradado"></div>
+      <h4>Imagen de fondo</h4>
+      <button class="bigbtn" onclick="document.getElementById('archivoFondo').click()">Subir imagen como fondo</button>
+      <input type="file" id="archivoFondo" accept="image/*" hidden>
+      <button class="bigbtn" onclick="quitarFondo()">Quitar fondo (transparente)</button>
+      <h4>Papel</h4>
+      <div class="grupoBtns">
+        <button class="pb" onclick="fondoPapel('cuadros')">▦ Cuadriculado</button>
+        <button class="pb" onclick="fondoPapel('rayas')">☰ Rayado</button>
+        <button class="pb" onclick="fondoPapel('puntos')">⁘ Puntos</button>
+      </div>
+      <p class="hint" style="font-size:12px">El papel usa el color de fondo elegido arriba.</p>
+    </div>
+  </aside>
+
+  <!-- ====== LIENZO ====== -->
+  <div id="centro">
+    <main id="area">
+      <div id="recorteAviso"></div>
+      <div id="dibujoAviso">✎ Modo dibujo<button onclick="activarDibujo(null)">Listo</button></div>
+      <div id="modoAviso">Arrastra de una forma a otra para unirlas<button onclick="activarModoConector(false)">Listo</button></div>
+      <div id="envoltura"><canvas id="lienzo"></canvas><div class="puntoCon" data-l="der" title="Clic: nueva idea · Arrastra: conectar con otra forma">+</div><div class="puntoCon" data-l="izq" title="Clic: nueva idea · Arrastra: conectar con otra forma">+</div><div class="puntoCon" data-l="arr" title="Clic: nueva idea · Arrastra: conectar con otra forma">+</div><div class="puntoCon" data-l="aba" title="Clic: nueva idea · Arrastra: conectar con otra forma">+</div><div class="puntoFin" data-e="a" title="Arrastra para conectar a otra forma"></div><div class="puntoFin" data-e="b" title="Arrastra para conectar a otra forma"></div><div class="asa" data-d="nw" title="Arrastra para cambiar el tamaño del lienzo"></div><div class="asa" data-d="n" title="Arrastra para cambiar el tamaño del lienzo"></div><div class="asa" data-d="ne" title="Arrastra para cambiar el tamaño del lienzo"></div><div class="asa" data-d="e" title="Arrastra para cambiar el tamaño del lienzo"></div><div class="asa" data-d="se" title="Arrastra para cambiar el tamaño del lienzo"></div><div class="asa" data-d="s" title="Arrastra para cambiar el tamaño del lienzo"></div><div class="asa" data-d="sw" title="Arrastra para cambiar el tamaño del lienzo"></div><div class="asa" data-d="w" title="Arrastra para cambiar el tamaño del lienzo"></div></div>
+    </main>
+    <div id="barraNotas"><button class="pb" id="bNotas" onclick="alternarNotas()" title="Notas del presentador de esta página">📝 Notas</button><span id="notasResumen"></span></div>
+    <textarea id="notasPagina" hidden placeholder="Escribe aquí lo que vas a decir en esta página. Solo tú lo verás al presentar (vista del presentador o botón 📝)."></textarea>
+    <div id="paginas"></div>
+  </div>
+
+  <!-- ====== PROPIEDADES ====== -->
+  <aside id="props">
+    <div class="cerrarHoja"><button onclick="alternarProps(false)">Listo ✓</button></div>
+    <div id="sinSel" class="hint">Selecciona un elemento del lienzo para editarlo.</div>
+    <div id="propsCont" hidden>
+
+      <div id="secTexto">
+        <h4>Texto</h4>
+        <div class="fila"><select id="pFuente"></select></div>
+        <div class="fila"><label>Tamaño</label><input type="number" id="pTam" min="4" max="2000"></div>
+        <div class="grupoBtns">
+          <button class="pb" id="bNegrita" style="font-weight:700">B</button>
+          <button class="pb" id="bCursiva" style="font-style:italic">I</button>
+          <button class="pb" id="bSubrayado" style="text-decoration:underline">U</button>
+          <button class="pb" id="bTachado" style="text-decoration:line-through">S</button>
+          <button class="pb" id="bMayus" title="MAYÚSCULAS">Aa</button>
+          <button class="pb" onclick="hacerLista('v')" title="Lista con viñetas">• Lista</button>
+          <button class="pb" onclick="hacerLista('n')" title="Lista numerada">1. Lista</button>
+        </div>
+        <div class="grupoBtns" id="alineaciones">
+          <button class="pb" data-al="left">⯇</button>
+          <button class="pb" data-al="center">≡</button>
+          <button class="pb" data-al="right">⯈</button>
+          <button class="pb" data-al="justify">☰</button>
+        </div>
+        <div class="fila"><label>Interlineado</label><input type="range" id="pInter" min="0.6" max="3" step="0.05"></div>
+        <div class="fila"><label>Espaciado</label><input type="range" id="pEsp" min="-200" max="1000" step="10"></div>
+        <div class="fila"><label>Resaltado</label><input type="color" id="pResalte" value="#ffff00"><button class="pb" id="bSinResalte">Quitar</button></div>
+        <div class="fila" id="filaCurva"><label>Curvar</label><input type="range" id="pCurva" min="-100" max="100" step="1" value="0"><button class="pb" id="bSinCurva" title="Quitar curva">0</button></div>
+        <label style="font-size:12px;color:var(--suave)">Efecto de texto</label>
+        <div class="grid" id="efectosTexto" style="grid-template-columns:repeat(4,1fr);gap:5px;margin:4px 0 8px"></div>
+      </div>
+
+      <div id="secRelleno">
+        <h4>Color</h4>
+        <div class="fila"><label>Relleno</label><input type="color" id="pRelleno"></div>
+        <div class="hint" style="padding:0 0 4px;font-size:11px">Mis colores (+ guarda el actual · doble clic quita)</div>
+        <div class="misColores" id="misColores"></div>
+      </div>
+
+      <div id="secBorde">
+        <h4>Borde / contorno</h4>
+        <div class="fila"><label>Color</label><input type="color" id="pBorde" value="#000000"></div>
+        <div class="fila"><label>Grosor</label><input type="range" id="pGrosor" min="0" max="60" step="1"></div>
+      </div>
+
+      <div id="secEsquinas">
+        <div class="fila"><label>Esquinas</label><input type="range" id="pRadio" min="0" max="300" step="1"></div>
+      </div>
+
+      <div id="secImagen">
+        <h4>Ajustes de imagen</h4>
+        <div class="fila"><label>Brillo</label><input type="range" id="fBrillo" min="-100" max="100" value="0"></div>
+        <div class="fila"><label>Contraste</label><input type="range" id="fContraste" min="-100" max="100" value="0"></div>
+        <div class="fila"><label>Saturación</label><input type="range" id="fSaturacion" min="-100" max="100" value="0"></div>
+        <div class="fila"><label>Desenfoque</label><input type="range" id="fBlur" min="0" max="100" value="0"></div>
+        <div class="grupoBtns">
+          <button class="pb" id="fGris">Blanco y negro</button>
+          <button class="pb" id="fSepia">Sepia</button>
+          <button class="pb" id="fInvertir">Invertir</button>
+          <button class="pb" id="fReset">Restablecer</button>
+        </div>
+        <h4>Recortar y quitar fondo</h4>
+        <div class="grupoBtns">
+          <button class="pb" onclick="iniciarRecorteRect()" title="Recorta con un recuadro que puedes mover y ajustar">✂ Recortar</button>
+          <button class="pb" onclick="iniciarRecorteLibre()" title="Dibuja a mano el contorno de lo que quieres conservar">✏ Recorte libre</button>
+          <button class="pb" onclick="verImagenCompleta()" title="Regresa la imagen a su tamaño original">⤢ Ver completa</button>
+        </div>
+        <div class="fila"><label>Tolerancia</label><input type="range" id="bgTol" min="5" max="120" value="40" title="Qué tan parecido al fondo debe ser un color para borrarlo"></div>
+        <div class="grupoBtns">
+          <button class="pb" onclick="quitarFondoImagen()" title="Borra el fondo liso que toca los bordes de la imagen">🪄 Quitar fondo</button>
+          <button class="pb" onclick="iniciarBorrarZona()" title="Borra la zona de color que toques">👆 Borrar zona</button>
+        </div>
+        <p class="hint" style="font-size:11.5px;padding-top:0">Funciona mejor con fondos lisos (blanco o de un solo color). Si borra de más, deshaz (Ctrl+Z) y baja la tolerancia; si deja restos, súbela.</p>
+        <h4>Recortar en forma</h4>
+        <div class="grupoBtns">
+          <button class="pb" onclick="recortar('circulo')">○ Círculo</button>
+          <button class="pb" onclick="recortar('cuadrado')">□ Cuadrado</button>
+          <button class="pb" onclick="recortar('redondo')">▢ Redondeado</button>
+          <button class="pb" onclick="recortar('estrella')">☆ Estrella</button>
+          <button class="pb" onclick="recortar(null)">Quitar recorte</button>
+        </div>
+        <button class="pb" style="width:100%" onclick="usarComoFondo()">Usar como fondo</button>
+      </div>
+
+      <div id="secMarco">
+        <h4>Foto en marco</h4>
+        <button class="pb" style="width:100%;margin-bottom:8px" id="bSubirFoto" onclick="$('archivoMarco').click()">📷 Subir foto</button>
+        <input type="file" id="archivoMarco" accept="image/*" hidden>
+        <div id="ajustesFoto">
+          <div class="fila"><label>Acercar</label><input type="range" id="mZoom" min="1" max="4" step="0.02" value="1"></div>
+          <div class="fila"><label>Mover ↔</label><input type="range" id="mPx" min="-1" max="1" step="0.01" value="0"></div>
+          <div class="fila"><label>Mover ↕</label><input type="range" id="mPy" min="-1" max="1" step="0.01" value="0"></div>
+          <div class="fila"><label>Forma</label><select id="mTipo"></select></div>
+          <button class="pb" onclick="sacarDeMarco()">Sacar del marco</button>
+        </div>
+      </div>
+
+      <div id="secGrafica">
+        <h4>Gráfica</h4>
+        <div class="grupoBtns" id="tiposGraf">
+          <button class="pb" data-t="barras">▮ Barras</button>
+          <button class="pb" data-t="lineas">⟋ Líneas</button>
+          <button class="pb" data-t="pastel">◔ Pastel</button>
+          <button class="pb" data-t="dona">◯ Dona</button>
+        </div>
+        <div class="fila"><label>Título</label><input type="text" id="gTitulo"></div>
+        <label style="font-size:12px;color:var(--suave)">Datos — una fila por dato: <i>etiqueta, valor</i></label>
+        <textarea id="gDatos" class="datos" rows="6"></textarea>
+        <div class="fila"><label>Colores</label><select id="gPaleta"></select></div>
+        <div class="fila"><label>Mostrar valores</label><input type="checkbox" id="gValores"></div>
+      </div>
+
+      <div id="secTabla">
+        <h4>Tabla</h4>
+        <div class="grupoBtns">
+          <button class="pb" onclick="tablaFila(1)">＋ Fila</button>
+          <button class="pb" onclick="tablaFila(-1)">− Fila</button>
+          <button class="pb" onclick="tablaCol(1)">＋ Columna</button>
+          <button class="pb" onclick="tablaCol(-1)">− Columna</button>
+        </div>
+        <div class="grupoBtns">
+          <button class="pb" onclick="tablaAncho(1.15)">↔ Más ancha</button>
+          <button class="pb" onclick="tablaAncho(1/1.15)">→← Más angosta</button>
+        </div>
+        <div class="fila"><label>Encabezado</label><input type="color" id="tColEnc" value="#7c3aed"></div>
+        <div class="fila"><label>1ª columna</label><input type="color" id="tColCol1" value="#ede9fe"></div>
+        <div class="fila"><label>Celdas</label><input type="color" id="tColCeldas" value="#ffffff"></div>
+        <p class="hint" style="font-size:12px">Doble clic en una celda para escribir.</p>
+      </div>
+
+      <div id="secDiagrama">
+        <h4>Agregar idea conectada</h4>
+        <div class="grupoBtns">
+          <button class="pb" onclick="agregarHijo('izq')" title="Nueva idea a la izquierda">＋←</button>
+          <button class="pb" onclick="agregarHijo('arr')" title="Nueva idea arriba">＋↑</button>
+          <button class="pb" onclick="agregarHijo('aba')" title="Nueva idea abajo (Shift+Tab)">＋↓</button>
+          <button class="pb" onclick="agregarHijo('der')" title="Nueva idea a la derecha (Tab)">＋→</button>
+        </div>
+        <div class="fila"><label>Cambiar forma</label><select id="pTipoForma"></select></div>
+      </div>
+
+      <div id="secConector">
+        <h4>Línea / conector</h4>
+        <div class="grupoBtns" id="estilosCon">
+          <button class="pb" data-e="recta">／ Recta</button>
+          <button class="pb" data-e="curva">∿ Curva</button>
+          <button class="pb" data-e="codo">┐ Codo</button>
+        </div>
+        <div class="fila"><label>Inicio</label><select id="pInicio"></select></div>
+        <div class="fila"><label>Final</label><select id="pFin"></select></div>
+        <div class="grupoBtns" id="patronesCon">
+          <button class="pb" data-p="solida">━ Sólida</button>
+          <button class="pb" data-p="guiones">╍ Guiones</button>
+          <button class="pb" data-p="puntos">┈ Puntos</button>
+        </div>
+        <div class="fila"><label>Texto en la línea</label><input type="text" id="pEtiqueta" placeholder="ej. causa, incluye, sí / no"></div>
+        <div class="grupoBtns">
+          <button class="pb" onclick="invertirConector()">⇄ Invertir</button>
+          <button class="pb" onclick="usarComoPredeterminado()">★ Usar en líneas nuevas</button>
+        </div>
+      </div>
+
+      <h4>Efectos</h4>
+      <div class="fila"><label>Opacidad</label><input type="range" id="pOpac" min="0" max="100"></div>
+      <div class="fila"><label>Sombra</label><input type="checkbox" id="pSombra"><input type="color" id="pSombraColor" value="#000000"></div>
+      <div class="fila"><label>Desenf. sombra</label><input type="range" id="pSombraBlur" min="0" max="80" value="20"></div>
+
+      <div id="secAnim">
+        <h4>Animación (al presentar)</h4>
+        <div class="fila"><label>Efecto</label><select id="aTipo"></select></div>
+        <div id="aDetalles">
+          <div class="fila"><label>Inicio</label><select id="aInicio">
+            <option value="clic">Al hacer clic</option><option value="despues">Después de la anterior</option><option value="con">Junto con la anterior</option></select></div>
+          <div class="fila"><label>Duración</label><input type="range" id="aDur" min="200" max="3000" step="100"></div>
+          <div class="fila"><label>Retraso</label><input type="range" id="aRet" min="0" max="3000" step="100"></div>
+          <div class="fila"><label>Orden</label><input type="number" id="aOrden" min="1" max="99"></div>
+        </div>
+        <button class="pb" style="width:100%" onclick="presentar(actual, true)">▶ Ver esta página animada</button>
+      </div>
+
+      <h4>Organizar</h4>
+      <div class="grupoBtns">
+        <button class="pb" onclick="orden('frente')" title="Traer al frente">⇈ Frente</button>
+        <button class="pb" onclick="orden('adelante')" title="Adelante">↑</button>
+        <button class="pb" onclick="orden('atras')" title="Atrás">↓</button>
+        <button class="pb" onclick="orden('fondo')" title="Enviar al fondo">⇊ Fondo</button>
+      </div>
+      <div class="grupoBtns">
+        <button class="pb" onclick="alinear('izq')" title="Alinear a la izquierda">⇤</button>
+        <button class="pb" onclick="alinear('centroH')" title="Centrar horizontal">↔</button>
+        <button class="pb" onclick="alinear('der')" title="Alinear a la derecha">⇥</button>
+        <button class="pb" onclick="alinear('arriba')" title="Arriba">⤒</button>
+        <button class="pb" onclick="alinear('centroV')" title="Centrar vertical">↕</button>
+        <button class="pb" onclick="alinear('abajo')" title="Abajo">⤓</button>
+      </div>
+      <div class="grupoBtns">
+        <button class="pb" onclick="voltear('flipX')">Voltear ↔</button>
+        <button class="pb" onclick="voltear('flipY')">Voltear ↕</button>
+        <button class="pb" id="bAgrupar" onclick="agruparToggle()">Agrupar</button>
+        <button class="pb" id="bConectar" onclick="conectar()">🔗 Conectar</button>
+        <button class="pb" id="bFlecha" onclick="toggleFlecha()">➝ Flecha</button>
+        <button class="pb" id="bTextoDentro" onclick="textoEnForma(activo())">T Texto dentro</button>
+      </div>
+      <div class="grupoBtns" id="grupoMulti">
+        <button class="pb" onclick="distribuir('h')" title="Mismo espacio entre ellos, a lo ancho">⇹ Distribuir ↔</button>
+        <button class="pb" onclick="distribuir('v')" title="Mismo espacio entre ellos, a lo alto">⇳ Distribuir ↕</button>
+        <button class="pb" onclick="igualarTamano()" title="Todos del tamaño del más grande">▣ Igualar tamaño</button>
+      </div>
+      <div class="grupoBtns">
+        <button class="pb" onclick="copiarEstilo()" title="Ctrl+Alt+C">🖌 Copiar estilo</button>
+        <button class="pb" id="bPegarEstilo" onclick="pegarEstilo()" title="Ctrl+Alt+V">Pegar estilo</button>
+      </div>
+      <div class="grupoBtns">
+        <button class="pb" onclick="duplicar()">⧉ Duplicar</button>
+        <button class="pb" id="bBloquear" onclick="bloquearSel()">🔒 Bloquear</button>
+        <button class="pb peligro" onclick="eliminar()">🗑 Eliminar</button>
+      </div>
+    </div>
+
+    <h4>Capas</h4>
+    <ul id="capas"></ul>
+  </aside>
+</div>
+
+<!-- ====== MODAL TAMAÑO ====== -->
+<div class="modal" id="mTamano"><div class="caja">
+  <h3>Tamaño del diseño</h3>
+  <label class="fila" style="cursor:pointer;background:#f5f3ff;border-radius:8px;padding:8px 10px"><input type="checkbox" id="tAcomodar" checked> <span><b>Acomodar el contenido</b> al nuevo tamaño en todas las páginas</span></label>
+  <div id="listaTamanos"></div>
+  <h4 style="font-size:12px;color:#6b7280">Personalizado (px)</h4>
+  <div class="fila"><input type="number" id="tamW" value="1080" min="50" max="8000"> × <input type="number" id="tamH" value="1080" min="50" max="8000"></div>
+  <h4 style="font-size:12px;color:#6b7280">Lienzo flexible</h4>
+  <button class="bigbtn" onclick="ajustarLienzoAContenido(false);cerrarModal('mTamano')">⤢ Ajustar el lienzo a lo que hay en el diseño</button>
+  <label class="fila" style="cursor:pointer"><input type="checkbox" id="lienzoAuto"> Agrandar el lienzo automáticamente si algo se sale</label>
+  <p class="hint" style="font-size:12px">También puedes arrastrar cualquiera de los bordes o esquinas del lienzo (los puntos y barras moradas).</p>
+  <div class="acciones">
+    <button class="btnS" onclick="cerrarModal('mTamano')">Cancelar</button>
+    <button class="btnP" onclick="aplicarTamanoPers()">Aplicar</button>
+  </div>
+</div></div>
+
+<!-- ====== MODAL EXPORTAR ====== -->
+<div class="modal" id="mExportar"><div class="caja">
+  <h3>Exportar</h3>
+  <div class="fila"><label>Formato</label>
+    <select id="eFormato"><option value="png">PNG (recomendado)</option><option value="jpeg">JPG</option><option value="pdf">PDF (para imprimir o entregar)</option><option value="pptx">PowerPoint (.pptx)</option><option value="video">🎬 Video MP4 (con animaciones)</option></select></div>
+  <div class="fila"><label>Páginas</label>
+    <select id="ePaginas"><option value="actual">Solo la página actual</option><option value="todas">Todas las páginas</option></select></div>
+  <div id="filaImprimir" style="display:none">
+    <div class="fila"><label>Hoja</label><select id="iPapel"><option value="diseno">Del tamaño del diseño</option><option value="carta">Carta (21.6 × 27.9 cm)</option><option value="a4">A4 (21 × 29.7 cm)</option><option value="oficio">Oficio (21.6 × 34 cm)</option></select></div>
+    <div id="filaHoja" style="display:none">
+      <div class="fila"><label>Acomodo</label><select id="iAcomodo"><option value="una">Una por hoja (ajustada)</option><option value="varias">Varias por hoja (para recortar)</option></select></div>
+      <div class="fila" id="filaAncho"><label>Ancho de cada una</label><input type="number" id="iAncho" min="1" max="40" step="0.1"><span class="hint">cm</span></div>
+      <div class="fila"><label>Copias de cada página</label><input type="number" id="iCopias" min="1" max="200" value="1"></div>
+      <div class="fila"><label>Margen</label><input type="number" id="iMargen" min="0" max="40" value="10"><span class="hint">mm</span></div>
+      <div class="fila"><label>Marcas de corte</label><input type="checkbox" id="iMarcas"><span class="hint" style="font-size:11px">líneas en las esquinas para recortar derecho</span></div>
+      <p class="hint" id="iInfo" style="font-size:11.5px;padding-top:0"></p>
+    </div>
+  </div>
+  <div id="filaVideo" style="display:none">
+    <div class="fila"><label>Segundos por página</label><input type="number" id="vSeg" min="1" max="30" step="0.5" value="3"><span class="hint" style="font-size:11px">después de las animaciones</span></div>
+    <div class="fila"><label>Calidad</label><select id="vCalidad"><option value="720">HD 720p (más ligero)</option><option value="1080">Full HD 1080p</option></select></div>
+    <p class="hint" style="font-size:11.5px;padding-top:0">Incluye las animaciones y la transición que elegiste en ▶ Presentar. Sirve para Classroom, WhatsApp o redes. Se crea en tu navegador y puede tardar unos segundos.</p>
+  </div>
+  <div class="fila" id="filaPptx" style="display:none"><label>Texto editable</label><input type="checkbox" id="ePptEditable" checked>
+    <span class="hint" style="font-size:11px">Los textos se podrán editar en PowerPoint; lo demás va como imagen.</span></div>
+  <div class="fila"><label>Tamaño</label>
+    <select id="eEscala">
+      <option value="0.5">0.5× (más ligero)</option>
+      <option value="1" selected>1× (original)</option>
+      <option value="2">2× (alta calidad)</option>
+      <option value="3">3× (impresión)</option>
+    </select></div>
+  <div class="fila"><label>Fondo transparente</label><input type="checkbox" id="eTransp"><span class="hint">solo PNG</span></div>
+  <div class="hint" id="eInfo"></div>
+  <div id="vista"></div>
+  <div class="acciones">
+    <button class="btnS" onclick="cerrarModal('mExportar')">Cerrar</button>
+    <button class="btnS" onclick="vistaPrevia()">Vista previa</button>
+    <button class="btnS" onclick="exportarDrive()">Guardar en este navegador</button>
+    <button class="btnP" onclick="descargarImagen()">Descargar</button>
+  </div>
+</div></div>
+
+<!-- ====== MODAL PROYECTOS ====== -->
+<div id="accMovil">
+  <button onclick="eliminar()" title="Eliminar">🗑</button>
+  <button onclick="duplicar()" title="Duplicar">⧉</button>
+  <button id="fabEditar" onclick="alternarProps()">✎ Editar</button>
+</div>
+
+<!-- ====== MODAL DIAPOSITIVA CON DISEÑO ====== -->
+<div class="modal" id="mDiapositiva"><div class="caja" style="width:min(820px,94vw)">
+  <h3>Agregar diapositiva con diseño</h3>
+  <p class="hint" style="padding-top:0">Elige un tema y toca el diseño que quieres. Se agrega después de la página actual, ya con animaciones.</p>
+  <p class="hint" id="avisoDiapo" style="color:#b45309">Las diapositivas son de 16:9 (1920 × 1080): tu diseño cambiará a ese tamaño.</p>
+  <div class="chips" id="temasDiapo"></div>
+  <div class="gridPl" id="gridDiapo" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr));margin-top:10px"></div>
+  <div class="acciones"><button class="btnS" onclick="cerrarModal('mDiapositiva')">Cerrar</button></div>
+</div></div>
+
+<div class="modal" id="mCompartir"><div class="caja">
+  <h3>🔗 Compartir con compañeros</h3>
+  <p class="hint soloWeb" style="padding-top:0;color:var(--neon)">En la versión web se comparte como <b>archivo</b>: al pulsar el botón se descarga tu diseño para que lo mandes por WhatsApp o correo.</p>
+  <p class="hint" style="padding-top:0">Se crea un enlace a una <b>copia</b> de tu diseño tal como está ahora. Quien lo abra puede editar su copia y guardarla en su propio navegador; tu diseño no cambia. Si después haces cambios, crea un enlace nuevo.</p>
+  <button class="btnP" onclick="crearEnlaceCompartir()">Crear enlace</button>
+  <div id="cResultado" hidden style="margin-top:14px">
+    <div class="fila"><input type="text" id="cLink" readonly style="flex:1;min-width:0;padding:8px;border:1px solid var(--borde);border-radius:6px"><button class="btnS" onclick="copiarEnlace()">Copiar</button></div>
+    <a id="cWhats" class="btnS" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">💬 Enviar por WhatsApp</a>
+    <p class="hint" id="cAviso" style="font-size:12px"></p>
+  </div>
+  <div class="acciones"><button class="btnS" onclick="cerrarModal('mCompartir')">Cerrar</button></div>
+</div></div>
+
+<div class="modal" id="mBuscar"><div class="caja">
+  <h3>🔍 Buscar y reemplazar</h3>
+  <div class="fila"><label>Buscar</label><input type="text" id="bTexto" style="flex:1;min-width:0;padding:7px;border:1px solid var(--borde);border-radius:6px"></div>
+  <div class="fila"><label>Cambiar por</label><input type="text" id="bNuevo" style="flex:1;min-width:0;padding:7px;border:1px solid var(--borde);border-radius:6px"></div>
+  <div class="fila" style="gap:14px;font-size:12.5px"><label style="width:auto;cursor:pointer"><input type="checkbox" id="bMayus"> Distinguir mayúsculas</label><label style="width:auto;cursor:pointer"><input type="checkbox" id="bPalabra"> Palabra completa</label></div>
+  <p class="hint" id="bInfo" style="padding:4px 0"></p>
+  <div id="bLista" style="max-height:200px;overflow:auto"></div>
+  <div class="acciones">
+    <button class="btnS" onclick="cerrarModal('mBuscar')">Cerrar</button>
+    <button class="btnS" onclick="siguienteResultado()">Ir al siguiente</button>
+    <button class="btnP" onclick="reemplazarTodo()">Reemplazar todo</button>
+  </div>
+</div></div>
+
+<div class="modal" id="mAyuda"><div class="caja" style="width:min(560px,94vw)">
+  <h3>❓ Ayuda</h3>
+  <button class="btnP" style="width:100%;margin-bottom:12px" onclick="iniciarRecorrido()">▶ Ver el recorrido de 1 minuto</button>
+  <h4 style="font-size:12px;color:#6b7280;margin:6px 0">Primeros pasos</h4>
+  <ol style="font-size:13px;line-height:1.55;padding-left:20px;margin:0 0 10px">
+    <li>Elige una <b>plantilla</b> o una <b>presentación</b> en el panel izquierdo (o empieza en blanco).</li>
+    <li>Haz <b>doble clic</b> en un texto para escribir; selecciona cualquier cosa para cambiar su color y estilo a la derecha.</li>
+    <li>Agrega formas, íconos, imágenes, gráficas y diagramas desde las pestañas de la izquierda.</li>
+    <li><b>💾 Guardar</b> lo guarda en este navegador; <b>⬇ Exportar</b> lo descarga como imagen, PDF, PowerPoint o video.</li>
+  </ol>
+  <h4 style="font-size:12px;color:#6b7280;margin:10px 0 4px">Atajos de teclado</h4>
+  <div id="listaAtajos"></div>
+  <div class="acciones"><button class="btnS" onclick="cerrarModal('mAyuda')">Cerrar</button></div>
+</div></div>
+
+<div id="recorrido"><div id="recFoco"></div><div id="recCaja"><div id="recTexto"></div>
+  <div class="pie"><span id="recNum"></span><button class="btnS" id="recAnt" onclick="siguientePaso(-1)">← Atrás</button><button class="btnS" onclick="terminarRecorrido()">Saltar</button><button class="btnP" id="recSig" onclick="siguientePaso(1)">Siguiente →</button></div>
+</div></div>
+<div id="bienvenida"><span>👋 ¿Primera vez aquí? Conoce lo básico en 1 minuto.</span><button style="background:#a78bfa;color:#fff" onclick="iniciarRecorrido()">Ver recorrido</button><button style="background:#374151;color:#fff" onclick="cerrarBienvenida()">Ahora no</button></div>
+
+<div class="modal" id="mDonar"><div class="caja">
+  <h3>❤ Apoya el proyecto</h3>
+  <p class="hint" id="textoDonacion" style="padding-top:0"></p>
+  <div id="listaDonaciones"></div>
+  <p class="hint" style="font-size:11.5px">Las donaciones son voluntarias: la app sigue siendo gratuita para todos. ¡Gracias!</p>
+  <div class="acciones"><button class="btnS" onclick="cerrarModal('mDonar')">Cerrar</button></div>
+</div></div>
+
+<div class="modal" id="mProyectos"><div class="caja">
+  <h3>Mis diseños en este navegador</h3>
+  <label class="fila" style="cursor:pointer;font-size:13px"><input type="checkbox" id="autoDrive"> Guardar automáticamente en este navegador mientras trabajo</label>
+  <p class="hint soloWeb" style="font-size:12px;padding-top:0">Tus diseños se guardan en <b>este navegador</b>. Para no perderlos o usarlos en otra computadora, descárgalos como archivo.</p>
+  <div class="grupoBtns">
+    <button class="btnS" onclick="descargarDisenoArchivo()" title="Guarda una copia de este diseño en tu computadora">⬇ Descargar este diseño</button>
+    <button class="btnS" onclick="$('archivoDiseno').click()" title="Abre un diseño que descargaste antes">📂 Abrir un archivo…</button>
+  </div>
+  <input type="file" id="archivoDiseno" accept=".json,application/json" hidden>
+  <div id="listaProy" class="hint">Cargando…</div>
+  <div class="acciones"><button class="btnS" onclick="cerrarModal('mProyectos')">Cerrar</button></div>
+</div></div>
+
+<!-- ====== MODAL PRESENTAR ====== -->
+<div class="modal" id="mPresentar"><div class="caja">
+  <h3>▶ Presentar</h3>
+  <div class="fila"><label>Empezar desde</label><select id="pDesde"><option value="inicio">La primera página</option><option value="actual">Esta página</option></select></div>
+  <div class="fila"><label>Transición</label><select id="pTrans">
+    <option value="desvanecer">Desvanecer</option><option value="deslizar">Deslizar</option><option value="zoom">Acercar</option><option value="ninguna">Ninguna</option></select></div>
+  <div class="fila"><label>Avance</label><select id="pAvance"><option value="manual">Con clic o flechas</option><option value="auto">Automático</option></select></div>
+  <div class="fila" id="filaSeg"><label>Segundos por página</label><input type="number" id="pSeg" min="1" max="120" value="6"></div>
+  <h4 style="font-size:12px;color:#6b7280;margin:14px 0 6px">Animar elementos automáticamente</h4>
+  <div class="fila"><label>Estilo</label><select id="pEstiloAnim">
+    <option value="dinamica">Dinámica (deslizar hacia arriba)</option><option value="suave">Suave (aparecer)</option>
+    <option value="divertida">Divertida (rebote)</option><option value="zoom">Acercamiento</option><option value="clic">Uno por clic</option></select></div>
+  <div class="grupoBtns">
+    <button class="btnS" onclick="animarPaginas(false)">Animar esta página</button>
+    <button class="btnS" onclick="animarPaginas(true)">Animar todas</button>
+    <button class="btnS" onclick="quitarAnimaciones()">Quitar animaciones</button>
+  </div>
+  <p class="hint" style="font-size:12px">En la presentación: <b>clic, espacio o →</b> avanza · <b>←</b> regresa · <b>Esc</b> sale. También puedes animar cada elemento desde el panel derecho.<br><b>N</b> o el botón <b>📝</b> muestran tus notas y el cronómetro. La <b>vista del presentador</b> abre una ventana aparte para tu laptop mientras el proyector muestra la presentación.</p>
+  <div class="acciones">
+    <button class="btnS" onclick="cerrarModal('mPresentar')">Cerrar</button>
+    <button class="btnS" onclick="iniciarPresentacion(true)" title="Abre una ventana aparte con tus notas, la siguiente diapositiva y un cronómetro">🖥 Con vista del presentador</button>
+    <button class="btnP" onclick="iniciarPresentacion()">▶ Presentar</button>
+  </div>
+</div></div>
+
+<!-- ====== PRESENTACIÓN EN PANTALLA COMPLETA ====== -->
+<div id="presentacion">
+  <div id="presEscenario"></div>
+  <div id="presFin">Fin de la presentación<small>Clic o Esc para salir</small></div>
+  <div id="presControles">
+    <button onclick="event.stopPropagation(); presAnterior()" title="Anterior (←)">◀</button>
+    <span id="presNum">1 / 1</span>
+    <button onclick="event.stopPropagation(); presSiguiente()" title="Siguiente (→)">▶</button>
+    <button onclick="event.stopPropagation(); alternarNotasPres()" title="Notas y cronómetro (N)">📝</button>
+    <button onclick="event.stopPropagation(); alternarPantallaCompleta()" title="Pantalla completa">⛶</button>
+    <button onclick="event.stopPropagation(); salirPresentacion()" title="Salir (Esc)">✕</button>
+  </div>
+  <div id="presNotas"><div class="cab"><b id="pnTiempo">00:00</b><span id="pnNum"></span><button onclick="event.stopPropagation(); pausarTiempo()" title="Pausar o continuar el cronómetro">⏯</button><button onclick="event.stopPropagation(); alternarNotasPres(false)">✕</button></div><div id="pnTexto"></div></div>
+</div>
+
+<div id="toast"></div>
+<div id="vistaGrande"><img alt=""><div></div></div>
+<div id="cargando">Procesando…</div>
+
+<script src="config.js"></script>
+<script src="js/almacen-local.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

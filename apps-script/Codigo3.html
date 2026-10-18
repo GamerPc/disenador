@@ -1,0 +1,996 @@
+<script>
+/*@parte Codigo3*/ (window.__partes = window.__partes || {})['Codigo3'] = true;
+
+/* =========================================================
+   RECORTAR A MANO Y QUITAR FONDO
+   ========================================================= */
+let recorte = null;   // modo activo: { tipo:'rect'|'libre'|'zona', img, ov?, pts? }
+function imagenActiva(){
+  const o = activo();
+  if (!o || o.type !== 'image'){ toast('Primero selecciona una imagen'); return null; }
+  if (o.marco){ toast('Esta foto está dentro de un marco: usa “Sacar del marco” para recortarla a mano.'); return null; }
+  return o;
+}
+function avisoRecorte(html){ const a = $('recorteAviso'); a.innerHTML = html; a.style.display = html ? 'flex' : 'none'; }
+function bloquearOtros(img, si){
+  canvas.getObjects().forEach(o => {
+    if (recorte && o === recorte.ov) return;
+    if (si){ if (!('__ev' in o)) o.__ev = o.evented; o.evented = false; }
+    else if ('__ev' in o){ o.evented = o.__ev; delete o.__ev; }
+  });
+  canvas.selection = !si;
+}
+function terminarRecorte(guardar){
+  if (!recorte) return;
+  const { img, ov } = recorte;
+  recorte = null;
+  if (ov){ restaurando = true; canvas.remove(ov); restaurando = false; }
+  canvas.off('after:render', sombraRecorte);
+  bloquearOtros(img, false);
+  canvas.defaultCursor = 'default'; canvas.clearContext(canvas.contextTop);
+  avisoRecorte('');
+  if (canvas.getObjects().includes(img)) canvas.setActiveObject(img);
+  canvas.requestRenderAll(); renderCapas(); actualizarPanel();
+  if (guardar) guardarEstado();
+}
+// ---------- Recorte con recuadro ----------
+function iniciarRecorteRect(){
+  const img = imagenActiva(); if (!img) return;
+  terminarRecorte(false);
+  const c = img.getCenterPoint();
+  const ov = new fabric.Rect({ width:img.getScaledWidth(), height:img.getScaledHeight(), angle:img.angle, originX:'center', originY:'center', left:c.x, top:c.y,
+    fill:'rgba(255,255,255,0.001)', stroke:'#19c8ff', strokeWidth:2, strokeDashArray:[8, 6], strokeUniform:true, lockRotation:true,
+    esDeco:true, name:'Recorte', cornerColor:'#19c8ff', cornerStrokeColor:'#0f1218', transparentCorners:false });
+  ov.setControlVisible('mtr', false);
+  recorte = { tipo:'rect', img, ov };
+  restaurando = true; canvas.add(ov); restaurando = false;
+  bloquearOtros(img, true);
+  canvas.setActiveObject(ov); canvas.on('after:render', sombraRecorte); canvas.requestRenderAll();
+  avisoRecorte('✂ Mueve y ajusta el recuadro sobre lo que quieres conservar <button onclick="aplicarRecorteRect()">✓ Recortar</button><button onclick="terminarRecorte(false)">Cancelar</button>');
+}
+function sombraRecorte(){
+  if (!recorte || recorte.tipo !== 'rect') return;
+  const ctx = canvas.contextContainer, v = canvas.viewportTransform;
+  const a = recorte.img.calcACoords(), b = recorte.ov.calcACoords();
+  ctx.save(); ctx.transform(v[0], v[1], v[2], v[3], v[4], v[5]);
+  ctx.beginPath();
+  [a.tl, a.tr, a.br, a.bl].forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.closePath();
+  [b.tl, b.bl, b.br, b.tr].forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.closePath();
+  ctx.fillStyle = 'rgba(15,17,25,.55)'; ctx.fill('evenodd');
+  ctx.restore();
+}
+function aplicarRecorteRect(){
+  if (!recorte || recorte.tipo !== 'rect') return;
+  const { img, ov } = recorte, m = img.calcTransformMatrix(), inv = fabric.util.invertTransform(m);
+  const c = ov.calcACoords();
+  const pts = [c.tl, c.tr, c.br, c.bl].map(p => fabric.util.transformPoint(p, inv));
+  const w = img.width, h = img.height;
+  const x0 = Math.max(-w / 2, Math.min(...pts.map(p => p.x))), x1 = Math.min(w / 2, Math.max(...pts.map(p => p.x)));
+  const y0 = Math.max(-h / 2, Math.min(...pts.map(p => p.y))), y1 = Math.min(h / 2, Math.max(...pts.map(p => p.y)));
+  if (x1 - x0 < 4 || y1 - y0 < 4){ toast('El recuadro quedó fuera de la imagen'); return; }
+  const centro = fabric.util.transformPoint(new fabric.Point((x0 + x1) / 2, (y0 + y1) / 2), m);
+  img.set({ cropX:(img.cropX || 0) + x0 + w / 2, cropY:(img.cropY || 0) + y0 + h / 2, width:x1 - x0, height:y1 - y0 });
+  img.clipPath = null;
+  img.setPositionByOrigin(centro, 'center', 'center'); img.setCoords(); img.dirty = true;
+  terminarRecorte(true);
+  toast('Imagen recortada. “⤢ Ver completa” la regresa a como estaba.');
+}
+function verImagenCompleta(){
+  const img = imagenActiva(); if (!img) return;
+  const og = img.getOriginalSize();
+  // la parte visible se queda en su lugar y la imagen completa se extiende a su alrededor
+  const local = new fabric.Point(og.width / 2 - (img.cropX || 0) - img.width / 2, og.height / 2 - (img.cropY || 0) - img.height / 2);
+  const c = fabric.util.transformPoint(local, img.calcTransformMatrix());
+  img.set({ cropX:0, cropY:0, width:og.width, height:og.height }); img.clipPath = null;
+  img.setPositionByOrigin(c, 'center', 'center'); img.setCoords(); img.dirty = true;
+  canvas.requestRenderAll(); guardarEstado();
+}
+// ---------- Recorte libre (dibujar el contorno) ----------
+function iniciarRecorteLibre(){
+  const img = imagenActiva(); if (!img) return;
+  terminarRecorte(false);
+  recorte = { tipo:'libre', img, pts:null };
+  bloquearOtros(img, true); canvas.discardActiveObject(); canvas.defaultCursor = 'crosshair'; canvas.requestRenderAll();
+  avisoRecorte('✏ Dibuja con el mouse o el dedo el contorno de lo que quieres conservar <button onclick="terminarRecorte(false)">Cancelar</button>');
+}
+function dibujarLazo(){
+  const ctx = canvas.contextTop, pts = recorte.pts; canvas.clearContext(ctx);
+  ctx.save(); ctx.beginPath();
+  pts.forEach((p, i) => i ? ctx.lineTo(p.x * zoom, p.y * zoom) : ctx.moveTo(p.x * zoom, p.y * zoom));
+  ctx.fillStyle = 'rgba(25,200,255,.12)'; ctx.fill();
+  ctx.strokeStyle = '#19c8ff'; ctx.lineWidth = 3; ctx.setLineDash([7, 5]); ctx.stroke();
+  ctx.restore();
+}
+function aplicarLazo(pts){
+  const img = recorte.img, inv = fabric.util.invertTransform(img.calcTransformMatrix());
+  const loc = [];
+  pts.forEach(p => { const q = fabric.util.transformPoint(p, inv), u = loc[loc.length - 1]; if (!u || Math.hypot(q.x - u.x, q.y - u.y) > 1.5) loc.push({ x:q.x, y:q.y }); });
+  if (loc.length < 6){ toast('Dibuja un contorno más grande'); return; }
+  img.clipPath = new fabric.Polygon(loc, { fill:'#000', stroke:null, strokeWidth:0, objectCaching:false });
+  img.dirty = true;
+  terminarRecorte(true);
+  toast('Recorte libre aplicado. “Quitar recorte” lo deshace.');
+}
+// ---------- Quitar fondo ----------
+const distColor = (d, i, r, g, b) => Math.sqrt((d[i] - r) ** 2 + (d[i + 1] - g) ** 2 + (d[i + 2] - b) ** 2);
+async function procesarFondo(img, semillas){
+  const tol = +$('bgTol').value;
+  const src = img._originalElement || img._element;
+  const nw = src.naturalWidth || src.width, nh = src.naturalHeight || src.height;
+  const k = Math.min(1, 2400 / Math.max(nw, nh));
+  const cw = Math.max(1, Math.round(nw * k)), ch = Math.max(1, Math.round(nh * k));
+  const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+  const g = cv.getContext('2d', { willReadFrequently:true }); g.drawImage(src, 0, 0, cw, ch);
+  let data;
+  try { data = g.getImageData(0, 0, cw, ch); }
+  catch (e) { toast('Esta imagen no se puede editar porque viene de otro sitio. Descárgala y súbela desde tu computadora.'); return null; }
+  const d = data.data, N = cw * ch;
+  // colores de referencia
+  let refs = [], inicio = [];
+  if (semillas){
+    semillas.forEach(s => {
+      const x = Math.max(0, Math.min(cw - 1, Math.round(s.x * k))), y = Math.max(0, Math.min(ch - 1, Math.round(s.y * k)));
+      const i = (y * cw + x) * 4;
+      if (d[i + 3] < 20){ return; }
+      refs.push([d[i], d[i + 1], d[i + 2]]); inicio.push(y * cw + x);
+    });
+    if (!refs.length){ toast('Esa zona ya es transparente'); return null; }
+  } else {
+    const cuenta = new Map(), borde = [];
+    for (let x = 0; x < cw; x++){ borde.push(x, (ch - 1) * cw + x); }
+    for (let y = 1; y < ch - 1; y++){ borde.push(y * cw, y * cw + cw - 1); }
+    let opacos = 0;
+    borde.forEach(p => { const i = p * 4; if (d[i + 3] < 20) return; opacos++; const q = ((d[i] >> 4) << 8) | ((d[i + 1] >> 4) << 4) | (d[i + 2] >> 4); cuenta.set(q, (cuenta.get(q) || 0) + 1); });
+    if (!opacos){ toast('Esta imagen ya no tiene fondo en los bordes'); return null; }
+    [...cuenta.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).forEach(([q, n]) => {
+      if (n / opacos < 0.08 && refs.length) return;
+      refs.push([((q >> 8) & 15) * 16 + 8, ((q >> 4) & 15) * 16 + 8, (q & 15) * 16 + 8]);
+    });
+    inicio = borde;
+  }
+  const lim = tol * 1.6;
+  const parecido = p => { const i = p * 4; if (d[i + 3] < 20) return true; for (const [r, gg, b] of refs) if (distColor(d, i, r, gg, b) <= lim) return true; return false; };
+  // relleno por inundación desde las semillas
+  const quitar = new Uint8Array(N), pila = new Int32Array(N); let tope = 0;
+  inicio.forEach(p => { if (!quitar[p] && parecido(p)){ quitar[p] = 1; pila[tope++] = p; } });
+  while (tope){
+    const p = pila[--tope], x = p % cw;
+    const vec = [x > 0 ? p - 1 : -1, x < cw - 1 ? p + 1 : -1, p - cw, p + cw];
+    for (const q of vec){ if (q >= 0 && q < N && !quitar[q] && parecido(q)){ quitar[q] = 1; pila[tope++] = q; } }
+  }
+  let borrados = 0;
+  for (let p = 0; p < N; p++) if (quitar[p]){ if (d[p * 4 + 3] >= 20) borrados++; d[p * 4 + 3] = 0; }
+  // bordes suaves: los pixeles junto a lo borrado y parecidos al fondo quedan semitransparentes
+  for (let p = 0; p < N; p++){
+    if (quitar[p]) continue;
+    const x = p % cw;
+    if (!((x > 0 && quitar[p - 1]) || (x < cw - 1 && quitar[p + 1]) || (p >= cw && quitar[p - cw]) || (p + cw < N && quitar[p + cw]))) continue;
+    const i = p * 4; let m = Infinity;
+    for (const [r, gg, b] of refs) m = Math.min(m, distColor(d, i, r, gg, b));
+    const f = Math.max(0.2, Math.min(1, (m - lim) / lim));
+    d[i + 3] = Math.round(d[i + 3] * f);
+  }
+  if (!borrados){ toast('No encontré fondo para quitar con esa tolerancia. Prueba subirla.'); return null; }
+  g.putImageData(data, 0, 0);
+  const antes = { c:img.getCenterPoint(), cropX:img.cropX || 0, cropY:img.cropY || 0, width:img.width, height:img.height, sx:img.scaleX, sy:img.scaleY };
+  await new Promise(ok => img.setSrc(cv.toDataURL('image/png'), ok));
+  img.set({ cropX:antes.cropX * k, cropY:antes.cropY * k, width:antes.width * k, height:antes.height * k, scaleX:antes.sx / k, scaleY:antes.sy / k });
+  if (img.filters && img.filters.length) img.applyFilters();
+  img.setPositionByOrigin(antes.c, 'center', 'center'); img.setCoords(); img.dirty = true;
+  canvas.requestRenderAll();
+  return borrados / N;
+}
+async function quitarFondoImagen(){
+  const img = imagenActiva(); if (!img) return;
+  terminarRecorte(false);
+  cargando(true);
+  try {
+    const f = await procesarFondo(img, null);
+    if (f != null){ guardarEstado(); actualizarPanel(); toast('Fondo quitado (' + Math.round(f * 100) + '% de la imagen). Si quitó de más, deshaz con Ctrl+Z y baja la tolerancia.'); }
+  } catch (e) { console.error(e); toast('No se pudo quitar el fondo: ' + e.message); }
+  finally { cargando(false); }
+}
+function iniciarBorrarZona(){
+  const img = imagenActiva(); if (!img) return;
+  terminarRecorte(false);
+  recorte = { tipo:'zona', img };
+  bloquearOtros(img, true); canvas.discardActiveObject(); canvas.defaultCursor = 'crosshair'; canvas.requestRenderAll();
+  avisoRecorte('👆 Toca o haz clic en la zona de color que quieres borrar (puedes tocar varias) <button onclick="terminarRecorte(true)">✓ Listo</button>');
+}
+async function borrarZonaEn(p){
+  const img = recorte.img, q = fabric.util.transformPoint(p, fabric.util.invertTransform(img.calcTransformMatrix()));
+  if (Math.abs(q.x) > img.width / 2 || Math.abs(q.y) > img.height / 2){ toast('Toca dentro de la imagen'); return; }
+  cargando(true);
+  try {
+    const f = await procesarFondo(img, [{ x:(img.cropX || 0) + q.x + img.width / 2, y:(img.cropY || 0) + q.y + img.height / 2 }]);
+    if (f != null) toast('Zona borrada. Toca otra o pulsa ✓ Listo.');
+  } catch (e) { console.error(e); toast('No se pudo borrar: ' + e.message); }
+  finally { cargando(false); }
+}
+// ---------- Eventos del lienzo durante los modos ----------
+canvas.on('mouse:down', e => {
+  if (!recorte || recorte.tipo === 'rect') return;
+  const p = canvas.getPointer(e.e);
+  if (recorte.tipo === 'zona'){ borrarZonaEn(p); return; }
+  recorte.pts = [p];
+});
+canvas.on('mouse:move', e => {
+  if (!recorte || recorte.tipo !== 'libre' || !recorte.pts) return;
+  const p = canvas.getPointer(e.e), u = recorte.pts[recorte.pts.length - 1];
+  if (Math.hypot(p.x - u.x, p.y - u.y) > 2 / zoom){ recorte.pts.push(p); dibujarLazo(); }
+});
+canvas.on('mouse:up', () => {
+  if (!recorte || recorte.tipo !== 'libre' || !recorte.pts) return;
+  const pts = recorte.pts; recorte.pts = null; canvas.clearContext(canvas.contextTop);
+  if (pts.length < 8){ toast('Dibuja un contorno más grande alrededor de lo que quieres conservar'); return; }
+  aplicarLazo(pts);
+});
+canvas.on('selection:cleared', () => { if (recorte && recorte.tipo === 'rect') canvas.setActiveObject(recorte.ov); });
+window.addEventListener('keydown', e => {
+  if (!recorte) return;
+  if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); terminarRecorte(recorte.tipo === 'zona'); }
+  else if (e.key === 'Enter' && recorte.tipo === 'rect'){ e.preventDefault(); e.stopPropagation(); aplicarRecorteRect(); }
+  else if (['Delete', 'Backspace'].includes(e.key)){ e.preventDefault(); e.stopPropagation(); }
+}, true);
+
+/* =========================================================
+   MIS COLORES
+   ========================================================= */
+let misColores = [];
+try { misColores = JSON.parse(localStorage.getItem('disenador_colores') || '[]'); } catch(e){}
+if (!misColores.length) misColores = ['#7c3aed', '#06b6d4', '#1f2330', '#ffffff'];
+function guardarColores(){
+  try { localStorage.setItem('disenador_colores', JSON.stringify(misColores)); } catch(e){}
+  renderMisColores();
+}
+function renderMisColores(){
+  const c = $('misColores'); c.innerHTML = '';
+  misColores.forEach((col, i) => {
+    const d = document.createElement('div'); d.className = 'sw'; d.style.background = col; d.title = col;
+    d.onclick = () => { $('pRelleno').value = col; aplicar('fill', col); };
+    d.ondblclick = () => { misColores.splice(i, 1); guardarColores(); };
+    c.appendChild(d);
+  });
+  const mas = document.createElement('button'); mas.className = 'pb'; mas.textContent = '+'; mas.title = 'Guardar el color actual';
+  mas.onclick = () => { const v = $('pRelleno').value; if (!misColores.includes(v)){ misColores.push(v); guardarColores(); } };
+  c.appendChild(mas);
+}
+renderMisColores();
+
+/* =========================================================
+   TEXTO DENTRO DE FORMAS (la forma crece con el texto)
+   ========================================================= */
+const PAD = () => 24 * Math.min(W, H) / 1080;   // margen interior proporcional al lado corto del lienzo
+const PATH_NUBE = 'M25 60 C10 60 5 45 18 38 C15 22 35 15 45 25 C52 10 78 12 80 30 C95 28 100 48 88 56 C90 66 75 70 68 63 C60 72 40 72 35 63 C30 66 25 64 25 60 Z';
+const PATH_BLOB = 'M60 5 C85 5 100 25 95 50 C90 75 70 95 45 92 C20 89 2 70 5 45 C8 20 35 5 60 5 Z';
+function puedeTenerTexto(o){
+  return !!o && !esTexto(o) && !esLinea(o) && !['image','group','activeSelection'].includes(o.type) && !o.esFondo && !o.esDeco;
+}
+function anchoUtil(f){
+  const porForma = { rombo:0.5, paralelo:0.72, documento:0.92, elipse:0.72, nube:0.6, blob:0.66 }[f.forma];
+  if (porForma) return porForma;
+  return f.type === 'rect' ? 1 : (f.type === 'circle' || f.type === 'ellipse') ? 0.72 : f.type === 'triangle' ? 0.55 : 0.68;
+}
+function esOscuro(c){
+  if (typeof c !== 'string') return false;
+  try { const [r, g, b] = new fabric.Color(c).getSource(); return (0.299*r + 0.587*g + 0.114*b) < 150; } catch(e){ return false; }
+}
+function anchoTexto(f){ return Math.max(60, f.getScaledWidth() * anchoUtil(f) - 2 * PAD()); }
+function centrarTexto(t, f){
+  const c = f.getCenterPoint();
+  t.set({ originX:'center', originY:'center', left:c.x, top:c.y, angle:f.angle }); t.setCoords();
+}
+// Crea el texto vinculado a una forma (no lo agrega al lienzo)
+function crearTextoVinculado(f, texto, est = {}){
+  f.id = f.id || nuevoId();
+  if (!f.anchoBase) f.anchoBase = f.getScaledWidth();
+  if (!f.altoBase) f.altoBase = f.getScaledHeight();
+  const t = new fabric.Textbox(texto, {
+    width: anchoTexto(f), fontFamily: est.fontFamily || 'Poppins', fontSize: est.fontSize || 40 * s(),
+    fontWeight: est.fontWeight || '400', fontStyle: est.fontStyle || 'normal', textAlign: 'center', lineHeight: 1.15,
+    fill: est.fill || (esOscuro(f.fill) ? '#ffffff' : '#1f2330'), textoDe: f.id, id: nuevoId(), name: 'Texto de forma'
+  });
+  prepararTextoVinculado(t);
+  f.formaTexto = t.id;
+  centrarTexto(t, f);
+  return t;
+}
+// El texto de una forma no tiene asas propias: se redimensiona la forma
+function prepararTextoVinculado(t){
+  t.set({ hasControls:false, lockScalingX:true, lockScalingY:true, lockRotation:true });
+}
+function normalizarVinculos(){
+  canvas.getObjects().forEach(o => { if (o.textoDe && porId(o.textoDe)) prepararTextoVinculado(o); });
+}
+function textoEnForma(f){
+  if (!puedeTenerTexto(f)) return;
+  const ya = porId(f.formaTexto);
+  if (ya){ canvas.setActiveObject(ya); ya.enterEditing(); ya.selectAll(); canvas.requestRenderAll(); return; }
+  const t = crearTextoVinculado(f, 'Escribe aquí');
+  canvas.add(t); ajustarFormaATexto(t); ordenarVinculos();
+  canvas.setActiveObject(t); t.enterEditing(); t.selectAll(); canvas.requestRenderAll();
+}
+function agregarCuadroTexto(){
+  const k = s();
+  const r = new fabric.Rect({ left:W/2, top:H/2, originX:'center', originY:'center', width:520*k, height:160*k,
+    rx:24*k, ry:24*k, fill:$('colorForma').value, strokeWidth:0 });
+  agregar(r, 'Cuadro de texto');
+  textoEnForma(r);
+}
+// Ancho que ocuparía el texto en una sola línea por renglón (sin cortes automáticos)
+function anchoNatural(t){
+  const m = new fabric.Text(t.text || ' ', { fontSize:t.fontSize, fontFamily:t.fontFamily, fontWeight:t.fontWeight,
+    fontStyle:t.fontStyle, charSpacing:t.charSpacing, lineHeight:t.lineHeight });
+  return m.width + 4;
+}
+// Cambia el tamaño visible de una forma según su tipo
+function fijarTamanoForma(f, w, hgt){
+  if (f.type === 'rect'){
+    f.set({ width: w / f.scaleX, height: hgt / f.scaleY });
+    if (f.forma === 'pildora'){ const r = Math.min(w, hgt) / 2; f.set({ rx: r / f.scaleX, ry: r / f.scaleY }); }
+  } else if (f.type === 'circle'){
+    f.set('radius', Math.max(w, hgt) / 2 / f.scaleX);
+  } else if (f.type === 'ellipse'){
+    f.set({ rx: w / 2 / f.scaleX, ry: hgt / 2 / f.scaleY });
+  } else {
+    f.set({ scaleX: w / f.width, scaleY: hgt / f.height });
+  }
+}
+// La forma se adapta al texto: primero se ensancha (hasta un límite) y luego crece hacia abajo.
+// Nunca queda más chica que el tamaño que tú le diste.
+function ajustarFormaATexto(t){
+  const f = porId(t.textoDe); if (!f || f.group || t.group) return;
+  if (f.tabla){ reorganizarTabla(f.tabla); return; }
+  const pad = PAD(), fac = anchoUtil(f), facAlto = f.type === 'rect' ? 1 : fac;
+  const base = f.anchoBase || f.getScaledWidth(), baseAlto = f.altoBase || f.getScaledHeight();
+  const minTexto = Math.max(40, base * fac - 2 * pad);
+  const limite = f.forma === 'rombo' ? minTexto * 1.5 : Math.min(720 * s(), W * 0.85);
+  const maxTexto = Math.max(minTexto, f.anchoMax || limite);
+  const tw = Math.min(maxTexto, Math.max(minTexto, anchoNatural(t)));
+  if (Math.abs(t.width - tw) > 0.5){ t.set('width', tw); }
+  t.initDimensions();
+  let ancho = Math.max(base, (tw + 2 * pad) / fac);
+  let alto = Math.max(baseAlto, (t.height * t.scaleY + 2 * pad) / facAlto);
+  if (f.type === 'circle'){ ancho = alto = Math.max(ancho, alto); }
+  if (Math.abs(ancho - f.getScaledWidth()) > 0.5 || Math.abs(alto - f.getScaledHeight()) > 0.5){
+    const c = f.getCenterPoint(), altoAntes = f.getScaledHeight();
+    fijarTamanoForma(f, ancho, alto);
+    // crece hacia abajo (el borde de arriba se queda en su lugar) y parejo a los lados
+    const nuevoC = f.angle ? c : new fabric.Point(c.x, c.y - altoAntes / 2 + f.getScaledHeight() / 2);
+    f.setPositionByOrigin(nuevoC, 'center', 'center');
+    f.setCoords();
+  }
+  centrarTexto(t, f);
+  actualizarConexiones(f);
+}
+// Mantiene el texto encima de su forma en el orden de capas
+function ordenarVinculos(){
+  const objs = canvas._objects;
+  objs.filter(o => o.formaTexto).forEach(f => {
+    const t = porId(f.formaTexto); if (!t) return;
+    objs.splice(objs.indexOf(t), 1);
+    objs.splice(objs.indexOf(f) + 1, 0, t);
+  });
+}
+// Al seleccionar varias cosas, la forma y su texto (o un conector) se comportan como una sola pieza
+let editandoCelda = false;
+function incluirVinculados(){
+  const sel0 = activo();
+  if (sel0 && sel0.type !== 'activeSelection' && !sel0.isEditing && !editandoCelda){
+    const f0 = nodoBase(sel0);
+    if (f0 && f0.tabla){ seleccionarTabla(f0.tabla); return; }
+  }
+  const a = activo(); if (!a || a.type !== 'activeSelection') return;
+  a.getObjects().slice().forEach(o => {
+    const t = porId(o.formaTexto); if (t && !a.contains(t)) a.addWithUpdate(t);
+    const f = porId(o.textoDe);    if (f && !a.contains(f)) a.addWithUpdate(f);
+  });
+  a.getObjects().filter(o => o.type === 'conector').forEach(c => a.removeWithUpdate(c));
+}
+// Mientras arrastras, escalas o giras: el texto sigue a su forma y los conectores se reajustan
+function seguirVinculos(o){
+  if (!o) return;
+  const lista = o.type === 'activeSelection' ? o.getObjects() : [o];
+  lista.forEach(x => {
+    if (x.group) return;
+    if (x.formaTexto){
+      const t = porId(x.formaTexto);
+      if (t && !t.group){ t.set('width', anchoTexto(x)); t.initDimensions(); centrarTexto(t, x); }
+    }
+    if (x.textoDe){
+      const f = porId(x.textoDe);
+      if (f && !f.group){
+        const c = x.getCenterPoint(), fc = f.getCenterPoint();
+        f.set({ left: f.left + (c.x - fc.x), top: f.top + (c.y - fc.y) }); f.setCoords();
+        actualizarConexiones(f);
+      }
+    }
+  });
+  actualizarConexiones(o);
+}
+function vinculosAlModificar(o){
+  if (!o) return;
+  const lista = o.type === 'activeSelection' ? o.getObjects() : [o];
+  lista.forEach(x => {
+    if (x.group) return;
+    if (x.formaTexto){
+      const t = porId(x.formaTexto);
+      // si tú cambias el tamaño de la forma, ese tamaño se respeta y el texto se acomoda dentro
+      if (Math.abs(x.getScaledWidth() - (x.anchoBase || 0)) > 1 || Math.abs(x.getScaledHeight() - (x.altoBase || 0)) > 1){
+        x.anchoBase = x.getScaledWidth(); x.altoBase = x.getScaledHeight(); x.anchoMax = anchoTexto(x);
+      }
+      if (t) ajustarFormaATexto(t);
+    }
+    if (x.textoDe) ajustarFormaATexto(x);
+  });
+  actualizarConexiones(o);
+}
+function limpiarVinculosClon(c){
+  const lista = c.type === 'activeSelection' ? c.getObjects() : [c];
+  const mapa = {};
+  lista.forEach(x => { const n = nuevoId(); if (x.id) mapa[x.id] = n; x.id = n; });
+  const mapaT = {};
+  lista.forEach(x => {
+    if (x.tabla) x.tabla = mapaT[x.tabla] || (mapaT[x.tabla] = nuevoId());
+    x.formaTexto = mapa[x.formaTexto] || null;
+    x.textoDe = mapa[x.textoDe] || null;
+    if (x.type === 'conector'){
+      x.conA = mapa[x.conA] || null; x.conB = mapa[x.conB] || null;
+      if (!x.conA || !x.conB) x.set({ lockMovementX:false, lockMovementY:false, hasControls:true });
+    }
+  });
+}
+
+/* =========================================================
+   CONECTORES
+   ========================================================= */
+function candidatosConexion(){
+  return canvas.getActiveObjects().filter(o => o.type !== 'conector' && !o.textoDe);
+}
+function puntoBorde(r, hacia, obj){
+  const cx = r.left + r.width/2, cy = r.top + r.height/2, dx = hacia.x - cx, dy = hacia.y - cy;
+  if (!dx && !dy) return { x:cx, y:cy };
+  if (obj && (obj.type === 'circle' || obj.type === 'ellipse')){   // borde redondo real
+    const rx = r.width/2, ry = r.height/2, t = 1 / Math.sqrt((dx*dx)/(rx*rx) + (dy*dy)/(ry*ry));
+    return { x: cx + dx*Math.min(t, 1), y: cy + dy*Math.min(t, 1) };
+  }
+  const sx = dx ? (r.width/2) / Math.abs(dx) : Infinity, sy = dy ? (r.height/2) / Math.abs(dy) : Infinity;
+  const t = Math.min(sx, sy, 1);
+  return { x: cx + dx*t, y: cy + dy*t };
+}
+// Elige los lados que se "miran" entre dos formas, según dónde está cada una
+function ladosAuto(ra, rb){
+  const gx = Math.max(rb.left - (ra.left + ra.width), ra.left - (rb.left + rb.width));
+  const gy = Math.max(rb.top - (ra.top + ra.height), ra.top - (rb.top + rb.height));
+  const ca = { x: ra.left + ra.width/2, y: ra.top + ra.height/2 }, cb = { x: rb.left + rb.width/2, y: rb.top + rb.height/2 };
+  if (gx >= gy && gx > 0) return cb.x > ca.x ? ['der','izq'] : ['izq','der'];
+  if (gy > 0) return cb.y > ca.y ? ['aba','arr'] : ['arr','aba'];
+  const l = ladoHacia(ra, cb);
+  return [l, { der:'izq', izq:'der', arr:'aba', aba:'arr' }[l]];
+}
+// Recalcula por dónde pasa el conector cada vez que algo se mueve
+function actualizarConector(c){
+  if (c.group) return;
+  const a = porId(c.conA), b = porId(c.conB); if (!a || !b) return;
+  const ra = cajaAbs(a), rb = cajaAbs(b);
+  const [la, lb] = (c.fijo && c.ladoA && c.ladoB) ? [c.ladoA, c.ladoB] : ladosAuto(ra, rb);
+  const redonda = o => ['circle','ellipse'].includes(o.type) || ['nube','blob'].includes(o.forma);
+  const ca = { x: ra.left + ra.width/2, y: ra.top + ra.height/2 }, cb = { x: rb.left + rb.width/2, y: rb.top + rb.height/2 };
+  const recta = (c.estilo || 'recta') === 'recta' && !c.fijo;
+  const p1 = recta && redonda(a) ? puntoBorde(ra, cb, a) : ladoPunto(ra, la);
+  const p2 = recta && redonda(b) ? puntoBorde(rb, ca, b) : ladoPunto(rb, lb);
+  const vA = la === 'arr' || la === 'aba', vB = lb === 'arr' || lb === 'aba';
+  c.modo = vA !== vB ? (vA ? 'vh' : 'hv') : null;
+  c.horiz = !vA;
+  if (!c.fijo){ c.ladoA = la; c.ladoB = lb; }
+  c.set({ x1:p1.x, y1:p1.y, x2:p2.x, y2:p2.y }); c.setCoords();
+}
+function actualizarConexiones(o){
+  if (!o) return;
+  const ids = new Set();
+  (o.type === 'activeSelection' ? o.getObjects() : [o]).forEach(x => {
+    if (x.id) ids.add(x.id);
+    if (x.textoDe) ids.add(x.textoDe);
+  });
+  canvas.getObjects().forEach(c => { if (c.type === 'conector' && (ids.has(c.conA) || ids.has(c.conB))) actualizarConector(c); });
+}
+function actualizarTodasConexiones(){ canvas.getObjects().filter(o => o.type === 'conector').forEach(actualizarConector); }
+const conectorDef = { estilo:'codo', inicio:'nada', fin:'flecha', patron:'solida', color:'#1f2330' };
+function unir(a, b, o = {}){
+  a.id = a.id || nuevoId(); b.id = b.id || nuevoId();
+  const c = new fabric.Conector([0, 0, 1, 1], {
+    stroke: o.color || conectorDef.color, strokeWidth: o.ancho || 5 * s(), strokeLineCap:'round',
+    estilo: o.estilo || conectorDef.estilo, inicio: o.inicio || conectorDef.inicio,
+    fin: o.fin || (o.flecha === false ? 'nada' : conectorDef.fin),
+    patron: o.patron || (o.punteada ? 'guiones' : conectorDef.patron),
+    etiqueta: o.etiqueta || '', orient: o.orient || null, dir: o.dir || null,
+    ladoA: o.lados ? o.lados[0] : null, ladoB: o.lados ? o.lados[1] : null, fijo: !!o.lados,
+    conA: a.id, conB: b.id, objectCaching:false, perPixelTargetFind:true,
+    lockMovementX:true, lockMovementY:true, hasControls:false, id: nuevoId(), name:'Conector'
+  });
+  actualizarConector(c);
+  canvas.add(c); canvas.sendToBack(c);
+  canvas.getObjects().filter(x => x.esFondo).forEach(x => canvas.sendToBack(x));
+  return c;
+}
+function heredarConector(c){
+  if (!c) return {};
+  return { estilo:c.estilo, inicio:c.inicio || 'nada', fin:c.fin || (c.flecha ? 'flecha' : 'nada'),
+    patron:c.patron || (c.strokeDashArray ? 'guiones' : 'solida'), color:c.stroke, ancho:c.strokeWidth };
+}
+function conectar(){
+  const sel = candidatosConexion();
+  if (sel.length !== 2){ toast('Selecciona exactamente dos elementos (Shift + clic) para conectarlos'); return; }
+  canvas.discardActiveObject();
+  restaurando = true; const c = unir(sel[0], sel[1]); restaurando = false;
+  canvas.setActiveObject(c); canvas.requestRenderAll(); renderCapas(); guardarEstado();
+}
+function conSel(){ const o = activo(); return o && o.type === 'conector' ? o : null; }
+function cambiarConector(cambios){
+  const o = conSel(); if (!o) return;
+  o.set(cambios); o.dirty = true; actualizarConector(o);
+  canvas.requestRenderAll(); actualizarPanel(); guardarEstado();
+}
+function togglePunteada(){ const o = conSel(); if (o) cambiarConector({ patron: o.patron === 'guiones' ? 'solida' : 'guiones', strokeDashArray:null }); }
+document.querySelectorAll('#estilosCon .pb').forEach(b => b.onclick = () => cambiarConector({ estilo:b.dataset.e, orient:null, ladoA:null, ladoB:null, fijo:false }));
+document.querySelectorAll('#patronesCon .pb').forEach(b => b.onclick = () => cambiarConector({ patron:b.dataset.p, strokeDashArray:null }));
+const PUNTAS = [['nada','Sin punta'],['flecha','Flecha'],['abierta','Flecha abierta'],['circulo','Círculo'],['rombo','Rombo']];
+['pInicio','pFin'].forEach(id => {
+  PUNTAS.forEach(([v, n]) => { const op = document.createElement('option'); op.value = v; op.textContent = n; $(id).appendChild(op); });
+  $(id).onchange = e => cambiarConector(id === 'pInicio' ? { inicio:e.target.value } : { fin:e.target.value, flecha: e.target.value !== 'nada' });
+});
+function invertirConector(){
+  const o = conSel(); if (!o) return;
+  cambiarConector({ conA:o.conB, conB:o.conA, ladoA:o.ladoB, ladoB:o.ladoA,
+    inicio: o.fin || (o.flecha ? 'flecha' : 'nada'), fin: o.inicio || 'nada' });
+}
+function usarComoPredeterminado(){
+  const o = conSel(); if (!o) return;
+  Object.assign(conectorDef, heredarConector(o)); delete conectorDef.ancho;
+  toast('Las líneas nuevas usarán este estilo');
+}
+$('pEtiqueta').addEventListener('input', e => { const o = conSel(); if (o){ o.set('etiqueta', e.target.value); canvas.requestRenderAll(); } });
+$('pEtiqueta').addEventListener('change', guardarEstado);
+
+/* =========================================================
+   MAPAS Y DIAGRAMAS
+   ========================================================= */
+const nodoBase = o => (o && o.textoDe) ? porId(o.textoDe) : o;
+function crearForma(tipo, o = {}){
+  const w = o.w || 320 * s(), hh = o.h || 130 * s();
+  const base = { originX:'center', originY:'center', left:0, top:0, fill: o.fill || $('colorForma').value,
+    stroke: o.stroke || null, strokeWidth: o.stroke ? (o.grosor || 4 * s()) : 0, strokeUniform:true, forma: tipo };
+  switch (tipo){
+    case 'redondo':  return new fabric.Rect({ ...base, width:w, height:hh, rx:Math.min(w, hh) * 0.2, ry:Math.min(w, hh) * 0.2 });
+    case 'pildora':  return new fabric.Rect({ ...base, width:w, height:hh, rx:hh/2, ry:hh/2 });
+    case 'rombo':    return new fabric.Polygon([{x:w/2,y:0},{x:w,y:hh/2},{x:w/2,y:hh},{x:0,y:hh/2}], base);
+    case 'paralelo': { const d = hh * 0.35; return new fabric.Polygon([{x:d,y:0},{x:w,y:0},{x:w-d,y:hh},{x:0,y:hh}], base); }
+    case 'documento':return new fabric.Path(`M0 0 L${w} 0 L${w} ${hh*0.85} C${w*0.75} ${hh*0.68} ${w*0.5} ${hh*1.04} ${w*0.25} ${hh} C${w*0.12} ${hh*0.98} ${w*0.05} ${hh*0.9} 0 ${hh*0.85} Z`, base);
+    case 'circulo':  return new fabric.Circle({ ...base, radius: w/2 });
+    case 'elipse':   return new fabric.Ellipse({ ...base, rx: w/2, ry: hh/2 });
+    case 'nota':     return new fabric.Rect({ ...base, width:w, height:hh, fill: o.fill || '#fde68a', shadow: new fabric.Shadow({ color:'rgba(0,0,0,.18)', blur:14*s(), offsetX:4*s(), offsetY:6*s() }) });
+    case 'nube': case 'blob': {
+      const pth = new fabric.Path(tipo === 'nube' ? PATH_NUBE : PATH_BLOB, base);
+      pth.set({ scaleX: w / pth.width, scaleY: hh / pth.height }); return pth;
+    }
+    default:         return new fabric.Rect({ ...base, width:w, height:hh });
+  }
+}
+// Crea un nodo (forma + texto) centrado en x, y
+function nodo(tipo, texto, x, y, o = {}){
+  const f = crearForma(tipo, o);
+  f.id = nuevoId(); f.name = o.nombre || 'Nodo';
+  if (o.anchoMax) f.anchoMax = o.anchoMax;
+  f.setPositionByOrigin(new fabric.Point(x, y), 'center', 'center'); f.setCoords();
+  canvas.add(f);
+  if (texto != null){
+    const t = crearTextoVinculado(f, texto, { fontSize:o.tam, fill:o.color, fontWeight:o.peso, fontFamily:o.fuente });
+    canvas.add(t); ajustarFormaATexto(t);
+  }
+  return f;
+}
+const TIPOS_NODO = [
+  ['pildora','Inicio / fin','<rect x="3" y="8" width="40" height="14" rx="7"/>'],
+  ['proceso','Proceso','<rect x="5" y="5" width="36" height="20"/>'],
+  ['rombo','Decisión','<polygon points="23,2 44,15 23,28 2,15"/>'],
+  ['paralelo','Datos','<polygon points="11,5 43,5 35,25 3,25"/>'],
+  ['documento','Documento','<path d="M5 4 H41 V22 C32 18 24 28 14 25 C10 24 7 23 5 22 Z"/>'],
+  ['elipse','Idea','<ellipse cx="23" cy="15" rx="20" ry="11"/>'],
+  ['redondo','Concepto','<rect x="5" y="5" width="36" height="20" rx="6"/>'],
+  ['circulo','Círculo','<circle cx="23" cy="15" r="12"/>'],
+  ['nube','Nube','<path transform="translate(1,-3) scale(.45)" d="M25 60 C10 60 5 45 18 38 C15 22 35 15 45 25 C52 10 78 12 80 30 C95 28 100 48 88 56 C90 66 75 70 68 63 C60 72 40 72 35 63 C30 66 25 64 25 60 Z"/>'],
+  ['blob','Mancha','<path transform="translate(8,1) scale(.29)" d="M60 5 C85 5 100 25 95 50 C90 75 70 95 45 92 C20 89 2 70 5 45 C8 20 35 5 60 5 Z"/>'],
+  ['nota','Nota','<rect x="8" y="3" width="30" height="24" fill="#fde68a"/>']
+];
+TIPOS_NODO.forEach(([tipo, nombre, svg]) => {
+  const b = document.createElement('button'); b.className = 'nodoBtn'; b.title = nombre;
+  b.innerHTML = `<svg viewBox="0 0 46 30" style="fill:#6d6f7b">${svg}</svg>${esc(nombre)}`;
+  b.onclick = () => {
+    const k = s(), dims = { circulo:[200,200], rombo:[320,200], nota:[280,240] }[tipo] || [320,130];
+    restaurando = true;
+    const f = nodo(tipo, nombre === 'Círculo' ? 'Texto' : nombre, W/2, H/2, { w:dims[0]*k, h:dims[1]*k, nombre });
+    ordenarVinculos(); restaurando = false;
+    const t = porId(f.formaTexto);
+    canvas.setActiveObject(t); t.enterEditing(); t.selectAll();
+    canvas.requestRenderAll(); renderCapas(); guardarEstado();
+  };
+  $('gridNodos').appendChild(b);
+});
+
+const nodoConectable = o => !!o && !esLinea(o) && !['activeSelection','group'].includes(o.type) && !o.esFondo && !o.textoDe && !o.esDeco && !o.tabla;
+// Copia una forma (con su estilo) en x, y y le pone texto nuevo
+function clonarNodo(p, x, y, cb){
+  const tp = porId(p.formaTexto);
+  p.clone(n => {
+    n.set({ id: nuevoId(), formaTexto: null, textoDe: null, angle: 0, name: p.name || 'Nodo' });
+    n.setPositionByOrigin(new fabric.Point(x, y), 'center', 'center'); n.setCoords();
+    canvas.add(n);
+    let t = null;
+    if (puedeTenerTexto(n)){
+      t = crearTextoVinculado(n, 'Nueva idea', tp ? { fontSize:tp.fontSize, fill:tp.fill, fontWeight:tp.fontWeight, fontFamily:tp.fontFamily, fontStyle:tp.fontStyle } : {});
+      canvas.add(t); ajustarFormaATexto(t);
+    }
+    cb(n, t);
+  }, EXTRA);
+}
+function crearNodoConectado(p, x, y, opc = {}){
+  if (activo() && activo().isEditing) activo().exitEditing();
+  canvas.discardActiveObject();
+  p.id = p.id || nuevoId();
+  const previo = canvas.getObjects().find(o => o.type === 'conector' && o.conB === p.id)
+              || canvas.getObjects().find(o => o.type === 'conector' && o.conA === p.id);
+  restaurando = true;
+  clonarNodo(p, x, y, (n, t) => {
+    unir(p, n, { ...heredarConector(previo), ...opc });
+    ordenarVinculos();
+    restaurando = false;
+    if (t){ canvas.setActiveObject(t); t.enterEditing(); t.selectAll(); } else canvas.setActiveObject(n);
+    canvas.requestRenderAll(); renderCapas(); guardarEstado(); revisarAuto();
+  });
+}
+// Agrega una idea nueva conectada a la forma seleccionada, en la dirección indicada
+function agregarHijo(dir, desde){
+  const p = desde || nodoBase(activo());
+  if (!nodoConectable(p)){ toast('Selecciona una forma para agregarle ideas conectadas'); return; }
+  p.id = p.id || nuevoId();
+  const n0 = canvas.getObjects().filter(c => c.type === 'conector' && c.conA === p.id && c.dir === dir).length;
+  const pr = cajaAbs(p), c = p.getCenterPoint(), sep = 110 * s(), hueco = 40 * s();
+  const k = n0 === 0 ? 0 : (n0 % 2 ? 1 : -1) * Math.ceil(n0 / 2);   // 0, +1, -1, +2, -2…
+  let x = c.x, y = c.y;
+  if (dir === 'der'){ x += pr.width + sep; y += k * (pr.height + hueco); }
+  if (dir === 'izq'){ x -= pr.width + sep; y += k * (pr.height + hueco); }
+  if (dir === 'aba'){ y += pr.height + sep; x += k * (pr.width + hueco); }
+  if (dir === 'arr'){ y -= pr.height + sep; x += k * (pr.width + hueco); }
+  crearNodoConectado(p, x, y, { dir });
+}
+
+/* ---------- Conexión arrastrando (círculos +, extremos de líneas y modo conector) ---------- */
+const OPUESTO = { der:'izq', izq:'der', arr:'aba', aba:'arr' };
+const puntosCon = [...document.querySelectorAll('.puntoCon')], puntosFin = [...document.querySelectorAll('.puntoFin')];
+let transformando = false, arrastreCon = null, modoConector = false, trazo = null;
+function ladoPunto(r, l){
+  return { arr:{x:r.left+r.width/2, y:r.top}, aba:{x:r.left+r.width/2, y:r.top+r.height},
+           izq:{x:r.left, y:r.top+r.height/2}, der:{x:r.left+r.width, y:r.top+r.height/2} }[l];
+}
+// lado de una forma que mira hacia un punto
+function ladoHacia(r, q){
+  const cx = r.left + r.width/2, cy = r.top + r.height/2, dx = (q.x - cx) / (r.width || 1), dy = (q.y - cy) / (r.height || 1);
+  return Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'der' : 'izq') : (dy > 0 ? 'aba' : 'arr');
+}
+function puntoLienzo(e){
+  const r = canvas.upperCanvasEl.getBoundingClientRect();
+  return { x: (e.clientX - r.left) / zoom, y: (e.clientY - r.top) / zoom };
+}
+function objetivoEn(q, excluir){
+  return canvas.getObjects().slice().reverse().find(o => {
+    if (!o.visible || !nodoConectable(o) || o === excluir) return false;
+    const r = cajaAbs(o);
+    return q.x >= r.left && q.x <= r.left + r.width && q.y >= r.top && q.y <= r.top + r.height;
+  });
+}
+function extremosConector(c){
+  const p = c.calcLinePoints(), m = c.calcTransformMatrix();
+  return { a: fabric.util.transformPoint(new fabric.Point(p.x1, p.y1), m), b: fabric.util.transformPoint(new fabric.Point(p.x2, p.y2), m) };
+}
+function dibujarGuia(inicio, q, objetivo){
+  const ctx = canvas.contextTop; canvas.clearContext(ctx);
+  ctx.save();
+  if (objetivo){
+    const r = cajaAbs(objetivo);
+    ctx.strokeStyle = '#ec4899'; ctx.lineWidth = 3; ctx.setLineDash([]);
+    ctx.strokeRect(r.left*zoom - 4, r.top*zoom - 4, r.width*zoom + 8, r.height*zoom + 8);
+  }
+  ctx.strokeStyle = '#7c3aed'; ctx.lineWidth = 2.5; ctx.setLineDash([7, 5]);
+  ctx.beginPath(); ctx.moveTo(inicio.x*zoom, inicio.y*zoom); ctx.lineTo(q.x*zoom, q.y*zoom); ctx.stroke();
+  ctx.setLineDash([]); ctx.fillStyle = '#7c3aed';
+  ctx.beginPath(); ctx.arc(q.x*zoom, q.y*zoom, 6, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+function limpiarGuia(){ canvas.clearContext(canvas.contextTop); canvas.requestRenderAll(); }
+// Termina una conexión: sobre otra forma las une; en el vacío crea una idea nueva conectada
+function terminarConexion(origen, lado, q){
+  const t = objetivoEn(q, origen);
+  const ro = cajaAbs(origen);
+  const ladoA = lado || ladoHacia(ro, q);
+  if (t){
+    const ladoB = ladoHacia(cajaAbs(t), ladoPunto(ro, ladoA));
+    restaurando = true; const c = unir(origen, t); restaurando = false;
+    canvas.setActiveObject(c); canvas.requestRenderAll(); renderCapas(); guardarEstado();
+    return 'unido';
+  }
+  crearNodoConectado(origen, q.x, q.y, {});
+  return 'nuevo';
+}
+function actualizarPuntos(){
+  const o = activo(), n = nodoBase(o);
+  const verNodo = !transformando && !arrastreCon && !modoConector && o && !o.isEditing && o.type !== 'activeSelection' && nodoConectable(n) && !n.bloqueado;
+  const r = verNodo ? cajaAbs(n) : null, sep = 30 / zoom;
+  puntosCon.forEach(el => {
+    if (!verNodo){ el.style.display = 'none'; return; }
+    const l = el.dataset.l, q = ladoPunto(r, l);
+    const dx = l === 'der' ? sep : l === 'izq' ? -sep : 0, dy = l === 'aba' ? sep : l === 'arr' ? -sep : 0;
+    el.style.left = (q.x + dx) * zoom + 'px'; el.style.top = (q.y + dy) * zoom + 'px'; el.style.display = 'block';
+  });
+  const verFin = !transformando && !arrastreCon && o && o.type === 'conector';
+  const ex = verFin ? extremosConector(o) : null;
+  puntosFin.forEach(el => {
+    if (!verFin){ el.style.display = 'none'; return; }
+    const q = ex[el.dataset.e];
+    el.style.left = q.x * zoom + 'px'; el.style.top = q.y * zoom + 'px'; el.style.display = 'block';
+  });
+}
+canvas.on('after:render', actualizarPuntos);
+['object:moving','object:scaling','object:rotating'].forEach(ev => canvas.on(ev, () => { transformando = true; }));
+canvas.on('mouse:up', () => { if (transformando){ transformando = false; actualizarPuntos(); } });
+// El control de giro va en la esquina para no estorbar a los círculos "+"
+Object.assign(fabric.Object.prototype.controls.mtr, { x:0.5, y:-0.5, offsetX:18, offsetY:-18, withConnection:false });
+
+puntosCon.forEach(el => {
+  el.addEventListener('pointerdown', e => {
+    e.preventDefault(); e.stopPropagation();
+    const n = nodoBase(activo()); if (!n) return;
+    if (activo().isEditing) activo().exitEditing();
+    el.setPointerCapture(e.pointerId);
+    arrastreCon = { origen:n, lado:el.dataset.l, x0:e.clientX, y0:e.clientY, movio:false };
+  });
+  el.addEventListener('pointermove', e => {
+    const a = arrastreCon; if (!a) return;
+    if (!a.movio && Math.hypot(e.clientX - a.x0, e.clientY - a.y0) > 6){ a.movio = true; actualizarPuntos(); }
+    if (a.movio){ const q = puntoLienzo(e); dibujarGuia(ladoPunto(cajaAbs(a.origen), a.lado), q, objetivoEn(q, a.origen)); }
+  });
+  const soltar = e => {
+    const a = arrastreCon; if (!a) return; arrastreCon = null; limpiarGuia();
+    if (!a.movio) agregarHijo(a.lado, a.origen);
+    else terminarConexion(a.origen, a.lado, puntoLienzo(e));
+  };
+  el.addEventListener('pointerup', soltar);
+  el.addEventListener('pointercancel', () => { arrastreCon = null; limpiarGuia(); });
+});
+// Arrastrar el extremo de una línea para conectarla a otra forma
+puntosFin.forEach(el => {
+  let arr = null;
+  el.addEventListener('pointerdown', e => {
+    e.preventDefault(); e.stopPropagation(); el.setPointerCapture(e.pointerId);
+    const c = conSel(); if (!c) return;
+    arr = { c, extremo: el.dataset.e }; arrastreCon = arr; actualizarPuntos();
+  });
+  el.addEventListener('pointermove', e => {
+    if (!arr) return;
+    const q = puntoLienzo(e), ex = extremosConector(arr.c), fijo = arr.extremo === 'a' ? ex.b : ex.a;
+    const otro = porId(arr.extremo === 'a' ? arr.c.conB : arr.c.conA);
+    dibujarGuia(fijo, q, objetivoEn(q, otro));
+  });
+  el.addEventListener('pointerup', e => {
+    if (!arr) return;
+    const { c, extremo } = arr; arr = null; arrastreCon = null; limpiarGuia();
+    const otro = porId(extremo === 'a' ? c.conB : c.conA), t = objetivoEn(puntoLienzo(e), otro);
+    if (!t){ toast('Suelta el extremo sobre una forma para conectarlo'); actualizarPuntos(); return; }
+    t.id = t.id || nuevoId();
+    c.set(extremo === 'a' ? { conA:t.id } : { conB:t.id }); c.set({ ladoA:null, ladoB:null, orient:null, fijo:false });
+    actualizarConector(c); canvas.setActiveObject(c); canvas.requestRenderAll(); guardarEstado();
+  });
+});
+
+// Modo conector: arrastrar de forma a forma directamente en el lienzo
+function activarModoConector(v){
+  modoConector = v; trazo = null;
+  canvas.skipTargetFind = v; canvas.selection = !v;
+  $('area').classList.toggle('modoCon', v);
+  $('modoAviso').style.display = v ? 'block' : 'none';
+  if (!v) document.querySelectorAll('.conBtn').forEach(b => b.classList.remove('on'));
+  if (v){ if (activo() && activo().isEditing) activo().exitEditing(); canvas.discardActiveObject(); }
+  canvas.requestRenderAll(); actualizarPuntos();
+}
+canvas.on('mouse:down', e => {
+  if (!modoConector) return;
+  const q = canvas.getPointer(e.e), o = objetivoEn(q, null);
+  trazo = o ? { origen:o } : null;
+});
+canvas.on('mouse:move', e => {
+  if (!modoConector || !trazo) return;
+  const q = canvas.getPointer(e.e), r = cajaAbs(trazo.origen);
+  dibujarGuia(ladoPunto(r, ladoHacia(r, q)), q, objetivoEn(q, trazo.origen));
+});
+canvas.on('mouse:up', e => {
+  if (!modoConector || !trazo) return;
+  const a = trazo; trazo = null; limpiarGuia();
+  const q = canvas.getPointer(e.e);
+  const r = cajaAbs(a.origen);
+  if (q.x >= r.left && q.x <= r.left + r.width && q.y >= r.top && q.y <= r.top + r.height) return;   // fue solo un clic
+  if (terminarConexion(a.origen, null, q) === 'nuevo') activarModoConector(false);
+});
+const PRESETS_CON = [
+  { n:'Recta',        c:{ estilo:'recta', inicio:'nada',   fin:'flecha', patron:'solida'  }, svg:'<path d="M5 25 L46 7"/><path d="M38 6 L47 6.5 L42 14" fill="#4b5563"/>' },
+  { n:'Curva',        c:{ estilo:'curva', inicio:'nada',   fin:'flecha', patron:'solida'  }, svg:'<path d="M4 25 C26 25 26 7 46 7"/><path d="M40 3 L48 7 L40 11" fill="#4b5563"/>' },
+  { n:'Codo',         c:{ estilo:'codo',  inicio:'nada',   fin:'flecha', patron:'solida'  }, svg:'<path d="M4 25 H25 V7 H46"/><path d="M40 3 L48 7 L40 11" fill="#4b5563"/>' },
+  { n:'Doble flecha', c:{ estilo:'recta', inicio:'flecha', fin:'flecha', patron:'solida'  }, svg:'<path d="M8 15 H44"/><path d="M12 10 L4 15 L12 20" fill="#4b5563"/><path d="M40 10 L48 15 L40 20" fill="#4b5563"/>' },
+  { n:'Sin flecha',   c:{ estilo:'curva', inicio:'nada',   fin:'nada',   patron:'solida'  }, svg:'<path d="M4 25 C26 25 26 5 48 5"/>' },
+  { n:'Punteada',     c:{ estilo:'recta', inicio:'nada',   fin:'flecha', patron:'guiones' }, svg:'<path d="M5 15 H42" stroke-dasharray="5 4"/><path d="M40 10 L48 15 L40 20" fill="#4b5563"/>' },
+  { n:'Relación',     c:{ estilo:'codo',  inicio:'rombo',  fin:'abierta',patron:'solida'  }, svg:'<path d="M12 23 H26 V7 H46"/><path d="M4 23 L8 20 L12 23 L8 26 Z" fill="#4b5563"/><path d="M41 3 L47 7 L41 11"/>' },
+  { n:'Punto a punto',c:{ estilo:'recta', inicio:'circulo',fin:'circulo',patron:'solida'  }, svg:'<path d="M8 15 H44"/><circle cx="7" cy="15" r="3.5" fill="#4b5563"/><circle cx="45" cy="15" r="3.5" fill="#4b5563"/>' },
+  { n:'Puntos',       c:{ estilo:'curva', inicio:'nada',   fin:'flecha', patron:'puntos'  }, svg:'<path d="M4 25 C26 25 26 7 44 7" stroke-dasharray="0.5 5"/><path d="M40 3 L48 7 L40 11" fill="#4b5563"/>' }
+];
+PRESETS_CON.forEach(pr => {
+  const b = document.createElement('button'); b.className = 'conBtn'; b.title = pr.n;
+  b.innerHTML = `<svg viewBox="0 0 52 30">${pr.svg}</svg>${esc(pr.n)}`;
+  b.onclick = () => {
+    Object.assign(conectorDef, pr.c);
+    if (candidatosConexion().length === 2){ conectar(); return; }
+    const c = conSel();
+    if (c){ cambiarConector({ ...pr.c, strokeDashArray:null, orient:null, ladoA:null, ladoB:null, fijo:false }); return; }
+    activarModoConector(true);
+    document.querySelectorAll('.conBtn').forEach(x => x.classList.toggle('on', x === b));
+  };
+  $('gridConectores').appendChild(b);
+});
+
+/* ---------- Cambiar el tipo de forma sin perder texto ni conexiones ---------- */
+(function(){
+  const sel = $('pTipoForma');
+  sel.innerHTML = '<option value="">—</option>' + TIPOS_NODO.map(([t, n]) => `<option value="${t}">${esc(n)}</option>`).join('');
+  sel.onchange = e => { if (e.target.value) cambiarTipoForma(e.target.value); };
+})();
+function cambiarTipoForma(tipo){
+  const f = nodoBase(activo()); if (!puedeTenerTexto(f)) return;
+  const w = f.getScaledWidth(), hh = f.getScaledHeight(), lado = Math.max(w, hh);
+  const n = crearForma(tipo, { w: tipo === 'circulo' ? lado : w, h: tipo === 'circulo' ? lado : hh,
+    fill: f.fill, stroke: f.stroke, grosor: f.strokeWidth });
+  n.set({ id:f.id, formaTexto:f.formaTexto, name:f.name, opacity:f.opacity, shadow:f.shadow, angle:f.angle,
+    anchoBase: tipo === 'circulo' ? lado : f.anchoBase, altoBase: tipo === 'circulo' ? lado : f.altoBase, anchoMax: null, bloqueado: f.bloqueado });
+  n.setPositionByOrigin(f.getCenterPoint(), 'center', 'center'); n.setCoords();
+  const idx = canvas.getObjects().indexOf(f);
+  restaurando = true; canvas.remove(f); canvas.insertAt(n, idx); restaurando = false;
+  const t = porId(n.formaTexto); if (t){ t.set('width', anchoTexto(n)); ajustarFormaATexto(t); }
+  actualizarConexiones(n);
+  canvas.setActiveObject(n); canvas.requestRenderAll(); renderCapas(); guardarEstado();
+}
+
+/* ---------- Organizar automáticamente (árbol horizontal, vertical o mapa mental) ---------- */
+// Centra el contenido en el lienzo; si no cabe, agranda el lienzo
+function encuadrarContenido(){
+  const b = limitesContenido(); if (!b) return;
+  const m = 60 * s(), bw = b.x2 - b.x1, bh = b.y2 - b.y1;
+  const nw = Math.min(8000, Math.max(W, Math.ceil(bw + 2*m))), nh = Math.min(8000, Math.max(H, Math.ceil(bh + 2*m)));
+  if (nw !== W || nh !== H) cambiarTamano(nw, nh);
+  moverTodo(W/2 - (b.x1 + bw/2), H/2 - (b.y1 + bh/2));
+}
+function grafoConexiones(){
+  const hijos = {}, padres = {};
+  canvas.getObjects().forEach(c => {
+    if (c.type !== 'conector' || !porId(c.conA) || !porId(c.conB)) return;
+    (hijos[c.conA] = hijos[c.conA] || []).push(c.conB);
+    (padres[c.conB] = padres[c.conB] || []).push(c.conA);
+  });
+  return { hijos, padres };
+}
+function moverNodoA(n, x, y){
+  n.setPositionByOrigin(new fabric.Point(x, y), 'center', 'center'); n.setCoords();
+  const t = porId(n.formaTexto); if (t) centrarTexto(t, n);
+}
+function organizar(modo){
+  if (activo() && activo().isEditing) activo().exitEditing();
+  const { hijos, padres } = grafoConexiones();
+  const nodos = canvas.getObjects().filter(o => nodoConectable(o) && o.visible && (hijos[o.id] || padres[o.id]));
+  if (nodos.length < 2){ toast('Conecta algunas formas primero'); return; }
+  const elegido = nodoBase(activo());
+  canvas.discardActiveObject();
+  let raices = elegido && nodos.includes(elegido) ? [elegido] : nodos.filter(n => !padres[n.id]);
+  if (!raices.length) raices = [nodos[0]];
+  if (modo === 'mental') raices = [raices[0]];
+  const visto = new Set();
+  const construir = n => {
+    visto.add(n.id);
+    const t = { n, hijos: [] };
+    (hijos[n.id] || []).forEach(id => { const x = porId(id); if (x && nodos.includes(x) && !visto.has(id)){ visto.add(id); t.hijos.push(id); } });
+    t.hijos = t.hijos.map(id => construir(porId(id)));
+    return t;
+  };
+  const eje = modo === 'v' ? 'v' : 'h';
+  const sepPrin = 130 * s(), sepSec = 40 * s();
+  const medir = t => {
+    const r = cajaAbs(t.n);
+    t.prin = eje === 'h' ? r.width : r.height; t.sec = eje === 'h' ? r.height : r.width;
+    t.hijos.forEach(medir);
+    const suma = t.hijos.reduce((a, x) => a + x.ext, 0) + Math.max(0, t.hijos.length - 1) * sepSec;
+    t.ext = Math.max(t.sec, suma);
+  };
+  // coloca un bosque de árboles; prof 0 empieza a "inicio" (distancia desde el origen) con signo +/-
+  const colocarBosque = (lista, inicio, signo, centroSec) => {
+    const anchos = [];
+    const niveles = (t, d) => { anchos[d] = Math.max(anchos[d] || 0, t.prin); t.hijos.forEach(x => niveles(x, d + 1)); };
+    lista.forEach(t => niveles(t, 0));
+    const dist = []; let acc = inicio;
+    anchos.forEach((a, d) => { dist[d] = acc + a/2; acc += a + sepPrin; });
+    const total = lista.reduce((a, t) => a + t.ext, 0) + Math.max(0, lista.length - 1) * sepSec;
+    const poner = (t, d, desde) => {
+      const prin = signo * dist[d], sec = desde + t.ext/2;
+      eje === 'h' ? moverNodoA(t.n, prin, sec) : moverNodoA(t.n, sec, prin);
+      const sumaH = t.hijos.reduce((a, x) => a + x.ext, 0) + Math.max(0, t.hijos.length - 1) * sepSec;
+      let cur = desde + (t.ext - sumaH) / 2;
+      t.hijos.forEach(x => { poner(x, d + 1, cur); cur += x.ext + sepSec; });
+    };
+    let cur = centroSec - total/2;
+    lista.forEach(t => { poner(t, 0, cur); cur += t.ext + sepSec; });
+  };
+  const arboles = raices.filter(r => !visto.has(r.id)).map(construir);
+  arboles.forEach(medir);
+  if (modo === 'mental'){
+    const raiz = arboles[0];
+    moverNodoA(raiz.n, 0, 0);
+    const der = raiz.hijos.filter((_, i) => i % 2 === 0), izq = raiz.hijos.filter((_, i) => i % 2 === 1);
+    colocarBosque(der, raiz.prin/2 + sepPrin, 1, 0);
+    colocarBosque(izq, raiz.prin/2 + sepPrin, -1, 0);
+  } else colocarBosque(arboles, 0, 1, 0);
+  actualizarTodasConexiones();
+  encuadrarContenido();
+  canvas.requestRenderAll(); guardarEstado();
+  toast('Diagrama organizado');
+}
+
+/* ---------- Paletas de color para todo el diagrama ---------- */
+const PALETAS = [
+  ['Vibrante',  ['#7c3aed','#f97316','#06b6d4','#10b981','#ec4899','#eab308'], '#334155'],
+  ['Escolar',   ['#1e3a8a','#2563eb','#0891b2','#0d9488','#4f46e5','#0284c7'], '#1e293b'],
+  ['Pastel',    ['#c4b5fd','#fdba74','#a5f3fc','#a7f3d0','#fbcfe8','#fde68a'], '#64748b'],
+  ['Elegante',  ['#0f172a','#7f1d1d','#334155','#78350f','#1e3a8a','#365314'], '#0f172a'],
+  ['Natural',   ['#166534','#65a30d','#ca8a04','#9a3412','#0f766e','#4d7c0f'], '#3f3f46']
+];
+PALETAS.forEach(([nombre, cols, linea]) => {
+  const b = document.createElement('button'); b.className = 'bigbtn'; b.style.cssText = 'display:flex;align-items:center;gap:8px;margin:0;padding:7px 10px';
+  b.innerHTML = cols.map(c => `<span style="width:16px;height:16px;border-radius:4px;background:${c}"></span>`).join('') + `<span style="margin-left:4px">${esc(nombre)}</span>`;
+  b.onclick = () => aplicarPaleta(cols, linea);
+  $('paletasDiagrama').appendChild(b);
+});
+// Colorea por ramas: la idea principal con el primer color y cada rama con su propio color
+function aplicarPaleta(cols, linea){
+  const { hijos, padres } = grafoConexiones();
+  const nodos = canvas.getObjects().filter(o => nodoConectable(o) && (hijos[o.id] || padres[o.id]));
+  if (!nodos.length){ toast('Conecta algunas formas primero'); return; }
+  const colorDe = {}, raices = nodos.filter(n => !padres[n.id]);
+  (raices.length ? raices : [nodos[0]]).forEach(r => {
+    colorDe[r.id] = cols[0];
+    (hijos[r.id] || []).forEach((id, i) => {
+      const c = cols[1 + (i % (cols.length - 1))];
+      const pila = [id];
+      while (pila.length){ const x = pila.pop(); if (colorDe[x]) continue; colorDe[x] = c; (hijos[x] || []).forEach(y => pila.push(y)); }
+    });
+  });
+  nodos.forEach(n => {
+    const c = colorDe[n.id] || cols[0];
+    n.set('fill', c); if (n.stroke) n.set('stroke', c);
+    const t = porId(n.formaTexto); if (t) t.set('fill', esOscuro(c) ? '#ffffff' : '#1f2330');
+  });
+  canvas.getObjects().filter(o => o.type === 'conector').forEach(c => {
+    const destino = colorDe[c.conB];
+    c.set('stroke', destino && (c.fin || (c.flecha ? 'flecha' : 'nada')) === 'nada' ? destino : linea);
+  });
+  canvas.requestRenderAll(); guardarEstado();
+}
+// Zoom con Ctrl + rueda del mouse (o pellizco en el touchpad)
+$('area').addEventListener('wheel', e => {
+  if (!e.ctrlKey) return;
+  e.preventDefault();
+  establecerZoom(zoom * (e.deltaY < 0 ? 1.1 : 1/1.1));
+}, { passive:false });
+
+</script>

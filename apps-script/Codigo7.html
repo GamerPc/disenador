@@ -1,0 +1,161 @@
+<script>
+/*@parte Codigo7*/ (window.__partes = window.__partes || {})['Codigo7'] = true;
+
+/* =========================================================
+   EXPORTAR VIDEO (MP4 con animaciones y transiciones)
+   ========================================================= */
+const URL_MP4MUXER = 'https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.1/build/mp4-muxer.js';
+function cargarMuxer(){
+  return new Promise((ok, mal) => {
+    if (window.Mp4Muxer) return ok();
+    const sc = document.createElement('script'); sc.src = URL_MP4MUXER;
+    sc.onload = ok; sc.onerror = () => mal(new Error('No se pudo cargar la librería de video (revisa tu conexión)'));
+    document.head.appendChild(sc);
+  });
+}
+const parVideo = n => Math.max(2, Math.round(n / 2) * 2);
+// Tamaño del video: 720p o 1080p respetando la forma del diseño
+function tamVideo(calidad){
+  const largo = calidad === '1080' ? 1920 : 1280, corto = calidad === '1080' ? 1080 : 720;
+  const k = Math.min(largo / Math.max(W, H), corto / Math.min(W, H));
+  return [parVideo(W * k), parVideo(H * k)];
+}
+// Arma la línea de tiempo: cada página con sus animaciones (en orden, sin esperar clics) y unos segundos de pausa
+async function lineaDeTiempoVideo(lista, VW, VH, segundos){
+  const diapos = []; let inicio = 0;
+  for (let k = 0; k < lista.length; k++){
+    const el = document.createElement('canvas');
+    const sc = new fabric.StaticCanvas(el, { width:VW, height:VH, renderOnAddRemove:false, enableRetinaScaling:false });
+    await new Promise(ok => sc.loadFromJSON(lista[k].p || PAGINA_VACIA(), ok));
+    sc.setZoom(VW / W);
+    const pasos = prepararPasos(sc), items = [];
+    let t = k ? 650 : 250;
+    pasos.forEach(p => {
+      let fin = t;
+      p.items.forEach(it => {
+        estadoInicial(it);
+        const o = it.o;
+        it.ini0 = { left:o.left, top:o.top, opacity:o.opacity, scaleX:o.scaleX, scaleY:o.scaleY, angle:o.angle, text:o.text };
+        it.t0 = t + it.ini;
+        it.largo = it.a.tipo === 'escribir' && typeof it.fin.text === 'string' && it.fin.text.length ? Math.max(it.dur, it.fin.text.length * 35) : it.dur;
+        fin = Math.max(fin, it.t0 + it.largo);
+        items.push(it);
+      });
+      t = fin + 350;
+    });
+    const dur = Math.max(t, 900) + segundos * 1000;
+    diapos.push({ sc, items, inicio, dur });
+    inicio += dur;
+  }
+  return { diapos, total:inicio + 400 };
+}
+// Pone cada elemento como se ve en el momento t (milisegundos desde que empezó la página)
+function estadoEn(d, t){
+  d.items.forEach(it => {
+    const o = it.o, f = it.fin, i0 = it.ini0;
+    if (t <= it.t0){ o.set({ left:i0.left, top:i0.top, opacity:i0.opacity, scaleX:i0.scaleX, scaleY:i0.scaleY, angle:i0.angle }); if (typeof i0.text === 'string' && o.text !== undefined && o.text !== i0.text) o.set('text', i0.text); return; }
+    if (t >= it.t0 + it.largo){ mostrarFinal(it); return; }
+    const p = (t - it.t0) / it.largo;
+    if (it.a.tipo === 'escribir' && typeof f.text === 'string' && f.text.length){ o.set({ text:f.text.slice(0, Math.round(p * f.text.length)), opacity:f.opacity }); return; }
+    const ease = it.a.tipo === 'rebote' ? fabric.util.ease.easeOutBack : fabric.util.ease.easeOutCubic;
+    const e = ease(p * it.largo, 0, 1, it.largo);
+    ['left','top','scaleX','scaleY','angle'].forEach(k => o.set(k, i0[k] + (f[k] - i0[k]) * e));
+    o.set('opacity', Math.max(0, Math.min(1, i0.opacity + (f.opacity - i0.opacity) * Math.min(1, e * 1.4))));
+  });
+  d.sc.renderAll();
+  return d.sc.lowerCanvasEl;
+}
+// Dibuja el cuadro del video en el momento t (incluye la transición entre páginas)
+function cuadroVideo(ctx, lt, t){
+  const VW = ctx.canvas.width, VH = ctx.canvas.height, ds = lt.diapos;
+  let k = ds.findIndex(d => t < d.inicio + d.dur); if (k < 0) k = ds.length - 1;
+  const d = ds[k], local = t - d.inicio, tr = presConfig.transicion || 'desvanecer';
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, VW, VH);
+  const dibujar = (img, alfa, dx, esc) => {
+    ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, alfa));
+    ctx.translate(VW / 2 + dx, VH / 2); ctx.scale(esc, esc); ctx.drawImage(img, -VW / 2, -VH / 2, VW, VH); ctx.restore();
+  };
+  if (k > 0 && tr !== 'ninguna' && local < 650){
+    const p = fabric.util.ease.easeOutCubic(local, 0, 1, 650);
+    const viejo = estadoEn(ds[k - 1], Infinity);
+    if (tr === 'deslizar') dibujar(viejo, 1, -p * VW, 1);
+    else if (tr === 'zoom') dibujar(viejo, 1 - p, 0, 1 + 0.12 * p);
+    else dibujar(viejo, 1, 0, 1);
+    const nuevo = estadoEn(d, local);
+    if (tr === 'deslizar') dibujar(nuevo, 1, (1 - p) * VW, 1);
+    else if (tr === 'zoom') dibujar(nuevo, p, 0, 0.82 + 0.18 * p);
+    else dibujar(nuevo, p, 0, 1);
+  } else dibujar(estadoEn(d, local), 1, 0, 1);
+}
+// Crea el video. Usa el codificador del navegador (rápido); si no existe, graba en tiempo real.
+async function crearVideo(lista, opciones = {}){
+  const segundos = Math.max(0.5, +($('vSeg') ? $('vSeg').value : 3) || 3);
+  const [VW, VH] = tamVideo($('vCalidad') ? $('vCalidad').value : '720');
+  const fps = 30, avisar = opciones.progreso || (() => {});
+  const lt = await lineaDeTiempoVideo(lista, VW, VH, segundos);
+  const rc = document.createElement('canvas'); rc.width = VW; rc.height = VH;
+  const ctx = rc.getContext('2d');
+  const totalCuadros = Math.ceil(lt.total / 1000 * fps);
+  const liberar = () => lt.diapos.forEach(d => { try { d.sc.dispose(); } catch(e){} });
+  try {
+    if (window.VideoEncoder && window.VideoFrame){
+      const bitrate = VH * VW >= 1920 * 1000 ? 8e6 : 4e6;
+      let elegido = null;
+      for (const [codec, tipo] of [['avc1.640028', 'avc'], ['avc1.4d4028', 'avc'], ['avc1.42e028', 'avc'], ['avc1.42001f', 'avc'], ['vp09.00.40.08', 'vp9']]){
+        try { const r = await VideoEncoder.isConfigSupported({ codec, width:VW, height:VH, bitrate, framerate:fps }); if (r.supported){ elegido = { codec, tipo }; break; } } catch(e){}
+      }
+      if (elegido){
+        await cargarMuxer();
+        const muxer = new Mp4Muxer.Muxer({ target:new Mp4Muxer.ArrayBufferTarget(), video:{ codec:elegido.tipo, width:VW, height:VH, frameRate:fps }, fastStart:'in-memory' });
+        let fallo = null;
+        const enc = new VideoEncoder({ output:(chunk, meta) => muxer.addVideoChunk(chunk, meta), error:e => { fallo = e; } });
+        enc.configure({ codec:elegido.codec, width:VW, height:VH, bitrate, framerate:fps, ...(elegido.tipo === 'avc' ? { avc:{ format:'avc' } } : {}) });
+        for (let n = 0; n < totalCuadros; n++){
+          if (fallo) throw fallo;
+          cuadroVideo(ctx, lt, n * 1000 / fps);
+          const fr = new VideoFrame(rc, { timestamp:Math.round(n * 1e6 / fps), duration:Math.round(1e6 / fps) });
+          enc.encode(fr, { keyFrame: n % (fps * 2) === 0 }); fr.close();
+          if (enc.encodeQueueSize > 8) await new Promise(r => setTimeout(r, 5));
+          if (n % 15 === 0){ avisar(n / totalCuadros); await new Promise(r => setTimeout(r, 0)); }
+        }
+        await enc.flush(); enc.close();
+        if (fallo) throw fallo;
+        muxer.finalize();
+        avisar(1);
+        return { blob:new Blob([muxer.target.buffer], { type:'video/mp4' }), ext:'mp4', codec:elegido.tipo };
+      }
+    }
+    // Plan B: grabar en tiempo real lo que se dibuja
+    if (!window.MediaRecorder || !rc.captureStream) throw new Error('Este navegador no puede crear videos. Prueba con Chrome.');
+    const tipo = ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'].find(x => MediaRecorder.isTypeSupported(x)) || '';
+    const stream = rc.captureStream(fps), partes = [];
+    const rec = new MediaRecorder(stream, tipo ? { mimeType:tipo, videoBitsPerSecond:4e6 } : {});
+    rec.ondataavailable = e => { if (e.data && e.data.size) partes.push(e.data); };
+    const terminado = new Promise(ok => rec.onstop = ok);
+    cuadroVideo(ctx, lt, 0); rec.start(500);
+    const t0 = performance.now();
+    await new Promise(ok => {
+      const paso = () => {
+        const t = performance.now() - t0;
+        cuadroVideo(ctx, lt, Math.min(t, lt.total));
+        avisar(t / lt.total);
+        if (t >= lt.total) return ok();
+        requestAnimationFrame(paso);
+      };
+      requestAnimationFrame(paso);
+    });
+    rec.stop(); await terminado;
+    const mime = rec.mimeType || tipo || 'video/webm';
+    return { blob:new Blob(partes, { type:mime.split(';')[0] }), ext:mime.includes('mp4') ? 'mp4' : 'webm', codec:'grabado' };
+  } finally { liberar(); }
+}
+async function videoConProgreso(lista){
+  const msg = $('cargando'), antes = msg.textContent;
+  cargando(true);
+  try {
+    return await crearVideo(lista, { progreso:p => { msg.textContent = 'Creando video… ' + Math.min(100, Math.round(p * 100)) + '%'; } });
+  } finally { msg.textContent = antes; cargando(false); }
+}
+const blobADataURL = blob => new Promise((ok, mal) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => mal(r.error); r.readAsDataURL(blob); });
+
+</script>

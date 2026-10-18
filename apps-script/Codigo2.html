@@ -1,0 +1,602 @@
+<script>
+/*@parte Codigo2*/ (window.__partes = window.__partes || {})['Codigo2'] = true;
+
+/* =========================================================
+   PLANTILLAS
+   ========================================================= */
+const PLANTILLAS = [
+  { nombre:'Portada de trabajo escolar', tam:[2550, 3300], bg:'linear-gradient(180deg,#1e3a8a 0 18%,#ffffff 18% 82%,#1e3a8a 82%)', txt:'Portada', oscuro:true, crear(){
+    fondoColor('#ffffff'); const k = s();
+    agregar(new fabric.Rect({ left:0, top:0, width:W, height:H*0.05, fill:'#1e3a8a' }), 'Franja superior');
+    agregar(new fabric.Rect({ left:0, top:H*0.95, width:W, height:H*0.05, fill:'#1e3a8a' }), 'Franja inferior');
+    agregarTexto('subtitulo', { text:'NOMBRE DE LA UNIVERSIDAD', top:H*0.13, fill:'#1e3a8a', fontFamily:'Montserrat', fontWeight:'700', fontSize:46*k, width:W*0.85 });
+    agregarTexto('cuerpo', { text:'Licenciatura en …', top:H*0.175, fill:'#374151', fontFamily:'Raleway', fontSize:34*k });
+    agregar(new fabric.Rect({ left:W/2, top:H*0.215, width:W*0.22, height:5*k, originX:'center', originY:'center', fill:'#1e3a8a' }), 'Línea');
+    agregarTexto('titulo', { text:'Título del trabajo', top:H*0.40, fill:'#111827', fontFamily:'Playfair Display', fontSize:96*k, width:W*0.8 });
+    agregarTexto('cuerpo', { text:'Asignatura / Módulo', top:H*0.50, fill:'#4b5563', fontFamily:'Raleway', fontSize:36*k });
+    agregarTexto('cuerpo', { text:'Presenta:\nNombre completo del alumno(a)\n\nDocente:\nNombre del profesor(a)', top:H*0.70, fill:'#1f2330', fontFamily:'Inter', fontSize:32*k, width:W*0.7, lineHeight:1.3 });
+    agregarTexto('cuerpo', { text:'Ciudad de México, fecha', top:H*0.88, fill:'#6b7280', fontFamily:'Inter', fontSize:28*k });
+  }},
+  { nombre:'Cartel para exposición', tam:[1800, 2700], bg:'linear-gradient(180deg,#7f1d1d 0 35%,#fdf6ec 35%)', txt:'Cartel', oscuro:true, crear(){
+    fondoColor('#fdf6ec'); const k = s();
+    agregar(new fabric.Rect({ left:0, top:0, width:W, height:H*0.33, fill:'#7f1d1d' }), 'Encabezado');
+    agregarTexto('cuerpo', { text:'EXPOSICIÓN · EQUIPO 1', top:H*0.08, fill:'#fde68a', fontFamily:'Montserrat', fontWeight:'700', charSpacing:250, fontSize:34*k });
+    agregarTexto('titulo', { text:'TEMA DE LA EXPOSICIÓN', top:H*0.19, fill:'#ffffff', fontFamily:'Bebas Neue', fontSize:150*k, width:W*0.85, lineHeight:0.95 });
+    const puntos = ['Idea principal número uno, explicada en pocas palabras.', 'Segundo punto clave con un dato importante.', 'Tercer punto: conclusión o propuesta.'];
+    puntos.forEach((t, i) => {
+      const y = H*(0.43 + i*0.14);
+      agregar(new fabric.Circle({ left:W*0.14, top:y, radius:42*k, originX:'center', originY:'center', fill:'#7f1d1d' }), 'Viñeta');
+      agregarTexto('subtitulo', { text:String(i+1), left:W*0.14, top:y, fill:'#fff', fontFamily:'Montserrat', fontSize:44*k, width:80*k });
+      agregarTexto('cuerpo', { text:t, left:W*0.22, top:y, originX:'left', textAlign:'left', fill:'#1f2330', fontFamily:'Poppins', fontSize:40*k, width:W*0.68 });
+    });
+    agregar(new fabric.Rect({ left:W/2, top:H*0.9, width:W*0.84, height:3*k, originX:'center', originY:'center', fill:'#7f1d1d' }), 'Línea');
+    agregarTexto('cuerpo', { text:'Fecha · Salón · Grupo', top:H*0.94, fill:'#7f1d1d', fontFamily:'Inter', fontWeight:'600', fontSize:34*k });
+  }},
+  { nombre:'Infografía (3 pasos)', tam:[1080, 1920], bg:'linear-gradient(180deg,#0e7490,#164e63)', txt:'Infografía', crear(){
+    fondoDegradado('#0e7490','#164e63'); const k = s();
+    agregarTexto('cuerpo', { text:'INFOGRAFÍA', top:H*0.06, fill:'#a5f3fc', fontFamily:'Montserrat', fontWeight:'700', charSpacing:300 });
+    agregarTexto('titulo', { text:'Título de tu tema', top:H*0.13, fill:'#ffffff', fontFamily:'Montserrat', fontWeight:'900', fontSize:88*k, width:W*0.85 });
+    ['Primer paso','Segundo paso','Tercer paso'].forEach((t, i) => {
+      const y = H*(0.32 + i*0.21);
+      agregar(new fabric.Rect({ left:W/2, top:y + 60*k, width:W*0.86, height:300*k, rx:28*k, ry:28*k, originX:'center', originY:'center', fill:'rgba(255,255,255,.95)' }), 'Tarjeta');
+      agregar(new fabric.Circle({ left:W*0.17, top:y + 60*k, radius:58*k, originX:'center', originY:'center', fill:'#f59e0b' }), 'Número');
+      agregarTexto('subtitulo', { text:String(i+1), left:W*0.17, top:y + 60*k, fill:'#fff', fontFamily:'Montserrat', fontSize:64*k, width:100*k });
+      agregarTexto('subtitulo', { text:t, left:W*0.28, top:y + 10*k, originX:'left', textAlign:'left', fill:'#164e63', fontFamily:'Montserrat', fontSize:44*k, width:W*0.6 });
+      agregarTexto('cuerpo', { text:'Describe aquí este punto con una o dos oraciones claras.', left:W*0.28, top:y + 95*k, originX:'left', textAlign:'left', fill:'#374151', fontFamily:'Inter', fontSize:30*k, width:W*0.6 });
+    });
+    agregarTexto('cuerpo', { text:'Fuente: autor, año', top:H*0.95, fill:'#a5f3fc', fontFamily:'Inter', fontSize:26*k });
+  }},
+  { nombre:'Reconocimiento / constancia', tam:[3300, 2550], bg:'#fffdf7', txt:'Reconocimiento', oscuro:true, crear(){
+    fondoColor('#fffdf7'); const k = s();
+    agregar(new fabric.Rect({ left:W/2, top:H/2, width:W*0.94, height:H*0.92, originX:'center', originY:'center', fill:null, stroke:'#b45309', strokeWidth:14*k }), 'Marco exterior');
+    agregar(new fabric.Rect({ left:W/2, top:H/2, width:W*0.91, height:H*0.88, originX:'center', originY:'center', fill:null, stroke:'#b45309', strokeWidth:3*k }), 'Marco interior');
+    agregarTexto('titulo', { text:'RECONOCIMIENTO', top:H*0.2, fill:'#78350f', fontFamily:'Playfair Display', fontSize:84*k, charSpacing:120, width:W*0.8 });
+    agregarTexto('cuerpo', { text:'Se otorga a', top:H*0.33, fill:'#57534e', fontFamily:'Raleway', fontSize:34*k });
+    agregarTexto('titulo', { text:'Nombre de la persona', top:H*0.45, fill:'#1f2330', fontFamily:'Dancing Script', fontSize:110*k, width:W*0.8 });
+    agregar(new fabric.Rect({ left:W/2, top:H*0.53, width:W*0.45, height:3*k, originX:'center', originY:'center', fill:'#b45309' }), 'Línea');
+    agregarTexto('cuerpo', { text:'Por su destacada participación en …', top:H*0.62, fill:'#44403c', fontFamily:'Raleway', fontSize:34*k, width:W*0.65 });
+    [0.3, 0.7].forEach((x, i) => {
+      agregar(new fabric.Rect({ left:W*x, top:H*0.82, width:W*0.24, height:2*k, originX:'center', originY:'center', fill:'#44403c' }), 'Firma');
+      agregarTexto('cuerpo', { text: i ? 'Nombre y cargo' : 'Nombre y cargo', left:W*x, top:H*0.86, fill:'#44403c', fontFamily:'Inter', fontSize:26*k, width:W*0.26 });
+    });
+  }},
+  { nombre:'Promoción / oferta', bg:'linear-gradient(135deg,#f97316,#ec4899)', txt:'50% OFF', crear(){
+    fondoDegradado('#f97316','#ec4899'); const k = s();
+    agregar(new fabric.Circle({ left:W*0.85, top:H*0.15, radius:220*k, originX:'center', originY:'center', fill:'rgba(255,255,255,.15)' }), 'Círculo');
+    agregar(new fabric.Circle({ left:W*0.1, top:H*0.9, radius:160*k, originX:'center', originY:'center', fill:'rgba(255,255,255,.12)' }), 'Círculo');
+    agregarTexto('cuerpo', { text:'SOLO ESTE FIN DE SEMANA', top:H*0.3, fill:'#fff', fontFamily:'Montserrat', fontWeight:'700', charSpacing:200 });
+    agregarTexto('titulo', { text:'50% OFF', top:H*0.48, fill:'#fff', fontFamily:'Anton', fontSize:260*k });
+    const r = new fabric.Rect({ left:W/2, top:H*0.72, width:420*k, height:100*k, rx:50*k, ry:50*k, originX:'center', originY:'center', fill:'#fff' });
+    agregar(r, 'Botón');
+    agregarTexto('subtitulo', { text:'Compra ahora', top:H*0.72, fill:'#ec4899', fontFamily:'Poppins', fontSize:44*k, width:400*k });
+  }},
+  { nombre:'Frase / cita', bg:'#0f172a', txt:'“Cita”', crear(){
+    fondoColor('#0f172a'); const k = s();
+    agregarTexto('titulo', { text:'“', top:H*0.25, fill:'#facc15', fontFamily:'Playfair Display', fontSize:300*k });
+    agregarTexto('subtitulo', { text:'El éxito es la suma de pequeños esfuerzos repetidos día tras día.', top:H*0.5, fill:'#fff', fontFamily:'Playfair Display', fontStyle:'italic', fontSize:64*k, width:W*0.8 });
+    agregarTexto('cuerpo', { text:'— Robert Collier', top:H*0.72, fill:'#facc15', fontFamily:'Raleway', fontSize:36*k });
+  }},
+  { nombre:'Invitación / evento', bg:'linear-gradient(135deg,#a18cd1,#fbc2eb)', txt:'Evento', crear(){
+    fondoDegradado('#a18cd1','#fbc2eb'); const k = s();
+    agregar(new fabric.Rect({ left:W/2, top:H/2, width:W*0.82, height:H*0.82, originX:'center', originY:'center', fill:'rgba(255,255,255,.85)', rx:30*k, ry:30*k }), 'Tarjeta');
+    agregarTexto('cuerpo', { text:'ESTÁS INVITADO A', top:H*0.25, fill:'#6b21a8', fontFamily:'Raleway', fontWeight:'700', charSpacing:300 });
+    agregarTexto('titulo', { text:'Mi Fiesta', top:H*0.4, fill:'#6b21a8', fontFamily:'Pacifico', fontSize:150*k });
+    agregarTexto('subtitulo', { text:'Sábado 20 de diciembre · 7:00 p.m.', top:H*0.58, fill:'#374151', fontFamily:'Poppins', fontSize:44*k });
+    agregarTexto('cuerpo', { text:'Lugar del evento, Ciudad', top:H*0.68, fill:'#6b7280', fontFamily:'Poppins' });
+  }},
+  { nombre:'Anuncio minimalista', bg:'#f3f4f6', txt:'Aa', crear(){
+    fondoColor('#f3f4f6'); const k = s();
+    agregar(new fabric.Rect({ left:W*0.08, top:H*0.12, width:12*k, height:H*0.3, fill:'#7c3aed' }), 'Barra');
+    agregarTexto('titulo', { text:'NUEVA COLECCIÓN', left:W*0.12, top:H*0.12, originX:'left', originY:'top', textAlign:'left', fill:'#111827', fontFamily:'Bebas Neue', fontSize:160*k, width:W*0.8 });
+    agregarTexto('cuerpo', { text:'Descubre los diseños de esta temporada.', left:W*0.12, top:H*0.5, originX:'left', originY:'top', textAlign:'left', fill:'#4b5563', width:W*0.7 });
+    agregarTexto('cuerpo', { text:'www.tusitio.com', left:W*0.12, top:H*0.85, originX:'left', originY:'top', textAlign:'left', fill:'#7c3aed', fontWeight:'700', width:W*0.6 });
+  }}
+];
+PLANTILLAS.forEach(p => {
+  const b = document.createElement('button'); b.className = 'plantilla';
+  b.innerHTML = `<div class="prev" style="background:${p.bg};color:${p.oscuro || p.bg === '#f3f4f6' ? '#111' : '#fff'}">${esc(p.txt)}</div><div class="t">${esc(p.nombre)}</div>`;
+  b.onclick = () => {
+    if (canvas.getObjects().length && !confirm('Esto reemplazará el contenido actual. ¿Continuar?')) return;
+    if (p.tam) fijarTamano(p.tam[0], p.tam[1]);
+    restaurando = true; canvas.clear(); canvas.backgroundColor = '#ffffff'; restaurando = false;
+    restaurando = true; p.crear(); restaurando = false;
+    canvas.discardActiveObject(); canvas.requestRenderAll(); renderCapas(); guardarEstado();
+  };
+  $('listaPlantillas').appendChild(b);
+});
+
+/* =========================================================
+   TAMAÑOS
+   ========================================================= */
+TAMANOS.forEach(([n, w, h]) => {
+  const b = document.createElement('button'); b.className = 'bigbtn';
+  b.innerHTML = `${esc(n)} <span style="float:right;color:#6b7280">${w} × ${h}</span>`;
+  b.onclick = () => aplicarTamano(w, h);
+  $('listaTamanos').appendChild(b);
+});
+function aplicarTamanoPers(){
+  const w = +$('tamW').value, h = +$('tamH').value;
+  if (w < 50 || h < 50 || w > 8000 || h > 8000) return toast('Usa medidas entre 50 y 8000 px');
+  aplicarTamano(w, h);
+}
+
+/* =========================================================
+   EXPORTAR
+   ========================================================= */
+function nombreArchivo(){ return ($('nombreDiseno').value || 'diseño').trim(); }
+function gs(fn, ...args){
+  return new Promise((ok, mal) => google.script.run.withSuccessHandler(ok).withFailureHandler(mal)[fn](...args));
+}
+function paginasAExportar(){
+  paginas[actual] = jsonPagina();
+  return $('ePaginas').value === 'todas' ? paginas.map((p, i) => ({ p, i })) : [{ p: paginas[actual], i: actual }];
+}
+// Dibuja una página fuera de pantalla y devuelve su imagen
+function renderPagina(json, fmt, escala, transp){
+  return new Promise(ok => {
+    const el = document.createElement('canvas');
+    const sc = new fabric.StaticCanvas(el, { width:W, height:H, enableRetinaScaling:false });
+    const j = JSON.parse(JSON.stringify(json || PAGINA_VACIA()));
+    if (transp) j.background = null;
+    if (fmt === 'jpeg' && !j.background) j.background = '#ffffff';
+    sc.loadFromJSON(j, () => {
+      sc.renderAll();
+      const url = sc.toDataURL({ format: fmt, quality: 0.95, multiplier: escala });
+      sc.dispose(); ok(url);
+    });
+  });
+}
+async function crearPDF(lista, escala){
+  if ($('iPapel') && $('iPapel').value !== 'diseno') return crearPDFHojas(lista);
+  const { jsPDF } = window.jspdf;
+  const dpi = Math.max(W, H) >= 2000 ? 300 : 96;          // carta/A4 a 300 dpi salen a su tamaño real
+  const pw = W * 72 / dpi, ph = H * 72 / dpi, ori = W > H ? 'landscape' : 'portrait';
+  const pdf = new jsPDF({ orientation: ori, unit: 'pt', format: [pw, ph], compress: true });
+  for (let k = 0; k < lista.length; k++){
+    if (k) pdf.addPage([pw, ph], ori);
+    const url = await renderPagina(lista[k].p, 'jpeg', escala, false);
+    pdf.addImage(url, 'JPEG', 0, 0, pw, ph, undefined, 'FAST');
+  }
+  return pdf;
+}
+function bajarBlob(blob, nombre){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = nombre; a.target = '_self';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 8000);
+}
+function opcionesExport(){
+  const fmt = $('eFormato').value;
+  return { fmt, escala: +$('eEscala').value, transp: $('eTransp').checked && fmt === 'png', lista: paginasAExportar() };
+}
+let ultimoVideo = null;
+async function obtenerVideo(){
+  canvas.discardActiveObject(); canvas.requestRenderAll();
+  const lista = paginasAExportar();
+  const clave = JSON.stringify([serializar(), $('vSeg').value, $('vCalidad').value, $('ePaginas').value, presConfig.transicion]);
+  if (ultimoVideo && ultimoVideo.clave === clave) return ultimoVideo.v;
+  const v = await videoConProgreso(lista);
+  ultimoVideo = { clave, v };
+  return v;
+}
+function avisoVideo(v){
+  const mb = (v.blob.size / 1048576).toFixed(1) + ' MB';
+  if (v.ext !== 'mp4') return 'Video listo (' + mb + ', formato WebM). Para WhatsApp conviene crearlo desde Chrome.';
+  if (v.codec === 'vp9') return 'Video listo (' + mb + '). Tu navegador no tiene el formato H.264; si WhatsApp no lo acepta, créalo desde Chrome.';
+  return 'Video listo (' + mb + ').';
+}
+async function descargarImagen(){
+  if ($('eFormato').value === 'video'){
+    try { const v = await obtenerVideo(); bajarBlob(v.blob, nombreArchivo() + '.' + v.ext); toast(avisoVideo(v)); }
+    catch (e) { console.error(e); toast('No se pudo crear el video: ' + e.message); }
+    return;
+  }
+  canvas.discardActiveObject(); canvas.requestRenderAll();
+  const { fmt, escala, transp, lista } = opcionesExport();
+  cargando(true);
+  try {
+    if (fmt === 'pptx'){
+      const pptx = await crearPPTX(lista, escala, $('ePptEditable').checked);
+      bajarBlob(await pptx.write({ outputType:'blob' }), nombreArchivo() + '.pptx');
+    } else if (fmt === 'pdf'){
+      const pdf = await crearPDF(lista, escala);
+      bajarBlob(pdf.output('blob'), nombreArchivo() + '.pdf');
+    } else {
+      const ext = fmt === 'jpeg' ? 'jpg' : 'png';
+      for (const it of lista){
+        const url = await renderPagina(it.p, fmt, escala, transp);
+        const suf = lista.length > 1 ? '-' + (it.i + 1) : '';
+        bajarBlob(await (await fetch(url)).blob(), nombreArchivo() + suf + '.' + ext);
+        await new Promise(r => setTimeout(r, 500));
+      }
+    }
+    toast('Descarga iniciada. Si no aparece, usa “Vista previa” o “Guardar en Drive”.');
+  } catch (e) { toast('Error al exportar: ' + e.message); }
+  finally { cargando(false); }
+}
+async function vistaPrevia(){
+  if ($('eFormato').value === 'video'){
+    try {
+      const v = await obtenerVideo();
+      $('vista').innerHTML = `<p class="hint">${esc(avisoVideo(v))} Revísalo aquí antes de descargarlo.</p><video controls autoplay muted playsinline style="width:100%;border-radius:8px;background:#000"></video>`;
+      $('vista').querySelector('video').src = URL.createObjectURL(v.blob);
+    } catch (e) { console.error(e); toast('No se pudo crear el video: ' + e.message); }
+    return;
+  }
+  const { fmt, escala, transp, lista } = opcionesExport();
+  cargando(true);
+  try {
+    if (fmt === 'pdf' && $('iPapel').value !== 'diseno'){
+      const hojas = await vistaHojas(lista);
+      $('vista').innerHTML = '<p class="hint">Así saldrán las hojas' + (hojas.length >= 6 ? ' (se muestran las primeras 6)' : '') + '.</p>' + hojas.map(u => `<img src="${u}" style="margin-bottom:8px;box-shadow:0 1px 6px rgba(0,0,0,.2)">`).join('');
+      return;
+    }
+    const f = (fmt === 'pdf' || fmt === 'pptx') ? 'png' : fmt, imgs = [];
+    for (const it of lista) imgs.push(await renderPagina(it.p, f, Math.min(escala, 1), transp));
+    $('vista').innerHTML = `<p class="hint">${fmt === 'pdf' ? 'Así se verá cada página del PDF.' : 'Clic derecho sobre la imagen → “Guardar imagen como…”'}</p>` +
+      imgs.map(u => `<img src="${u}" style="margin-bottom:8px">`).join('');
+  } finally { cargando(false); }
+}
+async function exportarDrive(){
+  if ($('eFormato').value === 'video'){
+    try {
+      const v = await obtenerVideo();
+      if (v.blob.size > 35 * 1048576){ toast('El video pesa ' + (v.blob.size / 1048576).toFixed(0) + ' MB: es muy grande para mandarlo a Drive desde aquí. Usa “Descargar” o baja la calidad / los segundos.'); return; }
+      cargando(true);
+      const r = await gs('guardarImagen', nombreArchivo(), await blobADataURL(v.blob));
+      $('eInfo').innerHTML = 'Guardado en Drive: <a href="' + r.url + '" target="_blank">' + esc(r.nombre) + '</a>';
+      toast('Video guardado en Drive');
+    } catch (e) { toast('Error: ' + e.message); }
+    finally { cargando(false); }
+    return;
+  }
+  const { fmt, escala, transp, lista } = opcionesExport();
+  cargando(true);
+  try {
+    const hechos = [];
+    if (fmt === 'pptx'){
+      const pptx = await crearPPTX(lista, escala, $('ePptEditable').checked);
+      const b64 = await pptx.write({ outputType:'base64' });
+      hechos.push(await gs('guardarImagen', nombreArchivo(), 'data:application/vnd.openxmlformats-officedocument.presentationml.presentation;base64,' + b64));
+    } else if (fmt === 'pdf'){
+      const pdf = await crearPDF(lista, escala);
+      hechos.push(await gs('guardarImagen', nombreArchivo(), pdf.output('datauristring')));
+    } else {
+      for (const it of lista){
+        const url = await renderPagina(it.p, fmt, escala, transp);
+        const suf = lista.length > 1 ? '-' + (it.i + 1) : '';
+        hechos.push(await gs('guardarImagen', nombreArchivo() + suf, url));
+      }
+    }
+    $('eInfo').innerHTML = 'Guardado en Drive: ' + hechos.map(r => `<a href="${r.url}" target="_blank">${esc(r.nombre)}</a>`).join(', ');
+    toast('Guardado en Drive');
+  } catch (e) { toast('Error: ' + e.message); }
+  finally { cargando(false); }
+}
+
+/* =========================================================
+   PROYECTOS EN DRIVE
+   ========================================================= */
+function guardarDrive(){
+  cargando(true);
+  clearTimeout(autoGuardado._t);
+  indicadorGuardado('guardando');
+  google.script.run
+    .withSuccessHandler(r => { cargando(false); enDrive = true; indicadorGuardado('ok'); toast('Diseño “' + r.nombre + '” guardado en Drive'); })
+    .withFailureHandler(e => { cargando(false); indicadorGuardado('error'); toast('Error al guardar: ' + e.message); })
+    .guardarProyecto(nombreArchivo(), serializar());
+}
+function listar(){
+  $('listaProy').innerHTML = 'Cargando…';
+  google.script.run
+    .withSuccessHandler(lista => {
+      if (!lista.length){ $('listaProy').innerHTML = '<p class="hint">Aún no tienes diseños guardados.</p>'; return; }
+      $('listaProy').innerHTML = '';
+      lista.forEach(p => {
+        const d = document.createElement('div'); d.className = 'proy';
+        d.innerHTML = `<div class="n"><b>${esc(p.nombre)}</b><small>${new Date(p.fecha).toLocaleString('es-MX')} · ${p.tamKB} KB</small></div>
+          <button class="btnP">Abrir</button><button class="btnS" title="Versiones anteriores">🕘</button><button class="btnS" title="Eliminar">🗑</button>`;
+        const [ba, bv, be] = d.querySelectorAll('button');
+        bv.onclick = () => verVersiones(p, d);
+        ba.onclick = () => abrirProyecto(p);
+        be.onclick = () => { if (confirm('¿Mandar “' + p.nombre + '” a la papelera de Drive?')) google.script.run.withSuccessHandler(listar).eliminarProyecto(p.id); };
+        $('listaProy').appendChild(d);
+      });
+    })
+    .withFailureHandler(e => $('listaProy').textContent = 'Error: ' + e.message)
+    .listarProyectos();
+}
+// Muestra las versiones anteriores de un diseño (se guardan solas en Drive, una cada 10 minutos como máximo)
+function verVersiones(p, fila){
+  const sig = fila.nextElementSibling;
+  if (sig && sig.classList.contains('versiones')){ sig.remove(); return; }
+  const cont = document.createElement('div'); cont.className = 'versiones';
+  cont.style.cssText = 'background:#f8f7fc;border-radius:8px;margin:4px 0 8px 12px;padding:6px 10px;font-size:12.5px';
+  cont.textContent = 'Buscando versiones…';
+  fila.after(cont);
+  gs('listarVersiones', p.id).then(lista => {
+    if (!lista || !lista.length){ cont.innerHTML = '<span class="hint">Todavía no hay versiones anteriores. Se crean solas cuando guardas cambios (máximo una cada 10 minutos).</span>'; return; }
+    cont.innerHTML = '<b style="display:block;margin-bottom:4px">Versiones anteriores</b>';
+    lista.forEach(v => {
+      const r = document.createElement('div'); r.style.cssText = 'display:flex;align-items:center;gap:8px;padding:4px 0;border-top:1px solid #ece9f6';
+      r.innerHTML = `<span style="flex:1">${new Date(v.fecha).toLocaleString('es-MX')} · ${v.tamKB} KB</span><button class="btnS" style="padding:5px 10px">Abrir esta versión</button>`;
+      r.querySelector('button').onclick = () => {
+        if (!confirm('Se abrirá la versión del ' + new Date(v.fecha).toLocaleString('es-MX') + '.\nTu diseño en Drive no cambia hasta que pulses 💾 Guardar. ¿Abrir?')) return;
+        abrirProyecto({ id:v.id, nombre:p.nombre }, true);
+      };
+      cont.appendChild(r);
+    });
+  }).catch(e => { cont.textContent = 'No se pudieron cargar las versiones: ' + e.message; });
+}
+function abrirProyecto(p, esVersion){
+  cargando(true);
+  google.script.run
+    .withSuccessHandler(txt => {
+      $('nombreDiseno').value = p.nombre;
+      historial = []; hi = -1; miniaturas = [];
+      cargarJSON(txt, true, () => { cargando(false); cerrarModal('mProyectos'); enDrive = !esVersion; indicadorGuardado(esVersion ? 'cambios' : 'ok'); toast(esVersion ? 'Versión anterior abierta. Pulsa 💾 Guardar para quedarte con ella.' : 'Diseño abierto'); });
+    })
+    .withFailureHandler(e => { cargando(false); toast('Error: ' + e.message); })
+    .cargarProyecto(p.id);
+}
+function nuevoDiseno(){
+  enDrive = false; setTimeout(() => indicadorGuardado('nuevo'), 50);
+  if (canvas.getObjects().length && !confirm('¿Empezar un diseño nuevo? Lo que no hayas guardado en Drive se perderá.')) return;
+  restaurando = true; canvas.clear(); canvas.backgroundColor = '#ffffff'; restaurando = false;
+  $('nombreDiseno').value = 'Mi diseño'; historial = []; hi = -1;
+  paginas = [null]; actual = 0; miniaturas = []; notaPagina = ''; mostrarNotas();
+  canvas.requestRenderAll(); renderCapas(); actualizarPanel(); guardarEstado();
+}
+
+/* =========================================================
+   PÁGINAS
+   ========================================================= */
+function miniCanvas(){
+  try { return canvas.toDataURL({ format:'png', multiplier: (152 / H) / zoom }); } catch(e){ return ''; }
+}
+function miniDeJSON(json, cb){
+  const el = document.createElement('canvas');
+  const sc = new fabric.StaticCanvas(el, { width:W, height:H, enableRetinaScaling:false });
+  sc.loadFromJSON(json || PAGINA_VACIA(), () => { sc.renderAll(); const u = sc.toDataURL({ format:'png', multiplier:152 / H }); sc.dispose(); cb(u); });
+}
+function renderPaginas(){
+  if (generandoVista) return;
+  clearTimeout(renderPaginas._t);
+  renderPaginas._t = setTimeout(() => {
+    miniaturas[actual] = miniCanvas();
+    const bar = $('paginas'); bar.innerHTML = '';
+    paginas.forEach((p, i) => {
+      const d = document.createElement('div');
+      d.className = 'pag' + (i === actual ? ' act' : '');
+      d.style.aspectRatio = W + ' / ' + H; d.title = 'Página ' + (i + 1);
+      const img = document.createElement('img');
+      if (miniaturas[i]) img.src = miniaturas[i];
+      else miniDeJSON(p, u => { miniaturas[i] = u; img.src = u; });
+      d.appendChild(img);
+      d.insertAdjacentHTML('beforeend', `<span class="num">${i + 1}</span>`);
+      if (i === actual ? notaPagina.trim() : (p && p.notas)) d.insertAdjacentHTML('beforeend', '<span class="tieneNota" title="Tiene notas">📝</span>');
+      d.onclick = () => { if (i !== actual) irPagina(i); };
+      bar.appendChild(d);
+    });
+    const acc = document.createElement('div'); acc.className = 'pagAcc';
+    acc.innerHTML = `<div style="display:flex;gap:4px"><button class="pb" onclick="agregarPagina()">＋ Página</button><button class="pb" title="Agregar diapositiva con diseño" onclick="abrirDiapositivas()">▦ Diapositiva</button></div>
+      <div style="display:flex;gap:4px">
+        <button class="pb" title="Duplicar página" onclick="duplicarPagina()">⧉</button>
+        <button class="pb" title="Mover a la izquierda" onclick="moverPagina(-1)">◀</button>
+        <button class="pb" title="Mover a la derecha" onclick="moverPagina(1)">▶</button>
+        <button class="pb peligro" title="Eliminar página" onclick="eliminarPagina()">🗑</button>
+      </div>`;
+    bar.appendChild(acc);
+  }, 150);
+}
+function cargarPaginaActual(conHist){
+  restaurando = true; canvas.discardActiveObject();
+  notaPagina = (paginas[actual] && paginas[actual].notas) || ''; mostrarNotas();
+  canvas.loadFromJSON(paginas[actual] || PAGINA_VACIA(), () => {
+    canvas.renderAll(); normalizarVinculos(); restaurando = false;
+    renderCapas(); actualizarPanel(); renderPaginas();
+    if (conHist) guardarEstado();
+  });
+}
+function guardarPaginaActual(){ paginas[actual] = jsonPagina(); miniaturas[actual] = miniCanvas(); }
+function irPagina(i){
+  if (i < 0 || i >= paginas.length) return;
+  guardarPaginaActual(); actual = i; cargarPaginaActual(true);
+}
+function agregarPagina(){
+  guardarPaginaActual();
+  paginas.splice(actual + 1, 0, PAGINA_VACIA()); miniaturas.splice(actual + 1, 0, undefined);
+  actual++; cargarPaginaActual(true);
+}
+function duplicarPagina(){
+  guardarPaginaActual();
+  paginas.splice(actual + 1, 0, JSON.parse(JSON.stringify(paginas[actual])));
+  miniaturas.splice(actual + 1, 0, miniaturas[actual]);
+  actual++; cargarPaginaActual(true);
+}
+function eliminarPagina(){
+  if (paginas.length === 1){ toast('El diseño necesita al menos una página'); return; }
+  if (!confirm('¿Eliminar la página ' + (actual + 1) + '?')) return;
+  paginas.splice(actual, 1); miniaturas.splice(actual, 1);
+  actual = Math.min(actual, paginas.length - 1); cargarPaginaActual(true);
+}
+function moverPagina(d){
+  const j = actual + d; if (j < 0 || j >= paginas.length) return;
+  guardarPaginaActual();
+  [paginas[actual], paginas[j]] = [paginas[j], paginas[actual]];
+  [miniaturas[actual], miniaturas[j]] = [miniaturas[j], miniaturas[actual]];
+  actual = j; guardarEstado(); renderPaginas();
+}
+
+/* =========================================================
+   ÍCONOS
+   ========================================================= */
+const ICONOS = {
+  'Palomita':   'M9 16.2 L4.8 12 L3.4 13.4 L9 19 L21 7 L19.6 5.6 Z',
+  'Tache':      'M6.4 5 L5 6.4 L10.6 12 L5 17.6 L6.4 19 L12 13.4 L17.6 19 L19 17.6 L13.4 12 L19 6.4 L17.6 5 L12 10.6 Z',
+  'Flecha':     'M4 11 L16.2 11 L10.6 5.4 L12 4 L20 12 L12 20 L10.6 18.6 L16.2 13 L4 13 Z',
+  'Ubicación':  'M12 2 C8.1 2 5 5.1 5 9 C5 14.2 12 22 12 22 C12 22 19 14.2 19 9 C19 5.1 15.9 2 12 2 Z M12 6.5 A2.5 2.5 0 1 1 12 11.5 A2.5 2.5 0 1 1 12 6.5 Z',
+  'Correo':     'M2 5 L22 5 L22 19 L2 19 Z M4 7.5 L4 17 L20 17 L20 7.5 L12 13 Z',
+  'Calendario': 'M3 4 L21 4 L21 21 L3 21 Z M5 9 L19 9 L19 19 L5 19 Z M7 1.5 L9 1.5 L9 4 L7 4 Z M15 1.5 L17 1.5 L17 4 L15 4 Z',
+  'Reloj':      'M12 2 A10 10 0 1 0 12 22 A10 10 0 1 0 12 2 Z M12 4 A8 8 0 1 1 12 20 A8 8 0 1 1 12 4 Z M11 6 L13 6 L13 11.4 L16.8 13.6 L15.8 15.3 L11 12.5 Z',
+  'Información':'M12 2 A10 10 0 1 0 12 22 A10 10 0 1 0 12 2 Z M11 10 L13 10 L13 17 L11 17 Z M11 6.5 L13 6.5 L13 8.5 L11 8.5 Z',
+  'Persona':    'M12 3 A4 4 0 1 1 12 11 A4 4 0 1 1 12 3 Z M4 21 C4 16.6 7.6 13.5 12 13.5 C16.4 13.5 20 16.6 20 21 Z',
+  'Libro':      'M3 4.5 L10 4.5 C11 4.5 11.5 5.2 11.5 6 L11.5 20 C11.5 19.2 11 18.5 10 18.5 L3 18.5 Z M21 4.5 L14 4.5 C13 4.5 12.5 5.2 12.5 6 L12.5 20 C12.5 19.2 13 18.5 14 18.5 L21 18.5 Z',
+  'Birrete':    'M12 3 L1 9 L12 15 L21 10.1 L21 17 L23 17 L23 9 Z M5 13.2 L5 17 C5 18.7 8.1 20 12 20 C15.9 20 19 18.7 19 17 L19 13.2 L12 17 Z',
+  'Balanza':    'M11 2 L13 2 L13 5 L19 5 L19 7 L18.2 7 L21 13.5 C21 15.2 19.7 16.5 18 16.5 C16.3 16.5 15 15.2 15 13.5 L17.8 7 L13 7 L13 20 L17 20 L17 22 L7 22 L7 20 L11 20 L11 7 L6.2 7 L9 13.5 C9 15.2 7.7 16.5 6 16.5 C4.3 16.5 3 15.2 3 13.5 L5.8 7 L5 7 L5 5 L11 5 Z',
+  'Foco':       'M12 2 C8.1 2 5 5.1 5 9 C5 11.4 6.2 13.5 8 14.7 L8 17 L16 17 L16 14.7 C17.8 13.5 19 11.4 19 9 C19 5.1 15.9 2 12 2 Z M9 18 L15 18 L15 20 L9 20 Z M10 21 L14 21 L14 22 L10 22 Z',
+  'Advertencia':'M12 2 L1 21 L23 21 Z M11 9 L13 9 L13 15 L11 15 Z M11 17 L13 17 L13 19 L11 19 Z',
+  'Diálogo':    'M3 3 L21 3 L21 16 L9 16 L4 20.5 L4 16 L3 16 Z'
+};
+function agregarIcono(nombre, d){
+  const p = new fabric.Path(d, { fill: $('colorForma').value, fillRule:'evenodd', strokeWidth:0, stroke:null,
+    originX:'center', originY:'center', left:W/2, top:H/2 });
+  p.scaleToWidth(200 * s());
+  agregar(p, nombre);
+}
+Object.entries(ICONOS).forEach(([n, d]) => {
+  const b = document.createElement('button'); b.className = 'forma'; b.title = n;
+  b.innerHTML = `<svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="${d}"/></svg>`;
+  b.onclick = () => agregarIcono(n, d);
+  $('gridIconos').appendChild(b);
+});
+
+/* =========================================================
+   ÍCONOS POR MATERIA (dibujados con figuras simples, cuadrícula de 24 × 24)
+   ========================================================= */
+const IC = (() => {
+  const f = n => +n.toFixed(2);
+  const pol = pts => 'M' + pts.map(([x, y]) => f(x) + ' ' + f(y)).join(' L') + ' Z';
+  const rot = (pts, ang, cx = 12, cy = 12) => { const a = ang * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+    return pts.map(([x, y]) => [cx + (x - cx) * c - (y - cy) * s, cy + (x - cx) * s + (y - cy) * c]); };
+  const rect = (x, y, w, h, ang = 0, cx, cy) => pol(rot([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], ang, cx ?? x + w / 2, cy ?? y + h / 2));
+  const circ = (cx, cy, r) => `M${f(cx - r)} ${f(cy)} A${f(r)} ${f(r)} 0 1 0 ${f(cx + r)} ${f(cy)} A${f(r)} ${f(r)} 0 1 0 ${f(cx - r)} ${f(cy)} Z`;
+  const elip = (cx, cy, rx, ry) => `M${f(cx - rx)} ${f(cy)} A${f(rx)} ${f(ry)} 0 1 0 ${f(cx + rx)} ${f(cy)} A${f(rx)} ${f(ry)} 0 1 0 ${f(cx - rx)} ${f(cy)} Z`;
+  const anillo = (cx, cy, r, g) => circ(cx, cy, r) + ' ' + circ(cx, cy, r - g);
+  const rr = (x, y, w, h, r) => `M${f(x + r)} ${f(y)} L${f(x + w - r)} ${f(y)} Q${f(x + w)} ${f(y)} ${f(x + w)} ${f(y + r)} L${f(x + w)} ${f(y + h - r)} Q${f(x + w)} ${f(y + h)} ${f(x + w - r)} ${f(y + h)} L${f(x + r)} ${f(y + h)} Q${f(x)} ${f(y + h)} ${f(x)} ${f(y + h - r)} L${f(x)} ${f(y + r)} Q${f(x)} ${f(y)} ${f(x + r)} ${f(y)} Z`;
+  const estrella = (cx, cy, R, r, n = 5) => pol(Array.from({ length:n * 2 }, (_, i) => { const a = -Math.PI / 2 + i * Math.PI / n, q = i % 2 ? r : R; return [cx + q * Math.cos(a), cy + q * Math.sin(a)]; }));
+  return { pol, rot, rect, circ, elip, anillo, rr, estrella, j:(...p) => p.join(' ') };
+})();
+const ICONOS_MATERIA = {
+  'Derecho': {
+    'Mazo': IC.j(IC.pol(IC.rot([[6,4],[15,4],[15,9],[6,9]], -45, 12, 10)), IC.pol(IC.rot([[9.6,9],[11.4,9],[11.4,19],[9.6,19]], -45, 12, 10)), IC.rr(12,19,10,3,1)),
+    'Tribunal': IC.j(IC.pol([[12,1.5],[22.5,7],[1.5,7]]), IC.rect(2.5,8,19,1.8), IC.rect(4,11,2.2,7), IC.rect(8.6,11,2.2,7), IC.rect(13.2,11,2.2,7), IC.rect(17.8,11,2.2,7), IC.rect(2,19,20,2.5)),
+    'Ley (artículo)': IC.j(IC.rr(4,2,16,20,2), 'M12.2 5.5 C9.8 5.5 9 6.6 9 7.6 C9 8.4 9.5 9 10.3 9.4 C9.4 9.9 9 10.6 9 11.4 C9 13 10.6 13.6 12 14.1 C13.2 14.5 13.8 14.8 13.8 15.5 C13.8 16.2 13.1 16.6 12 16.6 C10.9 16.6 10.2 16.1 10 15.2 L8.6 15.6 C8.9 17.1 10.2 18 12 18 C14 18 15.2 17 15.2 15.6 C15.2 14.8 14.8 14.2 14 13.8 C14.9 13.3 15.2 12.6 15.2 11.9 C15.2 10.3 13.7 9.7 12.3 9.2 C11.1 8.8 10.4 8.5 10.4 7.8 C10.4 7.2 11.1 6.9 12.1 6.9 C13 6.9 13.6 7.3 13.8 8 L15.1 7.6 C14.8 6.3 13.7 5.5 12.2 5.5 Z M11 10.4 C10.6 10.6 10.4 11 10.4 11.4 C10.4 12 11 12.4 12.2 12.8 C12.7 13 13.1 13.1 13.4 13.3 C13.7 13 13.8 12.6 13.8 12.2 C13.8 11.5 13.1 11.2 12 10.8 C11.6 10.7 11.3 10.5 11 10.4 Z'),
+    'Documento legal': IC.j('M4 2 L15 2 L20 7 L20 22 L4 22 Z M14 3.6 L14 8 L18.4 8 Z', IC.rect(6.5,10,8,1.4), IC.rect(6.5,13,11,1.4), IC.rect(6.5,16,6,1.4), IC.circ(16,18,2.3)),
+    'Escudo': IC.j('M12 1.5 L21 5 L21 11 C21 16.5 17 20.6 12 22.5 C7 20.6 3 16.5 3 11 L3 5 Z M12 4 L5.2 6.6 L5.2 11 C5.2 15.2 8.2 18.6 12 20.1 C15.8 18.6 18.8 15.2 18.8 11 L18.8 6.6 Z', 'M10.6 15.4 L7.4 12.2 L8.8 10.8 L10.6 12.6 L15.2 8 L16.6 9.4 Z'),
+    'Placa policial': IC.j(IC.estrella(12,12.5,10.5,5.6,6), IC.circ(12,12.5,3.2)),
+    'Esposas': IC.j(IC.anillo(6.5,15,4.8,1.7), IC.anillo(17.5,15,4.8,1.7), IC.rect(11.3,14.2,1.4,1.6), IC.rect(5.7,7.4,1.6,2.8), IC.rect(16.7,7.4,1.6,2.8), IC.rect(5.7,5.6,12.6,1.4)),
+    'Huella': IC.j(IC.elip(12,12.5,9,10.5), IC.elip(12,12.5,7.6,9.1), IC.elip(12,12.5,6,7.5), IC.elip(12,12.5,4.6,6.1), IC.elip(12,12.5,3,4.5), IC.elip(12,12.5,1.6,3.1)),
+    'Lupa': IC.j(IC.anillo(10,10,7.5,2.2), IC.rect(15.5,14.2,2.6,8.4,-45)),
+    'Candado': IC.j(IC.rr(4,10,16,12,2), IC.circ(12,15.2,1.8), IC.rect(11.2,15.5,1.6,3.5), 'M7 10 L7 7 C7 4.2 9.2 2 12 2 C14.8 2 17 4.2 17 7 L17 10 L14.8 10 L14.8 7 C14.8 5.5 13.5 4.2 12 4.2 C10.5 4.2 9.2 5.5 9.2 7 L9.2 10 Z'),
+    'Rejas': IC.j(IC.rect(2,2,20,2.2), IC.rect(2,19.8,20,2.2), IC.rect(3.5,4.2,2,15.6), IC.rect(8.2,4.2,2,15.6), IC.rect(13.8,4.2,2,15.6), IC.rect(18.5,4.2,2,15.6)),
+    'Firma': IC.j(IC.pol(IC.rot([[11,1],[14,1],[14,14],[12.5,17],[11,14]], 35, 12.5, 9)), 'M2 20 C4 17 5.5 17 6 19 C6.4 20.5 7.6 20.5 8.6 19.2 C9.6 18 10.6 18 11 19.5 C11.3 20.6 12.5 20.6 14 19.6 L22 19.6 L22 21 L14.4 21 C12.4 22.2 10.4 22 9.8 20.8 C8.6 22.2 5.6 22.6 4.8 20.2 C4.5 19.4 4 19.6 3.2 20.8 Z'),
+    'Pergamino': IC.j('M6 3 L18 3 C19.7 3 21 4.3 21 6 L21 7 L18 7 L18 18 C18 19.7 16.7 21 15 21 L5 21 C3.3 21 2 19.7 2 18 L2 17 L5 17 L5 6 C5 4.3 5.4 3 6 3 Z M7.2 5.2 C7.1 5.5 7 5.7 7 6 L7 17 L13 17 L13 18 C13 18.4 13.1 18.7 13.2 19 L15 19 C15.6 19 16 18.6 16 18 L16 6 C16 5.7 16 5.4 16.2 5.2 Z', IC.rect(8.6,8,5.6,1.3), IC.rect(8.6,10.8,5.6,1.3), IC.rect(8.6,13.6,4,1.3))
+  },
+  'Ciencias': {
+    'Matraz': IC.j('M9 2 L15 2 L15 3.6 L14 3.6 L14 8.6 L20.4 19.4 C21.2 20.8 20.2 22 18.8 22 L5.2 22 C3.8 22 2.8 20.8 3.6 19.4 L10 8.6 L10 3.6 L9 3.6 Z M7.2 15 L5.6 18 C5.2 18.8 5.6 19.6 6.4 19.6 L17.6 19.6 C18.4 19.6 18.8 18.8 18.4 18 L16.8 15 Z'),
+    'Tubo de ensayo': IC.j(IC.pol(IC.rot([[9.5,1.5],[14.5,1.5],[14.5,3],[13.6,3],[13.6,18],[13.4,19.2],[12,20.4],[10.6,19.2],[10.4,18],[10.4,3],[9.5,3]], 30)), IC.circ(18,6,1.6), IC.circ(19.5,10.5,1.1)),
+    'Átomo': IC.j(IC.elip(12,12,10.5,4.6), IC.elip(12,12,8.6,2.9), IC.circ(12,12,2.1), IC.circ(12,4.6,1.7), IC.circ(12,19.4,1.7), IC.circ(4.6,5.6,1.2), IC.circ(19.4,18.4,1.2)),
+    'ADN': (() => {
+      const xA = y => 12 + 6 * Math.sin((y - 2) * Math.PI / 10), xB = y => 24 - xA(y), g = 1, partes = [];
+      const banda = (fx, y0, y1) => { const ys = []; for (let y = y0; y <= y1 + 1e-6; y += 0.5) ys.push(y);
+        return IC.pol([...ys.map(y => [fx(y) - g, y]), ...ys.reverse().map(y => [fx(y) + g, y])]); };
+      partes.push(banda(xA, 2, 22));
+      [[2, 5.2], [8.8, 15.2], [18.8, 22]].forEach(([a, b]) => partes.push(banda(xB, a, b)));
+      [4.5, 6.6, 15.5, 17.6].forEach(y => { const a = Math.min(xA(y), xB(y)) + g + 0.6, b = Math.max(xA(y), xB(y)) - g - 0.6; if (b - a > 1) partes.push(IC.rect(a, y - 0.55, b - a, 1.1)); });
+      return IC.j(...partes);
+    })(),    'Planeta': IC.j(IC.circ(12,12,6.4), 'M2 17.6 C1 16 3.6 13.6 6.2 12 L6.3 13.8 C4.4 15.1 3.4 16.2 3.7 16.7 C4.3 17.7 9.8 16.4 15 13.4 C20.2 10.4 21 8 20.3 7.3 C19.9 6.9 18.8 7.1 17.6 7.4 L16.8 6 C19.3 5.3 21.4 5.2 22 6.4 C23 8.2 19.8 11.6 15.9 14.4 C10.5 18.2 3.4 19.8 2 17.6 Z'),
+    'Hoja': IC.j('M20.5 3 C10 3 4 7.5 4 14.5 C4 16.2 4.4 17.6 5 18.8 L3 21 L4.4 22.4 L6.3 20.4 C7.5 21.1 9 21.5 10.5 21.5 C17.5 21.5 21 15 20.5 3 Z M7.6 18.8 C10.5 15 13.2 12 17 8.2 L16 7.2 C12.2 11 9.5 14 6.6 17.6 Z'),
+    'Imán': 'M3 3 L9 3 L9 12 C9 13.7 10.3 15 12 15 C13.7 15 15 13.7 15 12 L15 3 L21 3 L21 12 C21 17 17 21 12 21 C7 21 3 17 3 12 Z M3 5.8 L9 5.8 L9 7.2 L3 7.2 Z M15 5.8 L21 5.8 L21 7.2 L15 7.2 Z',
+    'Termómetro': IC.j('M9.5 4.5 C9.5 3.1 10.6 2 12 2 C13.4 2 14.5 3.1 14.5 4.5 L14.5 14 C15.9 14.9 16.8 16.4 16.8 18.2 C16.8 20.8 14.6 23 12 23 C9.4 23 7.2 20.8 7.2 18.2 C7.2 16.4 8.1 14.9 9.5 14 Z M11.2 4.5 L11.2 15 C9.8 15.4 8.9 16.7 8.9 18.2 C8.9 19.9 10.3 21.3 12 21.3 C13.7 21.3 15.1 19.9 15.1 18.2 C15.1 16.7 14.2 15.4 12.8 15 L12.8 4.5 C12.8 4 12.4 3.7 12 3.7 C11.6 3.7 11.2 4 11.2 4.5 Z', IC.circ(12,18.2,2.2), IC.rect(11.4,9,1.2,8), IC.rect(16,5,3,1.2), IC.rect(16,8,3,1.2), IC.rect(16,11,3,1.2)),
+    'Gota': 'M12 2 C12 2 4.5 10.5 4.5 15 C4.5 19.1 7.9 22.5 12 22.5 C16.1 22.5 19.5 19.1 19.5 15 C19.5 10.5 12 2 12 2 Z M7.4 15.2 C7.4 17.6 9.3 19.6 11.6 19.8 L11.6 18.4 C10 18.2 8.8 16.8 8.8 15.2 Z',
+    'Rayo': 'M13.5 1.5 L4.5 13.5 L11 13.5 L9.5 22.5 L19.5 9.5 L12.8 9.5 Z',
+    'Microscopio': IC.j(IC.pol(IC.rot([[9,1.5],[13,1.5],[13,11.5],[9,11.5]], -25, 11, 7)), IC.rect(4,20,17,2.5), 'M6 20 C6 15.4 8.8 12.4 12.2 11.6 L12.8 13.4 C10 14.2 8 16.6 8 20 Z', IC.rect(11,16,9,1.6), IC.rect(14.6,12.6,1.8,2.2))
+  },
+  'Matemáticas': {
+    'Más': 'M10.5 3 L13.5 3 L13.5 10.5 L21 10.5 L21 13.5 L13.5 13.5 L13.5 21 L10.5 21 L10.5 13.5 L3 13.5 L3 10.5 L10.5 10.5 Z',
+    'Menos': IC.rect(3,10.5,18,3),
+    'Por': IC.j(IC.rect(10.5,2.5,3,19,45), IC.pol(IC.rot([[10.5,2.5],[13.5,2.5],[13.5,10.5],[10.5,10.5]], -45)), IC.pol(IC.rot([[10.5,13.5],[13.5,13.5],[13.5,21.5],[10.5,21.5]], -45))),
+    'Entre': IC.j(IC.rect(3,10.6,18,2.8), IC.circ(12,5.5,2.2), IC.circ(12,18.5,2.2)),
+    'Igual': IC.j(IC.rect(3,7,18,3), IC.rect(3,14,18,3)),
+    'Porcentaje': IC.j(IC.anillo(6.5,6.5,4,1.8), IC.anillo(17.5,17.5,4,1.8), IC.rect(10.8,1.5,2.4,21,40)),
+    'Pi': 'M3 4 L21 4 L21 7 L17.5 7 L17.5 17 C17.5 18.1 18.1 18.6 19 18.6 C19.6 18.6 20.2 18.4 20.6 18.1 L21.2 20.6 C20.5 21.1 19.6 21.4 18.5 21.4 C15.9 21.4 14.5 19.9 14.5 17.5 L14.5 7 L9.6 7 C9.4 12.5 8.5 17.6 6.5 21 L3.4 21 C5.7 17.4 6.5 12.6 6.6 7 L3 7 Z',
+    'Raíz': 'M2 13 L5.6 11.6 L8.6 18.6 L13.6 3 L22 3 L22 5.6 L15.6 5.6 L9.8 22.5 L7.2 22.5 L4.4 15.4 L3 15.9 Z',
+    'Infinito': 'M7 7 C4.2 7 2 9.2 2 12 C2 14.8 4.2 17 7 17 C9 17 10.6 15.6 12 14.1 C13.4 15.6 15 17 17 17 C19.8 17 22 14.8 22 12 C22 9.2 19.8 7 17 7 C15 7 13.4 8.4 12 9.9 C10.6 8.4 9 7 7 7 Z M7 9.3 C5.5 9.3 4.3 10.5 4.3 12 C4.3 13.5 5.5 14.7 7 14.7 C8.3 14.7 9.4 13.6 10.5 12 C9.4 10.4 8.3 9.3 7 9.3 Z M17 9.3 C15.7 9.3 14.6 10.4 13.5 12 C14.6 13.6 15.7 14.7 17 14.7 C18.5 14.7 19.7 13.5 19.7 12 C19.7 10.5 18.5 9.3 17 9.3 Z',
+    'Triángulo': 'M12 2.5 L22.5 21 L1.5 21 Z M12 7.4 L5.6 18.6 L18.4 18.6 Z',
+    'Regla': IC.j(IC.pol(IC.rot([[1,8],[23,8],[23,16],[1,16]], -30)), IC.pol(IC.rot([[4,8],[5.2,8],[5.2,11.5],[4,11.5]], -30)), IC.pol(IC.rot([[8,8],[9.2,8],[9.2,10.4],[8,10.4]], -30)), IC.pol(IC.rot([[12,8],[13.2,8],[13.2,11.5],[12,11.5]], -30)), IC.pol(IC.rot([[16,8],[17.2,8],[17.2,10.4],[16,10.4]], -30)), IC.pol(IC.rot([[20,8],[21.2,8],[21.2,11.5],[20,11.5]], -30))),
+    'Calculadora': IC.j(IC.rr(4,1.5,16,21,2), IC.rect(6.5,4,11,4.5), ...[0,1,2].flatMap(fila => [0,1,2].map(col => IC.rect(6.5 + col * 4, 10.5 + fila * 3.8, 3, 2.6)))),
+    'Gráfica': IC.j(IC.rect(2,20,20,2), IC.rect(3.5,13,4,6), IC.rect(10,8,4,11), IC.rect(16.5,3,4,16)),
+    'Compás': IC.j(IC.circ(12,3.6,2.2), IC.pol([[10.6,5.6],[12.2,6],[7.2,21.5],[5.2,21]]), IC.pol([[13.4,5.6],[11.8,6],[16.8,21.5],[18.8,21]]), IC.rect(7.6,14,8.8,1.4))
+  },
+  'Historia y geografía': {
+    'Globo terráqueo': IC.j(IC.anillo(12,12,10,1.6), 'M8 5.4 C9.6 5 10.6 6 10.2 7.4 C9.8 8.8 7.8 8.6 7.6 10.2 C7.4 11.6 9.6 12 10 13.6 C10.4 15.2 9 16.8 8 18.4 C6 17 4.4 14.6 4.2 12 C4 9.2 5.6 6.6 8 5.4 Z M15.6 6 C17.6 7.2 19.2 9.2 19.6 11.6 C18.4 11.8 17.6 11 16.6 11.2 C15.6 11.4 15.8 13 14.8 13.2 C13.6 13.4 13 12 13.4 10.8 C13.8 9.6 15.2 9.4 15.2 8.2 C15.2 7.4 15 6.6 15.6 6 Z M14.6 15.6 C15.6 15 17 15.2 17.8 16 C16.8 17.6 15.4 18.8 13.6 19.4 C13.6 18 13.6 16.2 14.6 15.6 Z'),
+    'Mapa': 'M2 5 L8 2.5 L16 5 L22 2.5 L22 19 L16 21.5 L8 19 L2 21.5 Z M8.8 4.6 L8.8 17.6 L15.2 19.6 L15.2 6.6 Z',
+    'Bandera': IC.j(IC.rect(3,2,2,20.5), 'M6 3 C9 1.6 11.6 4.4 14.6 3.4 C16.4 2.8 18 2.4 21 3 L21 13 C18 12.4 16.4 12.8 14.6 13.4 C11.6 14.4 9 11.6 6 13 Z'),
+    'Castillo': 'M2 6 L5 6 L5 8 L7 8 L7 6 L10 6 L10 8 L14 8 L14 6 L17 6 L17 8 L19 8 L19 6 L22 6 L22 22 L14.5 22 L14.5 17 C14.5 15.6 13.4 14.5 12 14.5 C10.6 14.5 9.5 15.6 9.5 17 L9.5 22 L2 22 Z M5 12 L7 12 L7 15 L5 15 Z M17 12 L19 12 L19 15 L17 15 Z',
+    'Columna griega': IC.j(IC.rect(3,2,18,2.2), 'M4 5 L20 5 L18.5 7.4 L5.5 7.4 Z', IC.rect(6.5,8.2,2,10.6), IC.rect(9.6,8.2,1.6,10.6), IC.rect(12.8,8.2,1.6,10.6), IC.rect(15.5,8.2,2,10.6), 'M5.5 19.6 L18.5 19.6 L20 22 L4 22 Z'),
+    'Brújula': IC.j(IC.anillo(12,12,10,1.8), IC.pol([[12,4.5],[14.2,12],[12,19.5],[9.8,12]]), IC.circ(12,12,1)),
+    'Montaña': 'M1.5 21 L9 7 L12.6 13.4 L15.5 9 L22.5 21 Z M9 10.4 L7.2 13.8 L8.6 13 L9.8 14 L10.8 12.6 Z',
+    'Reloj de arena': IC.j(IC.rect(4,1.5,16,2.2), IC.rect(4,20.3,16,2.2), 'M6 4.2 L18 4.2 C18 8 16 10.4 13.6 12 C16 13.6 18 16 18 19.8 L6 19.8 C6 16 8 13.6 10.4 12 C8 10.4 6 8 6 4.2 Z M8.6 18 L15.4 18 C14.8 16.2 13.4 15.2 12 15.2 C10.6 15.2 9.2 16.2 8.6 18 Z'),
+    'Corona': 'M2 7 L7 11.5 L12 3.5 L17 11.5 L22 7 L20 18 L4 18 Z M4 19.5 L20 19.5 L20 22 L4 22 Z',
+    'Pirámide': 'M12 3 L23 21 L1 21 Z M12 7.6 L13.2 20 L19.6 20 Z',
+    'Ancla': IC.j(IC.anillo(12,4.5,2.6,1.4), IC.rect(11,7,2,13), IC.rect(7.5,9,9,1.8), 'M3 12.5 L6.2 11 C6.2 15.6 8.6 18.6 11 19.4 L11 21.6 C6.6 20.8 3.6 17 3 12.5 Z M21 12.5 L17.8 11 C17.8 15.6 15.4 18.6 13 19.4 L13 21.6 C17.4 20.8 20.4 17 21 12.5 Z')
+  },
+  'Escuela': {
+    'Lápiz': IC.j(IC.pol(IC.rot([[5,9.5],[16.5,9.5],[21.5,12],[16.5,14.5],[5,14.5]], -45)), IC.pol(IC.rot([[1.5,9.5],[3.8,9.5],[3.8,14.5],[1.5,14.5]], -45))),
+    'Mochila': IC.j('M9 2.5 L15 2.5 C15.8 2.5 16.5 3.2 16.5 4 L16.5 5.2 C19 6 20.5 8.2 20.5 11 L20.5 20 C20.5 21.4 19.4 22.5 18 22.5 L6 22.5 C4.6 22.5 3.5 21.4 3.5 20 L3.5 11 C3.5 8.2 5 6 7.5 5.2 L7.5 4 C7.5 3.2 8.2 2.5 9 2.5 Z M9.2 4.2 L9.2 5 L14.8 5 L14.8 4.2 Z M7 13.5 L7 18.6 C7 19.4 7.6 20 8.4 20 L15.6 20 C16.4 20 17 19.4 17 18.6 L17 13.5 Z', IC.rect(11,15,2,2.4)),
+    'Trofeo': IC.j('M6 2 L18 2 L18 3.5 L21.5 3.5 L21.5 6.5 C21.5 9.2 19.6 11.2 17.2 11.5 C16.2 13.6 14.4 15 12.8 15.3 L12.8 18 L16 18 L16 20 L8 20 L8 18 L11.2 18 L11.2 15.3 C9.6 15 7.8 13.6 6.8 11.5 C4.4 11.2 2.5 9.2 2.5 6.5 L2.5 3.5 L6 3.5 Z M4.4 5.4 L4.4 6.5 C4.4 7.9 5.2 9.1 6.3 9.5 C6.1 8.6 6 7.7 6 6.8 L6 5.4 Z M19.6 5.4 L18 5.4 L18 6.8 C18 7.7 17.9 8.6 17.7 9.5 C18.8 9.1 19.6 7.9 19.6 6.5 Z', IC.rect(6,21,12,1.8)),
+    'Estrella': IC.estrella(12,12.6,10.5,4.4),
+    'Corazón': 'M12 21.5 C6 17 2 13.4 2 8.8 C2 5.6 4.4 3.2 7.4 3.2 C9.4 3.2 11 4.3 12 6 C13 4.3 14.6 3.2 16.6 3.2 C19.6 3.2 22 5.6 22 8.8 C22 13.4 18 17 12 21.5 Z',
+    'Computadora': IC.j('M2 4 L22 4 L22 17 L2 17 Z M4 6 L4 15 L20 15 L20 6 Z', IC.rect(10,17,4,3), IC.rect(6.5,20,11,2)),
+    'Nota musical': IC.j(IC.elip(7.5,18,4,3.2), IC.elip(17.5,15.5,4,3.2), IC.rect(10.2,3.5,1.8,14.5), IC.rect(20.2,2,1.8,13.5), IC.pol([[10.2,3.5],[22,1],[22,4.6],[10.2,7.2]])),
+    'Paleta de pintura': 'M12 2 C6.5 2 2 6 2 11.2 C2 16.4 6.4 20.5 11.6 20.5 C13.2 20.5 13.8 19.6 13.6 18.6 C13.4 17.4 12.6 16.6 13 15.6 C13.4 14.6 14.4 14.4 15.6 14.4 L17.6 14.4 C20.2 14.4 22 12.6 22 10 C22 5.6 17.6 2 12 2 Z M6.5 9 A1.6 1.6 0 1 0 6.5 12.2 A1.6 1.6 0 1 0 6.5 9 Z M9.6 5 A1.6 1.6 0 1 0 9.6 8.2 A1.6 1.6 0 1 0 9.6 5 Z M14.6 5 A1.6 1.6 0 1 0 14.6 8.2 A1.6 1.6 0 1 0 14.6 5 Z M18 8.4 A1.6 1.6 0 1 0 18 11.6 A1.6 1.6 0 1 0 18 8.4 Z M7.6 14 A1.6 1.6 0 1 0 7.6 17.2 A1.6 1.6 0 1 0 7.6 14 Z',
+    'Balón': IC.j(IC.anillo(12,12,10,1.6), IC.pol(IC.rot([[12,8.4],[15.4,10.9],[14.1,14.9],[9.9,14.9],[8.6,10.9]], 0)), IC.rect(11.2,4,1.6,4.4), IC.rect(15.2,13,1.6,4.6,-35), IC.rect(7.2,13,1.6,4.6,35), IC.rect(16.4,8.6,1.4,4.2,72), IC.rect(6.2,8.6,1.4,4.2,-72)),
+    'Manzana': IC.j('M12 7 C10.6 6 9.2 5.6 7.8 5.6 C4.6 5.6 2.5 8.4 2.5 12 C2.5 17 6 22.5 9 22.5 C10.2 22.5 10.8 21.8 12 21.8 C13.2 21.8 13.8 22.5 15 22.5 C18 22.5 21.5 17 21.5 12 C21.5 8.4 19.4 5.6 16.2 5.6 C14.8 5.6 13.4 6 12 7 Z', 'M12.6 5.6 C12.6 3.4 14.2 1.6 16.6 1.5 C16.6 3.8 15 5.4 12.6 5.6 Z'),
+    'Campana': IC.j('M12 2 C12.8 2 13.4 2.6 13.4 3.4 L13.4 4.2 C16.4 4.8 18.5 7.4 18.5 10.5 L18.5 15.5 L21 18 L21 19 L3 19 L3 18 L5.5 15.5 L5.5 10.5 C5.5 7.4 7.6 4.8 10.6 4.2 L10.6 3.4 C10.6 2.6 11.2 2 12 2 Z', 'M9.6 20 L14.4 20 C14.4 21.4 13.3 22.5 12 22.5 C10.7 22.5 9.6 21.4 9.6 20 Z'),
+    'Megáfono': IC.j('M3 9 L9 9 L19 3.5 L19 20.5 L9 15 L3 15 Z', IC.rect(5,15.6,3.2,6), IC.rect(20.4,10.8,2.4,2.4)),
+    'Grupo de personas': IC.j(IC.circ(12,6.5,3.4), 'M5.5 20 C5.5 15.6 8.4 12.4 12 12.4 C15.6 12.4 18.5 15.6 18.5 20 Z', IC.circ(4.8,9,2.4), IC.circ(19.2,9,2.4), 'M0.8 18 C0.8 15 2.6 12.8 4.8 12.8 C5.8 12.8 6.6 13.2 7.2 13.8 C5.6 15 4.6 16.4 4.2 18 Z M23.2 18 C23.2 15 21.4 12.8 19.2 12.8 C18.2 12.8 17.4 13.2 16.8 13.8 C18.4 15 19.4 16.4 19.8 18 Z')
+  }
+};
+Object.entries(ICONOS_MATERIA).forEach(([mat, lista]) => {
+  const cont = $('gridIconosMateria');
+  const h = document.createElement('h4'); h.textContent = mat; h.dataset.mat = mat; cont.appendChild(h);
+  const g = document.createElement('div'); g.className = 'grid gridIco'; g.dataset.mat = mat; cont.appendChild(g);
+  Object.entries(lista).forEach(([n, d]) => {
+    const b = document.createElement('button'); b.className = 'forma'; b.title = n; b.dataset.n = sinAcentosIco(n + ' ' + mat);
+    b.innerHTML = `<svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="${d}"/></svg>`;
+    b.onclick = () => agregarIcono(n, d);
+    g.appendChild(b);
+  });
+});
+function sinAcentosIco(t){ return t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+function filtrarIconos(){
+  const q = sinAcentosIco($('buscarIcono').value.trim());
+  document.querySelectorAll('#gridIconos button, #gridIconosMateria .forma').forEach(b => {
+    b.hidden = !!q && !(b.dataset.n || sinAcentosIco(b.title)).includes(q);
+  });
+  document.querySelectorAll('#gridIconosMateria h4').forEach(h => {
+    const g = h.nextElementSibling; h.hidden = g.hidden = ![...g.children].some(b => !b.hidden);
+  });
+}
+$('buscarIcono').addEventListener('input', filtrarIconos);
+Object.assign(ICONOS, ...Object.values(ICONOS_MATERIA));   // también se pueden usar en plantillas con ICONO()
+
+/* =========================================================
+   RECORTAR IMAGEN EN FORMA
+   ========================================================= */
+function recortar(forma){
+  const o = activo(); if (!o || o.type !== 'image') return;
+  if (o.marco){ o.marco.tipo = { circulo:'circulo', cuadrado:'rect', redondo:'redondo', estrella:'estrella' }[forma] || 'rect'; ajustarFoto(o); canvas.requestRenderAll(); actualizarPanel(); guardarEstado(); return; }
+  const w = o.width, h = o.height, m = Math.min(w, h);
+  const base = { originX:'center', originY:'center', left:0, top:0 };
+  let c = null;
+  if (forma === 'circulo')  c = new fabric.Circle({ ...base, radius: m/2 });
+  if (forma === 'cuadrado') c = new fabric.Rect({ ...base, width: m, height: m });
+  if (forma === 'redondo')  c = new fabric.Rect({ ...base, width: w, height: h, rx: m*0.12, ry: m*0.12 });
+  if (forma === 'estrella') c = new fabric.Polygon(puntosEstrella(5, m/2, m/4.6), base);
+  o.clipPath = c; o.dirty = true;
+  canvas.requestRenderAll(); guardarEstado();
+}
+
+</script>
