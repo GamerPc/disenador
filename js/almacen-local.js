@@ -88,6 +88,7 @@
     async cargarKit(){ const o = await leer('kit'); return o ? o.contenido : ''; }
   };
 
+  window.ALMACEN_LOCAL = FUNCIONES;   // la nube lo usa para subir lo que ya tenías aquí
   // Imita google.script.run: withSuccessHandler(...).withFailureHandler(...).funcion(...)
   function llamada(){
     let ok = () => {}, mal = e => console.error(e);
@@ -96,9 +97,17 @@
       if (k === 'withFailureHandler') return f => { mal = f; return p; };
       if (k === 'withUserObject') return () => p;
       return (...args) => {
-        const f = FUNCIONES[k];
-        Promise.resolve().then(() => { if (!f) throw new Error('No disponible en la versión web: ' + String(k)); return f(...args); })
-          .then(r => ok(r), e => mal(e instanceof Error ? e : new Error(String(e))));
+        const conNube = window.APIK_CONFIG && window.APIK_CONFIG.firebase && window.APIK_CONFIG.firebase.apiKey;
+        // un enlace compartido se abre al cargar la página: espera a que la nube esté lista
+        const espera = (k === 'cargarCompartido' && conNube)
+          ? new Promise(listo => { let n = 0; const t = setInterval(() => { if (window.NUBE_PUBLICAS || ++n > 100){ clearInterval(t); listo(); } }, 100); })
+          : Promise.resolve();
+        espera.then(() => {
+          // con sesión iniciada, se usa la nube; si no, este navegador
+          const f = (window.NUBE_FUNCIONES && window.NUBE_FUNCIONES[k]) || (window.NUBE_PUBLICAS && window.NUBE_PUBLICAS[k]) || FUNCIONES[k];
+          if (!f) throw new Error('No disponible en la versión web: ' + String(k));
+          return f(...args);
+        }).then(r => ok(r), e => mal(e instanceof Error ? e : new Error(String(e))));
       };
     }});
     return p;

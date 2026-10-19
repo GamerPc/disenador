@@ -69,16 +69,43 @@ Los enlaces están al final de `apps-script/Index.html`, en el bloque `window.AP
 
 ---
 
-## 3. Importante sobre la versión web
+## 3. Guardar en la nube (opcional, gratis con Firebase)
 
-- Los diseños se guardan **en el navegador** de cada persona. Si borra los datos del navegador o cambia de computadora, no los verá.
+Sin esto, la versión web guarda los diseños **en el navegador** de cada persona. Con Firebase aparece el botón **☁ Entrar**: cada quien entra con su cuenta de Google y sus diseños, plantillas y kit de marca quedan en la nube (los ve en cualquier computadora o celular), y **Compartir** crea un enlace que cualquiera puede abrir.
+
+1. Entra a **console.firebase.google.com** → **Crear un proyecto** (por ejemplo `disenador-apik`). Google Analytics no es necesario.
+2. **Compilación → Authentication → Comenzar → Google → Habilitar** → elige tu correo de asistencia → **Guardar**.
+3. En **Authentication → Configuración → Dominios autorizados** agrega `gamerpc.github.io` (y tu dominio propio, si lo conectas).
+4. **Compilación → Firestore Database → Crear base de datos** → ubicación `nam5` o la más cercana → **modo de producción**.
+5. En **Firestore → Reglas**, borra lo que hay, pega el contenido del archivo **`firestore.rules`** de este repositorio y pulsa **Publicar**.
+6. **⚙ Configuración del proyecto → Tus apps → `</>` (Web)** → ponle un nombre → **Registrar app**. Copia los datos que aparecen en `firebaseConfig`.
+7. Abre **`config.js`** y cambia `firebase: null,` por tus datos, por ejemplo:
+   ```js
+   firebase: { apiKey: 'AIza…', authDomain: 'disenador-apik.firebaseapp.com', projectId: 'disenador-apik', appId: '1:…:web:…' },
+   ```
+   Estos datos **no son secretos** (Google los diseñó para ir en la página); lo que protege los diseños son las reglas del paso 5: cada persona solo puede ver y cambiar lo suyo.
+8. Guarda el cambio (commit). En 1–2 minutos aparece **☁ Entrar** en la barra.
+
+El plan gratuito (Spark) alcanza para empezar: 1 GB de almacenamiento y 50,000 lecturas al día. Firebase no pide tarjeta para este plan.
+
+---
+
+## 4. App instalable
+
+La versión web se puede **instalar** como app (botón **📲 Instalar**, o en el celular: menú ⋮ → *Instalar app*; en iPhone: Compartir → *Agregar a inicio*). Abre aunque no haya internet y avisa cuando hay una versión nueva.
+
+---
+
+## 5. Importante sobre la versión web
+
+- Sin la nube (sección 3), los diseños se guardan **en el navegador** de cada persona. Si borra los datos del navegador o cambia de computadora, no los verá.
 - Por eso en **📂 Abrir** están los botones **⬇ Descargar este diseño** (archivo `.apik.json`) y **📂 Abrir un archivo**: sirven como copia de seguridad y para pasar diseños a otra computadora.
 - **Compartir** en la versión web descarga el diseño como archivo para mandarlo por WhatsApp o correo.
 - Las exportaciones (PNG, PDF, PowerPoint, video) se descargan directo a la computadora.
 
 ---
 
-## 4. Versión de Google Apps Script (con Google Drive)
+## 6. Versión de Google Apps Script (con Google Drive)
 
 1. En **script.google.com** crea un proyecto.
 2. Pega `apps-script/Code.gs` en `Código.gs`.
@@ -89,7 +116,7 @@ Los enlaces están al final de `apps-script/Index.html`, en el bloque `window.AP
 
 ---
 
-## 5. Cómo se actualiza el sistema (para quien programa)
+## 7. Cómo se actualiza el sistema (para quien programa)
 
 Todo el programa vive en **`fuente/Index.completo.html`** (un solo archivo con HTML, estilos y código).
 `fuente/almacen-local.js` es la pieza que permite a la versión web guardar en el navegador.

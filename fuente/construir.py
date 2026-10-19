@@ -125,7 +125,7 @@ print('Index.html', len(h.encode('utf-8')), 'bytes;', ', '.join(f'Codigo{i}.html
 
 # 5) versión web: un solo archivo de programa (js/app.js) y el almacén del navegador (js/almacen-local.js)
 REEMPLAZOS_WEB = [('a la papelera de Drive', 'a la papelera (se borra de este navegador)'), ('papelera de Drive', 'papelera'),
-  ('Google Drive', 'este navegador'), ('su propio Drive', 'su propio navegador'), ('tu Drive', 'este navegador'),
+  ('tu Google Drive', 'este navegador'), ('Google Drive', 'este navegador'), ('su propio Drive', 'su propio navegador'), ('tu Drive', 'este navegador'),
   ('en Drive', 'en este navegador'), ('a Drive', 'a este navegador'), ('de Drive', 'de este navegador'), ('Mis diseños en Drive', 'Mis diseños')]
 def textosWeb(t):
     for a, b in REEMPLAZOS_WEB: t = t.replace(a, b)
@@ -137,7 +137,15 @@ assert 'name="viewport"' in w
 w = w.replace(fab, fab + '\n<script>window.fabric || document.write(\'<script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"><\\/script>\')</script>', 1)
 mw = list(re.finditer(r'<script>\n(.*?)</script>', w, re.S))[-1]
 w = w[:mw.start()] + '<script src="config.js"></script>\n<script src="js/almacen-local.js"></script>\n<script src="js/app.js"></script>' + w[mw.end():]
+# app instalable: manifiesto, íconos y service worker (solo en la versión web)
+w = w.replace('<head>', '<head>\n<link rel="manifest" href="manifest.webmanifest">\n<meta name="theme-color" content="#05070d">\n<link rel="icon" type="image/png" href="icons/favicon.png">\n<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">\n<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-title" content="Diseñador">\n<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">', 1)
+w = w.replace('<script src="js/app.js"></script>', '<script src="js/app.js"></script>\n<script src="js/nube.js"></script>\n<script src="js/pwa.js"></script>', 1)
 open(RAIZ + 'index.html', 'w', encoding='utf-8').write(textosWeb(w))
 open(RAIZ + 'js/app.js', 'w', encoding='utf-8').write(textosWeb(js))
 shutil.copy(FUENTE + 'almacen-local.js', RAIZ + 'js/almacen-local.js')
+for f in ('pwa.js', 'nube.js'): shutil.copy(FUENTE + f, RAIZ + 'js/' + f)
+import hashlib
+huella = hashlib.sha1(b''.join(open(RAIZ + x, 'rb').read() for x in ('index.html', 'config.js', 'js/app.js', 'js/almacen-local.js', 'js/pwa.js', 'js/nube.js'))).hexdigest()[:10]
+open(RAIZ + 'sw.js', 'w', encoding='utf-8').write(open(FUENTE + 'sw.plantilla.js', encoding='utf-8').read().replace('__VERSION__', huella))
+print('Service worker versión', huella)
 print('Web: index.html', len(w.encode('utf-8')), 'bytes; js/app.js', len(js.encode('utf-8')), 'bytes')

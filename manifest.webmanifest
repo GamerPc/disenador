@@ -1,0 +1,18 @@
+{
+  "name": "Diseñador · Apik-Desing",
+  "short_name": "Diseñador",
+  "description": "Editor de diseño gratuito para la escuela y tu negocio: carteles, presentaciones, mapas, logos y tarjetas.",
+  "lang": "es-MX",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#05070d",
+  "theme_color": "#05070d",
+  "categories": ["education", "productivity", "design"],
+  "icons": [
+    { "src": "icons/icono-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icono-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
