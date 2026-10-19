@@ -25,7 +25,54 @@
   const trozos = t => { t = String(t || ''); const r = []; for (let i = 0; i < t.length; i += PARTE) r.push(t.slice(i, i + PARTE)); return r.length ? r : ['']; };
   const kb = t => Math.round(String(t || '').length / 1024);
   const ahora = () => new Date().toISOString();
-  async function escribirGrande(ref, meta, texto, padreAntes){
+  // ---------- Cuidar la nube gratis: fotos más ligeras, límite de tamaño y mensajes claros ----------
+  const LIMITE_MB = 12, MAX_LADO = 1800;
+  const cargarImg = src => new Promise((ok, mal) => { const i = new Image(); i.onload = () => ok(i); i.onerror = mal; i.src = src; });
+  // Re-comprime una foto pesada guardada dentro del diseño (y la achica si es enorme), sin cambiar cómo se ve
+  async function aligerarFoto(o){
+    const src = o.src;
+    if (typeof src !== 'string' || !src.startsWith('data:image/') || src.startsWith('data:image/svg') || src.length < 250000) return false;
+    let img; try { img = await cargarImg(src); } catch (e) { return false; }
+    const nw = img.naturalWidth, nh = img.naturalHeight; if (!nw || !nh) return false;
+    // con filtros o recorte en forma solo se re-comprime (achicarla movería el recorte)
+    const puedeAchicar = !(o.filters && o.filters.length) && !o.clipPath;
+    const f = puedeAchicar ? Math.min(1, MAX_LADO / Math.max(nw, nh)) : 1;
+    const w = Math.max(1, Math.round(nw * f)), h = Math.max(1, Math.round(nh * f));
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const x = c.getContext('2d'); x.drawImage(img, 0, 0, w, h);
+    let alfa = false;
+    try { const d = x.getImageData(0, 0, w, h).data; for (let i = 3; i < d.length; i += 4 * 7) if (d[i] < 250){ alfa = true; break; } } catch (e) { return false; }
+    let nuevo = c.toDataURL('image/webp', 0.86);
+    if (!nuevo.startsWith('data:image/webp')) nuevo = alfa ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.86);
+    if (nuevo.length >= src.length * 0.92) return false;
+    const kx = w / nw, ky = h / nh;
+    if (kx !== 1 || ky !== 1){
+      o.width = (o.width || nw) * kx; o.height = (o.height || nh) * ky;
+      o.cropX = (o.cropX || 0) * kx; o.cropY = (o.cropY || 0) * ky;
+      o.scaleX = (o.scaleX || 1) / kx; o.scaleY = (o.scaleY || 1) / ky;
+    }
+    o.src = nuevo; return true;
+  }
+  async function recorrer(n, fn, prof = 0){
+    if (!n || typeof n !== 'object' || prof > 40) return 0;
+    let c = 0;
+    if (Array.isArray(n)){ for (const v of n) c += await recorrer(v, fn, prof + 1); return c; }
+    if (n.type === 'image' && typeof n.src === 'string' && await fn(n)) c++;
+    for (const k in n) if (n[k] && typeof n[k] === 'object') c += await recorrer(n[k], fn, prof + 1);
+    return c;
+  }
+  async function aligerarDiseno(texto){
+    if (typeof texto !== 'string' || texto.length < 400000 || texto[0] !== '{' || !texto.includes('data:image/')) return texto;
+    let d; try { d = JSON.parse(texto); } catch (e) { return texto; }
+    try { return (await recorrer(d, aligerarFoto)) ? JSON.stringify(d) : texto; } catch (e) { return texto; }
+  }
+  const pesoMB = t => String(t || '').length / 1048576;
+  async function escribirGrande(ref, meta, texto, padreAntes, sinLimite){
+    if (!sinLimite){
+      texto = await aligerarDiseno(texto);
+      const mb = pesoMB(texto);
+      if (mb > LIMITE_MB) throw new Error(`Este diseño pesa ${mb.toFixed(1)} MB y la nube acepta hasta ${LIMITE_MB} MB. Quita o cambia algunas fotos, videos o modelos 3D y vuelve a intentarlo. Tu diseño no se perdió: sigue aquí abierto.`);
+    }
     const ps = trozos(texto);
     const previo = await ref.get().catch(() => null);
     const nPrevio = previo && previo.exists ? (previo.data().partes || 0) : 0;
@@ -56,7 +103,7 @@
     if (vs.length && Date.now() - new Date(vs[0].creada).getTime() < MIN_VERSIONES * 60 * 1000) return;
     const previo = await leerGrande(ref).catch(() => null);
     if (!previo) return;
-    await escribirGrande(ref.collection('versiones').doc(), { fecha:previo.meta.fecha || ahora(), creada:ahora() }, previo.texto);
+    await escribirGrande(ref.collection('versiones').doc(), { fecha:previo.meta.fecha || ahora(), creada:ahora() }, previo.texto, false, true);
     for (const v of vs.slice(MAX_VERSIONES - 1)) await borrarGrande(ref.collection('versiones').doc(v.id));
   }
   // id de una versión: "diseño~versión"; id de una plantilla: "pl_…"
@@ -129,9 +176,28 @@
   // Herramientas de la nube para otras partes (escuela, trabajo en equipo)
   window.NUBE = {
     listo, get db(){ return db; }, get auth(){ return auth; }, get usuario(){ return usuario; },
-    escribirGrande, leerGrande, borrarGrande, trozos, ahora,
+    escribirGrande, leerGrande, borrarGrande, trozos, ahora, aligerarDiseno, pesoMB, LIMITE_MB,
     entrar:() => entrar(), pedirCuenta(){ if (usuario) return true; pintarCuenta(); abrirModal('mNube'); toast('Primero entra con tu cuenta de Google'); return false; }
   };
+  // Los errores técnicos de la nube se explican con palabras sencillas
+  const traducirError = m => {
+    m = String(m || '');
+    if (/resource-exhausted|quota/i.test(m)) return 'La nube gratuita llegó a su límite de hoy. Tu diseño no se perdió: sigue aquí. Descárgalo con ⬇ Exportar o vuelve a intentarlo mañana.';
+    if (/client is offline|unavailable|Failed to fetch|network/i.test(m)) return 'No hay conexión con la nube. Revisa tu internet y vuelve a intentarlo; tu diseño sigue aquí.';
+    if (/deadline-exceeded/i.test(m)) return 'La nube tardó demasiado en responder. Revisa tu internet y vuelve a intentarlo.';
+    if (/Missing or insufficient permissions|permission-denied/i.test(m)) { const paso = (m.match(/paso: [^)]+/) || [''])[0]; return 'La nube no dio permiso para esto. Si administras la app, revisa que las reglas de Firestore estén publicadas' + (paso ? ' (' + paso + ')' : '') + '.'; }
+    return null;
+  };
+  if (typeof window.toast === 'function' && !window.toast._nube){
+    const toastBase = window.toast;
+    window.toast = function(msg){
+      const t = traducirError(msg), larga = t || String(msg || '').length > 90;
+      const r = toastBase.call(this, t || msg);
+      if (larga){ const el = document.getElementById('toast'); if (el){ clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('ver'), 7000); } }
+      return r;
+    };
+    window.toast._nube = true;
+  }
   window.NUBE_PUBLICAS = {
     async cargarCompartido(id){
       await listo;

@@ -156,3 +156,9 @@ Prueba rápida (necesita Python con Playwright): `python3 pruebas/humo.py` abre 
 ## Licencia
 
 Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, el código es de sus autores y nadie más puede reutilizarlo legalmente. Si quieren que otros puedan usarlo y mejorarlo, pueden agregar una (por ejemplo MIT o GPL) desde GitHub: **Add file → Create new file → `LICENSE` → Choose a license template**.
+
+## v36: guías, cuidado de la nube, modo claro y primeros pasos
+- `guia.html` (+ `guia-maestros.pdf`, `guia-alumnos.pdf`, `img/guia/`): guías del modo escuela para imprimir o compartir.
+- `fuente/nube.js`: antes de subir, las fotos pesadas se re-comprimen (WebP/JPEG, máx. 1800 px) sin cambiar cómo se ven; límite de 12 MB por diseño; los errores de la nube (límite diario, sin conexión, permisos) se explican con palabras sencillas.
+- `fuente/equipo.js`: la presencia se actualiza cada 40 s y solo con la pestaña visible (menos escrituras).
+- `74-modo-claro-atajos-y-primeros-pasos.js`: botón ☀/☾ (se recuerda), atajos nuevos (T, R, O, L, I, Ctrl+E, Ctrl+↑/↓, Ctrl+B/I/U, Ctrl+Shift+L) visibles en botones, menú «Más» y ayuda; práctica guiada «Primeros pasos» que avanza cuando el usuario hace cada cosa.

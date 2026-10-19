@@ -23,6 +23,7 @@
   document.body.appendChild(menu);
   // prioridad: el número más bajo se va primero al menú
   const PRIOR = [
+    [e => e.id === 'bTema', 0.5],
     [e => e.tagName === 'BUTTON' && e.getAttribute('onclick') === "abrirModal('mAyuda')", 1],
     [e => e.id === 'bAuto', 2], [e => (e.getAttribute('onclick') || '').includes('ajustarLienzoAContenido'), 3],
     [e => (e.getAttribute('onclick') || '').includes('abrirBuscar'), 4], [e => e.id === 'bInstalar', 5],

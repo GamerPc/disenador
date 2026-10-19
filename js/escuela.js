@@ -39,7 +39,7 @@
   .alumno small{color:var(--suave,#9ca3af)}.alumno .pb{padding:2px 8px;min-height:0;border-radius:999px}
   .filaRub{display:flex;gap:6px;margin:4px 0}.filaRub input[type=number]{width:80px}.filaRub .buscador{flex:1;margin:0}
   .rub{display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:12.5px}.rub label{display:flex;align-items:center;gap:6px;justify-content:space-between;margin:0;color:inherit}
-  .rub label span{color:var(--suave,#9ca3af);margin-left:auto}.rub input{width:56px}.totRub{font-size:13px;margin-top:2px}
+  .rub label span{color:var(--suave,#9ca3af);margin-left:auto;white-space:nowrap;flex:none}.rub input{width:56px}.totRub{font-size:13px;margin-top:2px}
   #bEscuela.avisoEsc{position:relative}#bEscuela.avisoEsc::after{content:attr(data-n);position:absolute;top:2px;right:2px;min-width:16px;height:16px;border-radius:8px;background:#ef4444;color:#fff;font:700 10px/16px Inter,sans-serif;text-align:center;padding:0 3px}
   #bandaActividad span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#bandaActividad .btnP{padding:7px 14px;white-space:nowrap}#bandaActividad[hidden]{display:none}`;
   document.head.appendChild(st);
@@ -78,7 +78,8 @@
     cuerpo().innerHTML = `<div class="grupoBtns"><button class="pb" id="escCrear">＋ Crear un grupo (soy maestro)</button><button class="pb" id="escUnirme">🔑 Unirme con un código</button></div>
       <div class="escLista">${activos.length ? activos.map(item).join('')
         : '<p class="hint">Todavía no estás en ningún grupo. Si eres maestro, crea uno; si eres alumno, pide el código a tu maestro.</p>'}</div>
-      ${archivados.length ? `<details><summary class="hint" style="cursor:pointer">🗄 Grupos archivados (${archivados.length})</summary><div class="escLista">${archivados.map(item).join('')}</div></details>` : ''}`;
+      ${archivados.length ? `<details><summary class="hint" style="cursor:pointer">🗄 Grupos archivados (${archivados.length})</summary><div class="escLista">${archivados.map(item).join('')}</div></details>` : ''}
+      <p class="hint" style="margin-top:12px">📘 ¿Primera vez? <a href="https://gamerpc.github.io/disenador/guia.html" target="_blank" rel="noopener">Lee la guía para maestros y alumnos</a>.</p>`;
     marcarBoton(activos.reduce((t, g) => t + ((g.pend && g.pend.n) || 0), 0));
     $e('escCrear').onclick = () => ver('Crear grupo', formGrupo);
     $e('escUnirme').onclick = () => ver('Unirme a un grupo', () => formUnirme());

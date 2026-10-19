@@ -75,7 +75,7 @@
     S.quitar.push(ref.collection('objetos').onSnapshot(sn => alCambiarObjetos(sn)));
     S.quitar.push(ref.collection('presencia').onSnapshot(sn => { S.otros = {}; sn.docs.forEach(d => { if (d.id !== S.yo) S.otros[d.id] = d.data(); }); pintarDock(); canvas.requestRenderAll(); }));
     S.quitar.push(ref.collection('comentarios').onSnapshot(sn => { S.comentarios = sn.docs.map(d => ({ id:d.id, ...d.data() })).sort((a, b) => a.t - b.t); pintarDock(); pintarComentarios(); canvas.requestRenderAll(); }));
-    S.latido = setInterval(presencia, 20000); presencia();
+    S.latido = setInterval(() => { if (!document.hidden) presencia(); }, 40000); presencia();
     const u = new URL(location.href); u.searchParams.set('equipo', eid); history.replaceState(null, '', u);
     pintarDock();
   }
@@ -108,7 +108,13 @@
     borrar.forEach(id => mapa.delete(id));
     const col = S.ref.collection('objetos');
     for (const [id, v] of escrituras){
-      if (v.j.length > MAX_DOC){ avisoGrande(); continue; }
+      if (v.j.length > MAX_DOC){   // una foto muy pesada: se manda una copia más ligera (se ve igual)
+        Promise.resolve(N.aligerarDiseno ? N.aligerarDiseno(v.j) : v.j).then(j2 => {
+          if (j2.length > MAX_DOC){ avisoGrande(); return; }
+          col.doc(idDoc(p, id)).set({ ...v, j:j2 }).catch(e => toast('No se pudo compartir un cambio: ' + e.message));
+        });
+        continue;
+      }
       col.doc(idDoc(p, id)).set(v).catch(e => toast('No se pudo compartir un cambio: ' + e.message));
     }
     borrar.forEach(id => col.doc(idDoc(p, id)).delete().catch(() => {}));
@@ -186,9 +192,10 @@
     const u = N.usuario; if (!u) return;
     S.ref.collection('presencia').doc(S.yo).set({ nombre:u.displayName || u.email || 'Alguien', color:colorDe(S.yo), pagina:actual, sel:canvas.getActiveObjects().map(o => String(o.id)).slice(0, 30), t:Date.now() }).catch(() => {});
   }
+  document.addEventListener('visibilitychange', () => { if (S && !document.hidden) presencia(); });
   let tPres = null; const presenciaPronto = () => { if (!S) return; clearTimeout(tPres); tPres = setTimeout(presencia, 300); };
   canvas.on('selection:created', presenciaPronto); canvas.on('selection:updated', presenciaPronto); canvas.on('selection:cleared', presenciaPronto);
-  const activos = () => Object.values(S ? S.otros : {}).filter(o => Date.now() - (o.t || 0) < 65000);
+  const activos = () => Object.values(S ? S.otros : {}).filter(o => Date.now() - (o.t || 0) < 95000);
   canvas.on('after:render', () => {
     if (!S || generandoVista) return;
     const ctx = canvas.contextContainer, v = canvas.viewportTransform;
