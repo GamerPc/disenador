@@ -41,7 +41,7 @@
     a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click(); a.remove();
     return a.href;
   }
-  const EXT = { 'image/jpeg':'jpg', 'image/png':'png', 'application/pdf':'pdf', 'video/mp4':'mp4', 'video/webm':'webm',
+  const EXT = { 'image/jpeg':'jpg', 'image/png':'png', 'application/pdf':'pdf', 'video/mp4':'mp4', 'video/webm':'webm', 'image/svg+xml':'svg',
     'application/vnd.openxmlformats-officedocument.presentationml.presentation':'pptx' };
 
   const FUNCIONES = {
