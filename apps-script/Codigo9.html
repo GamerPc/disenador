@@ -126,9 +126,7 @@ $('pSombraTipo').addEventListener('change', () => {
 const esResplandor = sh => !!sh && !sh.offsetX && !sh.offsetY;
 
 // Al seleccionar algo, el panel muestra su tipo de relleno y de sombra
-const actualizarPanelBase22 = actualizarPanel;
-actualizarPanel = function(){
-  actualizarPanelBase22.apply(this, arguments);
+alActualizarPanel(function(){
   if (generandoVista) return;
   const o = activo(); if (!o) return;
   const ref = objetivos().flatMap(hojas).find(admiteRelleno);
@@ -150,7 +148,7 @@ actualizarPanel = function(){
   const sh = (objetivos().flatMap(hojas)[0] || o).shadow;
   $('pSombraTipo').value = esResplandor(sh) ? 'brillo' : 'sombra';
   if (esResplandor(sh)) $('pSombraBlur').value = Math.round(sh.blur / (1.4 * s()));
-};
+});
 
 // ---------- Efecto de texto: Neón hueco (solo contorno que brilla) ----------
 const aplicarEfectoTextoBase22 = aplicarEfectoTexto;
@@ -500,9 +498,7 @@ fabric.Pattern.prototype.toSVG = function(object){
     '" xlink:href="' + url + '"></image>\n</pattern>\n';
 };
 const svgADataURL = t => 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(t)));
-const descargarImagenBase23 = descargarImagen;
-descargarImagen = async function(){
-  if ($('eFormato').value !== 'svg') return descargarImagenBase23.apply(this, arguments);
+FORMATO('svg').descargar = async function(){
   canvas.discardActiveObject(); canvas.requestRenderAll();
   const lista = paginasAExportar(), transp = $('eTransp').checked;
   cargando(true);
@@ -516,9 +512,7 @@ descargarImagen = async function(){
   } catch (e) { toast('Error al exportar: ' + e.message); }
   finally { cargando(false); }
 };
-const vistaPreviaBase23 = vistaPrevia;
-vistaPrevia = async function(){
-  if ($('eFormato').value !== 'svg') return vistaPreviaBase23.apply(this, arguments);
+FORMATO('svg').vista = async function(){
   const lista = paginasAExportar(), transp = $('eTransp').checked;
   cargando(true);
   try {
@@ -527,9 +521,7 @@ vistaPrevia = async function(){
       imgs.map(u => `<img src="${u}" style="margin-bottom:8px;background:repeating-conic-gradient(#ccc 0 25%,#fff 0 50%) 0 0/16px 16px">`).join('');
   } finally { cargando(false); }
 };
-const exportarDriveBase23 = exportarDrive;
-exportarDrive = async function(){
-  if ($('eFormato').value !== 'svg') return exportarDriveBase23.apply(this, arguments);
+FORMATO('svg').drive = async function(){
   const lista = paginasAExportar(), transp = $('eTransp').checked;
   cargando(true);
   try {
@@ -631,9 +623,7 @@ async function gotero(){
 }
 
 // ---------- Panel: mostrar los botones que tocan según lo seleccionado ----------
-const actualizarPanelBase23 = actualizarPanel;
-actualizarPanel = function(){
-  actualizarPanelBase23.apply(this, arguments);
+alActualizarPanel(function(){
   if (generandoVista) return;
   const o = activo(); if (!o) return;
   $('bMeterForma').hidden = !(o.type === 'activeSelection' && o.getObjects().length >= 2);
@@ -641,7 +631,7 @@ actualizarPanel = function(){
   if (o.mascara) $('bAgrupar').hidden = true;
   if (o.qr){ $('qrTexto').value = o.qr.texto; $('qrColor').value = aHex(o.qr.color); $('qrFondo').value = aHex(o.qr.fondo); $('qrTransp').checked = !!o.qr.transp; }
   $('bEditarQR').hidden = !o.qr;
-};
+});
 function editarQRSeleccionado(){
   const b = document.querySelector('#pestanas button[data-tab="tElementos"]'); if (b) b.click();
   setTimeout(() => { const t = $('qrTexto'); t.scrollIntoView({ block:'center' }); t.focus(); t.select(); }, 150);

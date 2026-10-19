@@ -1670,7 +1670,14 @@ function aplicar(prop, valor, sinGuardar){
 }
 function textos(){ return objetivos().flatMap(hojas).filter(esTexto); }
 
+// Otras partes agregan lo suyo al panel con alActualizarPanel(función); se ejecutan en orden después del panel base
+const GANCHOS_PANEL = [];
+const alActualizarPanel = fn => GANCHOS_PANEL.push(fn);
 function actualizarPanel(){
+  actualizarPanelBase.apply(this, arguments);
+  for (const f of GANCHOS_PANEL) f();
+}
+function actualizarPanelBase(){
   if (generandoVista) return;
   const o = activo();
   $('sinSel').hidden = !!o; $('propsCont').hidden = !o;
@@ -2298,6 +2305,10 @@ function aplicarTamanoPers(){
 /* =========================================================
    EXPORTAR
    ========================================================= */
+// Otras partes agregan formatos (SVG, página web…) con FORMATO('svg').descargar = …, .vista = …, .drive = …
+const FORMATOS_EXTRA = {};
+const FORMATO = f => FORMATOS_EXTRA[f] || (FORMATOS_EXTRA[f] = {});
+const formatoExtra = acc => { const f = FORMATOS_EXTRA[$('eFormato').value]; return f && f[acc]; };
 function nombreArchivo(){ return ($('nombreDiseno').value || 'diseño').trim(); }
 function gs(fn, ...args){
   return new Promise((ok, mal) => google.script.run.withSuccessHandler(ok).withFailureHandler(mal)[fn](...args));
@@ -2361,6 +2372,7 @@ function avisoVideo(v){
   return 'Video listo (' + mb + ').';
 }
 async function descargarImagen(){
+  if (formatoExtra('descargar')) return formatoExtra('descargar')();
   if ($('eFormato').value === 'video'){
     try { const v = await obtenerVideo(); bajarBlob(v.blob, nombreArchivo() + '.' + v.ext); toast(avisoVideo(v)); }
     catch (e) { console.error(e); toast('No se pudo crear el video: ' + e.message); }
@@ -2390,6 +2402,7 @@ async function descargarImagen(){
   finally { cargando(false); }
 }
 async function vistaPrevia(){
+  if (formatoExtra('vista')) return formatoExtra('vista')();
   if ($('eFormato').value === 'video'){
     try {
       const v = await obtenerVideo();
@@ -2413,6 +2426,7 @@ async function vistaPrevia(){
   } finally { cargando(false); }
 }
 async function exportarDrive(){
+  if (formatoExtra('drive')) return formatoExtra('drive')();
   if ($('eFormato').value === 'video'){
     try {
       const v = await obtenerVideo();
@@ -7103,9 +7117,7 @@ $('pSombraTipo').addEventListener('change', () => {
 const esResplandor = sh => !!sh && !sh.offsetX && !sh.offsetY;
 
 // Al seleccionar algo, el panel muestra su tipo de relleno y de sombra
-const actualizarPanelBase22 = actualizarPanel;
-actualizarPanel = function(){
-  actualizarPanelBase22.apply(this, arguments);
+alActualizarPanel(function(){
   if (generandoVista) return;
   const o = activo(); if (!o) return;
   const ref = objetivos().flatMap(hojas).find(admiteRelleno);
@@ -7127,7 +7139,7 @@ actualizarPanel = function(){
   const sh = (objetivos().flatMap(hojas)[0] || o).shadow;
   $('pSombraTipo').value = esResplandor(sh) ? 'brillo' : 'sombra';
   if (esResplandor(sh)) $('pSombraBlur').value = Math.round(sh.blur / (1.4 * s()));
-};
+});
 
 // ---------- Efecto de texto: Neón hueco (solo contorno que brilla) ----------
 const aplicarEfectoTextoBase22 = aplicarEfectoTexto;
@@ -7477,9 +7489,7 @@ fabric.Pattern.prototype.toSVG = function(object){
     '" xlink:href="' + url + '"></image>\n</pattern>\n';
 };
 const svgADataURL = t => 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(t)));
-const descargarImagenBase23 = descargarImagen;
-descargarImagen = async function(){
-  if ($('eFormato').value !== 'svg') return descargarImagenBase23.apply(this, arguments);
+FORMATO('svg').descargar = async function(){
   canvas.discardActiveObject(); canvas.requestRenderAll();
   const lista = paginasAExportar(), transp = $('eTransp').checked;
   cargando(true);
@@ -7493,9 +7503,7 @@ descargarImagen = async function(){
   } catch (e) { toast('Error al exportar: ' + e.message); }
   finally { cargando(false); }
 };
-const vistaPreviaBase23 = vistaPrevia;
-vistaPrevia = async function(){
-  if ($('eFormato').value !== 'svg') return vistaPreviaBase23.apply(this, arguments);
+FORMATO('svg').vista = async function(){
   const lista = paginasAExportar(), transp = $('eTransp').checked;
   cargando(true);
   try {
@@ -7504,9 +7512,7 @@ vistaPrevia = async function(){
       imgs.map(u => `<img src="${u}" style="margin-bottom:8px;background:repeating-conic-gradient(#ccc 0 25%,#fff 0 50%) 0 0/16px 16px">`).join('');
   } finally { cargando(false); }
 };
-const exportarDriveBase23 = exportarDrive;
-exportarDrive = async function(){
-  if ($('eFormato').value !== 'svg') return exportarDriveBase23.apply(this, arguments);
+FORMATO('svg').drive = async function(){
   const lista = paginasAExportar(), transp = $('eTransp').checked;
   cargando(true);
   try {
@@ -7608,9 +7614,7 @@ async function gotero(){
 }
 
 // ---------- Panel: mostrar los botones que tocan según lo seleccionado ----------
-const actualizarPanelBase23 = actualizarPanel;
-actualizarPanel = function(){
-  actualizarPanelBase23.apply(this, arguments);
+alActualizarPanel(function(){
   if (generandoVista) return;
   const o = activo(); if (!o) return;
   $('bMeterForma').hidden = !(o.type === 'activeSelection' && o.getObjects().length >= 2);
@@ -7618,7 +7622,7 @@ actualizarPanel = function(){
   if (o.mascara) $('bAgrupar').hidden = true;
   if (o.qr){ $('qrTexto').value = o.qr.texto; $('qrColor').value = aHex(o.qr.color); $('qrFondo').value = aHex(o.qr.fondo); $('qrTransp').checked = !!o.qr.transp; }
   $('bEditarQR').hidden = !o.qr;
-};
+});
 function editarQRSeleccionado(){
   const b = document.querySelector('#pestanas button[data-tab="tElementos"]'); if (b) b.click();
   setTimeout(() => { const t = $('qrTexto'); t.scrollIntoView({ block:'center' }); t.focus(); t.select(); }, 150);
@@ -7980,14 +7984,12 @@ $('pContenido').addEventListener('input', e => {
 });
 $('pContenido').addEventListener('change', () => { guardarEstado(); renderCapas && renderCapas(); });
 $('pContenido').addEventListener('keydown', e => e.stopPropagation());   // que Supr o Ctrl+Z no actúen sobre el lienzo
-const actualizarPanelBase26 = actualizarPanel;
-actualizarPanel = function(){
-  actualizarPanelBase26.apply(this, arguments);
+alActualizarPanel(function(){
   if (generandoVista || !activo()) return;
   const t = textoUnico(), c = $('pContenido');
   $('filaContenido').hidden = !t;
   if (t && document.activeElement !== c) c.value = t.text || '';
-};
+});
 canvas.on('text:changed', e => { if (document.activeElement !== $('pContenido') && e.target === textoUnico()) $('pContenido').value = e.target.text || ''; });
 // Cambiar la fuente: carga el grosor y estilo que de verdad usa cada texto (antes solo se pedía la negrita
 // y en algunas computadoras se quedaba dibujada la letra anterior hasta recargar)
@@ -8258,14 +8260,12 @@ function ponerEnlace(){
   else return toast('Escribe un número de página o una dirección que empiece con https://');
   actualizarPanel(); guardarEstado();
 }
-const actualizarPanelBase28 = actualizarPanel;
-actualizarPanel = function(){
-  actualizarPanelBase28.apply(this, arguments);
+alActualizarPanel(function(){
   if (generandoVista) return;
   const o = activo(); if (!o) return;
   $('bEnlace').textContent = o.enlace ? '🔗 ' + (o.enlace.startsWith('p:') ? 'Va a la página ' + o.enlace.slice(2) : 'Enlace web') : '🔗 Enlace';
   $('bEnlace').classList.toggle('on', !!o.enlace);
-};
+});
 function objetoConEnlace(e){
   if (!pres || !pres.cur) return null;
   const el = pres.cur.wrap.querySelector('canvas'); if (!el) return null;
@@ -8621,9 +8621,7 @@ function vista3DEnVivo(){
   }, e => toast(e.message));
 }
 // ---------- panel de propiedades: efectos para la página web ----------
-const actualizarPanelBase29 = actualizarPanel;
-actualizarPanel = function(){
-  actualizarPanelBase29.apply(this, arguments);
+alActualizarPanel(function(){
   if (generandoVista) return;
   const o = activo(); if (!o) return;
   $('pHover').value = o.hover || ''; $('pScrollFx').value = o.scrollFx || '';
@@ -8632,7 +8630,7 @@ actualizarPanel = function(){
   if (es3D){ $('p3Giro').checked = o.modelo3d.giro !== false; $('p3Scroll').value = o.modelo3d.scroll || 'no';
     $('p3Scroll').querySelectorAll('option[data-anim]').forEach(op => op.disabled = !(o.modelo3d.listaAnim || []).length && !o.modelo3d.animacion); }
   $('bFondosCamb').hidden = !(o.variantes || (es3D && o.modelo3d.colores && o.modelo3d.colores.length));
-};
+});
 $('pHover').onchange = e => { const o = activo(); if (!o) return; o.hover = e.target.value || null; guardarEstado(); };
 $('pScrollFx').onchange = e => { const o = activo(); if (!o) return; o.scrollFx = e.target.value || null; guardarEstado(); };
 $('p3Giro').onchange = e => { const o = activo(); if (o && o.modelo3d){ o.modelo3d.giro = e.target.checked; guardarEstado(); } };
@@ -8835,18 +8833,14 @@ async function htmlParaExportar(){
   if (r.ctx.vacios) toast(r.ctx.vacios + (r.ctx.vacios === 1 ? ' marco de foto vacío no se incluyó' : ' marcos de foto vacíos no se incluyeron') + ' en la página. Sube tus fotos para que aparezcan.');
   return r.html;
 }
-const descargarImagenBase29 = descargarImagen;
-descargarImagen = async function(){
-  if ($('eFormato').value !== 'html') return descargarImagenBase29.apply(this, arguments);
+FORMATO('html').descargar = async function(){
   cargando(true);
   try { const h = await htmlParaExportar(); bajarBlob(new Blob([h], { type:'text/html' }), nombreArchivo() + '.html');
     toast('Página web descargada. Ábrela con doble clic, o súbela gratis a GitHub Pages o Netlify para tener tu sitio en internet.'); }
   catch (e) { console.error(e); toast('Error al crear la página: ' + e.message); }
   finally { cargando(false); }
 };
-const vistaPreviaBase29 = vistaPrevia;
-vistaPrevia = async function(){
-  if ($('eFormato').value !== 'html') return vistaPreviaBase29.apply(this, arguments);
+FORMATO('html').vista = async function(){
   cargando(true);
   try {
     const h = await htmlParaExportar(), url = URL.createObjectURL(new Blob([h], { type:'text/html' }));
@@ -8854,9 +8848,7 @@ vistaPrevia = async function(){
       `<iframe id="vistaHTML" src="${url}" style="width:100%;height:70vh;border:1px solid var(--borde,#ddd);border-radius:8px;background:#fff"></iframe>`;
   } finally { cargando(false); }
 };
-const exportarDriveBase29 = exportarDrive;
-exportarDrive = async function(){
-  if ($('eFormato').value !== 'html') return exportarDriveBase29.apply(this, arguments);
+FORMATO('html').drive = async function(){
   cargando(true);
   try {
     const h = await htmlParaExportar();

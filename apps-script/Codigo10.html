@@ -173,14 +173,12 @@ $('pContenido').addEventListener('input', e => {
 });
 $('pContenido').addEventListener('change', () => { guardarEstado(); renderCapas && renderCapas(); });
 $('pContenido').addEventListener('keydown', e => e.stopPropagation());   // que Supr o Ctrl+Z no actúen sobre el lienzo
-const actualizarPanelBase26 = actualizarPanel;
-actualizarPanel = function(){
-  actualizarPanelBase26.apply(this, arguments);
+alActualizarPanel(function(){
   if (generandoVista || !activo()) return;
   const t = textoUnico(), c = $('pContenido');
   $('filaContenido').hidden = !t;
   if (t && document.activeElement !== c) c.value = t.text || '';
-};
+});
 canvas.on('text:changed', e => { if (document.activeElement !== $('pContenido') && e.target === textoUnico()) $('pContenido').value = e.target.text || ''; });
 // Cambiar la fuente: carga el grosor y estilo que de verdad usa cada texto (antes solo se pedía la negrita
 // y en algunas computadoras se quedaba dibujada la letra anterior hasta recargar)

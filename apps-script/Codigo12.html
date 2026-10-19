@@ -177,9 +177,7 @@ function vista3DEnVivo(){
   }, e => toast(e.message));
 }
 // ---------- panel de propiedades: efectos para la página web ----------
-const actualizarPanelBase29 = actualizarPanel;
-actualizarPanel = function(){
-  actualizarPanelBase29.apply(this, arguments);
+alActualizarPanel(function(){
   if (generandoVista) return;
   const o = activo(); if (!o) return;
   $('pHover').value = o.hover || ''; $('pScrollFx').value = o.scrollFx || '';
@@ -188,7 +186,7 @@ actualizarPanel = function(){
   if (es3D){ $('p3Giro').checked = o.modelo3d.giro !== false; $('p3Scroll').value = o.modelo3d.scroll || 'no';
     $('p3Scroll').querySelectorAll('option[data-anim]').forEach(op => op.disabled = !(o.modelo3d.listaAnim || []).length && !o.modelo3d.animacion); }
   $('bFondosCamb').hidden = !(o.variantes || (es3D && o.modelo3d.colores && o.modelo3d.colores.length));
-};
+});
 $('pHover').onchange = e => { const o = activo(); if (!o) return; o.hover = e.target.value || null; guardarEstado(); };
 $('pScrollFx').onchange = e => { const o = activo(); if (!o) return; o.scrollFx = e.target.value || null; guardarEstado(); };
 $('p3Giro').onchange = e => { const o = activo(); if (o && o.modelo3d){ o.modelo3d.giro = e.target.checked; guardarEstado(); } };
@@ -391,18 +389,14 @@ async function htmlParaExportar(){
   if (r.ctx.vacios) toast(r.ctx.vacios + (r.ctx.vacios === 1 ? ' marco de foto vacío no se incluyó' : ' marcos de foto vacíos no se incluyeron') + ' en la página. Sube tus fotos para que aparezcan.');
   return r.html;
 }
-const descargarImagenBase29 = descargarImagen;
-descargarImagen = async function(){
-  if ($('eFormato').value !== 'html') return descargarImagenBase29.apply(this, arguments);
+FORMATO('html').descargar = async function(){
   cargando(true);
   try { const h = await htmlParaExportar(); bajarBlob(new Blob([h], { type:'text/html' }), nombreArchivo() + '.html');
     toast('Página web descargada. Ábrela con doble clic, o súbela gratis a GitHub Pages o Netlify para tener tu sitio en internet.'); }
   catch (e) { console.error(e); toast('Error al crear la página: ' + e.message); }
   finally { cargando(false); }
 };
-const vistaPreviaBase29 = vistaPrevia;
-vistaPrevia = async function(){
-  if ($('eFormato').value !== 'html') return vistaPreviaBase29.apply(this, arguments);
+FORMATO('html').vista = async function(){
   cargando(true);
   try {
     const h = await htmlParaExportar(), url = URL.createObjectURL(new Blob([h], { type:'text/html' }));
@@ -410,9 +404,7 @@ vistaPrevia = async function(){
       `<iframe id="vistaHTML" src="${url}" style="width:100%;height:70vh;border:1px solid var(--borde,#ddd);border-radius:8px;background:#fff"></iframe>`;
   } finally { cargando(false); }
 };
-const exportarDriveBase29 = exportarDrive;
-exportarDrive = async function(){
-  if ($('eFormato').value !== 'html') return exportarDriveBase29.apply(this, arguments);
+FORMATO('html').drive = async function(){
   cargando(true);
   try {
     const h = await htmlParaExportar();

@@ -1,0 +1,397 @@
+/* =========================================================
+   ORGANIZADORES ESCOLARES (plantillas)
+   ========================================================= */
+// utilidades para armar plantillas
+function T(texto, x, y, o = {}){
+  const t = new fabric.Textbox(texto, { left:x, top:y, originX:'center', originY:'center', width:o.w || 600,
+    fontFamily:o.f || 'Poppins', fontSize:o.s || 32, fontWeight:o.b || '400', fill:o.c || '#1f2330', textAlign:o.al || 'center',
+    lineHeight:o.lh || 1.2, charSpacing:o.cs || 0, angle:o.ang || 0, fontStyle:o.it ? 'italic' : 'normal' });
+  t.id = nuevoId(); t.name = 'Texto'; canvas.add(t); return t;
+}
+function DECO(tipo, x, y, w, o = {}){
+  const d = crearDeco(tipo, { ...o, w }); d.setPositionByOrigin(new fabric.Point(x, y), 'center', 'center'); d.setCoords();
+  d.id = nuevoId(); canvas.add(d); return d;
+}
+function LLAVE(x, y, alto, ancho, color, grosor){
+  const p = new fabric.Path(pathLlave(alto, ancho), { left:x, top:y, fill:null, stroke:color, strokeWidth:grosor,
+    strokeLineCap:'round', strokeLineJoin:'round', strokeUniform:true, esDeco:true, name:'Llave', id:nuevoId() });
+  canvas.add(p); return p;
+}
+function FONDO(c){ canvas.backgroundColor = c; }
+function DEGRADADO(a, b){ fijarFondo(new fabric.Rect({ left:0, top:0, width:W, height:H, fill: crearDegradado(a, b) })); }
+
+const ORGANIZADORES = [
+  { nombre:'Análisis FODA', tam:[1920,1080], prev:'linear-gradient(135deg,#fdf4ff,#ddd6fe)', txt:'FODA', f:'Fredoka', c:'#6b21a8', crear(){
+    DEGRADADO('#fdf4ff', '#ede9fe');
+    T('ANÁLISIS FODA', 960, 105, { f:'Fredoka', s:96, b:'700', c:'#3b0764', w:1400, cs:60 });
+    DECO('subrayado', 960, 172, 440, { c:'#c026d3', sw:6 });
+    [['F','#a855f7',820,440],['O','#ec4899',1100,440],['D','#c026d3',820,720],['A','#f472b6',1100,720]].forEach(([l, c, x, y]) => {
+      const n = nodo('circulo', l, x, y, { w:300, h:300, fill:c, color:'#ffffff', tam:130, peso:'700', fuente:'Fredoka' });
+      n.set('opacity', 0.9);
+    });
+    [['FORTALEZAS','¿Qué hacemos bien?\n¿Qué recursos y habilidades nos distinguen?',360,360,'left'],
+     ['OPORTUNIDADES','¿Qué tendencias o apoyos externos podemos aprovechar?',1560,360,'right'],
+     ['DEBILIDADES','¿Qué podemos mejorar?\n¿Qué nos hace falta?',360,790,'left'],
+     ['AMENAZAS','¿Qué obstáculos externos enfrentamos?\n¿Qué riesgos hay en el entorno?',1560,790,'right']].forEach(([tit, txt, x, y, al]) => {
+      T(tit, x, y - 70, { f:'Montserrat', s:34, b:'800', c:'#6b21a8', w:480, al, cs:150 });
+      T(txt, x, y + 40, { f:'Poppins', s:26, c:'#374151', w:480, al, lh:1.35 });
+    });
+    DECO('destello', 1730, 150, 90, { c:'#ffffff' }); DECO('destello', 1650, 230, 45, { c:'#c084fc' });
+    DECO('destello', 230, 960, 70, { c:'#c084fc' }); DECO('estrella', 1700, 960, 56, { c:'#7c3aed' });
+    DECO('confeti', 230, 140, 120, { c:'#f472b6' });
+  }},
+  { nombre:'Ciclo de 4 pasos', tam:[1920,1080], prev:'#f0fdfa', txt:'Ciclo ↻', f:'Caveat', c:'#0f766e', crear(){
+    FONDO('#f0fdfa'); fondoPapel('puntos', '#f0fdfa');
+    T('Ciclo de', 960, 450, { f:'Caveat', s:72, c:'#0f766e', w:400 });
+    T('aprendizaje', 960, 545, { f:'Fredoka', s:80, b:'700', c:'#0d9488', w:540 });
+    DECO('subrayado', 960, 615, 380, { c:'#5eead4', sw:7 });
+    const datos = [
+      ['Planea\nDefine tu meta y organiza tus tiempos.', 960, 175, '#ccfbf1', '1'],
+      ['Investiga\nBusca fuentes confiables y toma notas.', 1530, 540, '#e0e7ff', '2'],
+      ['Practica\nAplica lo aprendido con ejercicios.', 960, 905, '#fce7f3', '3'],
+      ['Evalúa\nRevisa qué funcionó y qué mejorar.', 390, 540, '#fef9c3', '4']];
+    const n = datos.map(([txt, x, y, col, num]) => {
+      const f = nodo('redondo', txt, x, y, { anchoMax:420, w:500, h:160, fill:col, color:'#134e4a', tam:30, fuente:'Poppins' });
+      T(num, x > 960 ? x + 310 : x - 310, y, { f:'Amatic SC', s:130, b:'700', c:'#0f766e', w:90 });
+      return f;
+    });
+    const op = { estilo:'curva', fin:'flecha', color:'#5eead4', ancho:7 };
+    unir(n[0], n[1], { ...op, lados:['der','arr'] }); unir(n[1], n[2], { ...op, lados:['aba','der'] });
+    unir(n[2], n[3], { ...op, lados:['izq','aba'] }); unir(n[3], n[0], { ...op, lados:['arr','izq'] });
+    DECO('destello', 1700, 160, 70, { c:'#2dd4bf' }); DECO('destello', 220, 930, 60, { c:'#a78bfa' });
+  }},
+  { nombre:'Tabla comparativa', tam:[1920,1080], prev:'#fefce8', txt:'Tabla comparativa', f:'Caveat', c:'#1f2330', crear(){
+    FONDO('#fefce8'); fondoPapel('cuadros', '#fefce8');
+    T('Tabla comparativa', 960, 110, { f:'Caveat', s:110, b:'700', w:1200 });
+    DECO('foco', 520, 105, 80, { c:'#facc15' }); DECO('enfasis', 470, 55, 60, { c:'#1f2330', sw:4 });
+    DECO('estrella', 1410, 85, 60, { c:'#facc15' }); DECO('estrella', 1480, 145, 34, { c:'#facc15' });
+    crearTabla(960, 600, 5, 4, { ...ESTILOS_TABLA['Pastel a mano'], anchos:[300,430,430,430], alto:120, tam:28, tamEnc:34 },
+      [['Aspecto','Opción A','Opción B','Opción C'], ['Definición'], ['Características'], ['Ventajas'], ['Desventajas']]);
+    DECO('destello', 150, 980, 60, { c:'#a3e635' }); DECO('flecha', 1790, 960, 120, { c:'#1f2330', sw:4, ang:-20 });
+  }},
+  { nombre:'Cuadro sinóptico', tam:[1920,1080], prev:'#fffbeb', txt:'{ Sinóptico', f:'Playfair Display', c:'#92400e', crear(){
+    FONDO('#fffbeb'); fondoPapel('rayas', '#fffbeb');
+    T('Cuadro sinóptico', 230, 120, { f:'Caveat', s:58, c:'#92400e', w:380 });
+    T('Tema\nprincipal', 230, 540, { f:'Playfair Display', s:66, b:'700', c:'#78350f', w:360 });
+    LLAVE(420, 130, 820, 60, '#92400e', 6);
+    [220, 420, 640, 860].forEach((y, i) => {
+      T('Subtema ' + (i + 1), 615, y, { f:'Fredoka', s:40, b:'600', c:'#b45309', w:300 });
+      LLAVE(790, y - 75, 150, 34, '#d97706', 4);
+      T('• Idea o característica importante\n• Ejemplo o dato que lo explique', 1240, y, { f:'Patrick Hand', s:34, al:'left', w:760 });
+    });
+    DECO('destello', 1760, 110, 70, { c:'#f59e0b' }); DECO('flor', 1790, 980, 90, { c:'#fcd34d' });
+  }},
+  { nombre:'Mapa conceptual', tam:[1920,1080], prev:'#ffffff', txt:'Mapa conceptual', f:'Gochi Hand', c:'#db2777', crear(){
+    FONDO('#ffffff'); fondoPapel('cuadros', '#ffffff');
+    DECO('cinta', 960, 105, 640, { c:'#f9a8d4', op:0.55, ang:-2 });
+    T('Mapa conceptual', 960, 105, { f:'Gochi Hand', s:80, w:900 });
+    const est = { stroke:'#1f2330', grosor:3, color:'#1f2330', fuente:'Fredoka', peso:'600' };
+    const main = nodo('redondo', 'Concepto principal', 960, 290, { ...est, w:460, h:110, fill:'#fbcfe8', tam:40 });
+    const cols = ['#fde68a', '#bbf7d0', '#bae6fd'], enl = ['se define como', 'incluye', 'permite'];
+    [420, 960, 1500].forEach((x, i) => {
+      const n2 = nodo('redondo', 'Idea ' + (i + 1), x, 560, { ...est, w:320, h:100, fill:cols[i], tam:34 });
+      unir(main, n2, { estilo:'codo', fin:'flecha', color:'#1f2330', ancho:4, etiqueta:enl[i] });
+      const n3 = nodo('nota', 'Explica aquí la idea con tus propias palabras.', x, 855, { anchoMax:300, w:380, h:150, fill:'#ffffff', stroke:'#1f2330', grosor:2, color:'#374151', tam:28, fuente:'Patrick Hand' });
+      unir(n2, n3, { estilo:'recta', fin:'flecha', color:'#1f2330', ancho:3 });
+    });
+    DECO('estrella', 1700, 120, 60, { c:'#facc15' }); DECO('destello', 220, 140, 70, { c:'#f472b6' });
+    DECO('foco', 1760, 900, 90, { c:'#facc15' }); DECO('enfasis', 1700, 830, 70, { c:'#1f2330', sw:4 });
+  }},
+  { nombre:'Mapa mental de nubes', tam:[1920,1080], prev:'#ffffff', txt:'MAPA MENTAL', f:'Fredoka', c:'#1f2330', crear(){
+    FONDO('#ffffff'); fondoPapel('puntos', '#ffffff');
+    const centro = nodo('blob', 'MAPA\nMENTAL', 960, 540, { w:480, h:370, fill:'#fef3c7', color:'#1f2330', tam:96, peso:'700', fuente:'Fredoka' });
+    const nombres = ['Idea creativa','Idea genial','Idea práctica','Idea fantástica','Idea técnica','Idea brillante'];
+    const cols = ['#ddd6fe','#bbf7d0','#fbcfe8','#bae6fd','#fde68a','#fecaca'];
+    [[290,210],[290,540],[290,870],[1630,210],[1630,540],[1630,870]].forEach(([x, y], i) => {
+      const n = nodo('nube', nombres[i], x, y, { w:400, h:230, fill:cols[i], color:'#1f2330', tam:36, peso:'700', fuente:'Fredoka' });
+      unir(centro, n, { estilo:'curva', fin:'abierta', color:'#1f2330', ancho:4 });
+    });
+    DECO('destello', 960, 150, 70, { c:'#a78bfa' }); DECO('destello', 960, 940, 60, { c:'#f472b6' });
+  }},
+  { nombre:'Planeación de proyecto', tam:[1920,1080], prev:'#f5f0e6', txt:'Planeación', f:'Bebas Neue', c:'#1f2330', crear(){
+    FONDO('#f5f0e6');
+    nodo('redondo', 'Planeación\nde proyecto', 250, 540, { w:330, h:150, fill:'#ffffff', stroke:'#1f2330', grosor:3, color:'#1f2330', tam:46, fuente:'Bebas Neue' });
+    LLAVE(450, 150, 780, 50, '#1f2330', 5);
+    const etapas = ['Planteamiento','Investigación','Ejecución','Gestión','Seguimiento'];
+    const cols = ['#fde68a','#bbf7d0','#c7d2fe','#a5f3fc','#fbcfe8'];
+    etapas.forEach((e, i) => {
+      const y = 180 + i * 180;
+      const a = nodo('pildora', e, 690, y, { w:300, h:90, fill:cols[i], stroke:'#1f2330', grosor:3, color:'#1f2330', tam:36, fuente:'Bebas Neue' });
+      const d = nodo('redondo', 'Describe qué harás en esta etapa, quién participa y en qué fecha.', 1320, y, { anchoMax:660, w:760, h:120, fill:'#ffffff', stroke:'#1f2330', grosor:2, color:'#374151', tam:26, fuente:'Poppins' });
+      unir(a, d, { estilo:'recta', inicio:'circulo', fin:'flecha', color:'#1f2330', ancho:3 });
+    });
+  }},
+  { nombre:'Portada de proyecto', tam:[1240,1754], prev:'linear-gradient(135deg,#ede9fe,#fdf2f8)', txt:'PROYECTO', f:'Permanent Marker', c:'#7c3aed', crear(){
+    FONDO('#fffdf8');
+    DECO('mancha', 120, 150, 460, { c:'#c4b5fd', op:0.75 }); DECO('mancha', 1160, 280, 320, { c:'#fde68a', op:0.85 });
+    DECO('mancha', 1110, 1620, 520, { c:'#fbcfe8', op:0.8 }); DECO('mancha', 140, 1600, 340, { c:'#a5f3fc', op:0.8 });
+    DECO('flor', 1120, 1450, 110, { c:'#f472b6' }); DECO('flor', 230, 1430, 80, { c:'#a78bfa' });
+    DECO('destello', 1050, 520, 60, { c:'#7c3aed' }); DECO('destello', 200, 470, 44, { c:'#ec4899' });
+    nodo('pildora', 'Fecha de entrega', 620, 560, { w:340, h:70, fill:'#ec4899', color:'#ffffff', tam:28, fuente:'Poppins', peso:'600' });
+    T('PORTADA DE', 620, 700, { f:'Fredoka', s:80, b:'600', w:1000, cs:100 });
+    T('PROYECTO', 620, 830, { f:'Permanent Marker', s:150, c:'#7c3aed', w:1100 });
+    T('Escribe aquí una breve descripción del proyecto o el nombre de la asignatura.', 620, 990, { f:'Poppins', s:30, c:'#6b7280', w:820, lh:1.4 });
+    T('Nombre del alumno(a)', 620, 1160, { f:'Caveat', s:60, w:800 });
+    DECO('subrayado', 620, 1210, 400, { c:'#ec4899', sw:5 });
+    T('Grupo · Docente · Escuela', 620, 1275, { f:'Poppins', s:28, c:'#6b7280', w:800 });
+  }},
+  { nombre:'Tabla por categorías', tam:[1920,1080], prev:'#ffffff', txt:'Categorías', f:'Fredoka', c:'#7c3aed', crear(){
+    FONDO('#ffffff');
+    T('Clasificación por categorías', 960, 100, { f:'Fredoka', s:66, b:'700', w:1500 });
+    DECO('rizo', 1590, 110, 140, { c:'#a78bfa', sw:5 }); DECO('destello', 330, 95, 60, { c:'#f472b6' });
+    crearTabla(960, 600, 6, 4, { ...ESTILOS_TABLA['Por categorías'], anchos:[320,420,420,420], alto:115, tam:26, tamEnc:32 },
+      [['Categoría','Características','Elementos','Ejemplo'], ['Categoría 1'], ['Categoría 2'], ['Categoría 3'], ['Categoría 4'], ['Categoría 5']]);
+  }}
+];
+function usarOrganizador(p){
+  if (canvas.getObjects().length && !confirm('Esto reemplazará el contenido de esta página. ¿Continuar?')) return;
+  fijarTamano(p.tam[0], p.tam[1]);
+  restaurando = true;
+  canvas.clear(); canvas.backgroundColor = '#ffffff';
+  p.crear(); ordenarVinculos();
+  restaurando = false;
+  canvas.discardActiveObject(); canvas.requestRenderAll(); renderCapas(); guardarEstado();
+}
+function ICONO(nombre, x, y, w, color){
+  const pth = new fabric.Path(ICONOS[nombre], { fill:color, fillRule:'evenodd', originX:'center', originY:'center', esDeco:true, name:nombre, id:nuevoId() });
+  pth.scaleToWidth(w); pth.setPositionByOrigin(new fabric.Point(x, y), 'center', 'center'); canvas.add(pth); return pth;
+}
+function LINEA(x1, y1, x2, y2, color, grosor){
+  const l = new fabric.Line([x1, y1, x2, y2], { stroke:color, strokeWidth:grosor, strokeLineCap:'round', name:'Línea', id:nuevoId() });
+  canvas.add(l); return l;
+}
+const CAT_MAPAS = 'Mapas conceptuales y mentales', CAT_TABLAS = 'Tablas y cuadros', CAT_PROC = 'Procesos y análisis', CAT_PORT = 'Portadas, carteles y redes';
+const CATEGORIA_ORG = { 'Análisis FODA':CAT_PROC, 'Ciclo de 4 pasos':CAT_PROC, 'Tabla comparativa':CAT_TABLAS, 'Cuadro sinóptico':CAT_TABLAS,
+  'Mapa conceptual':CAT_MAPAS, 'Mapa mental de nubes':CAT_MAPAS, 'Planeación de proyecto':CAT_PROC, 'Portada de proyecto':CAT_PORT, 'Tabla por categorías':CAT_TABLAS };
+ORGANIZADORES.forEach(o => { o.cat = o.cat || CATEGORIA_ORG[o.nombre] || CAT_MAPAS; });
+
+ORGANIZADORES.push(
+  { nombre:'Mapa conceptual jerárquico', cat:CAT_MAPAS, tam:[1920,1080], crear(){
+    FONDO('#f5f3ff'); fondoPapel('cuadros', '#f5f3ff');
+    const borde = { stroke:'#1f2330', grosor:3, color:'#1f2330' };
+    const tit = nodo('redondo', 'Título aquí', 960, 95, { ...borde, w:420, h:90, fill:'#ecfccb', tam:40, fuente:'Fredoka', peso:'700' });
+    const def = nodo('redondo', 'Escribe aquí la definición del tema principal con tus propias palabras, de forma breve y clara.', 960, 300,
+      { anchoMax:880, w:1000, h:130, fill:'#ffffff', stroke:'#1f2330', grosor:2, color:'#374151', tam:28, fuente:'Poppins' });
+    unir(tit, def, { estilo:'recta', fin:'flecha', color:'#1f2330', ancho:3, etiqueta:'¿Qué es?' });
+    [390, 770, 1150, 1530].forEach((x, i) => {
+      const idea = nodo('redondo', 'Idea ' + (i + 1), x, 500, { ...borde, w:280, h:80, fill:'#ecfccb', tam:32, fuente:'Fredoka', peso:'700' });
+      unir(def, idea, { estilo:'codo', fin:'flecha', color:'#1f2330', ancho:3 });
+      const d = nodo('redondo', 'Explica la idea en dos o tres renglones.', x, 690, { anchoMax:260, w:330, h:150, fill:'#ffffff', stroke:'#1f2330', grosor:2, color:'#374151', tam:24, fuente:'Poppins' });
+      unir(idea, d, { estilo:'recta', fin:'flecha', color:'#1f2330', ancho:3 });
+      const ej = nodo('pildora', 'ejemplo', x, 865, { w:170, h:54, fill:'#ddd6fe', color:'#4c1d95', tam:30, fuente:'Caveat', peso:'700' });
+      unir(d, ej, { estilo:'recta', fin:'nada', color:'#1f2330', ancho:2 });
+      T('Escribe un ejemplo concreto.', x, 960, { f:'Poppins', s:22, c:'#4b5563', w:300 });
+    });
+    DECO('destello', 1760, 90, 60, { c:'#a78bfa' }); DECO('destello', 160, 980, 50, { c:'#84cc16' });
+  }},
+  { nombre:'Mapa de 8 ideas', cat:CAT_MAPAS, tam:[1920,1080], crear(){
+    FONDO('#ffffff'); fondoPapel('cuadros', '#ffffff');
+    const centro = nodo('proceso', 'MAPA\nCONCEPTUAL', 960, 540, { w:300, h:150, fill:'#fde047', stroke:'#1f2330', grosor:3, color:'#1f2330', tam:46, fuente:'Bebas Neue' });
+    const nombres = ['NOVEDOSA','ECOLÓGICA','ECONÓMICA','EFICIENTE','TECNOLÓGICA','EDUCATIVA','MODERNA','SOSTENIBLE'];
+    const cols = ['#d9f99d','#fbcfe8','#fde68a','#bae6fd','#a7f3d0','#fecaca','#ddd6fe','#e5e7eb'];
+    [165, 415, 665, 915].forEach((y, i) => [0, 1].forEach(lado => {
+      const n = i + lado * 4, x = lado ? 1490 : 430;
+      const c = nodo('proceso', 'IDEA ' + nombres[n] + '\nEscribe aquí una breve explicación de esta idea.', x, y,
+        { anchoMax:560, w:640, h:190, fill:cols[n], stroke:'#1f2330', grosor:3, color:'#1f2330', tam:26, fuente:'Poppins' });
+      T(String(n + 1), lado ? 1860 : 60, y, { f:'Bebas Neue', s:96, w:80 });
+      unir(centro, c, { estilo:'curva', fin:'flecha', color:'#1f2330', ancho:3, lados: lado ? ['der','izq'] : ['izq','der'] });
+    }));
+  }},
+  { nombre:'Mapa de columnas de colores', cat:CAT_MAPAS, tam:[1920,1080], crear(){
+    FONDO('#fffdf7');
+    T('MAPA CONCEPTUAL', 960, 105, { f:'Fredoka', s:80, b:'700', w:1100 });
+    DECO('foco', 520, 95, 70, { c:'#facc15' }); DECO('rizo', 1400, 105, 120, { c:'#1f2330', sw:4 });
+    T('Escribe aquí una introducción breve que explique de qué trata el tema y por qué es importante.', 960, 215, { f:'Poppins', s:26, c:'#4b5563', w:1300 });
+    const fuertes = ['#bae6fd','#fed7aa','#fbcfe8','#ddd6fe','#bbf7d0'], suaves = ['#f0f9ff','#fff7ed','#fdf2f8','#f5f3ff','#f0fdf4'];
+    [260, 610, 960, 1310, 1660].forEach((x, i) => {
+      const pill = nodo('pildora', 'IDEA ' + (i + 1), x, 340, { w:300, h:72, fill:fuertes[i], stroke:'#1f2330', grosor:2, color:'#1f2330', tam:30, fuente:'Fredoka', peso:'700' });
+      const col = nodo('redondo', 'Desarrolla aquí la idea: qué es, cómo funciona y un ejemplo que la explique.', x, 630,
+        { anchoMax:240, w:300, h:400, fill:suaves[i], color:'#1f2330', tam:28, fuente:'Patrick Hand' });
+      unir(pill, col, { estilo:'recta', fin:'nada', color:'#1f2330', ancho:3 });
+    });
+    DECO('estrella', 160, 980, 46, { c:'#facc15' }); DECO('destello', 1760, 980, 54, { c:'#f472b6' });
+  }},
+  { nombre:'Mapa de burbujas', cat:CAT_MAPAS, tam:[1920,1080], crear(){
+    FONDO('#ffffff'); fondoPapel('puntos', '#ffffff');
+    const centro = nodo('circulo', 'MAPA\nCONCEPTUAL', 960, 540, { w:300, h:300, fill:'#ffffff', stroke:'#0f766e', grosor:6, color:'#0f766e', tam:40, fuente:'Fredoka', peso:'700' });
+    const nombres = ['SIMPLE','SENCILLA','CREATIVA','BONITA','BÁSICA','DIVERTIDA'];
+    const cols = ['#fbcfe8','#bbf7d0','#fde68a','#bae6fd','#ddd6fe','#fecaca'];
+    [[620,250],[1300,250],[420,560],[1500,560],[620,860],[1300,860]].forEach(([x, y], i) => {
+      const b = nodo('circulo', 'IDEA ' + nombres[i] + '\nUna frase corta que la explique.', x, y, { anchoMax:190, w:320, h:320, fill:cols[i], color:'#1f2330', tam:23, fuente:'Poppins' });
+      unir(centro, b, { estilo:'recta', fin:'nada', color:'#0f766e', ancho:4 });
+    });
+    DECO('destello', 960, 160, 60, { c:'#14b8a6' }); DECO('espiral', 960, 930, 90, { c:'#0f766e', sw:4 });
+  }},
+  { nombre:'Mapa conceptual con notas', cat:CAT_MAPAS, tam:[1920,1080], crear(){
+    FONDO('#fafaf9'); fondoPapel('cuadros', '#fafaf9');
+    DECO('cinta', 960, 95, 620, { c:'#a5f3fc', op:0.6, ang:-2 });
+    T('Mapa conceptual', 960, 95, { f:'Gochi Hand', s:76, w:900 });
+    const main = nodo('nota', 'Tema principal', 960, 265, { w:380, h:120, fill:'#fde68a', color:'#1f2330', tam:42, fuente:'Gochi Hand' });
+    const cols = ['#fbcfe8','#bbf7d0','#bae6fd'];
+    [430, 960, 1490].forEach((x, i) => {
+      const sub = nodo('nota', 'Subtema ' + (i + 1), x, 520, { w:320, h:110, fill:cols[i], color:'#1f2330', tam:38, fuente:'Gochi Hand' });
+      unir(main, sub, { estilo:'curva', fin:'abierta', color:'#1f2330', ancho:4 });
+      [-135, 135].forEach(dx => {
+        const det = nodo('nota', 'Detalle o ejemplo', x + dx, 820, { anchoMax:180, w:230, h:170, fill:'#ffffff', color:'#374151', tam:30, fuente:'Patrick Hand' });
+        unir(sub, det, { estilo:'codo', fin:'flecha', color:'#1f2330', ancho:3 });
+      });
+    });
+    DECO('estrella', 1720, 120, 56, { c:'#facc15' }); DECO('foco', 200, 130, 80, { c:'#facc15' }); DECO('espiral', 1780, 960, 90, { c:'#1f2330', sw:4 });
+  }},
+  { nombre:'Cuadro comparativo de ideas', cat:CAT_TABLAS, tam:[1920,1080], crear(){
+    FONDO('#fefce8'); fondoPapel('cuadros', '#fefce8');
+    T('CUADRO COMPARATIVO', 960, 95, { f:'Amatic SC', s:100, b:'700', w:1200 });
+    DECO('estrella', 1400, 80, 50, { c:'#1f2330' }); DECO('destello', 1460, 125, 40, { c:'#f472b6' }); DECO('destello', 470, 90, 50, { c:'#a78bfa' });
+    crearTabla(960, 590, 5, 4, { sep:12, rx:12, borde:'#1f2330', grosor:2.5, enc:['#ede9fe','#fed7aa','#bbf7d0','#bae6fd'], encTexto:'#1f2330',
+      filasColores:['#c7d2fe'], celda:'#ffffff', fuente:'Patrick Hand', fuenteEnc:'Amatic SC', anchos:[300,440,440,440], alto:130, altoEnc:110, tam:26, tamEnc:46 },
+      [['', 'IDEA GRANDIOSA', 'IDEA BRILLANTE', 'IDEA FANTÁSTICA'], ['DEFINICIÓN'], ['OBJETIVOS'], ['INDICADORES'], ['EJEMPLOS']]);
+  }},
+  { nombre:'Cuadro S·Q·A', cat:CAT_TABLAS, tam:[1920,1080], crear(){
+    FONDO('#ffffff'); fondoPapel('rayas', '#ffffff');
+    T('Cuadro S · Q · A', 960, 95, { f:'Fredoka', s:72, b:'700', w:1200 });
+    T('Tema: ______________________', 960, 175, { f:'Patrick Hand', s:38, c:'#4b5563', w:900 });
+    crearTabla(960, 620, 2, 3, { sep:16, rx:18, borde:'#cbd5e1', grosor:2, enc:['#bae6fd','#fde68a','#bbf7d0'], encTexto:'#1f2330', celda:'#ffffff',
+      fuente:'Patrick Hand', fuenteEnc:'Fredoka', anchos:[540,540,540], alto:560, altoEnc:130, tam:30, tamEnc:34 },
+      [['S · Lo que sé', 'Q · Lo que quiero saber', 'A · Lo que aprendí'], ['', '', '']]);
+    DECO('destello', 1760, 90, 56, { c:'#38bdf8' }); DECO('foco', 160, 100, 70, { c:'#facc15' });
+  }},
+  { nombre:'Pros y contras', cat:CAT_TABLAS, tam:[1920,1080], crear(){
+    FONDO('#f8fafc');
+    T('Pros y contras', 960, 95, { f:'Fredoka', s:72, b:'700', w:1200 });
+    T('Decisión o tema a analizar', 960, 175, { f:'Caveat', s:50, c:'#475569', w:900 });
+    [[520,'A FAVOR','#22c55e','#f0fdf4','#86efac','#14532d','Palomita','✓'],[1400,'EN CONTRA','#ef4444','#fef2f2','#fca5a5','#7f1d1d','Tache','✗']]
+      .forEach(([x, tit, fuerte, suave, borde, txtc, icono, marca]) => {
+        nodo('pildora', tit, x, 290, { w:320, h:84, fill:fuerte, color:'#ffffff', tam:38, fuente:'Fredoka', peso:'700' });
+        ICONO(icono, x - 230, 290, 60, fuerte);
+        const lista = nodo('redondo', `${marca} Primer punto\n${marca} Segundo punto\n${marca} Tercer punto\n${marca} Cuarto punto`, x, 640,
+          { anchoMax:600, w:720, h:520, fill:suave, stroke:borde, grosor:3, color:txtc, tam:46, fuente:'Patrick Hand' });
+        porId(lista.formaTexto).set('textAlign', 'left');
+      });
+  }},
+  { nombre:'Proceso en 5 pasos', cat:CAT_PROC, tam:[1920,1080], crear(){
+    FONDO('#ffffff');
+    T('Proceso en 5 pasos', 960, 115, { f:'Fredoka', s:72, b:'700', w:1200 });
+    DECO('subrayado', 960, 180, 360, { c:'#f97316', sw:6 });
+    const cols = ['#f97316','#eab308','#22c55e','#06b6d4','#8b5cf6'];
+    const c = [240, 600, 960, 1320, 1680].map((x, i) => {
+      const n = nodo('circulo', String(i + 1), x, 420, { w:150, h:150, fill:cols[i], color:'#ffffff', tam:64, fuente:'Fredoka', peso:'700' });
+      T('Paso ' + (i + 1), x, 560, { f:'Fredoka', s:38, b:'600', c:cols[i], w:300 });
+      T('Describe brevemente qué se hace en este paso.', x, 650, { f:'Poppins', s:24, c:'#4b5563', w:290 });
+      return n;
+    });
+    for (let i = 0; i < 4; i++) unir(c[i], c[i + 1], { estilo:'recta', fin:'flecha', color:'#cbd5e1', ancho:6, patron:'guiones' });
+    nodo('redondo', 'Resultado final: escribe aquí lo que se logra al terminar el proceso.', 960, 880, { anchoMax:1000, w:1100, h:110, fill:'#f1f5f9', color:'#1f2330', tam:28, fuente:'Poppins' });
+  }},
+  { nombre:'Diagrama de Venn', cat:CAT_PROC, tam:[1920,1080], crear(){
+    FONDO('#ffffff');
+    T('Diagrama de Venn', 960, 100, { f:'Fredoka', s:72, b:'700', w:1200 });
+    [[760,'#60a5fa'],[1160,'#f472b6']].forEach(([x, c]) => canvas.add(new fabric.Circle({ left:x, top:575, radius:330, originX:'center', originY:'center', fill:c, opacity:0.4, name:'Conjunto', id:nuevoId() })));
+    T('TEMA A', 650, 360, { f:'Fredoka', s:46, b:'700', c:'#1e40af', w:300 });
+    T('TEMA B', 1270, 360, { f:'Fredoka', s:46, b:'700', c:'#9d174d', w:300 });
+    T('Características que solo tiene A', 610, 580, { f:'Poppins', s:28, w:260 });
+    T('Lo que tienen en común', 960, 580, { f:'Poppins', s:28, b:'600', w:170 });
+    T('Características que solo tiene B', 1310, 580, { f:'Poppins', s:28, w:260 });
+    DECO('destello', 1760, 110, 60, { c:'#a78bfa' }); DECO('destello', 170, 960, 50, { c:'#60a5fa' });
+  }},
+  { nombre:'Causa y efecto (espina de pescado)', cat:CAT_PROC, tam:[1920,1080], crear(){
+    FONDO('#f8fafc');
+    T('Diagrama de causa y efecto', 820, 90, { f:'Fredoka', s:60, b:'700', w:1400 });
+    LINEA(180, 540, 1480, 540, '#1f2330', 8);
+    nodo('redondo', 'Problema o efecto', 1670, 540, { anchoMax:260, w:330, h:200, fill:'#ef4444', color:'#ffffff', tam:34, fuente:'Fredoka', peso:'700' });
+    const cats = ['Métodos','Materiales','Personas','Entorno','Tiempo','Recursos'];
+    const cols = ['#bae6fd','#fde68a','#bbf7d0','#fbcfe8','#ddd6fe','#fed7aa'];
+    [420, 820, 1220].forEach((x, i) => [0, 1].forEach(abajo => {
+      const n = i + abajo * 3, yE = abajo ? 820 : 260;
+      LINEA(x - 140, yE, x + 60, 540, '#1f2330', 5);
+      nodo('pildora', cats[n], x - 140, abajo ? 870 : 210, { w:230, h:62, fill:cols[n], color:'#1f2330', tam:28, fuente:'Fredoka', peso:'600' });
+      T('• Causa principal\n• Otra causa', x + 95, abajo ? 690 : 390, { f:'Patrick Hand', s:28, al:'left', w:200 });
+    }));
+  }}
+);
+
+ORGANIZADORES.forEach(p => {
+  const b = document.createElement('button'); b.className = 'plantilla';
+  b.innerHTML = `<div class="t">${esc(p.nombre)}</div>`;
+  b.onclick = () => usarOrganizador(p);
+  $('listaOrganizadores').appendChild(b);
+});
+
+const DIAGRAMAS = [
+  { nombre:'Mapa mental', desc:'Idea central con ramas de colores', tam:[1920, 1080], crear(){
+    const centro = nodo('elipse', 'Idea central', 960, 540, { w:460, h:230, fill:'#7c3aed', color:'#ffffff', tam:56, peso:'700', fuente:'Montserrat' });
+    const colores = ['#f97316','#06b6d4','#10b981','#ec4899','#eab308','#3b82f6'];
+    [[1480,230],[1520,540],[1480,850],[440,230],[400,540],[440,850]].forEach(([x, y], i) => {
+      const r = nodo('redondo', 'Idea ' + (i+1), x, y, { w:320, h:110, fill:colores[i], color:'#ffffff', tam:38, peso:'600' });
+      unir(centro, r, { estilo:'curva', flecha:false, color:colores[i], ancho:9, orient:'h', dir: x > 960 ? 'der' : 'izq' });
+    });
+  }},
+  { nombre:'Mapa conceptual', desc:'Conceptos unidos con palabras de enlace', tam:[1920, 1080], crear(){
+    const est = { fill:'#eef2ff', stroke:'#1e3a8a', grosor:4, color:'#1e3a8a', tam:34, peso:'600' };
+    const raiz = nodo('redondo', 'Concepto principal', 960, 130, { ...est, w:440, h:110, fill:'#1e3a8a', color:'#ffffff', tam:40, peso:'700' });
+    const n2 = [400, 960, 1520].map((x, i) => nodo('redondo', 'Concepto ' + (i+1), x, 470, { ...est, w:320, h:100 }));
+    const enlaces = ['se divide en', 'incluye', 'se relaciona con'];
+    n2.forEach((n, i) => unir(raiz, n, { etiqueta:enlaces[i], color:'#334155', ancho:4 }));
+    [[230, 0], [570, 0], [1350, 2], [1690, 2]].forEach(([x, i], j) => {
+      const h3 = nodo('redondo', 'Ejemplo', x, 840, { ...est, w:280, h:96, fill:'#ffffff' });
+      unir(n2[i], h3, { etiqueta: j % 2 ? 'como' : 'por ejemplo', color:'#334155', ancho:4 });
+    });
+  }},
+  { nombre:'Diagrama de flujo', desc:'Inicio, procesos, decisión y fin', tam:[1400, 1920], crear(){
+    const blanco = { color:'#ffffff', tam:38, peso:'600' };
+    const ini = nodo('pildora', 'Inicio', 600, 160, { ...blanco, w:340, h:110, fill:'#10b981' });
+    const p1 = nodo('proceso', 'Proceso', 600, 420, { ...blanco, w:380, h:130, fill:'#3b82f6' });
+    const dec = nodo('rombo', '¿Condición?', 600, 760, { ...blanco, w:440, h:260, fill:'#f59e0b', tam:34 });
+    const otra = nodo('proceso', 'Otra acción', 1170, 760, { ...blanco, w:300, h:120, fill:'#64748b' });
+    const p2 = nodo('proceso', 'Siguiente paso', 600, 1120, { ...blanco, w:380, h:130, fill:'#3b82f6' });
+    const dat = nodo('paralelo', 'Resultado', 600, 1420, { ...blanco, w:400, h:130, fill:'#8b5cf6' });
+    const fin = nodo('pildora', 'Fin', 600, 1720, { ...blanco, w:340, h:110, fill:'#ef4444' });
+    const lin = { estilo:'codo', color:'#1f2330', ancho:5 };
+    unir(ini, p1, { ...lin, orient:'v' }); unir(p1, dec, { ...lin, orient:'v' });
+    unir(dec, p2, { ...lin, orient:'v', etiqueta:'Sí' }); unir(dec, otra, { ...lin, orient:'h', etiqueta:'No' });
+    unir(otra, dat, { ...lin, lados:['aba','der'] });
+    unir(p2, dat, { ...lin, orient:'v' }); unir(dat, fin, { ...lin, orient:'v' });
+  }},
+  { nombre:'Organigrama / árbol', desc:'Jerarquía de arriba hacia abajo', tam:[1920, 1080], crear(){
+    const raiz = nodo('redondo', 'Dirección', 960, 150, { w:360, h:110, fill:'#0f172a', color:'#ffffff', tam:40, peso:'700' });
+    const cols = ['#2563eb', '#0891b2', '#7c3aed'];
+    [400, 960, 1520].forEach((x, i) => {
+      const n = nodo('redondo', 'Área ' + (i+1), x, 480, { w:300, h:100, fill:cols[i], color:'#ffffff', tam:34, peso:'600' });
+      unir(raiz, n, { estilo:'codo', flecha:false, orient:'v', color:'#475569', ancho:4 });
+      [-140, 140].forEach(dx => {
+        const m = nodo('redondo', 'Puesto', x + dx, 820, { w:250, h:92, fill:'#f1f5f9', stroke:cols[i], grosor:4, color:'#1f2330', tam:30 });
+        unir(n, m, { estilo:'codo', flecha:false, orient:'v', color:'#94a3b8', ancho:4 });
+      });
+    });
+  }},
+  { nombre:'Línea del tiempo', desc:'Acontecimientos en orden', tam:[1920, 1080], crear(){
+    agregar(new fabric.Rect({ left:960, top:540, originX:'center', originY:'center', width:1640, height:12, rx:6, ry:6, fill:'#334155' }), 'Línea');
+    [260, 610, 960, 1310, 1660].forEach((x, i) => {
+      const punto = nodo('circulo', String(2020 + i), x, 540, { w:130, h:130, fill:'#7c3aed', color:'#ffffff', tam:30, peso:'700' });
+      const y = i % 2 ? 820 : 260;
+      const caja = nodo('redondo', 'Acontecimiento importante', x, y, { w:300, h:130, fill:'#f1f5f9', stroke:'#cbd5e1', grosor:3, color:'#1f2330', tam:30 });
+      unir(punto, caja, { flecha:false, color:'#94a3b8', ancho:4 });
+    });
+  }}
+];
+DIAGRAMAS.forEach(d => {
+  const b = document.createElement('button'); b.className = 'bigbtn';
+  b.innerHTML = `<b>${esc(d.nombre)}</b><br><span style="color:#6b7280;font-size:12px">${esc(d.desc)}</span>`;
+  b.onclick = () => {
+    if (canvas.getObjects().length && !confirm('Esto reemplazará el contenido de esta página. ¿Continuar?')) return;
+    fijarTamano(d.tam[0], d.tam[1]);
+    restaurando = true;
+    canvas.clear(); canvas.backgroundColor = '#ffffff';
+    d.crear(); ordenarVinculos();
+    restaurando = false;
+    canvas.discardActiveObject(); canvas.requestRenderAll(); renderCapas(); guardarEstado();
+  };
+  $('listaDiagramas').appendChild(b);
+});
+canvas.targetFindTolerance = 8;
+
+function toggleFlecha(){
+  const o = conSel(); if (!o) return;
+  const fin = (o.fin || (o.flecha ? 'flecha' : 'nada')) === 'nada' ? 'flecha' : 'nada';
+  cambiarConector({ fin, flecha: fin !== 'nada' });
+}
+

@@ -1,4 +1,4 @@
-# Arma las dos versiones de la app a partir de la versión completa (fuente/Index.completo.html):
+# Arma las dos versiones de la app a partir del código en fuente/partes/ (se junta en fuente/Index.completo.html):
 #   - apps-script/  → para Google Apps Script (guarda en Google Drive)
 #   - index.html + js/  → versión web para GitHub Pages u otro hosting (guarda en el navegador)
 # Uso:  python3 fuente/construir.py
@@ -7,6 +7,9 @@ RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/'
 FUENTE = RAIZ + 'fuente/'
 base = RAIZ + 'apps-script/'
 os.makedirs(base, exist_ok=True); os.makedirs(RAIZ + 'js', exist_ok=True)
+import sys; sys.path.insert(0, FUENTE)
+from ensamblar import ensamblar
+print('Index.completo.html armado desde fuente/partes: %d partes' % ensamblar()[0])
 h = open(FUENTE + 'Index.completo.html', encoding='utf-8').read()
 h0 = h
 cfg = open(RAIZ + 'config.js', encoding='utf-8').read()

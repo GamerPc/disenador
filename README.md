@@ -122,16 +122,29 @@ La versión web se puede **instalar** como app (botón **📲 Instalar**, o en e
 
 ## 7. Cómo se actualiza el sistema (para quien programa)
 
-Todo el programa vive en **`fuente/Index.completo.html`** (un solo archivo con HTML, estilos y código).
-`fuente/almacen-local.js` es la pieza que permite a la versión web guardar en el navegador.
+El código está ordenado por partes en **`fuente/partes/`**:
+
+| Archivo | Qué tiene |
+|---|---|
+| `pagina.html` | El esqueleto de la pantalla: barra, pestañas, paneles y ventanas |
+| `estilos.css` | Todos los estilos (colores, tamaños, modo celular) |
+| `codigo/01-….js` a `codigo/99-pestanas-e-inicio.js` | El programa, una parte por tema: lienzo, texto, plantillas, exportar, presentaciones, 3D, etc. Se juntan en orden de número. `99` siempre va al final porque arranca la app |
+
+Para cambiar algo, edita la parte que corresponde. Para agregar una función nueva, crea `codigo/NN-mi-funcion.js` con un número antes del 99.
 
 Después de cambiar algo:
 ```bash
 python3 fuente/construir.py
 ```
-Eso vuelve a generar **las dos versiones** (`index.html` + `js/` y la carpeta `apps-script/`). Luego sube los cambios (commit) y GitHub Pages se actualiza solo.
+Eso junta las partes en `fuente/Index.completo.html` y genera **las dos versiones** (`index.html` + `js/` y la carpeta `apps-script/`). Luego sube los cambios (commit) y GitHub Pages se actualiza solo.
 
-`construir.py` también revisa que no haya funciones con el mismo nombre (una taparía a la otra) y parte el código en archivos pequeños para Apps Script.
+Para que una parte nueva se conecte con lo que ya existe, sin tapar código de otras partes:
+- **Panel de propiedades:** `alActualizarPanel(function(){ … })` se ejecuta cada vez que cambia lo seleccionado.
+- **Nuevo formato para exportar:** `FORMATO('miFormato').descargar = async function(){ … }` (también `.vista` y `.drive`), y agrega su opción al menú `eFormato`.
+
+`construir.py` también revisa que no haya funciones con el mismo nombre (una taparía a la otra), parte el código en archivos pequeños para Apps Script y pone una huella (`?v=…`) a cada archivo para que el navegador siempre cargue el más nuevo.
+
+Prueba rápida (necesita Python con Playwright): `python3 pruebas/humo.py` abre la app sin internet de por medio, revisa que no haya errores y que las plantillas y la exportación funcionen.
 
 ---
 

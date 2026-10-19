@@ -163,14 +163,12 @@ function ponerEnlace(){
   else return toast('Escribe un número de página o una dirección que empiece con https://');
   actualizarPanel(); guardarEstado();
 }
-const actualizarPanelBase28 = actualizarPanel;
-actualizarPanel = function(){
-  actualizarPanelBase28.apply(this, arguments);
+alActualizarPanel(function(){
   if (generandoVista) return;
   const o = activo(); if (!o) return;
   $('bEnlace').textContent = o.enlace ? '🔗 ' + (o.enlace.startsWith('p:') ? 'Va a la página ' + o.enlace.slice(2) : 'Enlace web') : '🔗 Enlace';
   $('bEnlace').classList.toggle('on', !!o.enlace);
-};
+});
 function objetoConEnlace(e){
   if (!pres || !pres.cur) return null;
   const el = pres.cur.wrap.querySelector('canvas'); if (!el) return null;

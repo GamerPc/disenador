@@ -123,6 +123,10 @@ function aplicarTamanoPers(){
 /* =========================================================
    EXPORTAR
    ========================================================= */
+// Otras partes agregan formatos (SVG, página web…) con FORMATO('svg').descargar = …, .vista = …, .drive = …
+const FORMATOS_EXTRA = {};
+const FORMATO = f => FORMATOS_EXTRA[f] || (FORMATOS_EXTRA[f] = {});
+const formatoExtra = acc => { const f = FORMATOS_EXTRA[$('eFormato').value]; return f && f[acc]; };
 function nombreArchivo(){ return ($('nombreDiseno').value || 'diseño').trim(); }
 function gs(fn, ...args){
   return new Promise((ok, mal) => google.script.run.withSuccessHandler(ok).withFailureHandler(mal)[fn](...args));
@@ -186,6 +190,7 @@ function avisoVideo(v){
   return 'Video listo (' + mb + ').';
 }
 async function descargarImagen(){
+  if (formatoExtra('descargar')) return formatoExtra('descargar')();
   if ($('eFormato').value === 'video'){
     try { const v = await obtenerVideo(); bajarBlob(v.blob, nombreArchivo() + '.' + v.ext); toast(avisoVideo(v)); }
     catch (e) { console.error(e); toast('No se pudo crear el video: ' + e.message); }
@@ -215,6 +220,7 @@ async function descargarImagen(){
   finally { cargando(false); }
 }
 async function vistaPrevia(){
+  if (formatoExtra('vista')) return formatoExtra('vista')();
   if ($('eFormato').value === 'video'){
     try {
       const v = await obtenerVideo();
@@ -238,6 +244,7 @@ async function vistaPrevia(){
   } finally { cargando(false); }
 }
 async function exportarDrive(){
+  if (formatoExtra('drive')) return formatoExtra('drive')();
   if ($('eFormato').value === 'video'){
     try {
       const v = await obtenerVideo();

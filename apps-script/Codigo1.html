@@ -471,7 +471,14 @@ function aplicar(prop, valor, sinGuardar){
 }
 function textos(){ return objetivos().flatMap(hojas).filter(esTexto); }
 
+// Otras partes agregan lo suyo al panel con alActualizarPanel(función); se ejecutan en orden después del panel base
+const GANCHOS_PANEL = [];
+const alActualizarPanel = fn => GANCHOS_PANEL.push(fn);
 function actualizarPanel(){
+  actualizarPanelBase.apply(this, arguments);
+  for (const f of GANCHOS_PANEL) f();
+}
+function actualizarPanelBase(){
   if (generandoVista) return;
   const o = activo();
   $('sinSel').hidden = !!o; $('propsCont').hidden = !o;
