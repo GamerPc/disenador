@@ -8331,7 +8331,7 @@ const PLANTILLAS_WEB = [
   }},
   { nombre:'App: inicio / catálogo', tam:[390, 844], crear(){
     FONDO('#f8fafc'); PON(COMP.barraEstado(0, 0, 1));
-    PON([uiT('Hola, Paola 👋', 24, 56, { w:300, s:14, c:UI.suave }), uiT('¿Qué buscas hoy?', 24, 76, { w:300, s:26, b:'800', f:'Poppins' })]); PON(COMP.avatar(310, 60, 1, { ini:'P' }));
+    PON([uiT('Hola, Lorem 👋', 24, 56, { w:300, s:14, c:UI.suave }), uiT('¿Qué buscas hoy?', 24, 76, { w:300, s:26, b:'800', f:'Poppins' })]); PON(COMP.avatar(310, 60, 1, { ini:'L' }));
     PON(COMP.buscador(24, 130, 1, { w:342, fondo:'#ffffff' }));
     PON([uiR(24, 194, 342, 140, UI.acento, { r:20, nombre:'Promoción' }), uiT('-30% en tu\nprimera compra', 44, 218, { w:200, s:22, b:'800', c:'#ffffff', lh:1.15 })]); PON(COMP.boton(44, 280, 1, { t:'Ver ofertas', w:120, h:36, fill:'#ffffff', color:UI.acento }));
     ['Todo', 'Ropa', 'Tenis', 'Bolsas'].forEach((t, i) => PON([uiR(24 + i * 86, 356, 78, 36, i === 0 ? UI.texto : '#ffffff', { r:18, borde: i ? '#e5e7eb' : null, nombre:'Categoría' }), uiT(t, 24 + i * 86, 365, { w:78, s:14, b:'600', c: i === 0 ? '#ffffff' : UI.texto, al:'center' })]));
@@ -8344,7 +8344,7 @@ const PLANTILLAS_WEB = [
     FONDO('#ffffff'); PON(COMP.barraEstado(0, 0, 1));
     PON([uiR(0, 0, 390, 220, UI.acento, { nombre:'Portada' })]); PON(COMP.barraEstado(0, 0, 1, { oscuro:true }));
     FOTO(135, 150, 120, 120, 'circulo');
-    PON([uiT('Paola Cisneros', 24, 284, { w:342, s:24, b:'800', al:'center', f:'Poppins' }), uiT('Estudiante de Derecho · CDMX', 24, 318, { w:342, s:14, c:UI.suave, al:'center' })]);
+    PON([uiT('Lorem Ipsum', 24, 284, { w:342, s:24, b:'800', al:'center', f:'Poppins' }), uiT('Lorem ipsum dolor sit amet', 24, 318, { w:342, s:14, c:UI.suave, al:'center' })]);
     [['24', 'Diseños'], ['8', 'Carpetas'], ['3', 'Compartidos']].forEach(([n, t], i) => PON([uiT(n, 24 + i * 114, 360, { w:114, s:22, b:'800', al:'center' }), uiT(t, 24 + i * 114, 390, { w:114, s:13, c:UI.suave, al:'center' })]));
     ['👤  Datos personales', '🔔  Notificaciones', '🔒  Privacidad', '❓  Ayuda', '🚪  Cerrar sesión'].forEach((t, i) => {
       const y = 450 + i * 60; PON([uiR(24, y, 342, 52, UI.gris, { r:14, nombre:'Opción' }), uiT(t, 40, y + 15, { w:280, s:15, b:'500', c: i === 4 ? UI.rojo : UI.texto }), uiT('›', 330, y + 11, { w:20, s:22, c:'#9ca3af' })]); });
@@ -8366,7 +8366,7 @@ const PLANTILLAS_WEB = [
   { nombre:'Dashboard de ventas', tam:[1440, 900], crear(){
     FONDO('#f1f5f9'); PON(COMP.menuLateral(0, 0, 1, { h:900, marca:'Ventas+' }));
     PON([uiT('Resumen del mes', 280, 36, { w:600, s:28, b:'800', f:'Poppins' }), uiT('Octubre 2026', 280, 76, { w:300, s:15, c:UI.suave })]);
-    PON(COMP.buscador(1040, 36, 1, { w:260, fondo:'#ffffff' })); PON(COMP.avatar(1320, 30, 1, { ini:'PC' }));
+    PON(COMP.buscador(1040, 36, 1, { w:260, fondo:'#ffffff' })); PON(COMP.avatar(1320, 30, 1, { ini:'LI' }));
     [['Ventas del mes', '$48,250', '+12%'], ['Pedidos', '326', '+8%'], ['Clientes nuevos', '57', '+21%'], ['Devoluciones', '9', '-3%']].forEach(([t, v, c], i) => PON(COMP.kpi(280 + i * 285, 120, 1, { titulo:t, valor:v, cambio:c, w:265 })));
     PON([uiR(280, 270, 700, 380, '#ffffff', { r:16, borde:'#eef0f3', nombre:'Panel de gráfica' }), uiT('Ventas por mes', 304, 290, { w:400, s:17, b:'700' })]);
     GRAF(300, 320, 660, 310, 'barras', [{ e:'May', v:31 }, { e:'Jun', v:36 }, { e:'Jul', v:29 }, { e:'Ago', v:42 }, { e:'Sep', v:39 }, { e:'Oct', v:48 }]);
