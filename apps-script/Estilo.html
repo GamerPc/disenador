@@ -111,4 +111,11 @@
   .donBtn{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:10px;border:1px solid var(--borde);background:var(--panel2);color:var(--texto);text-decoration:none;margin-bottom:8px}
   .donBtn:hover{border-color:var(--rojo, #ff4b2b);box-shadow:0 0 0 1px rgba(255,75,43,.4)}
   .donBtn span{font-size:12px;color:var(--suave)}
+  #filaRelleno2[hidden],#filaRellAng[hidden],#filaRellGros[hidden],#filaRellSep[hidden],#filaRellTransp[hidden],#filaTipoRelleno[hidden]{display:none}
+  .sws{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px}
+  .sws .sw{width:26px;height:26px;border-radius:7px;cursor:pointer;border:1px solid rgba(255,255,255,.15)}
+  .cajaRepetir{border:1px solid var(--borde, #2a3140);border-radius:10px;padding:8px 10px;margin:4px 0 8px}
+  .cajaRepetir input[type=number]{width:70px}
+  .cajaRepetir[hidden]{display:none}
+  @media (max-width:560px){ #barra .logoTxt,#barra .ver,#estadoGuardado{display:none !important} #barra .logo{display:flex !important;flex:none} #barra .logoImg{width:30px;height:30px} #barra input.nombre{width:96px} }
 </style>

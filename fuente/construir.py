@@ -131,6 +131,9 @@ def textosWeb(t):
     for a, b in REEMPLAZOS_WEB: t = t.replace(a, b)
     return t
 w = h0.replace('<base target="_top">', '<base target="_top">\n' + aviso.replace(json.dumps(esperado), '{}'), 1)
+# en el celular y la tablet: usar el ancho real de la pantalla (en Apps Script lo pone Code.gs)
+w = w.replace('<head>', '<head>\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">', 1)
+assert 'name="viewport"' in w
 w = w.replace(fab, fab + '\n<script>window.fabric || document.write(\'<script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"><\\/script>\')</script>', 1)
 mw = list(re.finditer(r'<script>\n(.*?)</script>', w, re.S))[-1]
 w = w[:mw.start()] + '<script src="config.js"></script>\n<script src="js/almacen-local.js"></script>\n<script src="js/app.js"></script>' + w[mw.end():]

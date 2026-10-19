@@ -82,7 +82,7 @@ Los enlaces están al final de `apps-script/Index.html`, en el bloque `window.AP
 
 1. En **script.google.com** crea un proyecto.
 2. Pega `apps-script/Code.gs` en `Código.gs`.
-3. Crea un archivo HTML por cada archivo de `apps-script/` (`Index`, `Estilo`, `Codigo1` … `Codigo9`) con **exactamente** ese nombre y pega su contenido.
+3. Crea un archivo HTML por cada archivo de `apps-script/` (`Index`, `Estilo`, `Codigo1`, `Codigo2`… todos los que haya) con **exactamente** ese nombre y pega su contenido.
 4. **Implementar → Nueva implementación → Aplicación web**
    - Ejecutar como: **Usuario que accede a la aplicación web**
    - Quién tiene acceso: **Cualquier persona con una cuenta de Google**
