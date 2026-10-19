@@ -146,6 +146,13 @@ open(RAIZ + 'js/app.js', 'w', encoding='utf-8').write(textosWeb(js))
 shutil.copy(FUENTE + 'almacen-local.js', RAIZ + 'js/almacen-local.js')
 for f in ('pwa.js', 'nube.js'): shutil.copy(FUENTE + f, RAIZ + 'js/' + f)
 import hashlib
+# cada archivo lleva su huella (?v=…): así el navegador nunca usa uno viejo
+def huellaDe(x): return hashlib.sha1(open(RAIZ + x, 'rb').read()).hexdigest()[:8]
+idx = open(RAIZ + 'index.html', encoding='utf-8').read()
+for x in ('config.js', 'js/almacen-local.js', 'js/app.js', 'js/nube.js', 'js/pwa.js'):
+    assert idx.count(f'src="{x}"') == 1, x
+    idx = idx.replace(f'src="{x}"', f'src="{x}?v={huellaDe(x)}"')
+open(RAIZ + 'index.html', 'w', encoding='utf-8').write(idx)
 huella = hashlib.sha1(b''.join(open(RAIZ + x, 'rb').read() for x in ('index.html', 'config.js', 'js/app.js', 'js/almacen-local.js', 'js/pwa.js', 'js/nube.js'))).hexdigest()[:10]
 open(RAIZ + 'sw.js', 'w', encoding='utf-8').write(open(FUENTE + 'sw.plantilla.js', encoding='utf-8').read().replace('__VERSION__', huella))
 print('Service worker versión', huella)

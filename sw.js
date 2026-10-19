@@ -1,6 +1,6 @@
 /* Service worker del Diseñador: permite instalarlo y abrirlo aunque falle el internet.
    VERSION la pone construir.py; cuando cambia, el navegador baja la versión nueva. */
-const VERSION = '35dc329fb5';
+const VERSION = '6571ec020a';
 const CACHE = 'disenador-' + VERSION;
 const BASE = ['./', 'index.html', 'config.js', 'js/app.js', 'js/almacen-local.js', 'js/pwa.js', 'js/nube.js', 'manifest.webmanifest',
   'icons/icono-192.png', 'icons/icono-512.png', 'icons/apple-touch-icon.png', 'icons/favicon.png'];
@@ -9,8 +9,9 @@ const CDN = /^https:\/\/(cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net|fonts\.google
 self.addEventListener('install', e => {
   e.waitUntil((async () => {
     const c = await caches.open(CACHE);
-    await c.addAll(BASE);
+    await c.addAll(BASE.map(u => new Request(u, { cache:'reload' })));   // siempre lo más nuevo, sin la memoria del navegador
     await Promise.all(LIBRERIAS.map(u => c.add(u).catch(() => null)));   // si no se pueden, se guardan al usarlas
+    await self.skipWaiting();   // la versión nueva entra en cuanto se descarga
   })());
 });
 self.addEventListener('activate', e => {
@@ -27,11 +28,13 @@ self.addEventListener('fetch', e => {
   if (url.origin === location.origin){
     if (r.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname.endsWith('/')){
       // la página: primero internet (para ver lo nuevo), si no hay, la guardada
-      e.respondWith(fetch(r).then(res => { const copia = res.clone(); caches.open(CACHE).then(c => c.put(r, copia)); return res; })
+      e.respondWith(fetch(r, { cache:'no-cache' }).then(res => { const copia = res.clone(); caches.open(CACHE).then(c => c.put(r, copia)); return res; })
         .catch(() => caches.match(r).then(x => x || caches.match('index.html'))));
       return;
     }
-    e.respondWith(caches.match(r).then(x => x || fetch(r).then(res => { if (res.ok){ const copia = res.clone(); caches.open(CACHE).then(c => c.put(r, copia)); } return res; })));
+    // archivos de la app: primero internet (revisando si cambiaron); sin internet, la copia guardada
+    e.respondWith(fetch(r, { cache:'no-cache' }).then(res => { if (res.ok){ const copia = res.clone(); caches.open(CACHE).then(c => c.put(url.pathname.replace(/^.*\/disenador\//, ''), copia).catch(() => {})); } return res; })
+      .catch(() => caches.match(r, { ignoreSearch:true }).then(x => x || Promise.reject(new Error('sin conexión')))));
     return;
   }
   if (CDN.test(r.url)){

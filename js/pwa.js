@@ -28,7 +28,7 @@
     const avisarNueva = w => {
       const t = document.createElement('div'); t.id = 'avisoVersion';
       t.innerHTML = '✨ Hay una versión nueva del Diseñador <button>Actualizar</button>';
-      t.querySelector('button').onclick = () => { try { guardarEstado && guardarEstado(); } catch (e) {} w.postMessage('actualizar'); };
+      t.querySelector('button').onclick = () => { try { guardarEstado && guardarEstado(); } catch (e) {} w.postMessage('actualizar'); setTimeout(() => location.reload(), 600); };
       document.body.appendChild(t);
     };
     if (reg.waiting && navigator.serviceWorker.controller) avisarNueva(reg.waiting);
@@ -38,6 +38,13 @@
     });
     setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000);
   }).catch(() => {});
-  let recargando = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => { if (recargando) return; recargando = true; location.reload(); });
+  // cuando entra una versión nueva: se avisa y la persona decide cuándo recargar (para no perder lo que está haciendo)
+  const habiaControl = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!habiaControl || document.getElementById('avisoVersion')) return;
+    const t = document.createElement('div'); t.id = 'avisoVersion';
+    t.innerHTML = '✨ Ya está lista una versión nueva del Diseñador <button>Recargar</button>';
+    t.querySelector('button').onclick = () => { try { guardarEstado && guardarEstado(); } catch (e) {} setTimeout(() => location.reload(), 300); };
+    document.body.appendChild(t);
+  });
 })();
