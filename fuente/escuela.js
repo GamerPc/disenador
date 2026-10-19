@@ -35,6 +35,12 @@
   .entrega textarea,.escForm textarea{background:var(--panel,#10131b);color:inherit;border:1px solid var(--borde,#2a3140);border-radius:8px;padding:8px;font:13px/1.4 Inter,sans-serif;resize:vertical}
   .escForm label{display:block;font-size:13px;margin:10px 0 4px;color:var(--suave,#9ca3af)}.escForm input,.escForm textarea{width:100%;box-sizing:border-box}
   #bandaActividad{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:10px;background:#0b1220;color:#e8f6ff;border:1px solid #19c8ff;border-radius:999px;padding:6px 8px 6px 16px;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,.35);max-width:calc(100% - 20px)}
+  .alumnos{display:flex;flex-wrap:wrap;gap:6px}.alumno{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--borde,#2a3140);border-radius:999px;padding:4px 4px 4px 12px;font-size:13px}
+  .alumno small{color:var(--suave,#9ca3af)}.alumno .pb{padding:2px 8px;min-height:0;border-radius:999px}
+  .filaRub{display:flex;gap:6px;margin:4px 0}.filaRub input[type=number]{width:80px}.filaRub .buscador{flex:1;margin:0}
+  .rub{display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:12.5px}.rub label{display:flex;align-items:center;gap:6px;justify-content:space-between;margin:0;color:inherit}
+  .rub label span{color:var(--suave,#9ca3af);margin-left:auto}.rub input{width:56px}.totRub{font-size:13px;margin-top:2px}
+  #bEscuela.avisoEsc{position:relative}#bEscuela.avisoEsc::after{content:attr(data-n);position:absolute;top:2px;right:2px;min-width:16px;height:16px;border-radius:8px;background:#ef4444;color:#fff;font:700 10px/16px Inter,sans-serif;text-align:center;padding:0 3px}
   #bandaActividad span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#bandaActividad .btnP{padding:7px 14px;white-space:nowrap}#bandaActividad[hidden]{display:none}`;
   document.head.appendChild(st);
   const cuerpo = () => $e('escCuerpo');
@@ -60,10 +66,20 @@
   async function inicio(){
     await N.listo;
     const mios = (await misGrupos().get()).docs.map(d => ({ id:d.id, ...d.data() })).sort((a, b) => (b.unido || '').localeCompare(a.unido || ''));
+    await Promise.all(mios.map(async g => {
+      const d = await grupos().doc(g.id).get().catch(() => null);
+      g.existe = !!(d && d.exists); g.archivado = !!(g.existe && d.data().archivado);
+      if (g.rol === 'alumno' && g.existe && !g.archivado) g.pend = await pendientesDe(g.id).catch(() => null);
+    }));
+    const item = g => `<button class="escItem" data-g="${esc(g.id)}"><span class="t"><b>${esc(g.nombre)}</b><small>${g.rol === 'maestro' ? 'Código: ' + esc(g.codigo || '') : 'Maestro(a): ' + esc(g.maestroNombre || '')}</small></span>
+        ${g.pend && g.pend.pronto ? `<span class="insig i-tarde">⏰ ${g.pend.pronto} vence${g.pend.pronto > 1 ? 'n' : ''} pronto</span>` : g.pend && g.pend.n ? `<span class="insig i-pend">${g.pend.n} pendiente${g.pend.n > 1 ? 's' : ''}</span>` : ''}
+        <span class="insig ${g.rol === 'maestro' ? 'i-maestro' : 'i-alumno'}">${g.rol === 'maestro' ? 'Maestro' : 'Alumno'}</span></button>`;
+    const activos = mios.filter(g => g.existe && !g.archivado), archivados = mios.filter(g => g.existe && g.archivado);
     cuerpo().innerHTML = `<div class="grupoBtns"><button class="pb" id="escCrear">＋ Crear un grupo (soy maestro)</button><button class="pb" id="escUnirme">🔑 Unirme con un código</button></div>
-      <div class="escLista">${mios.length ? mios.map(g => `<button class="escItem" data-g="${esc(g.id)}"><span class="t"><b>${esc(g.nombre)}</b><small>${g.rol === 'maestro' ? 'Código: ' + esc(g.codigo || '') : 'Maestro(a): ' + esc(g.maestroNombre || '')}</small></span>
-        <span class="insig ${g.rol === 'maestro' ? 'i-maestro' : 'i-alumno'}">${g.rol === 'maestro' ? 'Maestro' : 'Alumno'}</span></button>`).join('')
-        : '<p class="hint">Todavía no estás en ningún grupo. Si eres maestro, crea uno; si eres alumno, pide el código a tu maestro.</p>'}</div>`;
+      <div class="escLista">${activos.length ? activos.map(item).join('')
+        : '<p class="hint">Todavía no estás en ningún grupo. Si eres maestro, crea uno; si eres alumno, pide el código a tu maestro.</p>'}</div>
+      ${archivados.length ? `<details><summary class="hint" style="cursor:pointer">🗄 Grupos archivados (${archivados.length})</summary><div class="escLista">${archivados.map(item).join('')}</div></details>` : ''}`;
+    marcarBoton(activos.reduce((t, g) => t + ((g.pend && g.pend.n) || 0), 0));
     $e('escCrear').onclick = () => ver('Crear grupo', formGrupo);
     $e('escUnirme').onclick = () => ver('Unirme a un grupo', () => formUnirme());
     cuerpo().querySelectorAll('[data-g]').forEach(b => b.onclick = () => { const g = mios.find(x => x.id === b.dataset.g); ver(g.nombre, () => g.rol === 'maestro' ? grupoMaestro(g.id) : grupoAlumno(g.id)); });
@@ -113,10 +129,25 @@
     await Promise.all(lista.map(async a => { a.entregas = (await gref.collection('actividades').doc(a.id).collection('entregas').get()).docs.length; }));
     const enlace = location.origin + location.pathname + '?grupo=' + g.codigo;
     cuerpo().innerHTML = `<p class="hint" style="padding-top:0">Código para tus alumnos:</p><div class="codigoGrande">${esc(g.codigo)}</div>
-      <div class="grupoBtns"><button class="pb" id="escCopiar">🔗 Copiar enlace para unirse</button><button class="pb" id="escNuevaAct">＋ Nueva actividad con el diseño actual</button></div>
+      ${g.archivado ? '<p class="hint"><span class="insig i-pend">🗄 Grupo archivado</span> Los alumnos lo ven en «archivados» y ya no reciben actividades nuevas.</p>' : ''}
+      <div class="grupoBtns"><button class="pb" id="escCopiar">🔗 Copiar enlace para unirse</button><button class="pb" id="escNuevaAct">＋ Nueva actividad con el diseño actual</button>
+        <button class="pb" id="escCalif">⬇ Calificaciones (Excel)</button><button class="pb" id="escArchivar">${g.archivado ? '♻ Reactivar grupo' : '🗄 Archivar grupo'}</button></div>
       <h4>Actividades</h4><div class="escLista">${lista.length ? lista.map(a => `<button class="escItem" data-a="${esc(a.id)}"><span class="t"><b>${esc(a.titulo)}</b><small>${a.limite ? 'Entrega: ' + fecha(a.limite) : 'Sin fecha límite'}</small></span><span class="insig i-cal">${a.entregas || 0} de ${miembros.size}</span></button>`).join('')
         : '<p class="hint">Aún no hay actividades. Abre o diseña la plantilla que usarán tus alumnos y pulsa «Nueva actividad».</p>'}</div>
-      <h4>Alumnos (${miembros.size})</h4><p class="hint" style="padding-top:0">${miembros.docs.map(m => esc(m.data().nombre)).join(' · ') || 'Todavía no se une nadie.'}</p>`;
+      <h4>Alumnos (${miembros.size})</h4>${miembros.size ? `<div class="alumnos">${miembros.docs.map(m => `<span class="alumno">${esc(m.data().nombre)}<small>${esc(m.data().correo || '')}</small><button class="pb" data-sacar="${esc(m.id)}" title="Sacar del grupo" aria-label="Sacar a ${esc(m.data().nombre)} del grupo">✕</button></span>`).join('')}</div>` : '<p class="hint" style="padding-top:0">Todavía no se une nadie.</p>'}`;
+    $e('escCalif').onclick = () => descargarCalificaciones(gid, g, miembros, lista);
+    $e('escArchivar').onclick = async () => {
+      const v = !g.archivado;
+      if (v && !confirm('¿Archivar «' + g.nombre + '»? Se guarda todo; solo deja de aparecer entre los grupos activos.')) return;
+      try { await gref.update({ archivado:v }); await misGrupos().doc(gid).update({ archivado:v }).catch(() => {}); toast(v ? 'Grupo archivado' : 'Grupo reactivado'); ver(g.nombre, () => grupoMaestro(gid), true); }
+      catch (e) { toast('No se pudo: ' + e.message); }
+    };
+    cuerpo().querySelectorAll('[data-sacar]').forEach(b => b.onclick = async () => {
+      const m = miembros.docs.find(x => x.id === b.dataset.sacar);
+      if (!confirm('¿Sacar a ' + m.data().nombre + ' del grupo? Sus entregas se conservan.')) return;
+      try { await gref.collection('miembros').doc(m.id).delete(); toast(m.data().nombre + ' ya no está en el grupo'); ver(g.nombre, () => grupoMaestro(gid), true); }
+      catch (e) { toast('No se pudo: ' + e.message); }
+    });
     $e('escCopiar').onclick = () => { (navigator.clipboard ? navigator.clipboard.writeText(enlace) : Promise.reject()).then(() => toast('Enlace copiado: ' + enlace), () => prompt('Copia este enlace:', enlace)); };
     $e('escNuevaAct').onclick = () => ver('Nueva actividad', () => formActividad(gid));
     cuerpo().querySelectorAll('[data-a]').forEach(b => b.onclick = () => { const a = lista.find(x => x.id === b.dataset.a); ver(a.titulo, () => actividadMaestro(gid, a.id)); });
@@ -126,13 +157,29 @@
       <label for="escTit">Título</label><input id="escTit" class="buscador" maxlength="100" placeholder="Ej. Mapa conceptual del proceso penal acusatorio">
       <label for="escInst">Instrucciones</label><textarea id="escInst" rows="4" maxlength="2000" placeholder="Qué deben hacer, cómo se evalúa…"></textarea>
       <label for="escLim">Fecha límite (opcional)</label><input id="escLim" type="date">
-      <button class="btnP" id="escActOk" style="margin-top:12px">Publicar actividad</button></div>`;
+      <label style="display:flex;gap:8px;align-items:center;color:inherit;margin-top:14px"><input type="checkbox" id="escUsaRub"> Calificar con rúbrica</label>
+      <div id="escRub" hidden><p class="hint" style="padding-top:0">Criterios y puntos máximos (la calificación es la suma):</p><div id="escRubFilas"></div><button class="pb" id="escRubMas">＋ Criterio</button> <span class="hint" id="escRubTotal"></span></div>
+      <p class="hint" style="margin-top:12px">¿No tienes plantilla? <button class="pb" id="escListas">📚 Usar una actividad lista</button></p>
+      <button class="btnP" id="escActOk" style="margin-top:6px">Publicar actividad</button></div>`;
+    const filaRub = (n, p) => { const d = document.createElement('div'); d.className = 'filaRub'; d.innerHTML = `<input class="buscador" maxlength="60" value="${esc(n)}" aria-label="Criterio"><input type="number" min="0" max="100" step="0.5" value="${p}" aria-label="Puntos"><button class="pb" aria-label="Quitar criterio">✕</button>`;
+      d.querySelector('button').onclick = () => { d.remove(); totalRub(); }; d.querySelectorAll('input').forEach(i => i.oninput = totalRub); $e('escRubFilas').appendChild(d); };
+    const totalRub = () => { const t = [...document.querySelectorAll('#escRubFilas .filaRub')].reduce((s, f) => s + (+f.children[1].value || 0), 0); $e('escRubTotal').textContent = 'Total: ' + t + ' puntos'; };
+    [['Contenido', 4], ['Organización', 2], ['Diseño y presentación', 2], ['Ortografía', 1], ['Entrega a tiempo', 1]].forEach(([n, p]) => filaRub(n, p)); totalRub();
+    $e('escUsaRub').onchange = e => { $e('escRub').hidden = !e.target.checked; };
+    $e('escRubMas').onclick = () => { filaRub('Nuevo criterio', 1); totalRub(); };
+    $e('escListas').onclick = () => {
+      cerrarModal('mEscuela'); abrirLateral && esTel && esTel() && abrirLateral(true);
+      const tab = document.querySelector('#pestanas button[data-tab="tPlantillas"]'); tab && tab.click();
+      const chip = [...document.querySelectorAll('#chipsCat .chip')].find(x => x.textContent.includes('Actividades')); chip && chip.click();
+      toast('Elige una actividad lista, ajústala y vuelve a 🎓 Escuela → Nueva actividad.');
+    };
     $e('escActOk').onclick = async () => {
       const titulo = $e('escTit').value.trim(); if (!titulo) return toast('Escribe el título');
       cargando(true);
       try {
         const ref = grupos().doc(gid).collection('actividades').doc();
-        await N.escribirGrande(ref, { titulo, instrucciones:$e('escInst').value.trim(), limite:$e('escLim').value || '', creada:N.ahora(), mini:miniatura(), w:W, h:H }, serializar(), true);
+        const rubrica = $e('escUsaRub').checked ? [...document.querySelectorAll('#escRubFilas .filaRub')].map(f => ({ c:f.children[0].value.trim(), p:+f.children[1].value || 0 })).filter(x => x.c && x.p > 0) : null;
+        await N.escribirGrande(ref, { titulo, instrucciones:$e('escInst').value.trim(), limite:$e('escLim').value || '', creada:N.ahora(), mini:miniatura(), w:W, h:H, rubrica:rubrica && rubrica.length ? rubrica : null }, serializar(), true);
         toast('Actividad publicada. Tus alumnos ya la ven en «Mi escuela».');
         $e('escAtras').click();
       } catch (e) { toast('No se pudo publicar: ' + e.message); } finally { cargando(false); }
@@ -148,7 +195,8 @@
       <div class="grupoBtns"><button class="pb" id="escVerPlantilla">👁 Abrir la plantilla</button><button class="pb peligro" id="escBorrarAct">🗑 Borrar actividad</button></div>
       <div class="gridEntregas">${lista.map(e => `<div class="entrega" data-e="${esc(e.id)}"><img alt="" src="${e.mini || ''}"><div class="pie"><b>${esc(e.nombre)}</b>
         <small class="hint" style="padding:0">${fechaHora(e.fecha)}${act.limite && e.fecha > act.limite + 'T23:59:59' ? ' · <span class="insig i-tarde">Tarde</span>' : ''}</small>
-        <div class="fila"><button class="pb" data-abrir>Abrir</button><input type="number" min="0" max="10" step="0.1" placeholder="Cal." value="${e.calificacion ?? ''}" aria-label="Calificación"><button class="pb" data-cal>Guardar</button></div>
+        ${act.rubrica ? `<div class="rub">${act.rubrica.map((k, i) => `<label>${esc(k.c)} <span>/ ${k.p}</span><input type="number" min="0" max="${k.p}" step="0.5" data-k="${i}" value="${e.rubrica && e.rubrica[i] != null ? e.rubrica[i] : ''}"></label>`).join('')}<b class="totRub">Total: ${e.calificacion ?? '—'} / ${maxRub(act)}</b></div>` : ''}
+        <div class="fila"><button class="pb" data-abrir>Abrir</button>${act.rubrica ? '' : `<input type="number" min="0" max="10" step="0.1" placeholder="Cal." value="${e.calificacion ?? ''}" aria-label="Calificación">`}<button class="pb" data-cal>Guardar</button></div>
         <textarea rows="2" placeholder="Comentario para el alumno" style="width:100%;margin-top:6px;box-sizing:border-box" aria-label="Comentario">${esc(e.comentario || '')}</textarea></div></div>`).join('')}</div>
       ${faltan.length ? `<p class="hint">Sin entregar: ${faltan.map(esc).join(' · ')}</p>` : ''}`;
     $e('escVerPlantilla').onclick = () => abrirDeNube(aref, act.titulo + ' (plantilla)', null);
@@ -161,9 +209,14 @@
     cuerpo().querySelectorAll('.entrega').forEach(div => {
       const id = div.dataset.e, e = lista.find(x => x.id === id), eref = aref.collection('entregas').doc(id);
       div.querySelector('[data-abrir]').onclick = () => abrirDeNube(eref, 'Entrega de ' + e.nombre + ' · ' + act.titulo, null);
+      const ins = [...div.querySelectorAll('[data-k]')];
+      const sumar = () => ins.every(i => i.value === '') ? null : ins.reduce((s, i) => s + Math.max(0, Math.min(+i.max, +i.value || 0)), 0);
+      ins.forEach(i => i.oninput = () => { const t = sumar(); div.querySelector('.totRub').textContent = 'Total: ' + (t == null ? '—' : t) + ' / ' + maxRub(act); });
       div.querySelector('[data-cal]').onclick = async () => {
-        const v = div.querySelector('input').value, cal = v === '' ? null : Math.max(0, Math.min(10, +v));
-        try { await eref.update({ calificacion:cal, comentario:div.querySelector('textarea').value.trim(), calificada:N.ahora() }); toast('Calificación guardada para ' + e.nombre); }
+        let cal, rub = null;
+        if (act.rubrica){ rub = ins.map(i => i.value === '' ? null : Math.max(0, Math.min(+i.max, +i.value))); cal = sumar(); }
+        else { const v = div.querySelector('.fila input').value; cal = v === '' ? null : Math.max(0, Math.min(10, +v)); }
+        try { await eref.update({ calificacion:cal, rubrica:rub, comentario:div.querySelector('textarea').value.trim(), calificada:N.ahora() }); e.calificacion = cal; e.rubrica = rub; toast('Calificación guardada para ' + e.nombre); }
         catch (er) { toast('No se pudo guardar: ' + er.message); }
       };
     });
@@ -172,6 +225,12 @@
   // ---------- alumno ----------
   async function grupoAlumno(gid){
     const gref = grupos().doc(gid), uid = N.usuario.uid;
+    const yo = await gref.collection('miembros').doc(uid).get().catch(() => null);
+    if (!yo || !yo.exists){
+      cuerpo().innerHTML = '<p class="hint" style="padding-top:0">Ya no formas parte de este grupo. Si es un error, pide a tu maestro el código para volver a unirte.</p><button class="pb" id="escQuitarGrupo">Quitarlo de mi lista</button>';
+      $e('escQuitarGrupo').onclick = async () => { await misGrupos().doc(gid).delete().catch(() => {}); $e('escAtras').click(); };
+      return;
+    }
     const acts = (await gref.collection('actividades').get()).docs.map(d => ({ id:d.id, ...d.data() })).sort((a, b) => (b.creada || '').localeCompare(a.creada || ''));
     const mias = {};
     await Promise.all(acts.map(async a => { const s = await gref.collection('actividades').doc(a.id).collection('entregas').doc(uid).get(); if (s.exists) mias[a.id] = s.data(); }));
@@ -188,7 +247,8 @@
     cuerpo().innerHTML = `${act.mini ? `<img src="${act.mini}" alt="" style="max-width:100%;max-height:220px;display:block;margin:0 auto 10px;background:#fff;border-radius:8px">` : ''}
       ${act.instrucciones ? `<p style="white-space:pre-wrap;margin-top:0">${esc(act.instrucciones)}</p>` : ''}
       <p class="hint">${act.limite ? 'Fecha límite: <b>' + fecha(act.limite) + '</b>' : 'Sin fecha límite'}</p>
-      ${ent ? `<div class="escItem" style="cursor:default"><span class="t"><b>✓ Entregaste el ${fechaHora(ent.fecha)}</b>${ent.calificacion != null ? `<small>Calificación: <b>${ent.calificacion}</b></small>` : '<small>Tu maestro aún no califica.</small>'}${ent.comentario ? `<small>Comentario: ${esc(ent.comentario)}</small>` : ''}</span></div>` : ''}
+      ${act.rubrica ? `<p class="hint"><b>Se califica con:</b> ${act.rubrica.map(k => esc(k.c) + ' (' + k.p + ')').join(' · ')}</p>` : ''}
+      ${ent ? `<div class="escItem" style="cursor:default"><span class="t"><b>✓ Entregaste el ${fechaHora(ent.fecha)}</b>${ent.calificacion != null ? `<small>Calificación: <b>${ent.calificacion}${act.rubrica ? ' / ' + maxRub(act) : ''}</b></small>` : '<small>Tu maestro aún no califica.</small>'}${act.rubrica && ent.rubrica ? `<small>${act.rubrica.map((k, i) => esc(k.c) + ': ' + (ent.rubrica[i] ?? '—') + '/' + k.p).join(' · ')}</small>` : ''}${ent.comentario ? `<small>Comentario: ${esc(ent.comentario)}</small>` : ''}</span></div>` : ''}
       <div class="grupoBtns" style="margin-top:10px"><button class="btnP" id="escEmpezar">${ent ? '✏ Abrir mi entrega para corregirla' : '✏ Empezar la actividad'}</button></div>`;
     const ctx = { gid, aid, titulo:act.titulo, grupo:g.data().nombre, limite:act.limite };
     $e('escEmpezar').onclick = () => ent ? abrirDeNube(aref.collection('entregas').doc(uid), act.titulo, ctx) : abrirDeNube(aref, act.titulo, ctx);
@@ -223,11 +283,60 @@
       const u = N.usuario, aref = grupos().doc(a.gid).collection('actividades').doc(a.aid), eref = aref.collection('entregas').doc(u.uid);
       const previo = await eref.get().catch(() => null), antes = previo && previo.exists ? previo.data() : null;
       const meta = { nombre:u.displayName || u.email || 'Alumno', correo:u.email || '', fecha:N.ahora(), mini:miniatura() };
-      if (antes){ if ('calificacion' in antes) meta.calificacion = antes.calificacion; if ('comentario' in antes) meta.comentario = antes.comentario; }
+      if (antes) ['calificacion', 'comentario', 'rubrica', 'calificada'].forEach(k => { if (k in antes) meta[k] = antes[k]; });
       await N.escribirGrande(eref, meta, serializar(), true);
-      toast('📤 ¡Entregado! Tu maestro ya puede verlo.');
+      toast('📤 ¡Entregado! Tu maestro ya puede verlo.'); revisarPendientes();
     } catch (e) { toast('No se pudo entregar: ' + e.message); } finally { cargando(false); }
   };
+  // ---------- pendientes del alumno y aviso en el botón ----------
+  const maxRub = a => (a.rubrica || []).reduce((s, k) => s + (k.p || 0), 0);
+  async function pendientesDe(gid){
+    const gref = grupos().doc(gid), uid = N.usuario.uid, hoy = new Date();
+    const acts = (await gref.collection('actividades').get()).docs.map(d => ({ id:d.id, ...d.data() }));
+    let n = 0, pronto = 0;
+    await Promise.all(acts.map(async a => {
+      const fin = a.limite ? new Date(a.limite + 'T23:59:59') : null;
+      if (fin && fin < hoy) return;
+      const e = await gref.collection('actividades').doc(a.id).collection('entregas').doc(uid).get();
+      if (e.exists) return;
+      n++; if (fin && (fin - hoy) < 3 * 864e5) pronto++;
+    }));
+    return { n, pronto };
+  }
+  function marcarBoton(n){ const bt = $e('bEscuela'); if (!bt) return; bt.classList.toggle('avisoEsc', n > 0); bt.dataset.n = n > 0 ? n : ''; bt.title = n > 0 ? 'Mi escuela: tienes ' + n + ' actividad' + (n > 1 ? 'es' : '') + ' pendiente' + (n > 1 ? 's' : '') : 'Mi escuela: grupos, actividades y entregas'; }
+  async function revisarPendientes(){
+    if (!N.usuario) return marcarBoton(0);
+    try {
+      const mios = (await misGrupos().get()).docs.map(d => ({ id:d.id, ...d.data() })).filter(g => g.rol === 'alumno');
+      let n = 0, pronto = 0;
+      for (const g of mios){ const d = await grupos().doc(g.id).get().catch(() => null); if (!d || !d.exists || d.data().archivado) continue; const p = await pendientesDe(g.id).catch(() => null); if (p){ n += p.n; pronto += p.pronto; } }
+      marcarBoton(n);
+      if (pronto && !revisarPendientes.avisado){ revisarPendientes.avisado = true; toast('⏰ Tienes ' + pronto + ' actividad' + (pronto > 1 ? 'es' : '') + ' de la escuela que vence' + (pronto > 1 ? 'n' : '') + ' pronto. Ábrelas en 🎓 Escuela.'); }
+    } catch (e) {}
+  }
+  // ---------- calificaciones en Excel (archivo CSV que Excel y Google Sheets abren) ----------
+  async function descargarCalificaciones(gid, g, miembros, actividades){
+    cargando(true);
+    try {
+      const gref = grupos().doc(gid), acts = actividades.slice().sort((a, b) => (a.creada || '').localeCompare(b.creada || ''));
+      const alumnos = new Map(miembros.docs.map(m => [m.id, { nombre:m.data().nombre, correo:m.data().correo || '' }]));
+      const notas = {};
+      for (const a of acts){
+        const es = await gref.collection('actividades').doc(a.id).collection('entregas').get();
+        es.docs.forEach(d => { const e = d.data(); if (!alumnos.has(d.id)) alumnos.set(d.id, { nombre:e.nombre + ' (salió del grupo)', correo:e.correo || '' }); (notas[d.id] = notas[d.id] || {})[a.id] = e; });
+      }
+      const celda = v => { const t = String(v ?? ''); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+      const filas = [['Alumno', 'Correo', ...acts.map(a => a.titulo + (a.rubrica ? ' (/' + maxRub(a) + ')' : ' (/10)')), 'Promedio (0-10)']];
+      [...alumnos.entries()].sort((a, b) => a[1].nombre.localeCompare(b[1].nombre)).forEach(([uid, al]) => {
+        const vals = acts.map(a => { const e = (notas[uid] || {})[a.id]; return !e ? 'Sin entregar' : e.calificacion == null ? 'Entregada' : e.calificacion; });
+        const sobre10 = acts.map((a, i) => typeof vals[i] === 'number' ? vals[i] * 10 / (a.rubrica ? maxRub(a) || 10 : 10) : null).filter(v => v != null);
+        filas.push([al.nombre, al.correo, ...vals, sobre10.length ? (sobre10.reduce((s, v) => s + v, 0) / sobre10.length).toFixed(1) : '']);
+      });
+      const csv = '\ufeff' + filas.map(f => f.map(celda).join(',')).join('\r\n');
+      bajarBlob(new Blob([csv], { type:'text/csv;charset=utf-8' }), 'Calificaciones - ' + g.nombre.replace(/[\\/:*?"<>|]/g, '') + '.csv');
+      toast('Calificaciones descargadas. Ábrelas con Excel o Google Sheets.');
+    } catch (e) { toast('No se pudieron descargar: ' + e.message); } finally { cargando(false); }
+  }
   // ---------- botón de la barra y enlace ?grupo=CÓDIGO ----------
   const b = document.createElement('button'); b.className = 'tb'; b.id = 'bEscuela'; b.title = 'Mi escuela: grupos, actividades y entregas';
   b.innerHTML = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9l10-5 10 5-10 5zM6 11v5c3 2.5 9 2.5 12 0v-5M22 9v6"/></svg><span class="txtLargo"> Escuela</span>';
@@ -240,5 +349,5 @@
       $e('escEntrar2').onclick = async () => { await N.entrar(); if (await esperarUsuario()) ver('Unirme a un grupo', () => formUnirme(codigoURL), true); }; }); }
     else ver('Unirme a un grupo', () => formUnirme(codigoURL));
   }, 1200));
-  window.addEventListener('nube-usuario', () => { if (!N.usuario){ window.ACTIVIDAD_ACTUAL = null; pintarBanda(); } });
+  window.addEventListener('nube-usuario', () => { if (!N.usuario){ window.ACTIVIDAD_ACTUAL = null; pintarBanda(); marcarBoton(0); } else setTimeout(revisarPendientes, 1500); });
 })();

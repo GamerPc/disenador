@@ -46,9 +46,11 @@ service cloud.firestore {
           allow read: if esMaestro() || (request.auth != null && request.auth.uid == u);
           // el alumno entrega (y vuelve a entregar) sin poder cambiarse la calificación; el maestro califica
           allow create: if request.auth != null && request.auth.uid == u && esMiembro()
-            && !('calificacion' in request.resource.data);
+            && !('calificacion' in request.resource.data) && !('rubrica' in request.resource.data) && !('comentario' in request.resource.data);
           allow update: if esMaestro() || (request.auth != null && request.auth.uid == u && esMiembro()
-            && request.resource.data.get('calificacion', null) == resource.data.get('calificacion', null));
+            && request.resource.data.get('calificacion', null) == resource.data.get('calificacion', null)
+            && request.resource.data.get('rubrica', null) == resource.data.get('rubrica', null)
+            && request.resource.data.get('comentario', null) == resource.data.get('comentario', null));
           allow delete: if esMaestro();
           match /partes/{p} {
             allow read: if esMaestro() || (request.auth != null && request.auth.uid == u);
