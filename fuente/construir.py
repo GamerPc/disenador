@@ -116,7 +116,8 @@ if ini >= 0:
     open(base + 'Estilo.html', 'w', encoding='utf-8').write('<style>\n' + h[ini:fin] + '</style>\n')
     h = h[:ini] + h[fin:fin + len('</style>')] + "\n<?!= include('Estilo') ?>" + h[fin + len('</style>'):]
 
-inc = '<script>\n' + cfg + '\n</script>\n' + ''.join(f"<?!= include('Codigo{i}') ?>\n" for i in range(1, N + 1))
+cfg_as = re.sub(r'firebase:\s*\{[^}]*\}', 'firebase: null', cfg)   # Apps Script guarda en Drive: no necesita la llave de Firebase
+inc = '<script>\n' + cfg_as + '\n</script>\n' + ''.join(f"<?!= include('Codigo{i}') ?>\n" for i in range(1, N + 1))
 m = list(re.finditer(r'<script>\n(.*?)</script>', h, re.S))[-1]
 h = h[:m.start()] + inc + h[m.end():]
 assert '<?' not in h.replace("<?!= include('Codigo", '').replace("<?!= include('Estilo') ?>", '')
