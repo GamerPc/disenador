@@ -221,7 +221,9 @@ const escH = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace
 function htmlDeTexto(o, bx, by){
   const m = o.calcTransformMatrix(); m[4] -= bx; m[5] -= by;
   const fs = o.fontSize, lh = fs * o.lineHeight * o._fontSizeMult;
-  const lineas = (o.textLines || String(o.text).split('\n')).map(l => escH(l).replace(/ /g, '&#32;') || '&nbsp;');
+  const crudas = o.textLines || String(o.text).split('\n');
+  const lineas = crudas.map(l => escH(l).replace(/ /g, '&#32;') || '&nbsp;');
+  const duro = i => o.type !== 'textbox' || !o.isEndOfWrapping || o.isEndOfWrapping(i);
   const sombra = o.shadow ? `text-shadow:${o.shadow.offsetX || 0}px ${o.shadow.offsetY || 0}px ${o.shadow.blur || 0}px ${o.shadow.color};` : '';
   const borde = o.stroke && o.strokeWidth ? `-webkit-text-stroke:${o.strokeWidth}px ${o.stroke};paint-order:stroke fill;` : '';
   const deco = [o.underline && 'underline', o.linethrough && 'line-through', o.overline && 'overline'].filter(Boolean).join(' ');
@@ -230,7 +232,16 @@ function htmlDeTexto(o, bx, by){
     `text-align:${o.textAlign === 'justify' ? 'justify' : o.textAlign};letter-spacing:${(o.charSpacing || 0) / 1000}em;white-space:nowrap;` +
     (deco ? `text-decoration:${deco};` : '') + (o.backgroundColor ? `background:${o.backgroundColor};` : '') + sombra + borde +
     (o.opacity < 1 ? `opacity:${o.opacity};` : '');
-  return `<div class="t" style="${css}">${lineas.join('<br>')}</div>`;
+  return `<div class="t" style="${css}">${lineas.map((l, i) => l + (i < lineas.length - 1 ? (duro(i) ? '<br>' : ' <br class="w">') : '')).join('')}</div>`;
+}
+function rectSimple(o){
+  return o.type === 'rect' && typeof o.fill === 'string' && !((o.angle || 0) % 360) && !o.skewX && !o.skewY && !o.clipPath && !(o.stroke && o.stroke.toLive);
+}
+function htmlDeRect(o){
+  const sx = o.scaleX || 1, sy = o.scaleY || 1, sw = o.stroke && o.strokeWidth ? o.strokeWidth * (o.strokeUniform ? 1 : sx) : 0;
+  const sh = o.shadow ? `box-shadow:${o.shadow.offsetX || 0}px ${o.shadow.offsetY || 0}px ${o.shadow.blur || 0}px ${o.shadow.color};` : '';
+  return `<div class="r" style="position:absolute;inset:0;background:${o.fill};border-radius:${(o.rx || 0) * sx}px/${(o.ry || o.rx || 0) * sy}px;` +
+    (sw ? `border:${sw}px ${o.strokeDashArray ? 'dashed' : 'solid'} ${o.stroke};` : '') + sh + (o.opacity < 1 ? `opacity:${o.opacity};` : '') + '"></div>';
 }
 function svgDeObjeto(o, r){
   const svg = o.toSVG();
@@ -252,14 +263,16 @@ async function paginaAHTML(json, num, ctx){
   }
   Object.assign(ctx.fuentes, fuentesDe(sc.getObjects()));
   const animados = sc.getObjects().filter(o => o.anim && o.anim.tipo && o.anim.tipo !== 'ninguna').sort((a, b) => (a.anim.orden || 0) - (b.anim.orden || 0));
-  const partes = [];
-  let primerCambio = null;
+  const items = [];
+  let primerCambio = null, idx = 0;
   for (const o of sc.getObjects()){
+    idx++;
     if (o.visible === false) continue;
     if (o.marcoVacio){ ctx.vacios++; continue; }
     if (o.type === 'conector' && (o.opacity === 0)) continue;
-    const r = o.modelo3d ? o.getBoundingRect(true, true) : cajaDe(o);
-    let dentro;
+    const esRect = rectSimple(o);
+    const r = o.modelo3d || esRect ? o.getBoundingRect(true, true) : cajaDe(o);
+    let dentro, tipo = 'otro';
     if (o.modelo3d){
       const m = o.modelo3d; ctx.usa3D = true;
       const at = [`src="${escH(m.src)}"`, `camera-orbit="${escH(m.camara)}"`, 'shadow-intensity="1"', 'exposure="1.1"', 'interaction-prompt="none"', 'camera-controls', 'disable-zoom', 'touch-action="pan-y"'];
@@ -275,26 +288,83 @@ async function paginaAHTML(json, num, ctx){
         o.variantes.map((v, i) => `<img src="${v.src}" alt="${escH(v.nombre || 'Producto ' + (i + 1))}" class="${i ? '' : 'on'}">`).join('') +
         `<button class="ant" aria-label="Anterior">‹</button><button class="sig" aria-label="Siguiente">›</button><div class="pts">${o.variantes.map((v, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div></div>`;
       if (!primerCambio) primerCambio = o.variantes[0].fondo;
-    } else if (textoHTMLSimple(o)) dentro = htmlDeTexto(o, r.left, r.top);
+    } else if (textoHTMLSimple(o)){ dentro = htmlDeTexto(o, r.left, r.top); tipo = 'texto'; }
+    else if (esRect){ dentro = htmlDeRect(o); tipo = 'rect'; }
     else dentro = svgDeObjeto(o, r);
+    if (o.modelo3d) tipo = '3d'; else if (o.variantes) tipo = 'camb';
     const a = o.anim && ANIM_CSS[o.anim.tipo] ? o.anim : null;
     const retraso = a ? Math.min(1500, (a.retraso || 0) + Math.max(0, animados.indexOf(o)) * 110) : 0;
-    const attrsO = [`class="o"`, `style="left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px"`];
-    if (o.scrollFx) attrsO.push(`data-scroll="${o.scrollFx}"`);
     let html = `<div class="h${o.hover ? ' h-' + o.hover : ''}">${dentro}</div>`;
     html = `<div class="a${a ? ' a-' + ANIM_CSS[a.tipo] : ''}"${a ? ` style="--d:${a.duracion || 700}ms;--r:${retraso}ms"` : ''}>${html}</div>`;
     if (o.enlace){
       const href = o.enlace.startsWith('p:') ? '#p' + o.enlace.slice(2) : o.enlace;
       html = `<a href="${escH(href)}"${o.enlace.startsWith('p:') ? '' : ' target="_blank" rel="noopener"'} class="lnk">${html}</a>`;
     }
-    partes.push(`<div ${attrsO.join(' ')}>${html}</div>`);
+    const fs = tipo === 'texto' ? o.fontSize * (o.scaleY || 1) : 0;
+    const rt = o.getBoundingRect(true, true);   // caja justa, sin margen para sombras
+    items.push({ r:{ left:Math.round(r.left), top:Math.round(r.top), width:Math.round(r.width), height:Math.round(r.height) }, rt, html, tipo, idx, fs,
+      al:o.textAlign || 'left', scrollFx:o.scrollFx || '', hijos:[], padre:null, enlace:!!o.enlace });
   }
   sc.dispose();
-  return `<section class="pag" id="p${num}" data-w="${W}" data-h="${H}" style="--w:${W};--h:${H};background:${primerCambio || fondo}">` +
+  // ¿qué está dentro de qué? (una tarjeta y su texto, un botón y su letrero…)
+  const dentroDe = (a, b) => a.rt.left >= b.rt.left - 3 && a.rt.top >= b.rt.top - 3 && a.rt.left + a.rt.width <= b.rt.left + b.rt.width + 3 && a.rt.top + a.rt.height <= b.rt.top + b.rt.height + 3;
+  const area = x => Math.max(1, x.rt.width * x.rt.height);
+  items.forEach(c => {
+    let mejor = null;
+    items.forEach(p => {
+      if (p === c || p.idx > c.idx || p.tipo === 'texto' || p.tipo === '3d' || p.tipo === 'camb') return;
+      if (area(p) < area(c) * 1.2 || !dentroDe(c, p)) return;
+      if (!mejor || area(p) < area(mejor)) mejor = p;
+    });
+    if (mejor){ c.padre = mejor; mejor.hijos.push(c); }
+  });
+  // orden de lectura (corte en X y Y): primero renglones separados por espacios en blanco; dentro de cada uno, columnas de izquierda a derecha
+  const ordenar = lista => {
+    if (lista.length <= 1) return lista.slice();
+    const caja = x => x.rt;
+    const cortar = (eje) => {
+      const ini = eje === 'y' ? (x => caja(x).top) : (x => caja(x).left), tam = eje === 'y' ? (x => caja(x).height) : (x => caja(x).width);
+      const l = lista.slice().sort((a, b) => ini(a) - ini(b)), grupos = []; let g = [], fin = -Infinity;
+      l.forEach(x => { if (g.length && ini(x) >= fin - 2){ grupos.push(g); g = []; } g.push(x); fin = Math.max(fin, ini(x) + tam(x)); });
+      grupos.push(g); return grupos;
+    };
+    let gr = cortar('y');
+    if (gr.length > 1) return gr.flatMap(ordenar);
+    gr = cortar('x');
+    if (gr.length > 1) return gr.flatMap(ordenar);
+    return lista.slice().sort((a, b) => (caja(a).top - caja(b).top) || (caja(a).left - caja(b).left));
+  };
+  // cosas pequeñas en el mismo renglón (botones, tallas, colores, íconos) se quedan juntas en el celular
+  const chico = x => x.rt.height <= 90 && x.rt.width <= (x.tipo === 'texto' ? 220 : W * 0.3);
+  const juntar = (lista, base) => {
+    const out = []; let run = [];
+    const soltar = () => { if (run.length >= 2) out.push('<div class="filaM">' + run.map(x => nodo(x, base)).join('') + '</div>'); else run.forEach(x => out.push(nodo(x, base))); run = []; };
+    lista.forEach(x => {
+      const u = run[run.length - 1];
+      const mismo = u && chico(x) && Math.min(u.rt.top + u.rt.height, x.rt.top + x.rt.height) - Math.max(u.rt.top, x.rt.top) > Math.min(u.rt.height, x.rt.height) * 0.5;
+      if (chico(x) && (!u || mismo)) run.push(x); else { soltar(); if (chico(x)) run.push(x); else out.push(nodo(x, base)); }
+    });
+    soltar(); return out.join('');
+  };
+  const nodo = (x, base) => {
+    const cls = ['o'], st = [`left:${x.r.left - base.left}px`, `top:${x.r.top - base.top}px`, `width:${x.r.width}px`, `height:${x.r.height}px`, `z-index:${x.idx}`];
+    if (x.hijos.length){ cls.push('cont'); if (x.r.height <= 140 && x.r.width / x.r.height > 2.5) cls.push('fila');
+      st.push(`--pad:${Math.round(Math.min(18, x.r.height * 0.22, x.r.width * 0.08))}px`); }
+    else if (x.tipo === 'texto'){ cls.push('tx'); if (!x.enlace) cls.push('sinClic');
+      const f = x.fs, m = f >= 40 ? Math.max(26, f * 0.55) : f >= 22 ? Math.max(18, f * 0.75) : Math.max(13, f * 0.95);
+      st.push(`--fsm:${Math.round(m)}px`, `--al:${x.al === 'center' ? 'center' : x.al === 'right' ? 'flex-end' : 'stretch'}`); }
+    else { const w0 = x.r.width, mw = w0 >= W * 0.5 || x.tipo === '3d' || x.tipo === 'camb' ? '100%' : Math.round(Math.max(Math.min(w0, 64), w0 * 0.62)) + 'px';
+      st.push(`--mw:${mw}`, `--ar:${x.r.width}/${Math.max(1, x.r.height)}`); }
+    const at = x.scrollFx ? ` data-scroll="${x.scrollFx}"` : '';
+    return `<div class="${cls.join(' ')}" style="${st.join(';')}"${at}>${x.html}${juntar(ordenar(x.hijos), x.r)}</div>`;
+  };
+  const partes = [juntar(ordenar(items.filter(x => !x.padre)), { left:0, top:0 })];
+  const flujo = W > 900 && ctx.modo !== 'pantallas';
+  return `<section class="pag${flujo ? ' flujo' : ''}" id="p${num}" data-w="${W}" data-h="${H}" style="--w:${W};--h:${H};background:${primerCambio || fondo}">` +
     `<div class="lienzo" style="width:${W}px;height:${H}px${fondoImg ? `;background:url(${fondoImg}) center/cover` : ''}">${partes.join('\n')}</div></section>`;
 }
 async function crearHTML(lista, modo){
-  const ctx = { fuentes:{}, vacios:0, usa3D:false, usaCambiador:false };
+  const ctx = { fuentes:{}, vacios:0, usa3D:false, usaCambiador:false, modo };
   const secciones = []; for (const it of lista) secciones.push(await paginaAHTML(it.p, it.i + 1, ctx));
   const fams = Object.entries(ctx.fuentes);
   let cssFuentes = '', linkFuentes = '';
@@ -331,6 +401,26 @@ model-viewer::part(default-progress-bar){display:none}
 .colores3d{position:absolute;bottom:-10px;left:0;right:0;display:flex;gap:14px;justify-content:center}.colores3d button{width:38px;height:38px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.25);transition:transform .2s}.colores3d button.on{transform:scale(1.25);outline:2px solid #111;outline-offset:2px}
 ${modo === 'pantallas' ? '.pag{display:none;margin:0 auto}.pag.activa{display:block}' : ''}
 @media (prefers-reduced-motion:reduce){.a[class*="a-"]{opacity:1;transform:none;transition:none}.h-latido{animation:none}}
+/* en el celular, las páginas anchas se reacomodan en una columna */
+@media (max-width:700px){
+ .pag.flujo{height:auto!important}
+ .pag.flujo>.lienzo{position:relative;left:auto;top:auto;transform:none!important;width:auto!important;height:auto!important;display:flex;flex-direction:column;gap:16px;padding:28px 18px 36px}
+ .pag.flujo .o{position:relative!important;left:auto!important;top:auto!important;width:auto!important;height:auto!important;transform:none!important;z-index:auto!important;will-change:auto}
+ .pag.flujo .o:not(.cont):not(.tx){width:min(100%,var(--mw))!important;aspect-ratio:var(--ar);align-self:center}
+ .pag.flujo .o.tx{align-self:var(--al,stretch)}.pag.flujo .o.tx .a,.pag.flujo .o.tx .h,.pag.flujo .o.tx a.lnk{height:auto}
+ .pag.flujo .o.tx .t{position:static!important;transform:none!important;width:auto!important;height:auto!important;white-space:normal!important;font-size:var(--fsm)!important;line-height:1.3!important;letter-spacing:normal!important;overflow-wrap:anywhere}
+ .pag.flujo .o.tx .t br.w{display:none}
+ .pag.flujo .o.cont{display:flex;flex-direction:column;gap:10px;padding:var(--pad,14px)}
+ .pag.flujo .o.cont>.a,.pag.flujo .o.cont>a.lnk{position:absolute;inset:0;width:auto;height:auto;z-index:0}
+ .pag.flujo .o.cont>.o{z-index:1!important}
+ .pag.flujo .o.cont.fila{flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 14px}
+ .pag.flujo .o.fila>.o.tx{align-self:center}
+ .pag.flujo .filaM{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center}
+ .pag.flujo .filaM>.o:not(.cont):not(.tx){width:var(--mw)!important;max-width:100%}
+ .pag.flujo .filaM>.o.cont{min-width:44px}
+ .pag.flujo .o.fila>.o:not(.cont):not(.tx){width:min(100%,var(--mw),48px)!important}
+}
+.filaM{display:contents}.o.sinClic{pointer-events:none}.o.sinClic .o{pointer-events:auto}
 </style></head><body>
 ${secciones.join('\n')}
 <script>
@@ -347,15 +437,17 @@ revelar();
 var conScroll=[].slice.call(document.querySelectorAll('.o[data-scroll]'));
 var mvs=[].slice.call(document.querySelectorAll('model-viewer'));
 function cl(v,a,b){return Math.max(a,Math.min(b,v));}
+function progresoElem(el){var r=el.getBoundingClientRect(),vh=innerHeight;return cl((vh-r.top)/(vh+r.height),0,1);}
 function progresoSeccion(el){var p=el.closest('.pag'),r=p.getBoundingClientRect(),vh=innerHeight;return r.height<=vh?cl((vh-r.top)/(vh+r.height),0,1):cl(-r.top/(r.height-vh),0,1);}
+var mqFlujo=matchMedia('(max-width:700px)');
 function scroll(){var vh=innerHeight;
- conScroll.forEach(function(o){var p=o.closest('.pag'),k=p._k||1,fx=o.dataset.scroll,r=o.getBoundingClientRect(),c=(r.top+r.height/2-vh/2)/vh,t='';
+ conScroll.forEach(function(o){if(mqFlujo.matches&&o.closest('.pag.flujo')){o.style.transform='';return;}var p=o.closest('.pag'),k=p._k||1,fx=o.dataset.scroll,r=o.getBoundingClientRect(),c=(r.top+r.height/2-vh/2)/vh,t='';
   if(fx==='paralaje')t='translateY('+(c*-120)+'px)';
   else if(fx==='girar')t='rotate('+(c*-90)+'deg)';
   else if(fx==='acercar')t='scale('+cl(1.25-Math.abs(c)*0.6,0.6,1.25)+')';
   else if(fx==='fijo'){var pr=p.getBoundingClientRect(),top=parseFloat(o.style.top),h=parseFloat(o.style.height),H=+p.dataset.h;var desea=(-pr.top)/k+(vh/k-h)/2;t='translateY('+(cl(desea,top,H-h)-top)+'px)';}
   o.style.transform=t;});
- mvs.forEach(function(mv){var fx=mv.dataset.scroll;if(!fx||fx==='no')return;var p=progresoSeccion(mv);
+ mvs.forEach(function(mv){var fx=mv.dataset.scroll;if(!fx||fx==='no')return;var p=(mqFlujo.matches&&mv.closest('.pag.flujo'))?progresoElem(mv):progresoSeccion(mv);
   if((fx==='girar'||fx==='ambos')&&mv._orb){mv.cameraOrbit=(mv._orb[0]+p*360)+'deg '+mv._orb[1]+' '+mv._orb[2];}
   if((fx==='animar'||fx==='ambos')&&mv.duration){mv.currentTime=Math.min(mv.duration-0.001,p*mv.duration*1.15);}});
 }
@@ -372,6 +464,7 @@ function pintar(mv,hex){if(!mv.model)return;var mats=mv.model.materials,m=mv.dat
  c.querySelector('.ant').addEventListener('click',function(e){e.preventDefault();a(i-1);});c.querySelector('.sig').addEventListener('click',function(e){e.preventDefault();a(i+1);});
  pts.forEach(function(p,j){p.addEventListener('click',function(){a(j);});});
  var x0=null;c.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;},{passive:true});c.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.changedTouches[0].clientX-x0;if(Math.abs(dx)>40)a(i+(dx<0?1:-1));x0=null;});});
+if(MODO!=='pantallas'&&pags[0])document.body.style.background=getComputedStyle(pags[pags.length-1]).backgroundColor;
 addEventListener('resize',ajustar);addEventListener('scroll',scroll,{passive:true});ajustar();
 })();
 <\/script>
@@ -471,7 +564,11 @@ const PLANTILLAS_3D = [
     const vs = [['#0ea5e9', '#0369a1', '#e0f2fe', 'Mora azul'], ['#22c55e', '#15803d', '#dcfce7', 'Limón'], ['#f97316', '#c2410c', '#ffedd5', 'Mandarina'], ['#e11d48', '#9f1239', '#ffe4e6', 'Frutos rojos']]
       .map(([c, c2, f, n], i) => ({ src:dibujoProducto(i % 2 ? 'lata' : 'botella', c, c2), fondo:f, nombre:n }));
     FONDO(vs[0].fondo);
-    grupoCambiador(vs, 520, 760).then(g => { g.setPositionByOrigin(new fabric.Point(1000, 560), 'center', 'center'); canvas.add(g); canvas.requestRenderAll(); if (!restaurando) guardarEstado(); });
+    const lienzo = canvas, esVista = generandoVista;   // se guarda a qué lienzo va: si es la vista previa del catálogo, no debe caer en tu diseño
+    grupoCambiador(vs, 520, 760).then(g => {
+      if (!lienzo.contextContainer) return;
+      g.setPositionByOrigin(new fabric.Point(1000, 560), 'center', 'center'); lienzo.add(g); lienzo.requestRenderAll();
+      if (!esVista && lienzo === canvas && !restaurando) guardarEstado(); });
   }}
 ];
 PLANTILLAS_3D.forEach(p => {

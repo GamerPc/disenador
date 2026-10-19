@@ -485,14 +485,28 @@
   @media (max-width:560px){ #bMas .txtMas{display:none} }
   #barra.soloIconos > .tb{font-size:0;padding-left:10px;padding-right:10px}
   #barra.soloIconos > .tb .ico{width:20px;height:20px}
-  #barra.soloIconos input.nombre{min-width:72px}
+  #barra.soloIconos input.nombre{min-width:72px}  /* ---------- banco de fotos e íconos ---------- */
+  .filaBusca{display:flex;gap:6px;align-items:center;margin:4px 0}
+  .filaBusca .buscador{flex:1;min-width:0;margin:0}
+  .gridBanco{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:6px 0}
+  .gridBanco img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;cursor:pointer;background:#1b2030;display:block}
+  .gridBanco img:hover{outline:2px solid var(--neon,#19c8ff)}
+  .gridBanco.iconos{grid-template-columns:repeat(6,1fr)}
+  .icoBanco{aspect-ratio:1;border:1px solid var(--borde,#2a3140);border-radius:8px;background:#f8fafc;display:flex;align-items:center;justify-content:center;padding:6px;cursor:pointer;min-width:0}
+  .icoBanco:hover{outline:2px solid var(--neon,#19c8ff)}
+  .icoBanco img{width:100%;height:100%;object-fit:contain;background:none;aspect-ratio:auto}
+  #bCredito[hidden],#bFondoIA[hidden]{display:none}
+  #progresoIA{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);z-index:250;background:#0b1220;color:#e8f6ff;border:1px solid #19c8ff;border-radius:14px;padding:12px 16px;width:min(420px,92vw);box-shadow:0 0 18px rgba(25,200,255,.35);font-size:13px}
+  #progresoIA .barraIA{height:8px;border-radius:4px;background:#1b2030;margin-top:8px;overflow:hidden}
+  #progresoIA .barraIA i{display:block;height:100%;width:0;background:linear-gradient(90deg,#19c8ff,#a855f7);transition:width .2s}
+
 </style>
 </head>
 <body>
 
 <!-- ====== BARRA SUPERIOR ====== -->
 <div id="barra">
-  <div class="logo"><img class="logoImg" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAMAAAC5zwKfAAAAwFBMVEUHLGYDIRUAf/8TfsAFGR0EHyQAAP8k0tgACREAAAAAEhQD6/cG9v0Gtf0EqvoI2PQHx/sQaHAHJi4Ux9EFGCgLOFAMRk8AAAAOV3IUusgRh48Upq8AAQIQdq4KNTkMR24NVloPZpURiMgSk5kBAQIOWooAAQMAAgQSldMU09sReoUUs7oUmagJKUYShbEOm+QA//8QdnwTps8FFxYQbKMAAAAAOTcAJiYMPWQAVVUAf38CDSAAADIEEg4DFRQGIyT60TZkAAAAQHRSTlMFGwL/vNgB//4A/v7+/v7+/v7+/v7+/mz+/v7+Tv7+//3+/v4s/6/M/v7//v7+//0B//4p/5cLC/8EAv8FFNrEvWmOFQAAB8JJREFUeNqdmQd34jgQgLk+yEW23AtgSgyYkoT03b27//+vbsayjFxS9vTevsUYf56u0WQy/XjlURRBu/Ai/+SByQf3HvJtCSCCwr1PcVVuEQoG5TZ/+F/AzRPA3F17hmFel+Ed3YDB0+Zngc/RFuZpUrM0oLz20hC20ctPABHH4oOhANzzksMh8fZG+4LEZdvo+avADTDXkw/yQ+qGwmcMgDF/HrrrWmr8t68EbL4EnJRQSNz+WAjoLzZ3M17f5i6Uz58D863I6PfGwSUa6y+Cinv5xiTc5p8BI3A54bKQjdAYNNDGJsY9RB8CH0q2ph96hUZTunblZPRiwzyI8uF94C8gEnpvxUCDMTHHJViXioof6d37AB7eAz7AfI8/SeZXnCjSA4WLYey9rOqaAaCgnxtFhzjReQFHJY5XQxXkT315x5BptphLQ7o6caLLhzyjaoSQrjSNzpIh3fyApfiGjIixRrwCS4Fpi29rxIu9Pk0xk9pjZG7SZk3EsBwCI5YYHN/ViJeN0hpkNkfr4gtTAhORz6M+MIcj8kg+fD0EnnlVsq0MMrnpS8Ml8x2g1py0TljeBT5vY+RVUNsHQm5wSTO8LHVxpdm+wZnNDfw/BGnLA16tt7/80IGlcDg/ygAmZ3NOxMydq7AGEd7rVq2lapwtKHqKUpcQFeY8EVA/7iecePwYdEKZwijRkWkbriFe7UU+aYF3EHPHCWsegzNHafklGOQyMM/YS1MSsGrvQ2oS/64Foocdfm4UDh1aLkA3lenW0azEoXWXC9qb8CXS0wR82S4dxxLqKeItoCkttK+kGXom9ME1D/jd0RwAGRQoYrZtgN8i33acuJEjUDzpQnHkhtpJDC7oy0RGjg5kQHE7j36VEkLsOBe/EXDmWAhvSgveMbj0OFHrsKdI7kso/bKG6R0BN7CzLCWgf7Gcc2s0l8slCWsp9BiQRDS52JCEb0+BZdm+0tiyrFMjYK0+wSTRYx8ByYru0xsC/4alZc2UK2PtM+wQeEzPFylh2OS5AlbQDSnKRZIwJ40DxVjSZ6akdc71RiWqhOP2cQ26bmBfv57n08ndFrXcKY1hZt1ePzuVdA2AaxzbuHTHgeQWd3s3mZY3lvXYarmyzleNd9Akz9xxxGdA0jkrp5MchbIWLeQ3a9l+DtQ2zy7KgO8Dybamx/JJ5O8sW2gS3gx6BagMzQHvAt06tif5ybZW39unHwdAKo8XNgLMesA5fhejhIGtBQrc6BdNrFvOCdgQeOgBsSyaVTSBhaWZDa9WfeDZiYF9AYhJjsk0QZnshSaObYuuwrEzU6XiQ5Xr7MsQuOwA0eeLjnwni+rGGPDQB6KbEwTOLDvQAEFXZ4yBADptzfsS0sY/BGLgvGpXS6c1sJYSNdDr7xAVBeIQGGiJCK9a4vSBe7/nlftxIHppqblI1rJe0jbAcQkf+0A4t+V21lFfqfAeMJVO6XmZ5FL5F1uroFmhWkV4/x5wTRWxH4eKSDIGtm1balHxVpvBO0CMwyNMom6mtMRHjBi7WYrYQZpcwCBTUlkcBukL3x+tM3rrQ6ARwCCXXSpft9bKH5o+trWlK81b4LwLDHCnDVFCjGSMjcESV/Np8ul9Z19ClzZS7JjKx6FXZKWNr+sGL9xmVXxcQnJySZvUwtb2lJHoHlTwUWC9p6S0SeVoxF3fiMGIXdWjQike9hPIDHNqRYbJRxFzGpOtbsB9rzFit+5SrWG00b88LSy7Fziz4ValyZg09auAvsZPL3Wz5N/at50yjW/Y3fifAnUJIaYuvm6W/pxS/6FLdKpD73Z5GlGZkcojEuJRgFqbO9lwIuHW1yNGRrM9C4Yiwjwx3mlh4+iu6bG36JariMtrytmz1z4v5ubgGCAF9P6ZvqmmnURUVgw6OWevFr62BbLK4G4TNqoBbfYZ022b9umvVGUbR39fWXY3jWv/SPOJi5kIpmwoTz50uqG6cIBv3xTwGYPbbvIvRqF2iNGR9lLUfVjoGGldptrIBrb+C+/RATLMv+lHM4yU2i/+LaaIf1r8ZneR5J8l5zGB1UnV9Ao8W+EBLKbDXjn9cQU+/01+oZ5poZrZ02OLlNXmfDYudX3BzUg7quKReY7nfu/fBtUeb1FpqhGza3d8mkmkKmD8LPdNte3VxLQ+OaP2+eAAjt7F8F7pVeZ0tlpgfTSSMefvlc4mneAOrYd14A80Iz58c2t3ysICu1Gp8iUYNiMGDQvo/J2W05fBzGFD+x8J1CkU/lLyznqbIE8WNLKRvAw2byNjlk2TIzvWLY146iA7sC7RJPfKwVHGNuODICnjsHItd4OzM8ReRoHp9XndUdUGyI6rYLBNdzpONVUDdk+H0nV3jNgdpm3K11sUcukPGvfB5A9tUQ+B7svNx+M+Qbm8W3xQsJupWErieWH0+UDyhjyzWnzAo5EkTULM47/59OXTGWxJKUJFRowB6UOY1kM2ryi/MoO9Q9+8rij47HN8YoOOIqzkNNq7R+/efWVKjF9F28VZptxu5oaB8GkJERZV5snplef+gdZ7+/qkPdoGy0vd0eCyEloeV6MwnhX/RP9jdO8Hy52ltXDN8H5diJ8f3ZMpp5t8W4pweT5eEo9Wkh2rYv77Nt9MR4z3hb9WXP/8wdCAAj38hT9//AeaYVQBgkwsDAAAAABJRU5ErkJggg==" alt=""><span class="logoTxt">Diseñador<small class="logoMarca">APIK-DESING</small></span><small class="ver">v32</small></div>
+  <div class="logo"><img class="logoImg" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAMAAAC5zwKfAAAAwFBMVEUHLGYDIRUAf/8TfsAFGR0EHyQAAP8k0tgACREAAAAAEhQD6/cG9v0Gtf0EqvoI2PQHx/sQaHAHJi4Ux9EFGCgLOFAMRk8AAAAOV3IUusgRh48Upq8AAQIQdq4KNTkMR24NVloPZpURiMgSk5kBAQIOWooAAQMAAgQSldMU09sReoUUs7oUmagJKUYShbEOm+QA//8QdnwTps8FFxYQbKMAAAAAOTcAJiYMPWQAVVUAf38CDSAAADIEEg4DFRQGIyT60TZkAAAAQHRSTlMFGwL/vNgB//4A/v7+/v7+/v7+/v7+/mz+/v7+Tv7+//3+/v4s/6/M/v7//v7+//0B//4p/5cLC/8EAv8FFNrEvWmOFQAAB8JJREFUeNqdmQd34jgQgLk+yEW23AtgSgyYkoT03b27//+vbsayjFxS9vTevsUYf56u0WQy/XjlURRBu/Ai/+SByQf3HvJtCSCCwr1PcVVuEQoG5TZ/+F/AzRPA3F17hmFel+Ed3YDB0+Zngc/RFuZpUrM0oLz20hC20ctPABHH4oOhANzzksMh8fZG+4LEZdvo+avADTDXkw/yQ+qGwmcMgDF/HrrrWmr8t68EbL4EnJRQSNz+WAjoLzZ3M17f5i6Uz58D863I6PfGwSUa6y+Cinv5xiTc5p8BI3A54bKQjdAYNNDGJsY9RB8CH0q2ph96hUZTunblZPRiwzyI8uF94C8gEnpvxUCDMTHHJViXioof6d37AB7eAz7AfI8/SeZXnCjSA4WLYey9rOqaAaCgnxtFhzjReQFHJY5XQxXkT315x5BptphLQ7o6caLLhzyjaoSQrjSNzpIh3fyApfiGjIixRrwCS4Fpi29rxIu9Pk0xk9pjZG7SZk3EsBwCI5YYHN/ViJeN0hpkNkfr4gtTAhORz6M+MIcj8kg+fD0EnnlVsq0MMrnpS8Ml8x2g1py0TljeBT5vY+RVUNsHQm5wSTO8LHVxpdm+wZnNDfw/BGnLA16tt7/80IGlcDg/ygAmZ3NOxMydq7AGEd7rVq2lapwtKHqKUpcQFeY8EVA/7iecePwYdEKZwijRkWkbriFe7UU+aYF3EHPHCWsegzNHafklGOQyMM/YS1MSsGrvQ2oS/64Foocdfm4UDh1aLkA3lenW0azEoXWXC9qb8CXS0wR82S4dxxLqKeItoCkttK+kGXom9ME1D/jd0RwAGRQoYrZtgN8i33acuJEjUDzpQnHkhtpJDC7oy0RGjg5kQHE7j36VEkLsOBe/EXDmWAhvSgveMbj0OFHrsKdI7kso/bKG6R0BN7CzLCWgf7Gcc2s0l8slCWsp9BiQRDS52JCEb0+BZdm+0tiyrFMjYK0+wSTRYx8ByYru0xsC/4alZc2UK2PtM+wQeEzPFylh2OS5AlbQDSnKRZIwJ40DxVjSZ6akdc71RiWqhOP2cQ26bmBfv57n08ndFrXcKY1hZt1ePzuVdA2AaxzbuHTHgeQWd3s3mZY3lvXYarmyzleNd9Akz9xxxGdA0jkrp5MchbIWLeQ3a9l+DtQ2zy7KgO8Dybamx/JJ5O8sW2gS3gx6BagMzQHvAt06tif5ybZW39unHwdAKo8XNgLMesA5fhejhIGtBQrc6BdNrFvOCdgQeOgBsSyaVTSBhaWZDa9WfeDZiYF9AYhJjsk0QZnshSaObYuuwrEzU6XiQ5Xr7MsQuOwA0eeLjnwni+rGGPDQB6KbEwTOLDvQAEFXZ4yBADptzfsS0sY/BGLgvGpXS6c1sJYSNdDr7xAVBeIQGGiJCK9a4vSBe7/nlftxIHppqblI1rJe0jbAcQkf+0A4t+V21lFfqfAeMJVO6XmZ5FL5F1uroFmhWkV4/x5wTRWxH4eKSDIGtm1balHxVpvBO0CMwyNMom6mtMRHjBi7WYrYQZpcwCBTUlkcBukL3x+tM3rrQ6ARwCCXXSpft9bKH5o+trWlK81b4LwLDHCnDVFCjGSMjcESV/Np8ul9Z19ClzZS7JjKx6FXZKWNr+sGL9xmVXxcQnJySZvUwtb2lJHoHlTwUWC9p6S0SeVoxF3fiMGIXdWjQike9hPIDHNqRYbJRxFzGpOtbsB9rzFit+5SrWG00b88LSy7Fziz4ValyZg09auAvsZPL3Wz5N/at50yjW/Y3fifAnUJIaYuvm6W/pxS/6FLdKpD73Z5GlGZkcojEuJRgFqbO9lwIuHW1yNGRrM9C4Yiwjwx3mlh4+iu6bG36JariMtrytmz1z4v5ubgGCAF9P6ZvqmmnURUVgw6OWevFr62BbLK4G4TNqoBbfYZ022b9umvVGUbR39fWXY3jWv/SPOJi5kIpmwoTz50uqG6cIBv3xTwGYPbbvIvRqF2iNGR9lLUfVjoGGldptrIBrb+C+/RATLMv+lHM4yU2i/+LaaIf1r8ZneR5J8l5zGB1UnV9Ao8W+EBLKbDXjn9cQU+/01+oZ5poZrZ02OLlNXmfDYudX3BzUg7quKReY7nfu/fBtUeb1FpqhGza3d8mkmkKmD8LPdNte3VxLQ+OaP2+eAAjt7F8F7pVeZ0tlpgfTSSMefvlc4mneAOrYd14A80Iz58c2t3ysICu1Gp8iUYNiMGDQvo/J2W05fBzGFD+x8J1CkU/lLyznqbIE8WNLKRvAw2byNjlk2TIzvWLY146iA7sC7RJPfKwVHGNuODICnjsHItd4OzM8ReRoHp9XndUdUGyI6rYLBNdzpONVUDdk+H0nV3jNgdpm3K11sUcukPGvfB5A9tUQ+B7svNx+M+Qbm8W3xQsJupWErieWH0+UDyhjyzWnzAo5EkTULM47/59OXTGWxJKUJFRowB6UOY1kM2ryi/MoO9Q9+8rij47HN8YoOOIqzkNNq7R+/efWVKjF9F28VZptxu5oaB8GkJERZV5snplef+gdZ7+/qkPdoGy0vd0eCyEloeV6MwnhX/RP9jdO8Hy52ltXDN8H5diJ8f3ZMpp5t8W4pweT5eEo9Wkh2rYv77Nt9MR4z3hb9WXP/8wdCAAj38hT9//AeaYVQBgkwsDAAAAABJRU5ErkJggg==" alt=""><span class="logoTxt">Diseñador<small class="logoMarca">APIK-DESING</small></span><small class="ver">v33</small></div>
   <input class="nombre" id="nombreDiseno" value="Mi diseño" title="Nombre del diseño">
   <span id="estadoGuardado" title="Estado del guardado en Drive">No guardado en Drive</span>
   <button class="tb" onclick="nuevoDiseno()">Nuevo</button>
@@ -592,6 +606,11 @@
 
     <div class="panelTab" id="tElementos">
       <h3>Elementos</h3>
+      <h4>Íconos</h4>
+      <div class="filaBusca"><input type="search" id="buscaIcono" class="buscador" placeholder="Busca en inglés o español: home, casa, libro…" enterkeyhint="search"><button class="pb" id="bBuscaIcono">Buscar</button></div>
+      <div class="fila"><label>Color</label><input type="color" id="colorIcono" value="#111827"><select id="estiloIcono" title="Estilo de los íconos"><option value="ph,tabler,lucide,mdi,material-symbols">Línea y relleno</option><option value="fluent-emoji-flat,noto,twemoji">A color (emoji)</option><option value="">Todos</option></select></div>
+      <div id="resIconos" class="gridBanco iconos"></div>
+      <p class="hint" style="font-size:11px">Más de 200 000 íconos gratis de <a href="https://iconify.design" target="_blank" rel="noopener">Iconify</a>. Se agregan como dibujo: puedes cambiarles el color y el tamaño sin que pierdan calidad.</p>
       <h4>Código QR</h4>
       <input type="text" id="qrTexto" class="buscador" placeholder="Enlace, teléfono o texto">
       <p class="hint" style="font-size:11.5px;padding-top:0">Ejemplos: <b>https://link.mercadopago.com.mx/tunombre</b> · WhatsApp: <b>https://wa.me/5215500000000</b> · teléfono: <b>tel:5500000000</b></p>
@@ -642,6 +661,12 @@
       <div class="drop">También puedes arrastrar imágenes al lienzo o pegarlas con Ctrl+V</div>
       <h4>Subidas en esta sesión</h4>
       <div id="misImagenes"></div>
+      <h4>Fotos gratis</h4>
+      <div class="filaBusca"><input type="search" id="buscaFoto" class="buscador" placeholder="Busca: café, escuela, balanza…" enterkeyhint="search"><button class="pb" id="bBuscaFoto">Buscar</button></div>
+      <label class="hint" style="display:flex;gap:6px;align-items:center;font-size:12px;padding:4px 0"><input type="checkbox" id="fotoComercial"> Solo las que puedo usar en mi negocio</label>
+      <div id="resFotos" class="gridBanco"></div>
+      <button class="bigbtn" id="masFotos" hidden>Ver más fotos</button>
+      <p class="hint" style="font-size:11px">Fotos con licencia libre de <a href="https://openverse.org" target="_blank" rel="noopener">Openverse</a>. Muchas piden dar crédito al autor: selecciona la foto y pulsa <b>© Crédito</b>.</p>
     </div>
 
     <div class="panelTab" id="tDiagramas">
@@ -835,6 +860,7 @@
           <button class="pb" onclick="quitarFondoImagen()" title="Borra el fondo liso que toca los bordes de la imagen">🪄 Quitar fondo</button>
           <button class="pb" onclick="iniciarBorrarZona()" title="Borra la zona de color que toques">👆 Borrar zona</button>
         </div>
+        <button class="bigbtn" id="bFondoIA" onclick="quitarFondoIA()" title="Detecta a la persona u objeto principal y borra todo lo demás, aunque el fondo no sea liso">✨ Quitar fondo con IA <span style="float:right;color:#6b7280;font-size:11px">personas, productos, mascotas</span></button>
         <p class="hint" style="font-size:11.5px;padding-top:0">Funciona mejor con fondos lisos (blanco o de un solo color). Si borra de más, deshaz (Ctrl+Z) y baja la tolerancia; si deja restos, súbela.</p>
         <h4>Recortar en forma</h4>
         <div class="grupoBtns">
@@ -8668,7 +8694,9 @@ const escH = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace
 function htmlDeTexto(o, bx, by){
   const m = o.calcTransformMatrix(); m[4] -= bx; m[5] -= by;
   const fs = o.fontSize, lh = fs * o.lineHeight * o._fontSizeMult;
-  const lineas = (o.textLines || String(o.text).split('\n')).map(l => escH(l).replace(/ /g, '&#32;') || '&nbsp;');
+  const crudas = o.textLines || String(o.text).split('\n');
+  const lineas = crudas.map(l => escH(l).replace(/ /g, '&#32;') || '&nbsp;');
+  const duro = i => o.type !== 'textbox' || !o.isEndOfWrapping || o.isEndOfWrapping(i);
   const sombra = o.shadow ? `text-shadow:${o.shadow.offsetX || 0}px ${o.shadow.offsetY || 0}px ${o.shadow.blur || 0}px ${o.shadow.color};` : '';
   const borde = o.stroke && o.strokeWidth ? `-webkit-text-stroke:${o.strokeWidth}px ${o.stroke};paint-order:stroke fill;` : '';
   const deco = [o.underline && 'underline', o.linethrough && 'line-through', o.overline && 'overline'].filter(Boolean).join(' ');
@@ -8677,7 +8705,16 @@ function htmlDeTexto(o, bx, by){
     `text-align:${o.textAlign === 'justify' ? 'justify' : o.textAlign};letter-spacing:${(o.charSpacing || 0) / 1000}em;white-space:nowrap;` +
     (deco ? `text-decoration:${deco};` : '') + (o.backgroundColor ? `background:${o.backgroundColor};` : '') + sombra + borde +
     (o.opacity < 1 ? `opacity:${o.opacity};` : '');
-  return `<div class="t" style="${css}">${lineas.join('<br>')}</div>`;
+  return `<div class="t" style="${css}">${lineas.map((l, i) => l + (i < lineas.length - 1 ? (duro(i) ? '<br>' : ' <br class="w">') : '')).join('')}</div>`;
+}
+function rectSimple(o){
+  return o.type === 'rect' && typeof o.fill === 'string' && !((o.angle || 0) % 360) && !o.skewX && !o.skewY && !o.clipPath && !(o.stroke && o.stroke.toLive);
+}
+function htmlDeRect(o){
+  const sx = o.scaleX || 1, sy = o.scaleY || 1, sw = o.stroke && o.strokeWidth ? o.strokeWidth * (o.strokeUniform ? 1 : sx) : 0;
+  const sh = o.shadow ? `box-shadow:${o.shadow.offsetX || 0}px ${o.shadow.offsetY || 0}px ${o.shadow.blur || 0}px ${o.shadow.color};` : '';
+  return `<div class="r" style="position:absolute;inset:0;background:${o.fill};border-radius:${(o.rx || 0) * sx}px/${(o.ry || o.rx || 0) * sy}px;` +
+    (sw ? `border:${sw}px ${o.strokeDashArray ? 'dashed' : 'solid'} ${o.stroke};` : '') + sh + (o.opacity < 1 ? `opacity:${o.opacity};` : '') + '"></div>';
 }
 function svgDeObjeto(o, r){
   const svg = o.toSVG();
@@ -8699,14 +8736,16 @@ async function paginaAHTML(json, num, ctx){
   }
   Object.assign(ctx.fuentes, fuentesDe(sc.getObjects()));
   const animados = sc.getObjects().filter(o => o.anim && o.anim.tipo && o.anim.tipo !== 'ninguna').sort((a, b) => (a.anim.orden || 0) - (b.anim.orden || 0));
-  const partes = [];
-  let primerCambio = null;
+  const items = [];
+  let primerCambio = null, idx = 0;
   for (const o of sc.getObjects()){
+    idx++;
     if (o.visible === false) continue;
     if (o.marcoVacio){ ctx.vacios++; continue; }
     if (o.type === 'conector' && (o.opacity === 0)) continue;
-    const r = o.modelo3d ? o.getBoundingRect(true, true) : cajaDe(o);
-    let dentro;
+    const esRect = rectSimple(o);
+    const r = o.modelo3d || esRect ? o.getBoundingRect(true, true) : cajaDe(o);
+    let dentro, tipo = 'otro';
     if (o.modelo3d){
       const m = o.modelo3d; ctx.usa3D = true;
       const at = [`src="${escH(m.src)}"`, `camera-orbit="${escH(m.camara)}"`, 'shadow-intensity="1"', 'exposure="1.1"', 'interaction-prompt="none"', 'camera-controls', 'disable-zoom', 'touch-action="pan-y"'];
@@ -8722,26 +8761,83 @@ async function paginaAHTML(json, num, ctx){
         o.variantes.map((v, i) => `<img src="${v.src}" alt="${escH(v.nombre || 'Producto ' + (i + 1))}" class="${i ? '' : 'on'}">`).join('') +
         `<button class="ant" aria-label="Anterior">‹</button><button class="sig" aria-label="Siguiente">›</button><div class="pts">${o.variantes.map((v, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div></div>`;
       if (!primerCambio) primerCambio = o.variantes[0].fondo;
-    } else if (textoHTMLSimple(o)) dentro = htmlDeTexto(o, r.left, r.top);
+    } else if (textoHTMLSimple(o)){ dentro = htmlDeTexto(o, r.left, r.top); tipo = 'texto'; }
+    else if (esRect){ dentro = htmlDeRect(o); tipo = 'rect'; }
     else dentro = svgDeObjeto(o, r);
+    if (o.modelo3d) tipo = '3d'; else if (o.variantes) tipo = 'camb';
     const a = o.anim && ANIM_CSS[o.anim.tipo] ? o.anim : null;
     const retraso = a ? Math.min(1500, (a.retraso || 0) + Math.max(0, animados.indexOf(o)) * 110) : 0;
-    const attrsO = [`class="o"`, `style="left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px"`];
-    if (o.scrollFx) attrsO.push(`data-scroll="${o.scrollFx}"`);
     let html = `<div class="h${o.hover ? ' h-' + o.hover : ''}">${dentro}</div>`;
     html = `<div class="a${a ? ' a-' + ANIM_CSS[a.tipo] : ''}"${a ? ` style="--d:${a.duracion || 700}ms;--r:${retraso}ms"` : ''}>${html}</div>`;
     if (o.enlace){
       const href = o.enlace.startsWith('p:') ? '#p' + o.enlace.slice(2) : o.enlace;
       html = `<a href="${escH(href)}"${o.enlace.startsWith('p:') ? '' : ' target="_blank" rel="noopener"'} class="lnk">${html}</a>`;
     }
-    partes.push(`<div ${attrsO.join(' ')}>${html}</div>`);
+    const fs = tipo === 'texto' ? o.fontSize * (o.scaleY || 1) : 0;
+    const rt = o.getBoundingRect(true, true);   // caja justa, sin margen para sombras
+    items.push({ r:{ left:Math.round(r.left), top:Math.round(r.top), width:Math.round(r.width), height:Math.round(r.height) }, rt, html, tipo, idx, fs,
+      al:o.textAlign || 'left', scrollFx:o.scrollFx || '', hijos:[], padre:null, enlace:!!o.enlace });
   }
   sc.dispose();
-  return `<section class="pag" id="p${num}" data-w="${W}" data-h="${H}" style="--w:${W};--h:${H};background:${primerCambio || fondo}">` +
+  // ¿qué está dentro de qué? (una tarjeta y su texto, un botón y su letrero…)
+  const dentroDe = (a, b) => a.rt.left >= b.rt.left - 3 && a.rt.top >= b.rt.top - 3 && a.rt.left + a.rt.width <= b.rt.left + b.rt.width + 3 && a.rt.top + a.rt.height <= b.rt.top + b.rt.height + 3;
+  const area = x => Math.max(1, x.rt.width * x.rt.height);
+  items.forEach(c => {
+    let mejor = null;
+    items.forEach(p => {
+      if (p === c || p.idx > c.idx || p.tipo === 'texto' || p.tipo === '3d' || p.tipo === 'camb') return;
+      if (area(p) < area(c) * 1.2 || !dentroDe(c, p)) return;
+      if (!mejor || area(p) < area(mejor)) mejor = p;
+    });
+    if (mejor){ c.padre = mejor; mejor.hijos.push(c); }
+  });
+  // orden de lectura (corte en X y Y): primero renglones separados por espacios en blanco; dentro de cada uno, columnas de izquierda a derecha
+  const ordenar = lista => {
+    if (lista.length <= 1) return lista.slice();
+    const caja = x => x.rt;
+    const cortar = (eje) => {
+      const ini = eje === 'y' ? (x => caja(x).top) : (x => caja(x).left), tam = eje === 'y' ? (x => caja(x).height) : (x => caja(x).width);
+      const l = lista.slice().sort((a, b) => ini(a) - ini(b)), grupos = []; let g = [], fin = -Infinity;
+      l.forEach(x => { if (g.length && ini(x) >= fin - 2){ grupos.push(g); g = []; } g.push(x); fin = Math.max(fin, ini(x) + tam(x)); });
+      grupos.push(g); return grupos;
+    };
+    let gr = cortar('y');
+    if (gr.length > 1) return gr.flatMap(ordenar);
+    gr = cortar('x');
+    if (gr.length > 1) return gr.flatMap(ordenar);
+    return lista.slice().sort((a, b) => (caja(a).top - caja(b).top) || (caja(a).left - caja(b).left));
+  };
+  // cosas pequeñas en el mismo renglón (botones, tallas, colores, íconos) se quedan juntas en el celular
+  const chico = x => x.rt.height <= 90 && x.rt.width <= (x.tipo === 'texto' ? 220 : W * 0.3);
+  const juntar = (lista, base) => {
+    const out = []; let run = [];
+    const soltar = () => { if (run.length >= 2) out.push('<div class="filaM">' + run.map(x => nodo(x, base)).join('') + '</div>'); else run.forEach(x => out.push(nodo(x, base))); run = []; };
+    lista.forEach(x => {
+      const u = run[run.length - 1];
+      const mismo = u && chico(x) && Math.min(u.rt.top + u.rt.height, x.rt.top + x.rt.height) - Math.max(u.rt.top, x.rt.top) > Math.min(u.rt.height, x.rt.height) * 0.5;
+      if (chico(x) && (!u || mismo)) run.push(x); else { soltar(); if (chico(x)) run.push(x); else out.push(nodo(x, base)); }
+    });
+    soltar(); return out.join('');
+  };
+  const nodo = (x, base) => {
+    const cls = ['o'], st = [`left:${x.r.left - base.left}px`, `top:${x.r.top - base.top}px`, `width:${x.r.width}px`, `height:${x.r.height}px`, `z-index:${x.idx}`];
+    if (x.hijos.length){ cls.push('cont'); if (x.r.height <= 140 && x.r.width / x.r.height > 2.5) cls.push('fila');
+      st.push(`--pad:${Math.round(Math.min(18, x.r.height * 0.22, x.r.width * 0.08))}px`); }
+    else if (x.tipo === 'texto'){ cls.push('tx'); if (!x.enlace) cls.push('sinClic');
+      const f = x.fs, m = f >= 40 ? Math.max(26, f * 0.55) : f >= 22 ? Math.max(18, f * 0.75) : Math.max(13, f * 0.95);
+      st.push(`--fsm:${Math.round(m)}px`, `--al:${x.al === 'center' ? 'center' : x.al === 'right' ? 'flex-end' : 'stretch'}`); }
+    else { const w0 = x.r.width, mw = w0 >= W * 0.5 || x.tipo === '3d' || x.tipo === 'camb' ? '100%' : Math.round(Math.max(Math.min(w0, 64), w0 * 0.62)) + 'px';
+      st.push(`--mw:${mw}`, `--ar:${x.r.width}/${Math.max(1, x.r.height)}`); }
+    const at = x.scrollFx ? ` data-scroll="${x.scrollFx}"` : '';
+    return `<div class="${cls.join(' ')}" style="${st.join(';')}"${at}>${x.html}${juntar(ordenar(x.hijos), x.r)}</div>`;
+  };
+  const partes = [juntar(ordenar(items.filter(x => !x.padre)), { left:0, top:0 })];
+  const flujo = W > 900 && ctx.modo !== 'pantallas';
+  return `<section class="pag${flujo ? ' flujo' : ''}" id="p${num}" data-w="${W}" data-h="${H}" style="--w:${W};--h:${H};background:${primerCambio || fondo}">` +
     `<div class="lienzo" style="width:${W}px;height:${H}px${fondoImg ? `;background:url(${fondoImg}) center/cover` : ''}">${partes.join('\n')}</div></section>`;
 }
 async function crearHTML(lista, modo){
-  const ctx = { fuentes:{}, vacios:0, usa3D:false, usaCambiador:false };
+  const ctx = { fuentes:{}, vacios:0, usa3D:false, usaCambiador:false, modo };
   const secciones = []; for (const it of lista) secciones.push(await paginaAHTML(it.p, it.i + 1, ctx));
   const fams = Object.entries(ctx.fuentes);
   let cssFuentes = '', linkFuentes = '';
@@ -8778,6 +8874,26 @@ model-viewer::part(default-progress-bar){display:none}
 .colores3d{position:absolute;bottom:-10px;left:0;right:0;display:flex;gap:14px;justify-content:center}.colores3d button{width:38px;height:38px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.25);transition:transform .2s}.colores3d button.on{transform:scale(1.25);outline:2px solid #111;outline-offset:2px}
 ${modo === 'pantallas' ? '.pag{display:none;margin:0 auto}.pag.activa{display:block}' : ''}
 @media (prefers-reduced-motion:reduce){.a[class*="a-"]{opacity:1;transform:none;transition:none}.h-latido{animation:none}}
+/* en el celular, las páginas anchas se reacomodan en una columna */
+@media (max-width:700px){
+ .pag.flujo{height:auto!important}
+ .pag.flujo>.lienzo{position:relative;left:auto;top:auto;transform:none!important;width:auto!important;height:auto!important;display:flex;flex-direction:column;gap:16px;padding:28px 18px 36px}
+ .pag.flujo .o{position:relative!important;left:auto!important;top:auto!important;width:auto!important;height:auto!important;transform:none!important;z-index:auto!important;will-change:auto}
+ .pag.flujo .o:not(.cont):not(.tx){width:min(100%,var(--mw))!important;aspect-ratio:var(--ar);align-self:center}
+ .pag.flujo .o.tx{align-self:var(--al,stretch)}.pag.flujo .o.tx .a,.pag.flujo .o.tx .h,.pag.flujo .o.tx a.lnk{height:auto}
+ .pag.flujo .o.tx .t{position:static!important;transform:none!important;width:auto!important;height:auto!important;white-space:normal!important;font-size:var(--fsm)!important;line-height:1.3!important;letter-spacing:normal!important;overflow-wrap:anywhere}
+ .pag.flujo .o.tx .t br.w{display:none}
+ .pag.flujo .o.cont{display:flex;flex-direction:column;gap:10px;padding:var(--pad,14px)}
+ .pag.flujo .o.cont>.a,.pag.flujo .o.cont>a.lnk{position:absolute;inset:0;width:auto;height:auto;z-index:0}
+ .pag.flujo .o.cont>.o{z-index:1!important}
+ .pag.flujo .o.cont.fila{flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 14px}
+ .pag.flujo .o.fila>.o.tx{align-self:center}
+ .pag.flujo .filaM{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center}
+ .pag.flujo .filaM>.o:not(.cont):not(.tx){width:var(--mw)!important;max-width:100%}
+ .pag.flujo .filaM>.o.cont{min-width:44px}
+ .pag.flujo .o.fila>.o:not(.cont):not(.tx){width:min(100%,var(--mw),48px)!important}
+}
+.filaM{display:contents}.o.sinClic{pointer-events:none}.o.sinClic .o{pointer-events:auto}
 </style></head><body>
 ${secciones.join('\n')}
 <script>
@@ -8794,15 +8910,17 @@ revelar();
 var conScroll=[].slice.call(document.querySelectorAll('.o[data-scroll]'));
 var mvs=[].slice.call(document.querySelectorAll('model-viewer'));
 function cl(v,a,b){return Math.max(a,Math.min(b,v));}
+function progresoElem(el){var r=el.getBoundingClientRect(),vh=innerHeight;return cl((vh-r.top)/(vh+r.height),0,1);}
 function progresoSeccion(el){var p=el.closest('.pag'),r=p.getBoundingClientRect(),vh=innerHeight;return r.height<=vh?cl((vh-r.top)/(vh+r.height),0,1):cl(-r.top/(r.height-vh),0,1);}
+var mqFlujo=matchMedia('(max-width:700px)');
 function scroll(){var vh=innerHeight;
- conScroll.forEach(function(o){var p=o.closest('.pag'),k=p._k||1,fx=o.dataset.scroll,r=o.getBoundingClientRect(),c=(r.top+r.height/2-vh/2)/vh,t='';
+ conScroll.forEach(function(o){if(mqFlujo.matches&&o.closest('.pag.flujo')){o.style.transform='';return;}var p=o.closest('.pag'),k=p._k||1,fx=o.dataset.scroll,r=o.getBoundingClientRect(),c=(r.top+r.height/2-vh/2)/vh,t='';
   if(fx==='paralaje')t='translateY('+(c*-120)+'px)';
   else if(fx==='girar')t='rotate('+(c*-90)+'deg)';
   else if(fx==='acercar')t='scale('+cl(1.25-Math.abs(c)*0.6,0.6,1.25)+')';
   else if(fx==='fijo'){var pr=p.getBoundingClientRect(),top=parseFloat(o.style.top),h=parseFloat(o.style.height),H=+p.dataset.h;var desea=(-pr.top)/k+(vh/k-h)/2;t='translateY('+(cl(desea,top,H-h)-top)+'px)';}
   o.style.transform=t;});
- mvs.forEach(function(mv){var fx=mv.dataset.scroll;if(!fx||fx==='no')return;var p=progresoSeccion(mv);
+ mvs.forEach(function(mv){var fx=mv.dataset.scroll;if(!fx||fx==='no')return;var p=(mqFlujo.matches&&mv.closest('.pag.flujo'))?progresoElem(mv):progresoSeccion(mv);
   if((fx==='girar'||fx==='ambos')&&mv._orb){mv.cameraOrbit=(mv._orb[0]+p*360)+'deg '+mv._orb[1]+' '+mv._orb[2];}
   if((fx==='animar'||fx==='ambos')&&mv.duration){mv.currentTime=Math.min(mv.duration-0.001,p*mv.duration*1.15);}});
 }
@@ -8819,6 +8937,7 @@ function pintar(mv,hex){if(!mv.model)return;var mats=mv.model.materials,m=mv.dat
  c.querySelector('.ant').addEventListener('click',function(e){e.preventDefault();a(i-1);});c.querySelector('.sig').addEventListener('click',function(e){e.preventDefault();a(i+1);});
  pts.forEach(function(p,j){p.addEventListener('click',function(){a(j);});});
  var x0=null;c.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;},{passive:true});c.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.changedTouches[0].clientX-x0;if(Math.abs(dx)>40)a(i+(dx<0?1:-1));x0=null;});});
+if(MODO!=='pantallas'&&pags[0])document.body.style.background=getComputedStyle(pags[pags.length-1]).backgroundColor;
 addEventListener('resize',ajustar);addEventListener('scroll',scroll,{passive:true});ajustar();
 })();
 <\/script>
@@ -8918,7 +9037,11 @@ const PLANTILLAS_3D = [
     const vs = [['#0ea5e9', '#0369a1', '#e0f2fe', 'Mora azul'], ['#22c55e', '#15803d', '#dcfce7', 'Limón'], ['#f97316', '#c2410c', '#ffedd5', 'Mandarina'], ['#e11d48', '#9f1239', '#ffe4e6', 'Frutos rojos']]
       .map(([c, c2, f, n], i) => ({ src:dibujoProducto(i % 2 ? 'lata' : 'botella', c, c2), fondo:f, nombre:n }));
     FONDO(vs[0].fondo);
-    grupoCambiador(vs, 520, 760).then(g => { g.setPositionByOrigin(new fabric.Point(1000, 560), 'center', 'center'); canvas.add(g); canvas.requestRenderAll(); if (!restaurando) guardarEstado(); });
+    const lienzo = canvas, esVista = generandoVista;   // se guarda a qué lienzo va: si es la vista previa del catálogo, no debe caer en tu diseño
+    grupoCambiador(vs, 520, 760).then(g => {
+      if (!lienzo.contextContainer) return;
+      g.setPositionByOrigin(new fabric.Point(1000, 560), 'center', 'center'); lienzo.add(g); lienzo.requestRenderAll();
+      if (!esVista && lienzo === canvas && !restaurando) guardarEstado(); });
   }}
 ];
 PLANTILLAS_3D.forEach(p => {
@@ -9111,6 +9234,189 @@ function svgIcono(n){ return `<svg class="ico${n === 'play' ? ' relleno' : ''}" 
   window.acomodarBarra = acomodar;
 })();
 
+/* =========================================================
+   BANCO DE FOTOS E ÍCONOS GRATIS
+   ========================================================= */
+EXTRA.push('credito');
+const API_FOTOS = 'https://api.openverse.org/v1/images/';
+const API_ICONOS = 'https://api.iconify.design/';
+const TRAD_ICONOS = { casa:'home', hogar:'home', libro:'book', escuela:'school', balanza:'scale', justicia:'scale', ley:'gavel', mazo:'gavel', persona:'user', usuario:'user',
+  gente:'users', grupo:'users', corazon:'heart', 'corazón':'heart', estrella:'star', telefono:'phone', 'teléfono':'phone', correo:'mail', carta:'mail', calendario:'calendar',
+  reloj:'clock', dinero:'money', pago:'credit-card', tarjeta:'credit-card', carrito:'cart', compra:'shopping', tienda:'store', comida:'food', cafe:'coffee', 'café':'coffee',
+  ubicacion:'map-pin', 'ubicación':'map-pin', mapa:'map', buscar:'search', lupa:'search', flecha:'arrow', foto:'camera', camara:'camera', 'cámara':'camera', musica:'music',
+  'música':'music', video:'video', chat:'chat', mensaje:'message', whatsapp:'whatsapp', facebook:'facebook', instagram:'instagram', tiktok:'tiktok', candado:'lock',
+  seguridad:'shield', escudo:'shield', computadora:'computer', celular:'smartphone', idea:'lightbulb', foco:'lightbulb', grafica:'chart', 'gráfica':'chart', documento:'file',
+  archivo:'file', carpeta:'folder', lapiz:'pencil', 'lápiz':'pencil', basura:'trash', ajustes:'settings', estudiante:'student', maestro:'teacher', policia:'police', 'policía':'police',
+  carro:'car', auto:'car', avion:'plane', 'avión':'plane', sol:'sun', luna:'moon', arbol:'tree', 'árbol':'tree', flor:'flower', perro:'dog', gato:'cat', regalo:'gift', fiesta:'party' };
+let fotosEstado = { q:'', pag:1 };
+async function buscarFotos(mas){
+  const q = $('buscaFoto').value.trim(); if (!q) return toast('Escribe qué foto buscas');
+  if (!mas) fotosEstado = { q, pag:1 }; else fotosEstado.pag++;
+  const cont = $('resFotos'); if (!mas) cont.innerHTML = '<p class="hint">Buscando…</p>';
+  try {
+    const u = API_FOTOS + '?q=' + encodeURIComponent(q) + '&page_size=20&page=' + fotosEstado.pag + ($('fotoComercial').checked ? '&license_type=commercial' : '') + '&mature=false';
+    const r = await fetch(u); if (!r.ok) throw new Error(r.status === 429 ? 'Demasiadas búsquedas seguidas, espera un minuto' : 'El banco de fotos no respondió (' + r.status + ')');
+    const d = await r.json();
+    if (!mas) cont.innerHTML = '';
+    if (!d.results || !d.results.length){ if (!mas) cont.innerHTML = '<p class="hint">No encontré fotos. Prueba con otra palabra (a veces funciona mejor en inglés).</p>'; $('masFotos').hidden = true; return; }
+    d.results.forEach(f => {
+      const im = document.createElement('img'); im.loading = 'lazy'; im.alt = f.title || q; im.src = f.thumbnail || f.url;
+      im.title = (f.title || '') + (f.creator ? ' · ' + f.creator : '') + ' · ' + licenciaTexto(f);
+      im.onclick = () => usarFoto(f);
+      cont.appendChild(im);
+    });
+    $('masFotos').hidden = !(d.page_count > fotosEstado.pag);
+  } catch (e) { if (!mas) cont.innerHTML = ''; toast(e.message.includes('fetch') ? 'Sin conexión con el banco de fotos. Revisa tu internet.' : e.message); }
+}
+const licenciaTexto = f => (f.license === 'cc0' ? 'CC0 (dominio público)' : f.license === 'pdm' ? 'Dominio público' : 'CC ' + String(f.license || '').toUpperCase() + ' ' + (f.license_version || ''));
+async function usarFoto(f){
+  cargando(true);
+  try {
+    let blob = null;
+    for (const u of [f.thumbnail ? f.thumbnail.replace(/\/?$/, '/') + '?full_size=true' : null, f.url, f.thumbnail].filter(Boolean)){
+      try { const r = await fetch(u); if (r.ok){ const b = await r.blob(); if (b.type.startsWith('image/')){ blob = b; break; } } } catch (e) {}
+    }
+    if (!blob) throw new Error('No se pudo descargar esa foto. Prueba con otra.');
+    const datos = await blobADataURL(blob);
+    const url = await new Promise(ok => reducirImagen(datos, 2000, ok));
+    const credito = 'Foto: ' + (f.title ? '«' + f.title + '» ' : '') + (f.creator ? 'de ' + f.creator + ' ' : '') + '(' + licenciaTexto(f).trim() + ')' + (f.foreign_landing_url ? ' — ' + f.foreign_landing_url : '');
+    const sel = activo();
+    if (sel && (sel.marco || sel.marcoVacio)){ llenarMarco(sel, url); }
+    else fabric.Image.fromURL(url, img => {
+      const k = Math.min((W * 0.6) / img.width, (H * 0.6) / img.height, 1);
+      img.set({ left:W / 2, top:H / 2, originX:'center', originY:'center', scaleX:k, scaleY:k, fx:{ b:0, c:0, s:0, bl:0, gris:false, sepia:false, inv:false } });
+      img.credito = f.license === 'cc0' || f.license === 'pdm' ? '' : credito;
+      agregar(img, 'Foto'); renderCapas(); guardarEstado();
+    });
+    miniatura(url);
+    toast(f.license === 'cc0' || f.license === 'pdm' ? 'Foto agregada (libre, no necesitas dar crédito).' : 'Foto agregada. Esta licencia pide dar crédito: selecciónala y pulsa «© Crédito».');
+  } catch (e) { toast(e.message); }
+  finally { cargando(false); }
+}
+function agregarCredito(){
+  const o = activo(); if (!o || !o.credito) return;
+  const r = o.getBoundingRect(true, true);
+  const t = new fabric.Textbox(o.credito.replace(/ — https?:\/\/\S+$/, ''), { left:r.left, top:r.top + r.height + 6, width:Math.max(160, r.width), fontSize:Math.max(10, Math.round(Math.min(W, H) / 90)),
+    fontFamily:'Inter', fill:'#6b7280', name:'Crédito de la foto' });
+  agregar(t, 'Crédito de la foto'); renderCapas(); guardarEstado();
+}
+// ---------- íconos ----------
+async function buscarIconos(){
+  let q = $('buscaIcono').value.trim().toLowerCase(); if (!q) return toast('Escribe qué ícono buscas');
+  q = q.split(/\s+/).map(w => TRAD_ICONOS[w] || w).join(' ');
+  const cont = $('resIconos'); cont.innerHTML = '<p class="hint">Buscando…</p>';
+  try {
+    const pre = $('estiloIcono').value;
+    const r = await fetch(API_ICONOS + 'search?query=' + encodeURIComponent(q) + '&limit=96' + (pre ? '&prefixes=' + pre : ''));
+    if (!r.ok) throw new Error('El banco de íconos no respondió (' + r.status + ')');
+    const d = await r.json(); cont.innerHTML = '';
+    if (!d.icons || !d.icons.length){ cont.innerHTML = '<p class="hint">No encontré íconos. Prueba en inglés (por ejemplo «book», «heart», «school»).</p>'; return; }
+    d.icons.forEach(n => {
+      const [p, nom] = n.split(':'), info = (d.collections || {})[p] || {};
+      const b = document.createElement('button'); b.className = 'icoBanco'; b.title = nom.replace(/-/g, ' ') + ' · ' + (info.name || p) + (info.license ? ' (' + info.license.title + ')' : '');
+      b.setAttribute('aria-label', nom.replace(/-/g, ' '));
+      b.innerHTML = `<img loading="lazy" alt="" src="${API_ICONOS}${p}/${nom}.svg?height=40">`;
+      b.onclick = () => usarIcono(p, nom);
+      cont.appendChild(b);
+    });
+  } catch (e) { cont.innerHTML = ''; toast(e.message.includes('fetch') ? 'Sin conexión con el banco de íconos. Revisa tu internet.' : e.message); }
+}
+async function usarIcono(p, nom){
+  try {
+    const color = $('colorIcono').value;
+    const r = await fetch(`${API_ICONOS}${p}/${nom}.svg?height=240`); if (!r.ok) throw new Error('No se pudo descargar el ícono');
+    const svg = (await r.text()).replace(/currentColor/g, color);
+    fabric.loadSVGFromString(svg, (objs, opt) => {
+      const o = fabric.util.groupSVGElements(objs, opt);
+      const s = Math.min(W, H) * 0.18 / Math.max(o.width, o.height);
+      o.set({ left:W / 2, top:H / 2, originX:'center', originY:'center', scaleX:s, scaleY:s, name:'Ícono ' + nom.replace(/-/g, ' ') });
+      agregar(o, 'Ícono'); renderCapas(); guardarEstado();
+    });
+  } catch (e) { toast(e.message); }
+}
+// ---------- botones y panel ----------
+$('bBuscaFoto').onclick = () => buscarFotos(false);
+$('buscaFoto').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') buscarFotos(false); });
+$('masFotos').onclick = () => buscarFotos(true);
+$('bBuscaIcono').onclick = buscarIconos;
+$('buscaIcono').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') buscarIconos(); });
+(function(){
+  const b = document.createElement('button'); b.className = 'pb'; b.id = 'bCredito'; b.hidden = true; b.title = 'Pone debajo de la foto el nombre del autor y la licencia'; b.textContent = '© Crédito';
+  b.onclick = agregarCredito;
+  const ref = $('bEnlace'); if (ref) ref.after(b);
+})();
+alActualizarPanel(function(){
+  if (generandoVista) return;
+  const o = activo(); $('bCredito').hidden = !(o && o.credito);
+});
+/* =========================================================
+   QUITAR FONDO CON IA (funciona en tu navegador; la foto no se sube a ningún lado)
+   ========================================================= */
+const URL_TRANSFORMERS = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1';
+const MODELO_FONDO = 'd30social/ormbg-ortweb';   // ORMBG, licencia Apache-2.0, ~84 MB la primera vez
+let segmentadorFondo = null;
+function avisoProgresoIA(txt, pct){
+  let a = $('progresoIA');
+  if (txt === null){ if (a) a.remove(); return; }
+  if (!a){ a = document.createElement('div'); a.id = 'progresoIA'; a.setAttribute('role', 'status'); a.innerHTML = '<div class="txt"></div><div class="barraIA"><i></i></div>'; document.body.appendChild(a); }
+  a.querySelector('.txt').textContent = txt; a.querySelector('i').style.width = Math.max(2, Math.min(100, pct || 0)) + '%';
+}
+async function cargarSegmentador(){
+  if (segmentadorFondo) return segmentadorFondo;
+  avisoProgresoIA('Preparando la IA… (solo la primera vez descarga unos 85 MB; después queda guardada)', 2);
+  const tf = await import(/* webpackIgnore: true */ URL_TRANSFORMERS);
+  tf.env.allowLocalModels = false;
+  const archivos = {};
+  const progreso = p => {
+    if (p.status === 'progress' && p.total){ archivos[p.file] = [p.loaded, p.total];
+      const t = Object.values(archivos).reduce((s, [l, tt]) => [s[0] + l, s[1] + tt], [0, 0]);
+      avisoProgresoIA('Descargando la IA para quitar fondos… ' + (t[0] / 1048576).toFixed(0) + ' de ' + (t[1] / 1048576).toFixed(0) + ' MB', 5 + 85 * t[0] / t[1]); }
+  };
+  const intentos = navigator.gpu ? [{ device:'webgpu', dtype:'fp16' }, { device:'wasm', dtype:'fp16' }] : [{ device:'wasm', dtype:'fp16' }];
+  let ultimo;
+  for (const op of intentos){
+    try { segmentadorFondo = await tf.pipeline('image-segmentation', MODELO_FONDO, { ...op, progress_callback:progreso }); segmentadorFondo.tf = tf; return segmentadorFondo; }
+    catch (e) { ultimo = e; console.warn('IA de fondo con', op.device, 'falló:', e); }
+  }
+  throw ultimo || new Error('No se pudo preparar la IA');
+}
+async function quitarFondoIA(){
+  const img = imagenActiva(); if (!img) return;
+  terminarRecorte(false);
+  try {
+    const seg = await cargarSegmentador();
+    avisoProgresoIA('Buscando lo principal de la foto…', 92);
+    const src = img._originalElement || img._element;
+    const nw = src.naturalWidth || src.width, nh = src.naturalHeight || src.height;
+    const k = Math.min(1, 2400 / Math.max(nw, nh)), cw = Math.round(nw * k), ch = Math.round(nh * k);
+    const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+    const g = cv.getContext('2d', { willReadFrequently:true }); g.drawImage(src, 0, 0, cw, ch);
+    try { g.getImageData(0, 0, 1, 1); } catch (e) { throw new Error('Esta imagen viene de otro sitio y no se puede editar. Descárgala y súbela desde tu computadora.'); }
+    const blob = await new Promise(ok => cv.toBlob(ok, 'image/png'));
+    const url = URL.createObjectURL(blob);
+    let salida; try { salida = await seg(url); } finally { URL.revokeObjectURL(url); }
+    const m = (Array.isArray(salida) ? salida[0] : salida).mask;
+    // la máscara (gris) se vuelve la transparencia de la foto
+    const mc = document.createElement('canvas'); mc.width = m.width; mc.height = m.height;
+    const mg = mc.getContext('2d'), md = mg.createImageData(m.width, m.height), ch1 = m.channels || 1;
+    for (let i = 0, j = 0; i < m.width * m.height; i++, j += ch1){ const a = m.data[j]; md.data[i * 4 + 3] = a; }
+    mg.putImageData(md, 0, 0);
+    g.globalCompositeOperation = 'destination-in'; g.imageSmoothingQuality = 'high'; g.drawImage(mc, 0, 0, cw, ch); g.globalCompositeOperation = 'source-over';
+    // ¿quedó algo?
+    const d = g.getImageData(0, 0, cw, ch).data; let opacos = 0; for (let i = 3; i < d.length; i += 16) if (d[i] > 30) opacos++;
+    if (opacos < (cw * ch / 4) * 0.01) throw new Error('No encontré una persona u objeto claro en la foto. Prueba con «🪄 Quitar fondo».');
+    const antes = { c:img.getCenterPoint(), cropX:img.cropX || 0, cropY:img.cropY || 0, width:img.width, height:img.height, sx:img.scaleX, sy:img.scaleY };
+    await new Promise(ok => img.setSrc(cv.toDataURL('image/png'), ok));
+    img.set({ cropX:antes.cropX * k, cropY:antes.cropY * k, width:antes.width * k, height:antes.height * k, scaleX:antes.sx / k, scaleY:antes.sy / k });
+    if (img.filters && img.filters.length) img.applyFilters();
+    img.setPositionByOrigin(antes.c, 'center', 'center'); img.setCoords(); img.dirty = true;
+    canvas.requestRenderAll(); guardarEstado(); actualizarPanel();
+    avisoProgresoIA(null); toast('¡Listo! Fondo quitado. Si algo quedó mal, deshaz con Ctrl+Z.');
+  } catch (e) {
+    console.error(e); avisoProgresoIA(null);
+    toast((e && e.message && /fetch|network|Failed to/.test(e.message)) ? 'No se pudo descargar la IA. Revisa tu internet e intenta de nuevo.' : 'No se pudo quitar el fondo: ' + (e.message || e));
+  }
+}
 /* =========================================================
    PESTAÑAS E INICIO
    ========================================================= */

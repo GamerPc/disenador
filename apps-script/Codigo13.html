@@ -2,33 +2,325 @@
 /*@parte Codigo13*/ (window.__partes = window.__partes || {})['Codigo13'] = true;
 
 /* =========================================================
-   PESTAÑAS E INICIO
+   ÍCONOS DIBUJADOS (se ven iguales en cualquier celular o computadora)
    ========================================================= */
-document.querySelectorAll('#pestanas button').forEach(b => b.onclick = () => {
-  if (esTel()){
-    const abierto = $('lateral').classList.contains('abierto');
-    if (abierto && b.classList.contains('activa')){ abrirLateral(false); return; }
-    abrirLateral(true);
+const ICONOS_UI = {
+  carpeta:'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+  guardar:'M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM8 3v5h7V3M7 21v-7h10v7',
+  deshacer:'M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3', rehacer:'M15 14l5-5-5-5M20 9H10a6 6 0 0 0 0 12h3',
+  buscar:'M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14zM21 21l-5-5',
+  corazon:'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z',
+  enlace:'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',
+  play:'M7 5v14l11-7z', descargar:'M12 4v11M7 10l5 5 5-5M5 20h14', subir:'M12 20V9M7 14l5-5 5 5M5 4h14',
+  ajustar:'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',
+  basura:'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6', duplicar:'M8 8h11v11H8zM5 16V5h11',
+  lapiz:'M4 20h4L19 9l-4-4L4 16zM14 6l4 4', izq:'M15 5l-7 7 7 7', der:'M9 5l7 7-7 7',
+  notas:'M6 3h9l4 4v14H6zM9 12h7M9 16h5', mas:'M12 5v14M5 12h14', menos:'M5 12h14',
+  plantillas:'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z', texto:'M5 7V4h14v3M12 4v16M9 20h6',
+  formas:'M4 13h7v7H4zM16.5 4a3.5 3.5 0 1 0 0 7a3.5 3.5 0 1 0 0-7zM7.5 3l3.5 6H4z',
+  elementos:'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 15l.8 2.2 2.2.8-2.2.8L19 21l-.8-2.2-2.2-.8 2.2-.8z',
+  dibujar:'M4 20c0-3 1-4.5 3-5l9-9 3 3-9 9c-.5 2-2 3-6 2zM14 8l2 2',
+  imagen:'M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M15.5 8.5h.01', diagramas:'M4 4h6v5H4zM14 15h6v5h-6zM7 9v3h10v3',
+  fondo:'M4 4h16v16H4zM4 15l5-5 11 11M14 4l6 6', marca:'M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z',
+  monitor:'M3 4h18v12H3zM8 20h8M12 16v4', listo:'M5 12l5 5 9-10', cerrar:'M6 6l12 12M18 6 6 18'
+};
+const GLIFO_ICONO = { '📂':'carpeta', '💾':'guardar', '↶':'deshacer', '↷':'rehacer', '🔍':'buscar', '❤':'corazon', '❤️':'corazon', '🔗':'enlace', '▶':'play',
+  '⬇':'descargar', '⬆':'subir', '⤢':'ajustar', '🗑':'basura', '🗑️':'basura', '⧉':'duplicar', '✎':'lapiz', '◀':'izq', '📝':'notas', '＋':'mas', '+':'mas', '−':'menos', '▦':'plantillas' };
+const GLIFO_PESTANA = { tPlantillas:'plantillas', tTexto:'texto', tFormas:'formas', tElementos:'elementos', tDibujar:'dibujar', tImagenes:'imagen',
+  tDiagramas:'diagramas', tFondo:'fondo', tMarca:'marca', tWeb:'monitor' };
+function svgIcono(n){ return `<svg class="ico${n === 'play' ? ' relleno' : ''}" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="${ICONOS_UI[n]}"/></svg>`; }
+(function(){
+  const ZONAS = '#barra, #pestanas, #accMovil, #paginas, #barraNotas, #props .grupoBtns, #props .fila, #fila3D, #lateral .bigbtn';
+  const glifos = Object.keys(GLIFO_ICONO).sort((a, b) => b.length - a.length);
+  function convertir(b){
+    if (b.querySelector('svg.ico')) return;
+    const tab = b.closest('#pestanas') && b.dataset.tab;
+    if (tab && GLIFO_PESTANA[tab]){ const s = b.querySelector('span'); if (s){ s.innerHTML = svgIcono(GLIFO_PESTANA[tab]); } return; }
+    const n = [...b.childNodes].find(x => x.nodeType === 3 && x.textContent.trim());
+    if (!n || n !== [...b.childNodes].find(x => x.nodeType !== 3 || x.textContent.trim())) return;
+    const t = n.textContent.replace(/^\s+/, '');
+    const g = glifos.find(x => t.startsWith(x) && (t.length === x.length || /\s|️/.test(t[x.length])));
+    if (!g) return;
+    if ((g === '+' || g === '−') && t.trim().length > 1 && !/^[+−]\s/.test(t)) return;
+    const resto = t.slice(g.length).replace(/^️/, '');
+    const sp = document.createElement('span'); sp.className = 'icoCaja'; sp.innerHTML = svgIcono(GLIFO_ICONO[g]);
+    b.insertBefore(sp, n); n.textContent = resto.trim() ? ' ' + resto.trim() : '';
+    if (!resto.trim() && !b.getAttribute('aria-label') && b.title) b.setAttribute('aria-label', b.title);
   }
-  document.querySelectorAll('#pestanas button').forEach(x => x.classList.remove('activa'));
-  document.querySelectorAll('.panelTab').forEach(x => x.classList.remove('activa'));
-  b.classList.add('activa'); $(b.dataset.tab).classList.add('activa');
-});
-
-(async function iniciar(){
-  try { await Promise.all(FUENTES.filter(f => !['Arial','Georgia','Times New Roman','Courier New','Verdana'].includes(f)).flatMap(f => [document.fonts.load(`400 40px "${f}"`), document.fonts.load(`700 40px "${f}"`)])); } catch(e){}
-  setTimeout(generarVistas, 300);
-  cargarMisPlantillas();
-  if (await abrirCompartidoSiHay()) return;
-  let borrador = null;
-  try { borrador = localStorage.getItem('disenador_borrador'); } catch(e){}
-  if (borrador){
-    try { $('nombreDiseno').value = localStorage.getItem('disenador_nombre') || 'Mi diseño'; } catch(e){}
-    cargarJSON(borrador, true, () => toast('Se recuperó tu último diseño'));
-  } else {
-    ajustarZoom(); guardarEstado();
-  }
+  const todos = raiz => raiz.querySelectorAll('button').forEach(b => { if (b.matches(ZONAS.split(',').map(z => z.trim() + ' button, ' + z.trim()).join(','))) convertir(b); });
+  todos(document);
+  let pend = false;
+  new MutationObserver(() => { if (pend) return; pend = true; requestAnimationFrame(() => { pend = false; todos(document); }); })
+    .observe(document.body, { childList:true, subtree:true, characterData:true });
 })();
-window.__appLista = true;
 
+/* =========================================================
+   BARRA DE ARRIBA ADAPTABLE: lo que no cabe pasa al menú «Más»
+   ========================================================= */
+(function(){
+  const barra = $('barra'); if (!barra) return;
+  // agrupar el zoom y deshacer/rehacer para que se muevan juntos
+  const agrupar = (id, els) => { els = els.filter(Boolean); if (!els.length) return null; const g = document.createElement('div'); g.id = id; g.className = 'grupoBarra';
+    els[0].before(g); els.forEach(e => g.appendChild(e)); return g; };
+  const hijos = [...barra.children];
+  const porClick = t => hijos.find(e => e.tagName === 'BUTTON' && (e.getAttribute('onclick') || '').includes(t));
+  agrupar('grupoHist', [$('bDeshacer'), $('bRehacer')]);
+  agrupar('grupoZoom', [porClick('cambiarZoom(-0.1)'), $('zoomTxt'), porClick('cambiarZoom(0.1)')]);
+  hijos.forEach(b => { if (b.tagName === 'BUTTON' && !b.title){ const t = b.textContent.trim(); if (t) { b.title = t; b.setAttribute('aria-label', t); } } });
+  // fabric 5.3.1 usa un valor que el navegador no reconoce y llena la consola de avisos: se corrige
+  try { const f = fabric.Text.prototype._setTextStyles, src = f.toString();
+    if (/(["'])alphabetical\1/.test(src)) fabric.Text.prototype._setTextStyles = (0, eval)('(' + src.replace(/^_setTextStyles\s*\(/, 'function(').replace(/(["'])alphabetical\1/, '"alphabetic"') + ')');
+  } catch (e) {}
+  // botón «Más» y su menú
+  const mas = document.createElement('button'); mas.className = 'tb'; mas.id = 'bMas'; mas.hidden = true;
+  mas.title = 'Más opciones'; mas.setAttribute('aria-label', 'Más opciones'); mas.setAttribute('aria-haspopup', 'true'); mas.setAttribute('aria-expanded', 'false');
+  mas.innerHTML = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01" style="stroke-width:3.2"/></svg><span class="txtMas"> Más</span>';
+  const menu = document.createElement('div'); menu.id = 'menuMas'; menu.setAttribute('role', 'menu'); menu.hidden = true;
+  document.body.appendChild(menu);
+  // prioridad: el número más bajo se va primero al menú
+  const PRIOR = [
+    [e => e.tagName === 'BUTTON' && e.getAttribute('onclick') === "abrirModal('mAyuda')", 1],
+    [e => e.id === 'bAuto', 2], [e => (e.getAttribute('onclick') || '').includes('ajustarLienzoAContenido'), 3],
+    [e => (e.getAttribute('onclick') || '').includes('abrirBuscar'), 4], [e => e.id === 'bInstalar', 5],
+    [e => e.classList.contains('donar'), 6], [e => e.id === 'tamTxt', 7], [e => (e.getAttribute('onclick') || '') === 'nuevoDiseno()', 8],
+    [e => (e.getAttribute('onclick') || '') === 'ajustarZoom()', 9], [e => e.id === 'grupoZoom', 10], [e => e.id === 'bNube', 11],
+    [e => (e.getAttribute('onclick') || '').includes('mCompartir'), 12], [e => (e.getAttribute('onclick') || '').includes('mProyectos'), 13],
+    [e => e.id === 'grupoHist', 14], [e => (e.getAttribute('onclick') || '').includes('mPresentar'), 15]
+  ];
+  const prioridad = e => { for (const [f, p] of PRIOR) if (f(e)) return p; return 0; };
+  const todos = [];        // orden original de la barra
+  const registrar = () => {
+    [...barra.children].forEach(e => {
+      if (todos.includes(e)) return;
+      const prev = e.previousElementSibling, k = todos.indexOf(prev);
+      todos.splice(k >= 0 ? k + 1 : todos.length, 0, e);
+    });
+    // «Más» y «Exportar» siempre al final, a la derecha
+    const exp = todos.find(e => (e.getAttribute('onclick') || '').includes('mExportar'));
+    [mas, exp].forEach(e => { if (!e) return; const k = todos.indexOf(e); if (k >= 0) todos.splice(k, 1); todos.push(e); });
+  };
+  const etiquetar = e => {        // en el menú, los botones de solo ícono muestran su nombre
+    const bs = e.tagName === 'BUTTON' ? [e] : [...e.querySelectorAll('button')];
+    bs.forEach(b => { if (b.id !== 'tamTxt' && !b.querySelector('.etqMenu') && b.title && !(b.textContent || '').replace(/\s/g, '').match(/[\p{L}]{3,}/u)){
+      const s = document.createElement('span'); s.className = 'etqMenu'; s.textContent = ' ' + b.title.replace(/\s*\(.*\)$/, ''); b.appendChild(s); } });
+  };
+  let acomodando = false;
+  function acomodar(){
+    if (acomodando) return; acomodando = true;
+    registrar();
+    todos.forEach(e => barra.appendChild(e));            // todo regresa a la barra en su orden
+    mas.hidden = true; barra.classList.remove('apretada');
+    const cabe = () => barra.scrollWidth <= barra.clientWidth + 1;
+    const lista = todos.filter(e => prioridad(e)).sort((a, b) => prioridad(a) - prioridad(b));
+    if (!cabe()) barra.classList.add('apretada');          // primero se esconde el texto «Guardado…»
+    let i = 0;
+    while (!cabe() && i < lista.length){ mas.hidden = false; menu.appendChild(lista[i]); etiquetar(lista[i]); i++; }
+    [...menu.children].sort((a, b) => todos.indexOf(a) - todos.indexOf(b)).forEach(e => menu.appendChild(e));
+    barra.classList.remove('soloIconos');
+    if (!cabe()) barra.classList.add('soloIconos');        // pantallas muy angostas: Guardar y Exportar solo con ícono
+    acomodando = false;
+  }
+  const abrir = v => {
+    menu.hidden = !v; mas.setAttribute('aria-expanded', v ? 'true' : 'false');
+    if (v){ const r = mas.getBoundingClientRect(); menu.style.top = (r.bottom + 6) + 'px';
+      if (innerWidth < 560){ menu.style.left = '8px'; menu.style.right = '8px'; menu.style.maxWidth = 'none'; }
+      else { menu.style.left = 'auto'; menu.style.right = Math.max(8, innerWidth - r.right) + 'px'; menu.style.maxWidth = Math.max(240, r.right - 8) + 'px'; }
+      const f = menu.querySelector('button'); f && f.focus({ preventScroll:true }); }
+  };
+  mas.onclick = e => { e.stopPropagation(); abrir(menu.hidden); };
+  menu.addEventListener('click', e => { if (e.target.closest('button') && !e.target.closest('#grupoZoom')) abrir(false); });
+  document.addEventListener('click', e => { if (!menu.hidden && !menu.contains(e.target) && e.target !== mas) abrir(false); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !menu.hidden){ abrir(false); mas.focus(); } });
+  let t = null; const pedir = () => { clearTimeout(t); t = setTimeout(() => { abrir(false); acomodar(); }, 60); };
+  addEventListener('resize', pedir);
+  new MutationObserver(ms => { if (!acomodando && ms.some(m => [...m.addedNodes].some(n => n.nodeType === 1 && n.parentNode === barra && !todos.includes(n)))) pedir(); })
+    .observe(barra, { childList:true });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(pedir);
+  acomodar(); setTimeout(acomodar, 800); setTimeout(acomodar, 2500);
+  window.acomodarBarra = acomodar;
+})();
+
+/* =========================================================
+   BANCO DE FOTOS E ÍCONOS GRATIS
+   ========================================================= */
+EXTRA.push('credito');
+const API_FOTOS = 'https://api.openverse.org/v1/images/';
+const API_ICONOS = 'https://api.iconify.design/';
+const TRAD_ICONOS = { casa:'home', hogar:'home', libro:'book', escuela:'school', balanza:'scale', justicia:'scale', ley:'gavel', mazo:'gavel', persona:'user', usuario:'user',
+  gente:'users', grupo:'users', corazon:'heart', 'corazón':'heart', estrella:'star', telefono:'phone', 'teléfono':'phone', correo:'mail', carta:'mail', calendario:'calendar',
+  reloj:'clock', dinero:'money', pago:'credit-card', tarjeta:'credit-card', carrito:'cart', compra:'shopping', tienda:'store', comida:'food', cafe:'coffee', 'café':'coffee',
+  ubicacion:'map-pin', 'ubicación':'map-pin', mapa:'map', buscar:'search', lupa:'search', flecha:'arrow', foto:'camera', camara:'camera', 'cámara':'camera', musica:'music',
+  'música':'music', video:'video', chat:'chat', mensaje:'message', whatsapp:'whatsapp', facebook:'facebook', instagram:'instagram', tiktok:'tiktok', candado:'lock',
+  seguridad:'shield', escudo:'shield', computadora:'computer', celular:'smartphone', idea:'lightbulb', foco:'lightbulb', grafica:'chart', 'gráfica':'chart', documento:'file',
+  archivo:'file', carpeta:'folder', lapiz:'pencil', 'lápiz':'pencil', basura:'trash', ajustes:'settings', estudiante:'student', maestro:'teacher', policia:'police', 'policía':'police',
+  carro:'car', auto:'car', avion:'plane', 'avión':'plane', sol:'sun', luna:'moon', arbol:'tree', 'árbol':'tree', flor:'flower', perro:'dog', gato:'cat', regalo:'gift', fiesta:'party' };
+let fotosEstado = { q:'', pag:1 };
+async function buscarFotos(mas){
+  const q = $('buscaFoto').value.trim(); if (!q) return toast('Escribe qué foto buscas');
+  if (!mas) fotosEstado = { q, pag:1 }; else fotosEstado.pag++;
+  const cont = $('resFotos'); if (!mas) cont.innerHTML = '<p class="hint">Buscando…</p>';
+  try {
+    const u = API_FOTOS + '?q=' + encodeURIComponent(q) + '&page_size=20&page=' + fotosEstado.pag + ($('fotoComercial').checked ? '&license_type=commercial' : '') + '&mature=false';
+    const r = await fetch(u); if (!r.ok) throw new Error(r.status === 429 ? 'Demasiadas búsquedas seguidas, espera un minuto' : 'El banco de fotos no respondió (' + r.status + ')');
+    const d = await r.json();
+    if (!mas) cont.innerHTML = '';
+    if (!d.results || !d.results.length){ if (!mas) cont.innerHTML = '<p class="hint">No encontré fotos. Prueba con otra palabra (a veces funciona mejor en inglés).</p>'; $('masFotos').hidden = true; return; }
+    d.results.forEach(f => {
+      const im = document.createElement('img'); im.loading = 'lazy'; im.alt = f.title || q; im.src = f.thumbnail || f.url;
+      im.title = (f.title || '') + (f.creator ? ' · ' + f.creator : '') + ' · ' + licenciaTexto(f);
+      im.onclick = () => usarFoto(f);
+      cont.appendChild(im);
+    });
+    $('masFotos').hidden = !(d.page_count > fotosEstado.pag);
+  } catch (e) { if (!mas) cont.innerHTML = ''; toast(e.message.includes('fetch') ? 'Sin conexión con el banco de fotos. Revisa tu internet.' : e.message); }
+}
+const licenciaTexto = f => (f.license === 'cc0' ? 'CC0 (dominio público)' : f.license === 'pdm' ? 'Dominio público' : 'CC ' + String(f.license || '').toUpperCase() + ' ' + (f.license_version || ''));
+async function usarFoto(f){
+  cargando(true);
+  try {
+    let blob = null;
+    for (const u of [f.thumbnail ? f.thumbnail.replace(/\/?$/, '/') + '?full_size=true' : null, f.url, f.thumbnail].filter(Boolean)){
+      try { const r = await fetch(u); if (r.ok){ const b = await r.blob(); if (b.type.startsWith('image/')){ blob = b; break; } } } catch (e) {}
+    }
+    if (!blob) throw new Error('No se pudo descargar esa foto. Prueba con otra.');
+    const datos = await blobADataURL(blob);
+    const url = await new Promise(ok => reducirImagen(datos, 2000, ok));
+    const credito = 'Foto: ' + (f.title ? '«' + f.title + '» ' : '') + (f.creator ? 'de ' + f.creator + ' ' : '') + '(' + licenciaTexto(f).trim() + ')' + (f.foreign_landing_url ? ' — ' + f.foreign_landing_url : '');
+    const sel = activo();
+    if (sel && (sel.marco || sel.marcoVacio)){ llenarMarco(sel, url); }
+    else fabric.Image.fromURL(url, img => {
+      const k = Math.min((W * 0.6) / img.width, (H * 0.6) / img.height, 1);
+      img.set({ left:W / 2, top:H / 2, originX:'center', originY:'center', scaleX:k, scaleY:k, fx:{ b:0, c:0, s:0, bl:0, gris:false, sepia:false, inv:false } });
+      img.credito = f.license === 'cc0' || f.license === 'pdm' ? '' : credito;
+      agregar(img, 'Foto'); renderCapas(); guardarEstado();
+    });
+    miniatura(url);
+    toast(f.license === 'cc0' || f.license === 'pdm' ? 'Foto agregada (libre, no necesitas dar crédito).' : 'Foto agregada. Esta licencia pide dar crédito: selecciónala y pulsa «© Crédito».');
+  } catch (e) { toast(e.message); }
+  finally { cargando(false); }
+}
+function agregarCredito(){
+  const o = activo(); if (!o || !o.credito) return;
+  const r = o.getBoundingRect(true, true);
+  const t = new fabric.Textbox(o.credito.replace(/ — https?:\/\/\S+$/, ''), { left:r.left, top:r.top + r.height + 6, width:Math.max(160, r.width), fontSize:Math.max(10, Math.round(Math.min(W, H) / 90)),
+    fontFamily:'Inter', fill:'#6b7280', name:'Crédito de la foto' });
+  agregar(t, 'Crédito de la foto'); renderCapas(); guardarEstado();
+}
+// ---------- íconos ----------
+async function buscarIconos(){
+  let q = $('buscaIcono').value.trim().toLowerCase(); if (!q) return toast('Escribe qué ícono buscas');
+  q = q.split(/\s+/).map(w => TRAD_ICONOS[w] || w).join(' ');
+  const cont = $('resIconos'); cont.innerHTML = '<p class="hint">Buscando…</p>';
+  try {
+    const pre = $('estiloIcono').value;
+    const r = await fetch(API_ICONOS + 'search?query=' + encodeURIComponent(q) + '&limit=96' + (pre ? '&prefixes=' + pre : ''));
+    if (!r.ok) throw new Error('El banco de íconos no respondió (' + r.status + ')');
+    const d = await r.json(); cont.innerHTML = '';
+    if (!d.icons || !d.icons.length){ cont.innerHTML = '<p class="hint">No encontré íconos. Prueba en inglés (por ejemplo «book», «heart», «school»).</p>'; return; }
+    d.icons.forEach(n => {
+      const [p, nom] = n.split(':'), info = (d.collections || {})[p] || {};
+      const b = document.createElement('button'); b.className = 'icoBanco'; b.title = nom.replace(/-/g, ' ') + ' · ' + (info.name || p) + (info.license ? ' (' + info.license.title + ')' : '');
+      b.setAttribute('aria-label', nom.replace(/-/g, ' '));
+      b.innerHTML = `<img loading="lazy" alt="" src="${API_ICONOS}${p}/${nom}.svg?height=40">`;
+      b.onclick = () => usarIcono(p, nom);
+      cont.appendChild(b);
+    });
+  } catch (e) { cont.innerHTML = ''; toast(e.message.includes('fetch') ? 'Sin conexión con el banco de íconos. Revisa tu internet.' : e.message); }
+}
+async function usarIcono(p, nom){
+  try {
+    const color = $('colorIcono').value;
+    const r = await fetch(`${API_ICONOS}${p}/${nom}.svg?height=240`); if (!r.ok) throw new Error('No se pudo descargar el ícono');
+    const svg = (await r.text()).replace(/currentColor/g, color);
+    fabric.loadSVGFromString(svg, (objs, opt) => {
+      const o = fabric.util.groupSVGElements(objs, opt);
+      const s = Math.min(W, H) * 0.18 / Math.max(o.width, o.height);
+      o.set({ left:W / 2, top:H / 2, originX:'center', originY:'center', scaleX:s, scaleY:s, name:'Ícono ' + nom.replace(/-/g, ' ') });
+      agregar(o, 'Ícono'); renderCapas(); guardarEstado();
+    });
+  } catch (e) { toast(e.message); }
+}
+// ---------- botones y panel ----------
+$('bBuscaFoto').onclick = () => buscarFotos(false);
+$('buscaFoto').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') buscarFotos(false); });
+$('masFotos').onclick = () => buscarFotos(true);
+$('bBuscaIcono').onclick = buscarIconos;
+$('buscaIcono').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') buscarIconos(); });
+(function(){
+  const b = document.createElement('button'); b.className = 'pb'; b.id = 'bCredito'; b.hidden = true; b.title = 'Pone debajo de la foto el nombre del autor y la licencia'; b.textContent = '© Crédito';
+  b.onclick = agregarCredito;
+  const ref = $('bEnlace'); if (ref) ref.after(b);
+})();
+alActualizarPanel(function(){
+  if (generandoVista) return;
+  const o = activo(); $('bCredito').hidden = !(o && o.credito);
+});
+/* =========================================================
+   QUITAR FONDO CON IA (funciona en tu navegador; la foto no se sube a ningún lado)
+   ========================================================= */
+const URL_TRANSFORMERS = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1';
+const MODELO_FONDO = 'd30social/ormbg-ortweb';   // ORMBG, licencia Apache-2.0, ~84 MB la primera vez
+let segmentadorFondo = null;
+function avisoProgresoIA(txt, pct){
+  let a = $('progresoIA');
+  if (txt === null){ if (a) a.remove(); return; }
+  if (!a){ a = document.createElement('div'); a.id = 'progresoIA'; a.setAttribute('role', 'status'); a.innerHTML = '<div class="txt"></div><div class="barraIA"><i></i></div>'; document.body.appendChild(a); }
+  a.querySelector('.txt').textContent = txt; a.querySelector('i').style.width = Math.max(2, Math.min(100, pct || 0)) + '%';
+}
+async function cargarSegmentador(){
+  if (segmentadorFondo) return segmentadorFondo;
+  avisoProgresoIA('Preparando la IA… (solo la primera vez descarga unos 85 MB; después queda guardada)', 2);
+  const tf = await import(/* webpackIgnore: true */ URL_TRANSFORMERS);
+  tf.env.allowLocalModels = false;
+  const archivos = {};
+  const progreso = p => {
+    if (p.status === 'progress' && p.total){ archivos[p.file] = [p.loaded, p.total];
+      const t = Object.values(archivos).reduce((s, [l, tt]) => [s[0] + l, s[1] + tt], [0, 0]);
+      avisoProgresoIA('Descargando la IA para quitar fondos… ' + (t[0] / 1048576).toFixed(0) + ' de ' + (t[1] / 1048576).toFixed(0) + ' MB', 5 + 85 * t[0] / t[1]); }
+  };
+  const intentos = navigator.gpu ? [{ device:'webgpu', dtype:'fp16' }, { device:'wasm', dtype:'fp16' }] : [{ device:'wasm', dtype:'fp16' }];
+  let ultimo;
+  for (const op of intentos){
+    try { segmentadorFondo = await tf.pipeline('image-segmentation', MODELO_FONDO, { ...op, progress_callback:progreso }); segmentadorFondo.tf = tf; return segmentadorFondo; }
+    catch (e) { ultimo = e; console.warn('IA de fondo con', op.device, 'falló:', e); }
+  }
+  throw ultimo || new Error('No se pudo preparar la IA');
+}
+async function quitarFondoIA(){
+  const img = imagenActiva(); if (!img) return;
+  terminarRecorte(false);
+  try {
+    const seg = await cargarSegmentador();
+    avisoProgresoIA('Buscando lo principal de la foto…', 92);
+    const src = img._originalElement || img._element;
+    const nw = src.naturalWidth || src.width, nh = src.naturalHeight || src.height;
+    const k = Math.min(1, 2400 / Math.max(nw, nh)), cw = Math.round(nw * k), ch = Math.round(nh * k);
+    const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+    const g = cv.getContext('2d', { willReadFrequently:true }); g.drawImage(src, 0, 0, cw, ch);
+    try { g.getImageData(0, 0, 1, 1); } catch (e) { throw new Error('Esta imagen viene de otro sitio y no se puede editar. Descárgala y súbela desde tu computadora.'); }
+    const blob = await new Promise(ok => cv.toBlob(ok, 'image/png'));
+    const url = URL.createObjectURL(blob);
+    let salida; try { salida = await seg(url); } finally { URL.revokeObjectURL(url); }
+    const m = (Array.isArray(salida) ? salida[0] : salida).mask;
+    // la máscara (gris) se vuelve la transparencia de la foto
+    const mc = document.createElement('canvas'); mc.width = m.width; mc.height = m.height;
+    const mg = mc.getContext('2d'), md = mg.createImageData(m.width, m.height), ch1 = m.channels || 1;
+    for (let i = 0, j = 0; i < m.width * m.height; i++, j += ch1){ const a = m.data[j]; md.data[i * 4 + 3] = a; }
+    mg.putImageData(md, 0, 0);
+    g.globalCompositeOperation = 'destination-in'; g.imageSmoothingQuality = 'high'; g.drawImage(mc, 0, 0, cw, ch); g.globalCompositeOperation = 'source-over';
+    // ¿quedó algo?
+    const d = g.getImageData(0, 0, cw, ch).data; let opacos = 0; for (let i = 3; i < d.length; i += 16) if (d[i] > 30) opacos++;
+    if (opacos < (cw * ch / 4) * 0.01) throw new Error('No encontré una persona u objeto claro en la foto. Prueba con «🪄 Quitar fondo».');
+    const antes = { c:img.getCenterPoint(), cropX:img.cropX || 0, cropY:img.cropY || 0, width:img.width, height:img.height, sx:img.scaleX, sy:img.scaleY };
+    await new Promise(ok => img.setSrc(cv.toDataURL('image/png'), ok));
+    img.set({ cropX:antes.cropX * k, cropY:antes.cropY * k, width:antes.width * k, height:antes.height * k, scaleX:antes.sx / k, scaleY:antes.sy / k });
+    if (img.filters && img.filters.length) img.applyFilters();
+    img.setPositionByOrigin(antes.c, 'center', 'center'); img.setCoords(); img.dirty = true;
+    canvas.requestRenderAll(); guardarEstado(); actualizarPanel();
+    avisoProgresoIA(null); toast('¡Listo! Fondo quitado. Si algo quedó mal, deshaz con Ctrl+Z.');
+  } catch (e) {
+    console.error(e); avisoProgresoIA(null);
+    toast((e && e.message && /fetch|network|Failed to/.test(e.message)) ? 'No se pudo descargar la IA. Revisa tu internet e intenta de nuevo.' : 'No se pudo quitar el fondo: ' + (e.message || e));
+  }
+}
 </script>

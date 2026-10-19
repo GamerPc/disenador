@@ -474,4 +474,17 @@
   @media (max-width:560px){ #bMas .txtMas{display:none} }
   #barra.soloIconos > .tb{font-size:0;padding-left:10px;padding-right:10px}
   #barra.soloIconos > .tb .ico{width:20px;height:20px}
-  #barra.soloIconos input.nombre{min-width:72px}
+  #barra.soloIconos input.nombre{min-width:72px}  /* ---------- banco de fotos e íconos ---------- */
+  .filaBusca{display:flex;gap:6px;align-items:center;margin:4px 0}
+  .filaBusca .buscador{flex:1;min-width:0;margin:0}
+  .gridBanco{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:6px 0}
+  .gridBanco img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;cursor:pointer;background:#1b2030;display:block}
+  .gridBanco img:hover{outline:2px solid var(--neon,#19c8ff)}
+  .gridBanco.iconos{grid-template-columns:repeat(6,1fr)}
+  .icoBanco{aspect-ratio:1;border:1px solid var(--borde,#2a3140);border-radius:8px;background:#f8fafc;display:flex;align-items:center;justify-content:center;padding:6px;cursor:pointer;min-width:0}
+  .icoBanco:hover{outline:2px solid var(--neon,#19c8ff)}
+  .icoBanco img{width:100%;height:100%;object-fit:contain;background:none;aspect-ratio:auto}
+  #bCredito[hidden],#bFondoIA[hidden]{display:none}
+  #progresoIA{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);z-index:250;background:#0b1220;color:#e8f6ff;border:1px solid #19c8ff;border-radius:14px;padding:12px 16px;width:min(420px,92vw);box-shadow:0 0 18px rgba(25,200,255,.35);font-size:13px}
+  #progresoIA .barraIA{height:8px;border-radius:4px;background:#1b2030;margin-top:8px;overflow:hidden}
+  #progresoIA .barraIA i{display:block;height:100%;width:0;background:linear-gradient(90deg,#19c8ff,#a855f7);transition:width .2s}

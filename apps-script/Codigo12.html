@@ -224,7 +224,9 @@ const escH = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace
 function htmlDeTexto(o, bx, by){
   const m = o.calcTransformMatrix(); m[4] -= bx; m[5] -= by;
   const fs = o.fontSize, lh = fs * o.lineHeight * o._fontSizeMult;
-  const lineas = (o.textLines || String(o.text).split('\n')).map(l => escH(l).replace(/ /g, '&#32;') || '&nbsp;');
+  const crudas = o.textLines || String(o.text).split('\n');
+  const lineas = crudas.map(l => escH(l).replace(/ /g, '&#32;') || '&nbsp;');
+  const duro = i => o.type !== 'textbox' || !o.isEndOfWrapping || o.isEndOfWrapping(i);
   const sombra = o.shadow ? `text-shadow:${o.shadow.offsetX || 0}px ${o.shadow.offsetY || 0}px ${o.shadow.blur || 0}px ${o.shadow.color};` : '';
   const borde = o.stroke && o.strokeWidth ? `-webkit-text-stroke:${o.strokeWidth}px ${o.stroke};paint-order:stroke fill;` : '';
   const deco = [o.underline && 'underline', o.linethrough && 'line-through', o.overline && 'overline'].filter(Boolean).join(' ');
@@ -233,7 +235,16 @@ function htmlDeTexto(o, bx, by){
     `text-align:${o.textAlign === 'justify' ? 'justify' : o.textAlign};letter-spacing:${(o.charSpacing || 0) / 1000}em;white-space:nowrap;` +
     (deco ? `text-decoration:${deco};` : '') + (o.backgroundColor ? `background:${o.backgroundColor};` : '') + sombra + borde +
     (o.opacity < 1 ? `opacity:${o.opacity};` : '');
-  return `<div class="t" style="${css}">${lineas.join('<br>')}</div>`;
+  return `<div class="t" style="${css}">${lineas.map((l, i) => l + (i < lineas.length - 1 ? (duro(i) ? '<br>' : ' <br class="w">') : '')).join('')}</div>`;
+}
+function rectSimple(o){
+  return o.type === 'rect' && typeof o.fill === 'string' && !((o.angle || 0) % 360) && !o.skewX && !o.skewY && !o.clipPath && !(o.stroke && o.stroke.toLive);
+}
+function htmlDeRect(o){
+  const sx = o.scaleX || 1, sy = o.scaleY || 1, sw = o.stroke && o.strokeWidth ? o.strokeWidth * (o.strokeUniform ? 1 : sx) : 0;
+  const sh = o.shadow ? `box-shadow:${o.shadow.offsetX || 0}px ${o.shadow.offsetY || 0}px ${o.shadow.blur || 0}px ${o.shadow.color};` : '';
+  return `<div class="r" style="position:absolute;inset:0;background:${o.fill};border-radius:${(o.rx || 0) * sx}px/${(o.ry || o.rx || 0) * sy}px;` +
+    (sw ? `border:${sw}px ${o.strokeDashArray ? 'dashed' : 'solid'} ${o.stroke};` : '') + sh + (o.opacity < 1 ? `opacity:${o.opacity};` : '') + '"></div>';
 }
 function svgDeObjeto(o, r){
   const svg = o.toSVG();
@@ -255,14 +266,16 @@ async function paginaAHTML(json, num, ctx){
   }
   Object.assign(ctx.fuentes, fuentesDe(sc.getObjects()));
   const animados = sc.getObjects().filter(o => o.anim && o.anim.tipo && o.anim.tipo !== 'ninguna').sort((a, b) => (a.anim.orden || 0) - (b.anim.orden || 0));
-  const partes = [];
-  let primerCambio = null;
+  const items = [];
+  let primerCambio = null, idx = 0;
   for (const o of sc.getObjects()){
+    idx++;
     if (o.visible === false) continue;
     if (o.marcoVacio){ ctx.vacios++; continue; }
     if (o.type === 'conector' && (o.opacity === 0)) continue;
-    const r = o.modelo3d ? o.getBoundingRect(true, true) : cajaDe(o);
-    let dentro;
+    const esRect = rectSimple(o);
+    const r = o.modelo3d || esRect ? o.getBoundingRect(true, true) : cajaDe(o);
+    let dentro, tipo = 'otro';
     if (o.modelo3d){
       const m = o.modelo3d; ctx.usa3D = true;
       const at = [`src="${escH(m.src)}"`, `camera-orbit="${escH(m.camara)}"`, 'shadow-intensity="1"', 'exposure="1.1"', 'interaction-prompt="none"', 'camera-controls', 'disable-zoom', 'touch-action="pan-y"'];
@@ -278,26 +291,83 @@ async function paginaAHTML(json, num, ctx){
         o.variantes.map((v, i) => `<img src="${v.src}" alt="${escH(v.nombre || 'Producto ' + (i + 1))}" class="${i ? '' : 'on'}">`).join('') +
         `<button class="ant" aria-label="Anterior">‹</button><button class="sig" aria-label="Siguiente">›</button><div class="pts">${o.variantes.map((v, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div></div>`;
       if (!primerCambio) primerCambio = o.variantes[0].fondo;
-    } else if (textoHTMLSimple(o)) dentro = htmlDeTexto(o, r.left, r.top);
+    } else if (textoHTMLSimple(o)){ dentro = htmlDeTexto(o, r.left, r.top); tipo = 'texto'; }
+    else if (esRect){ dentro = htmlDeRect(o); tipo = 'rect'; }
     else dentro = svgDeObjeto(o, r);
+    if (o.modelo3d) tipo = '3d'; else if (o.variantes) tipo = 'camb';
     const a = o.anim && ANIM_CSS[o.anim.tipo] ? o.anim : null;
     const retraso = a ? Math.min(1500, (a.retraso || 0) + Math.max(0, animados.indexOf(o)) * 110) : 0;
-    const attrsO = [`class="o"`, `style="left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px"`];
-    if (o.scrollFx) attrsO.push(`data-scroll="${o.scrollFx}"`);
     let html = `<div class="h${o.hover ? ' h-' + o.hover : ''}">${dentro}</div>`;
     html = `<div class="a${a ? ' a-' + ANIM_CSS[a.tipo] : ''}"${a ? ` style="--d:${a.duracion || 700}ms;--r:${retraso}ms"` : ''}>${html}</div>`;
     if (o.enlace){
       const href = o.enlace.startsWith('p:') ? '#p' + o.enlace.slice(2) : o.enlace;
       html = `<a href="${escH(href)}"${o.enlace.startsWith('p:') ? '' : ' target="_blank" rel="noopener"'} class="lnk">${html}</a>`;
     }
-    partes.push(`<div ${attrsO.join(' ')}>${html}</div>`);
+    const fs = tipo === 'texto' ? o.fontSize * (o.scaleY || 1) : 0;
+    const rt = o.getBoundingRect(true, true);   // caja justa, sin margen para sombras
+    items.push({ r:{ left:Math.round(r.left), top:Math.round(r.top), width:Math.round(r.width), height:Math.round(r.height) }, rt, html, tipo, idx, fs,
+      al:o.textAlign || 'left', scrollFx:o.scrollFx || '', hijos:[], padre:null, enlace:!!o.enlace });
   }
   sc.dispose();
-  return `<section class="pag" id="p${num}" data-w="${W}" data-h="${H}" style="--w:${W};--h:${H};background:${primerCambio || fondo}">` +
+  // ¿qué está dentro de qué? (una tarjeta y su texto, un botón y su letrero…)
+  const dentroDe = (a, b) => a.rt.left >= b.rt.left - 3 && a.rt.top >= b.rt.top - 3 && a.rt.left + a.rt.width <= b.rt.left + b.rt.width + 3 && a.rt.top + a.rt.height <= b.rt.top + b.rt.height + 3;
+  const area = x => Math.max(1, x.rt.width * x.rt.height);
+  items.forEach(c => {
+    let mejor = null;
+    items.forEach(p => {
+      if (p === c || p.idx > c.idx || p.tipo === 'texto' || p.tipo === '3d' || p.tipo === 'camb') return;
+      if (area(p) < area(c) * 1.2 || !dentroDe(c, p)) return;
+      if (!mejor || area(p) < area(mejor)) mejor = p;
+    });
+    if (mejor){ c.padre = mejor; mejor.hijos.push(c); }
+  });
+  // orden de lectura (corte en X y Y): primero renglones separados por espacios en blanco; dentro de cada uno, columnas de izquierda a derecha
+  const ordenar = lista => {
+    if (lista.length <= 1) return lista.slice();
+    const caja = x => x.rt;
+    const cortar = (eje) => {
+      const ini = eje === 'y' ? (x => caja(x).top) : (x => caja(x).left), tam = eje === 'y' ? (x => caja(x).height) : (x => caja(x).width);
+      const l = lista.slice().sort((a, b) => ini(a) - ini(b)), grupos = []; let g = [], fin = -Infinity;
+      l.forEach(x => { if (g.length && ini(x) >= fin - 2){ grupos.push(g); g = []; } g.push(x); fin = Math.max(fin, ini(x) + tam(x)); });
+      grupos.push(g); return grupos;
+    };
+    let gr = cortar('y');
+    if (gr.length > 1) return gr.flatMap(ordenar);
+    gr = cortar('x');
+    if (gr.length > 1) return gr.flatMap(ordenar);
+    return lista.slice().sort((a, b) => (caja(a).top - caja(b).top) || (caja(a).left - caja(b).left));
+  };
+  // cosas pequeñas en el mismo renglón (botones, tallas, colores, íconos) se quedan juntas en el celular
+  const chico = x => x.rt.height <= 90 && x.rt.width <= (x.tipo === 'texto' ? 220 : W * 0.3);
+  const juntar = (lista, base) => {
+    const out = []; let run = [];
+    const soltar = () => { if (run.length >= 2) out.push('<div class="filaM">' + run.map(x => nodo(x, base)).join('') + '</div>'); else run.forEach(x => out.push(nodo(x, base))); run = []; };
+    lista.forEach(x => {
+      const u = run[run.length - 1];
+      const mismo = u && chico(x) && Math.min(u.rt.top + u.rt.height, x.rt.top + x.rt.height) - Math.max(u.rt.top, x.rt.top) > Math.min(u.rt.height, x.rt.height) * 0.5;
+      if (chico(x) && (!u || mismo)) run.push(x); else { soltar(); if (chico(x)) run.push(x); else out.push(nodo(x, base)); }
+    });
+    soltar(); return out.join('');
+  };
+  const nodo = (x, base) => {
+    const cls = ['o'], st = [`left:${x.r.left - base.left}px`, `top:${x.r.top - base.top}px`, `width:${x.r.width}px`, `height:${x.r.height}px`, `z-index:${x.idx}`];
+    if (x.hijos.length){ cls.push('cont'); if (x.r.height <= 140 && x.r.width / x.r.height > 2.5) cls.push('fila');
+      st.push(`--pad:${Math.round(Math.min(18, x.r.height * 0.22, x.r.width * 0.08))}px`); }
+    else if (x.tipo === 'texto'){ cls.push('tx'); if (!x.enlace) cls.push('sinClic');
+      const f = x.fs, m = f >= 40 ? Math.max(26, f * 0.55) : f >= 22 ? Math.max(18, f * 0.75) : Math.max(13, f * 0.95);
+      st.push(`--fsm:${Math.round(m)}px`, `--al:${x.al === 'center' ? 'center' : x.al === 'right' ? 'flex-end' : 'stretch'}`); }
+    else { const w0 = x.r.width, mw = w0 >= W * 0.5 || x.tipo === '3d' || x.tipo === 'camb' ? '100%' : Math.round(Math.max(Math.min(w0, 64), w0 * 0.62)) + 'px';
+      st.push(`--mw:${mw}`, `--ar:${x.r.width}/${Math.max(1, x.r.height)}`); }
+    const at = x.scrollFx ? ` data-scroll="${x.scrollFx}"` : '';
+    return `<div class="${cls.join(' ')}" style="${st.join(';')}"${at}>${x.html}${juntar(ordenar(x.hijos), x.r)}</div>`;
+  };
+  const partes = [juntar(ordenar(items.filter(x => !x.padre)), { left:0, top:0 })];
+  const flujo = W > 900 && ctx.modo !== 'pantallas';
+  return `<section class="pag${flujo ? ' flujo' : ''}" id="p${num}" data-w="${W}" data-h="${H}" style="--w:${W};--h:${H};background:${primerCambio || fondo}">` +
     `<div class="lienzo" style="width:${W}px;height:${H}px${fondoImg ? `;background:url(${fondoImg}) center/cover` : ''}">${partes.join('\n')}</div></section>`;
 }
 async function crearHTML(lista, modo){
-  const ctx = { fuentes:{}, vacios:0, usa3D:false, usaCambiador:false };
+  const ctx = { fuentes:{}, vacios:0, usa3D:false, usaCambiador:false, modo };
   const secciones = []; for (const it of lista) secciones.push(await paginaAHTML(it.p, it.i + 1, ctx));
   const fams = Object.entries(ctx.fuentes);
   let cssFuentes = '', linkFuentes = '';
@@ -334,6 +404,26 @@ model-viewer::part(default-progress-bar){display:none}
 .colores3d{position:absolute;bottom:-10px;left:0;right:0;display:flex;gap:14px;justify-content:center}.colores3d button{width:38px;height:38px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.25);transition:transform .2s}.colores3d button.on{transform:scale(1.25);outline:2px solid #111;outline-offset:2px}
 ${modo === 'pantallas' ? '.pag{display:none;margin:0 auto}.pag.activa{display:block}' : ''}
 @media (prefers-reduced-motion:reduce){.a[class*="a-"]{opacity:1;transform:none;transition:none}.h-latido{animation:none}}
+/* en el celular, las páginas anchas se reacomodan en una columna */
+@media (max-width:700px){
+ .pag.flujo{height:auto!important}
+ .pag.flujo>.lienzo{position:relative;left:auto;top:auto;transform:none!important;width:auto!important;height:auto!important;display:flex;flex-direction:column;gap:16px;padding:28px 18px 36px}
+ .pag.flujo .o{position:relative!important;left:auto!important;top:auto!important;width:auto!important;height:auto!important;transform:none!important;z-index:auto!important;will-change:auto}
+ .pag.flujo .o:not(.cont):not(.tx){width:min(100%,var(--mw))!important;aspect-ratio:var(--ar);align-self:center}
+ .pag.flujo .o.tx{align-self:var(--al,stretch)}.pag.flujo .o.tx .a,.pag.flujo .o.tx .h,.pag.flujo .o.tx a.lnk{height:auto}
+ .pag.flujo .o.tx .t{position:static!important;transform:none!important;width:auto!important;height:auto!important;white-space:normal!important;font-size:var(--fsm)!important;line-height:1.3!important;letter-spacing:normal!important;overflow-wrap:anywhere}
+ .pag.flujo .o.tx .t br.w{display:none}
+ .pag.flujo .o.cont{display:flex;flex-direction:column;gap:10px;padding:var(--pad,14px)}
+ .pag.flujo .o.cont>.a,.pag.flujo .o.cont>a.lnk{position:absolute;inset:0;width:auto;height:auto;z-index:0}
+ .pag.flujo .o.cont>.o{z-index:1!important}
+ .pag.flujo .o.cont.fila{flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 14px}
+ .pag.flujo .o.fila>.o.tx{align-self:center}
+ .pag.flujo .filaM{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center}
+ .pag.flujo .filaM>.o:not(.cont):not(.tx){width:var(--mw)!important;max-width:100%}
+ .pag.flujo .filaM>.o.cont{min-width:44px}
+ .pag.flujo .o.fila>.o:not(.cont):not(.tx){width:min(100%,var(--mw),48px)!important}
+}
+.filaM{display:contents}.o.sinClic{pointer-events:none}.o.sinClic .o{pointer-events:auto}
 </style></head><body>
 ${secciones.join('\n')}
 <script>
@@ -350,15 +440,17 @@ revelar();
 var conScroll=[].slice.call(document.querySelectorAll('.o[data-scroll]'));
 var mvs=[].slice.call(document.querySelectorAll('model-viewer'));
 function cl(v,a,b){return Math.max(a,Math.min(b,v));}
+function progresoElem(el){var r=el.getBoundingClientRect(),vh=innerHeight;return cl((vh-r.top)/(vh+r.height),0,1);}
 function progresoSeccion(el){var p=el.closest('.pag'),r=p.getBoundingClientRect(),vh=innerHeight;return r.height<=vh?cl((vh-r.top)/(vh+r.height),0,1):cl(-r.top/(r.height-vh),0,1);}
+var mqFlujo=matchMedia('(max-width:700px)');
 function scroll(){var vh=innerHeight;
- conScroll.forEach(function(o){var p=o.closest('.pag'),k=p._k||1,fx=o.dataset.scroll,r=o.getBoundingClientRect(),c=(r.top+r.height/2-vh/2)/vh,t='';
+ conScroll.forEach(function(o){if(mqFlujo.matches&&o.closest('.pag.flujo')){o.style.transform='';return;}var p=o.closest('.pag'),k=p._k||1,fx=o.dataset.scroll,r=o.getBoundingClientRect(),c=(r.top+r.height/2-vh/2)/vh,t='';
   if(fx==='paralaje')t='translateY('+(c*-120)+'px)';
   else if(fx==='girar')t='rotate('+(c*-90)+'deg)';
   else if(fx==='acercar')t='scale('+cl(1.25-Math.abs(c)*0.6,0.6,1.25)+')';
   else if(fx==='fijo'){var pr=p.getBoundingClientRect(),top=parseFloat(o.style.top),h=parseFloat(o.style.height),H=+p.dataset.h;var desea=(-pr.top)/k+(vh/k-h)/2;t='translateY('+(cl(desea,top,H-h)-top)+'px)';}
   o.style.transform=t;});
- mvs.forEach(function(mv){var fx=mv.dataset.scroll;if(!fx||fx==='no')return;var p=progresoSeccion(mv);
+ mvs.forEach(function(mv){var fx=mv.dataset.scroll;if(!fx||fx==='no')return;var p=(mqFlujo.matches&&mv.closest('.pag.flujo'))?progresoElem(mv):progresoSeccion(mv);
   if((fx==='girar'||fx==='ambos')&&mv._orb){mv.cameraOrbit=(mv._orb[0]+p*360)+'deg '+mv._orb[1]+' '+mv._orb[2];}
   if((fx==='animar'||fx==='ambos')&&mv.duration){mv.currentTime=Math.min(mv.duration-0.001,p*mv.duration*1.15);}});
 }
@@ -375,6 +467,7 @@ function pintar(mv,hex){if(!mv.model)return;var mats=mv.model.materials,m=mv.dat
  c.querySelector('.ant').addEventListener('click',function(e){e.preventDefault();a(i-1);});c.querySelector('.sig').addEventListener('click',function(e){e.preventDefault();a(i+1);});
  pts.forEach(function(p,j){p.addEventListener('click',function(){a(j);});});
  var x0=null;c.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;},{passive:true});c.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.changedTouches[0].clientX-x0;if(Math.abs(dx)>40)a(i+(dx<0?1:-1));x0=null;});});
+if(MODO!=='pantallas'&&pags[0])document.body.style.background=getComputedStyle(pags[pags.length-1]).backgroundColor;
 addEventListener('resize',ajustar);addEventListener('scroll',scroll,{passive:true});ajustar();
 })();
 <\/script>
@@ -474,7 +567,11 @@ const PLANTILLAS_3D = [
     const vs = [['#0ea5e9', '#0369a1', '#e0f2fe', 'Mora azul'], ['#22c55e', '#15803d', '#dcfce7', 'Limón'], ['#f97316', '#c2410c', '#ffedd5', 'Mandarina'], ['#e11d48', '#9f1239', '#ffe4e6', 'Frutos rojos']]
       .map(([c, c2, f, n], i) => ({ src:dibujoProducto(i % 2 ? 'lata' : 'botella', c, c2), fondo:f, nombre:n }));
     FONDO(vs[0].fondo);
-    grupoCambiador(vs, 520, 760).then(g => { g.setPositionByOrigin(new fabric.Point(1000, 560), 'center', 'center'); canvas.add(g); canvas.requestRenderAll(); if (!restaurando) guardarEstado(); });
+    const lienzo = canvas, esVista = generandoVista;   // se guarda a qué lienzo va: si es la vista previa del catálogo, no debe caer en tu diseño
+    grupoCambiador(vs, 520, 760).then(g => {
+      if (!lienzo.contextContainer) return;
+      g.setPositionByOrigin(new fabric.Point(1000, 560), 'center', 'center'); lienzo.add(g); lienzo.requestRenderAll();
+      if (!esVista && lienzo === canvas && !restaurando) guardarEstado(); });
   }}
 ];
 PLANTILLAS_3D.forEach(p => {
@@ -526,145 +623,6 @@ renderCatalogo();
     a.style.visibility = $('lateral') && $('lateral').classList.contains('abierto') ? 'hidden' : ''; };
   new MutationObserver(ajustarFab).observe($('lateral'), { attributes:true, attributeFilter:['class'] });
   addEventListener('resize', ajustarFab); setInterval(ajustarFab, 1500); ajustarFab();
-})();
-
-/* =========================================================
-   ÍCONOS DIBUJADOS (se ven iguales en cualquier celular o computadora)
-   ========================================================= */
-const ICONOS_UI = {
-  carpeta:'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
-  guardar:'M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM8 3v5h7V3M7 21v-7h10v7',
-  deshacer:'M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3', rehacer:'M15 14l5-5-5-5M20 9H10a6 6 0 0 0 0 12h3',
-  buscar:'M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14zM21 21l-5-5',
-  corazon:'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z',
-  enlace:'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',
-  play:'M7 5v14l11-7z', descargar:'M12 4v11M7 10l5 5 5-5M5 20h14', subir:'M12 20V9M7 14l5-5 5 5M5 4h14',
-  ajustar:'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',
-  basura:'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6', duplicar:'M8 8h11v11H8zM5 16V5h11',
-  lapiz:'M4 20h4L19 9l-4-4L4 16zM14 6l4 4', izq:'M15 5l-7 7 7 7', der:'M9 5l7 7-7 7',
-  notas:'M6 3h9l4 4v14H6zM9 12h7M9 16h5', mas:'M12 5v14M5 12h14', menos:'M5 12h14',
-  plantillas:'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z', texto:'M5 7V4h14v3M12 4v16M9 20h6',
-  formas:'M4 13h7v7H4zM16.5 4a3.5 3.5 0 1 0 0 7a3.5 3.5 0 1 0 0-7zM7.5 3l3.5 6H4z',
-  elementos:'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 15l.8 2.2 2.2.8-2.2.8L19 21l-.8-2.2-2.2-.8 2.2-.8z',
-  dibujar:'M4 20c0-3 1-4.5 3-5l9-9 3 3-9 9c-.5 2-2 3-6 2zM14 8l2 2',
-  imagen:'M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M15.5 8.5h.01', diagramas:'M4 4h6v5H4zM14 15h6v5h-6zM7 9v3h10v3',
-  fondo:'M4 4h16v16H4zM4 15l5-5 11 11M14 4l6 6', marca:'M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z',
-  monitor:'M3 4h18v12H3zM8 20h8M12 16v4', listo:'M5 12l5 5 9-10', cerrar:'M6 6l12 12M18 6 6 18'
-};
-const GLIFO_ICONO = { '📂':'carpeta', '💾':'guardar', '↶':'deshacer', '↷':'rehacer', '🔍':'buscar', '❤':'corazon', '❤️':'corazon', '🔗':'enlace', '▶':'play',
-  '⬇':'descargar', '⬆':'subir', '⤢':'ajustar', '🗑':'basura', '🗑️':'basura', '⧉':'duplicar', '✎':'lapiz', '◀':'izq', '📝':'notas', '＋':'mas', '+':'mas', '−':'menos', '▦':'plantillas' };
-const GLIFO_PESTANA = { tPlantillas:'plantillas', tTexto:'texto', tFormas:'formas', tElementos:'elementos', tDibujar:'dibujar', tImagenes:'imagen',
-  tDiagramas:'diagramas', tFondo:'fondo', tMarca:'marca', tWeb:'monitor' };
-function svgIcono(n){ return `<svg class="ico${n === 'play' ? ' relleno' : ''}" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="${ICONOS_UI[n]}"/></svg>`; }
-(function(){
-  const ZONAS = '#barra, #pestanas, #accMovil, #paginas, #barraNotas, #props .grupoBtns, #props .fila, #fila3D, #lateral .bigbtn';
-  const glifos = Object.keys(GLIFO_ICONO).sort((a, b) => b.length - a.length);
-  function convertir(b){
-    if (b.querySelector('svg.ico')) return;
-    const tab = b.closest('#pestanas') && b.dataset.tab;
-    if (tab && GLIFO_PESTANA[tab]){ const s = b.querySelector('span'); if (s){ s.innerHTML = svgIcono(GLIFO_PESTANA[tab]); } return; }
-    const n = [...b.childNodes].find(x => x.nodeType === 3 && x.textContent.trim());
-    if (!n || n !== [...b.childNodes].find(x => x.nodeType !== 3 || x.textContent.trim())) return;
-    const t = n.textContent.replace(/^\s+/, '');
-    const g = glifos.find(x => t.startsWith(x) && (t.length === x.length || /\s|️/.test(t[x.length])));
-    if (!g) return;
-    if ((g === '+' || g === '−') && t.trim().length > 1 && !/^[+−]\s/.test(t)) return;
-    const resto = t.slice(g.length).replace(/^️/, '');
-    const sp = document.createElement('span'); sp.className = 'icoCaja'; sp.innerHTML = svgIcono(GLIFO_ICONO[g]);
-    b.insertBefore(sp, n); n.textContent = resto.trim() ? ' ' + resto.trim() : '';
-    if (!resto.trim() && !b.getAttribute('aria-label') && b.title) b.setAttribute('aria-label', b.title);
-  }
-  const todos = raiz => raiz.querySelectorAll('button').forEach(b => { if (b.matches(ZONAS.split(',').map(z => z.trim() + ' button, ' + z.trim()).join(','))) convertir(b); });
-  todos(document);
-  let pend = false;
-  new MutationObserver(() => { if (pend) return; pend = true; requestAnimationFrame(() => { pend = false; todos(document); }); })
-    .observe(document.body, { childList:true, subtree:true, characterData:true });
-})();
-
-/* =========================================================
-   BARRA DE ARRIBA ADAPTABLE: lo que no cabe pasa al menú «Más»
-   ========================================================= */
-(function(){
-  const barra = $('barra'); if (!barra) return;
-  // agrupar el zoom y deshacer/rehacer para que se muevan juntos
-  const agrupar = (id, els) => { els = els.filter(Boolean); if (!els.length) return null; const g = document.createElement('div'); g.id = id; g.className = 'grupoBarra';
-    els[0].before(g); els.forEach(e => g.appendChild(e)); return g; };
-  const hijos = [...barra.children];
-  const porClick = t => hijos.find(e => e.tagName === 'BUTTON' && (e.getAttribute('onclick') || '').includes(t));
-  agrupar('grupoHist', [$('bDeshacer'), $('bRehacer')]);
-  agrupar('grupoZoom', [porClick('cambiarZoom(-0.1)'), $('zoomTxt'), porClick('cambiarZoom(0.1)')]);
-  hijos.forEach(b => { if (b.tagName === 'BUTTON' && !b.title){ const t = b.textContent.trim(); if (t) { b.title = t; b.setAttribute('aria-label', t); } } });
-  // fabric 5.3.1 usa un valor que el navegador no reconoce y llena la consola de avisos: se corrige
-  try { const f = fabric.Text.prototype._setTextStyles, src = f.toString();
-    if (/(["'])alphabetical\1/.test(src)) fabric.Text.prototype._setTextStyles = (0, eval)('(' + src.replace(/^_setTextStyles\s*\(/, 'function(').replace(/(["'])alphabetical\1/, '"alphabetic"') + ')');
-  } catch (e) {}
-  // botón «Más» y su menú
-  const mas = document.createElement('button'); mas.className = 'tb'; mas.id = 'bMas'; mas.hidden = true;
-  mas.title = 'Más opciones'; mas.setAttribute('aria-label', 'Más opciones'); mas.setAttribute('aria-haspopup', 'true'); mas.setAttribute('aria-expanded', 'false');
-  mas.innerHTML = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01" style="stroke-width:3.2"/></svg><span class="txtMas"> Más</span>';
-  const menu = document.createElement('div'); menu.id = 'menuMas'; menu.setAttribute('role', 'menu'); menu.hidden = true;
-  document.body.appendChild(menu);
-  // prioridad: el número más bajo se va primero al menú
-  const PRIOR = [
-    [e => e.tagName === 'BUTTON' && e.getAttribute('onclick') === "abrirModal('mAyuda')", 1],
-    [e => e.id === 'bAuto', 2], [e => (e.getAttribute('onclick') || '').includes('ajustarLienzoAContenido'), 3],
-    [e => (e.getAttribute('onclick') || '').includes('abrirBuscar'), 4], [e => e.id === 'bInstalar', 5],
-    [e => e.classList.contains('donar'), 6], [e => e.id === 'tamTxt', 7], [e => (e.getAttribute('onclick') || '') === 'nuevoDiseno()', 8],
-    [e => (e.getAttribute('onclick') || '') === 'ajustarZoom()', 9], [e => e.id === 'grupoZoom', 10], [e => e.id === 'bNube', 11],
-    [e => (e.getAttribute('onclick') || '').includes('mCompartir'), 12], [e => (e.getAttribute('onclick') || '').includes('mProyectos'), 13],
-    [e => e.id === 'grupoHist', 14], [e => (e.getAttribute('onclick') || '').includes('mPresentar'), 15]
-  ];
-  const prioridad = e => { for (const [f, p] of PRIOR) if (f(e)) return p; return 0; };
-  const todos = [];        // orden original de la barra
-  const registrar = () => {
-    [...barra.children].forEach(e => {
-      if (todos.includes(e)) return;
-      const prev = e.previousElementSibling, k = todos.indexOf(prev);
-      todos.splice(k >= 0 ? k + 1 : todos.length, 0, e);
-    });
-    // «Más» y «Exportar» siempre al final, a la derecha
-    const exp = todos.find(e => (e.getAttribute('onclick') || '').includes('mExportar'));
-    [mas, exp].forEach(e => { if (!e) return; const k = todos.indexOf(e); if (k >= 0) todos.splice(k, 1); todos.push(e); });
-  };
-  const etiquetar = e => {        // en el menú, los botones de solo ícono muestran su nombre
-    const bs = e.tagName === 'BUTTON' ? [e] : [...e.querySelectorAll('button')];
-    bs.forEach(b => { if (b.id !== 'tamTxt' && !b.querySelector('.etqMenu') && b.title && !(b.textContent || '').replace(/\s/g, '').match(/[\p{L}]{3,}/u)){
-      const s = document.createElement('span'); s.className = 'etqMenu'; s.textContent = ' ' + b.title.replace(/\s*\(.*\)$/, ''); b.appendChild(s); } });
-  };
-  let acomodando = false;
-  function acomodar(){
-    if (acomodando) return; acomodando = true;
-    registrar();
-    todos.forEach(e => barra.appendChild(e));            // todo regresa a la barra en su orden
-    mas.hidden = true; barra.classList.remove('apretada');
-    const cabe = () => barra.scrollWidth <= barra.clientWidth + 1;
-    const lista = todos.filter(e => prioridad(e)).sort((a, b) => prioridad(a) - prioridad(b));
-    if (!cabe()) barra.classList.add('apretada');          // primero se esconde el texto «Guardado…»
-    let i = 0;
-    while (!cabe() && i < lista.length){ mas.hidden = false; menu.appendChild(lista[i]); etiquetar(lista[i]); i++; }
-    [...menu.children].sort((a, b) => todos.indexOf(a) - todos.indexOf(b)).forEach(e => menu.appendChild(e));
-    barra.classList.remove('soloIconos');
-    if (!cabe()) barra.classList.add('soloIconos');        // pantallas muy angostas: Guardar y Exportar solo con ícono
-    acomodando = false;
-  }
-  const abrir = v => {
-    menu.hidden = !v; mas.setAttribute('aria-expanded', v ? 'true' : 'false');
-    if (v){ const r = mas.getBoundingClientRect(); menu.style.top = (r.bottom + 6) + 'px';
-      if (innerWidth < 560){ menu.style.left = '8px'; menu.style.right = '8px'; menu.style.maxWidth = 'none'; }
-      else { menu.style.left = 'auto'; menu.style.right = Math.max(8, innerWidth - r.right) + 'px'; menu.style.maxWidth = Math.max(240, r.right - 8) + 'px'; }
-      const f = menu.querySelector('button'); f && f.focus({ preventScroll:true }); }
-  };
-  mas.onclick = e => { e.stopPropagation(); abrir(menu.hidden); };
-  menu.addEventListener('click', e => { if (e.target.closest('button') && !e.target.closest('#grupoZoom')) abrir(false); });
-  document.addEventListener('click', e => { if (!menu.hidden && !menu.contains(e.target) && e.target !== mas) abrir(false); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !menu.hidden){ abrir(false); mas.focus(); } });
-  let t = null; const pedir = () => { clearTimeout(t); t = setTimeout(() => { abrir(false); acomodar(); }, 60); };
-  addEventListener('resize', pedir);
-  new MutationObserver(ms => { if (!acomodando && ms.some(m => [...m.addedNodes].some(n => n.nodeType === 1 && n.parentNode === barra && !todos.includes(n)))) pedir(); })
-    .observe(barra, { childList:true });
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(pedir);
-  acomodar(); setTimeout(acomodar, 800); setTimeout(acomodar, 2500);
-  window.acomodarBarra = acomodar;
 })();
 
 </script>
