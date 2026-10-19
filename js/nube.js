@@ -111,6 +111,19 @@
       return { id:ref.id, url:location.origin + location.pathname + '?copia=' + ref.id, publico:true };
     }
   };
+  // Si algo falla, el mensaje dice qué parte de la nube y con qué cuenta (para encontrar el problema rápido)
+  Object.keys(FUNCIONES_NUBE).forEach(k => {
+    const f = FUNCIONES_NUBE[k];
+    FUNCIONES_NUBE[k] = async (...a) => {
+      try { return await f(...a); }
+      catch (e) {
+        console.error('Nube', k, e);
+        const permiso = e && (e.code === 'permission-denied' || /permission/i.test(e.message || ''));
+        const extra = permiso ? ' — revisa que las reglas de Firestore estén publicadas (cuenta: ' + (usuario ? usuario.uid.slice(0, 6) + '…' : 'sin sesión') + ', paso: ' + k + ')' : ' (paso: ' + k + ')';
+        throw new Error((e && e.message || String(e)) + extra);
+      }
+    };
+  });
   // Abrir un diseño compartido funciona aunque no hayas entrado
   window.NUBE_PUBLICAS = {
     async cargarCompartido(id){
