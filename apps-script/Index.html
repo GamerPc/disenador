@@ -5,7 +5,7 @@
 <script>
 // Si algo falla al cargar, se muestra aquí en vez de dejar la pantalla en blanco
 window.__erroresCarga = []; window.__lineasError = [];
-window.__esperado = {"Codigo1": {"chars": 53525, "lineas": 979}, "Codigo2": {"chars": 48118, "lineas": 601}, "Codigo3": {"chars": 54631, "lineas": 995}, "Codigo4": {"chars": 49566, "lineas": 741}, "Codigo5": {"chars": 45464, "lineas": 674}, "Codigo6": {"chars": 49411, "lineas": 769}, "Codigo7": {"chars": 8953, "lineas": 160}, "Codigo8": {"chars": 51454, "lineas": 883}, "Codigo9": {"chars": 48581, "lineas": 833}, "Codigo10": {"chars": 20380, "lineas": 291}, "Codigo11": {"chars": 1498, "lineas": 33}};
+window.__esperado = {"Codigo1": {"chars": 53525, "lineas": 979}, "Codigo2": {"chars": 48118, "lineas": 601}, "Codigo3": {"chars": 54631, "lineas": 995}, "Codigo4": {"chars": 49566, "lineas": 741}, "Codigo5": {"chars": 45464, "lineas": 674}, "Codigo6": {"chars": 49411, "lineas": 769}, "Codigo7": {"chars": 8953, "lineas": 160}, "Codigo8": {"chars": 51454, "lineas": 883}, "Codigo9": {"chars": 48581, "lineas": 833}, "Codigo10": {"chars": 20380, "lineas": 291}, "Codigo11": {"chars": 35626, "lineas": 352}, "Codigo12": {"chars": 1498, "lineas": 33}};
 function __mostrarErrorCarga(msg){
   window.__erroresCarga.push(msg);
   var pintar = function(){
@@ -348,7 +348,7 @@ window.addEventListener('load', function(){
 
 <!-- ====== BARRA SUPERIOR ====== -->
 <div id="barra">
-  <div class="logo"><img class="logoImg" src="data:image/png;base64,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" alt=""><span class="logoTxt">Diseñador<small class="logoMarca">APIK-DESING</small></span><small class="ver">v27</small></div>
+  <div class="logo"><img class="logoImg" src="data:image/png;base64,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" alt=""><span class="logoTxt">Diseñador<small class="logoMarca">APIK-DESING</small></span><small class="ver">v28</small></div>
   <input class="nombre" id="nombreDiseno" value="Mi diseño" title="Nombre del diseño">
   <span id="estadoGuardado" title="Estado del guardado en Drive">No guardado en Drive</span>
   <button class="tb" onclick="nuevoDiseno()">Nuevo</button>
@@ -384,6 +384,7 @@ window.addEventListener('load', function(){
     <button data-tab="tDiagramas"><span>⎔</span>Diagramas</button>
     <button data-tab="tFondo"><span>▧</span>Fondo</button>
     <button data-tab="tMarca"><span>★</span>Mi marca</button>
+    <button data-tab="tWeb"><span>🖥</span>Web y UI</button>
   </nav>
 
   <!-- ====== PANEL LATERAL ====== -->
@@ -525,6 +526,20 @@ window.addEventListener('load', function(){
         4. O arrastra cualquiera de los círculos <b>+</b> que aparecen alrededor de la forma: suéltalo sobre otra forma para unirlas, o en un espacio vacío para crear una idea nueva.<br>
         5. Clic en una línea para cambiar su tipo, sus puntas, el trazo o escribirle una palabra de enlace. Arrastra los puntos de sus extremos para conectarla a otra forma.
       </p>
+    </div>
+
+    <div class="panelTab" id="tWeb">
+      <h3>Diseño web y de apps</h3>
+      <p class="hint" style="padding-top:0">Diseña páginas web, pantallas de app y sistemas. Une pantallas con <b>🔗 Enlace</b> y pruébalas en <b>Presentar</b> como si fuera la app real.</p>
+      <h4>1. Tamaño de pantalla</h4>
+      <div id="tamWeb"></div>
+      <h4>2. Ayudas</h4>
+      <button class="bigbtn" id="bCuadricula" onclick="alternarCuadricula()">▥ Mostrar cuadrícula de columnas <span style="float:right;color:#6b7280;font-size:11px">12 en web · 4 en celular</span></button>
+      <h4>3. Componentes</h4>
+      <div id="listaComponentes"></div>
+      <h4>4. Plantillas</h4>
+      <div id="listaPlantillasWeb"></div>
+      <p class="hint">Cómo hacer un prototipo: crea una página por pantalla (＋ Página), selecciona un botón, pulsa <b>🔗 Enlace</b> y escribe el número de la pantalla a la que lleva. Luego pulsa <b>Presentar</b> y toca los botones.</p>
     </div>
 
     <div class="panelTab" id="tMarca">
@@ -803,6 +818,7 @@ window.addEventListener('load', function(){
         <button class="pb" id="bMeterForma" onclick="meterEnForma()" title="Lo de abajo solo se ve dentro de la forma de arriba (foto, rayas, degradado…)">◐ Meter en la forma</button>
         <button class="pb" id="bSacarForma" onclick="sacarDeForma()" title="Separa otra vez la forma y lo que tenía adentro">◑ Sacar de la forma</button>
         <button class="pb" id="bEditarQR" onclick="editarQRSeleccionado()" title="Cambia el enlace o los colores del código QR">▦ Editar QR</button>
+        <button class="pb" id="bEnlace" onclick="ponerEnlace()" title="Al tocarlo en «Presentar» lleva a otra página o abre una dirección web">🔗 Enlace</button>
       </div>
       <div class="grupoBtns" id="grupoMulti">
         <button class="pb" onclick="distribuir('h')" title="Mismo espacio entre ellos, a lo ancho">⇹ Distribuir ↔</button>
@@ -1063,6 +1079,7 @@ window.APIK_CONFIG = {
 <?!= include('Codigo9') ?>
 <?!= include('Codigo10') ?>
 <?!= include('Codigo11') ?>
+<?!= include('Codigo12') ?>
 
 </body>
 </html>

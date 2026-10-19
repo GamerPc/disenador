@@ -2,33 +2,352 @@
 /*@parte Codigo11*/ (window.__partes = window.__partes || {})['Codigo11'] = true;
 
 /* =========================================================
-   PESTAÑAS E INICIO
+   DISEÑO WEB Y UI: componentes, marcos, cuadrícula, enlaces y plantillas
    ========================================================= */
-document.querySelectorAll('#pestanas button').forEach(b => b.onclick = () => {
-  if (esTel()){
-    const abierto = $('lateral').classList.contains('abierto');
-    if (abierto && b.classList.contains('activa')){ abrirLateral(false); return; }
-    abrirLateral(true);
-  }
-  document.querySelectorAll('#pestanas button').forEach(x => x.classList.remove('activa'));
-  document.querySelectorAll('.panelTab').forEach(x => x.classList.remove('activa'));
-  b.classList.add('activa'); $(b.dataset.tab).classList.add('activa');
+EXTRA.push('enlace');
+const UI = { acento:'#2563eb', acento2:'#1d4ed8', texto:'#111827', suave:'#6b7280', borde:'#d1d5db', fondo:'#ffffff', gris:'#f3f4f6', gris2:'#e5e7eb', verde:'#16a34a', rojo:'#dc2626', ambar:'#d97706' };
+// ---------- piezas básicas (coordenadas de esquina superior izquierda) ----------
+function uiT(texto, x, y, o = {}){
+  return new fabric.Textbox(String(texto), { left:x, top:y, width:o.w || 300, fontSize:o.s || 16, fontFamily:o.f || 'Inter', fontWeight:o.b || '400',
+    fill:o.c || UI.texto, textAlign:o.al || 'left', lineHeight:o.lh || 1.25, charSpacing:o.cs || 0, originX:'left', originY:'top', name:o.nombre || 'Texto' });
+}
+function uiR(x, y, w, h, fill, o = {}){
+  return new fabric.Rect({ left:x, top:y, width:w, height:h, rx:o.r || 0, ry:o.r || 0, fill, stroke:o.borde || null, strokeWidth:o.borde ? (o.gb || 1) : 0,
+    strokeUniform:true, opacity:o.op ?? 1, name:o.nombre || 'Rectángulo', shadow:o.sombra ? new fabric.Shadow({ color:'rgba(15,23,42,.10)', blur:24, offsetX:0, offsetY:8 }) : null });
+}
+function uiC(cx, cy, r, fill, o = {}){
+  return new fabric.Circle({ left:cx, top:cy, radius:r, originX:'center', originY:'center', fill, stroke:o.borde || null, strokeWidth:o.borde ? (o.gb || 1) : 0, name:o.nombre || 'Círculo' });
+}
+// ---------- componentes (devuelven una lista de objetos; u = escala) ----------
+const COMP = {
+  boton(x, y, u, o = {}){ const w = (o.w || 160) * u, h = (o.h || 48) * u, sec = o.secundario;
+    return [uiR(x, y, w, h, sec ? 'rgba(0,0,0,0)' : (o.fill || UI.acento), { r:(o.r ?? 12) * u, borde: sec ? (o.fill || UI.acento) : null, gb:2 * u, nombre:'Botón' }),
+      uiT(o.t || 'Botón', x, y + h / 2 - 10 * u, { w, s:16 * u, b:'600', c: sec ? (o.fill || UI.acento) : (o.color || '#ffffff'), al:'center' })]; },
+  campo(x, y, u, o = {}){ const w = (o.w || 320) * u;
+    return [uiT(o.etiqueta || 'Correo electrónico', x, y, { w, s:13 * u, b:'600', c:UI.suave }),
+      uiR(x, y + 22 * u, w, 48 * u, '#ffffff', { r:10 * u, borde:UI.borde, gb:1.5 * u, nombre:'Campo de texto' }),
+      uiT(o.ph || 'tucorreo@ejemplo.com', x + 14 * u, y + 37 * u, { w:w - 28 * u, s:15 * u, c:'#9ca3af' })]; },
+  buscador(x, y, u, o = {}){ const w = (o.w || 320) * u;
+    return [uiR(x, y, w, 44 * u, o.fondo || UI.gris, { r:22 * u, nombre:'Buscador' }), uiT('🔍', x + 14 * u, y + 11 * u, { w:24 * u, s:16 * u }),
+      uiT(o.ph || 'Buscar…', x + 42 * u, y + 12 * u, { w:w - 56 * u, s:15 * u, c:'#9ca3af' })]; },
+  casilla(x, y, u, o = {}){ const on = o.on !== false;
+    return [uiR(x, y, 20 * u, 20 * u, on ? UI.acento : '#ffffff', { r:5 * u, borde: on ? null : UI.borde, gb:1.5 * u, nombre:'Casilla' }),
+      ...(on ? [uiT('✓', x, y + 1 * u, { w:20 * u, s:14 * u, b:'700', c:'#ffffff', al:'center' })] : []),
+      uiT(o.t || 'Recordarme', x + 30 * u, y + 1 * u, { w:(o.w || 200) * u, s:15 * u })]; },
+  interruptor(x, y, u, o = {}){ const on = o.on !== false;
+    return [uiR(x, y, 52 * u, 30 * u, on ? UI.acento : '#cbd5e1', { r:15 * u, nombre:'Interruptor' }), uiC(x + (on ? 37 : 15) * u, y + 15 * u, 11 * u, '#ffffff'),
+      uiT(o.t || 'Notificaciones', x + 64 * u, y + 5 * u, { w:(o.w || 200) * u, s:15 * u })]; },
+  tarjeta(x, y, u, o = {}){ const w = (o.w || 300) * u, h = (o.h || 360) * u, ih = (o.img ?? 170) * u;
+    return [uiR(x, y, w, h, '#ffffff', { r:16 * u, sombra:true, borde:'#eef0f3', nombre:'Tarjeta' }),
+      ...(ih ? [uiR(x, y, w, ih, o.colorImg || UI.gris2, { r:16 * u, nombre:'Imagen' }), uiT('🖼', x, y + ih / 2 - 18 * u, { w, s:30 * u, al:'center', c:'#9ca3af' })] : []),
+      uiT(o.titulo || 'Título de la tarjeta', x + 20 * u, y + ih + 18 * u, { w:w - 40 * u, s:19 * u, b:'700' }),
+      uiT(o.texto || 'Describe aquí este elemento en una o dos líneas.', x + 20 * u, y + ih + 50 * u, { w:w - 40 * u, s:14.5 * u, c:UI.suave, lh:1.4 }),
+      ...(o.boton !== false ? COMP.boton(x + 20 * u, y + h - 64 * u, u, { t:o.boton || 'Ver más', w:120, h:42 }) : [])]; },
+  navbar(x, y, u, o = {}){ const w = (o.w || 1200) * u, h = 72 * u, c = o.oscuro ? '#ffffff' : UI.texto;
+    const r = [uiR(x, y, w, h, o.fondo || 'rgba(0,0,0,0)', { nombre:'Barra de navegación' }), uiC(x + 20 * u, y + h / 2, 16 * u, o.acento || UI.acento),
+      uiT(o.marca || 'TuMarca', x + 46 * u, y + h / 2 - 13 * u, { w:220 * u, s:21 * u, b:'800', c })];
+    const links = o.links || ['Inicio', 'Servicios', 'Precios', 'Contacto'];
+    links.forEach((l, i) => r.push(uiT(l, x + w - (150 + (links.length - i) * 110) * u, y + h / 2 - 10 * u, { w:100 * u, s:16 * u, b:'500', c: o.oscuro ? '#cbd5e1' : UI.suave, al:'center' })));
+    r.push(...COMP.boton(x + w - 140 * u, y + h / 2 - 22 * u, u, { t:o.boton || 'Empezar', w:140, h:44, fill:o.acento }));
+    return r; },
+  barraEstado(x, y, u, o = {}){ const w = (o.w || 390) * u, c = o.oscuro ? '#ffffff' : UI.texto;
+    return [uiT('9:41', x + 28 * u, y + 14 * u, { w:80 * u, s:16 * u, b:'700', c }), uiT('📶 🔋', x + w - 108 * u, y + 13 * u, { w:84 * u, s:15 * u, al:'right', c })]; },
+  tabbar(x, y, u, o = {}){ const w = (o.w || 390) * u, h = 84 * u, items = o.items || [['🏠', 'Inicio'], ['🔍', 'Buscar'], ['🛒', 'Carrito'], ['👤', 'Perfil']];
+    const r = [uiR(x, y, w, h, '#ffffff', { borde:'#eef0f3', nombre:'Barra de pestañas' })];
+    items.forEach(([ic, t], i) => { const cx = x + (i + 0.5) * w / items.length, on = i === (o.activo || 0);
+      r.push(uiT(ic, cx - 30 * u, y + 12 * u, { w:60 * u, s:22 * u, al:'center' }), uiT(t, cx - 40 * u, y + 44 * u, { w:80 * u, s:12 * u, b: on ? '700' : '500', c: on ? (o.acento || UI.acento) : UI.suave, al:'center' })); });
+    return r; },
+  avatar(x, y, u, o = {}){ const r = (o.r || 28) * u; return [uiC(x + r, y + r, r, o.fill || '#c7d2fe', { nombre:'Avatar' }), uiT(o.ini || 'AB', x, y + r - 11 * u * (r / (28 * u)), { w:2 * r, s:18 * u * (r / (28 * u)), b:'700', c:o.color || '#3730a3', al:'center' })]; },
+  insignia(x, y, u, o = {}){ const w = (o.w || 84) * u;
+    return [uiR(x, y, w, 26 * u, o.fill || '#dcfce7', { r:13 * u, nombre:'Insignia' }), uiT(o.t || 'Activo', x, y + 5 * u, { w, s:12.5 * u, b:'700', c:o.color || '#166534', al:'center' })]; },
+  alerta(x, y, u, o = {}){ const w = (o.w || 380) * u, ok = o.tipo !== 'error';
+    return [uiR(x, y, w, 56 * u, ok ? '#ecfdf5' : '#fef2f2', { r:12 * u, borde: ok ? '#a7f3d0' : '#fecaca', nombre:'Alerta' }),
+      uiT(ok ? '✅' : '⚠️', x + 16 * u, y + 15 * u, { w:28 * u, s:18 * u }), uiT(o.t || (ok ? 'Cambios guardados correctamente' : 'Revisa los datos marcados'), x + 50 * u, y + 17 * u, { w:w - 66 * u, s:15 * u, b:'500', c: ok ? '#065f46' : '#991b1b' })]; },
+  progreso(x, y, u, o = {}){ const w = (o.w || 300) * u, p = (o.pct ?? 65) / 100;
+    return [uiR(x, y, w, 10 * u, UI.gris2, { r:5 * u, nombre:'Barra de progreso' }), uiR(x, y, w * p, 10 * u, o.fill || UI.acento, { r:5 * u, nombre:'Progreso' })]; },
+  estrellas(x, y, u, o = {}){ const n = o.n ?? 4; return [uiT('★'.repeat(n) + '☆'.repeat(5 - n), x, y, { w:140 * u, s:22 * u, c:'#f59e0b', cs:80 })]; },
+  kpi(x, y, u, o = {}){ const w = (o.w || 260) * u, sube = !String(o.cambio || '+12%').startsWith('-');
+    return [uiR(x, y, w, 120 * u, '#ffffff', { r:14 * u, sombra:true, borde:'#eef0f3', nombre:'Indicador' }),
+      uiT(o.titulo || 'Ventas del mes', x + 20 * u, y + 18 * u, { w:w - 40 * u, s:14 * u, b:'500', c:UI.suave }),
+      uiT(o.valor || '$48,250', x + 20 * u, y + 44 * u, { w:w - 40 * u, s:30 * u, b:'800' }),
+      uiT((sube ? '▲ ' : '▼ ') + (o.cambio || '+12%') + ' ' + (o.sufijo || 'vs. mes anterior'), x + 20 * u, y + 88 * u, { w:w - 40 * u, s:13 * u, b:'600', c: sube ? UI.verde : UI.rojo })]; },
+  menuLateral(x, y, u, o = {}){ const w = (o.w || 240) * u, h = (o.h || 900) * u, items = o.items || ['📊  Panel', '📁  Proyectos', '👥  Clientes', '📅  Agenda', '⚙️  Ajustes'];
+    const r = [uiR(x, y, w, h, o.fondo || '#0f172a', { nombre:'Menú lateral' }), uiC(x + 36 * u, y + 44 * u, 14 * u, o.acento || '#38bdf8'),
+      uiT(o.marca || 'Mi sistema', x + 58 * u, y + 32 * u, { w:w - 70 * u, s:19 * u, b:'800', c:'#ffffff' })];
+    items.forEach((t, i) => { const yy = y + (110 + i * 52) * u;
+      if (i === (o.activo || 0)) r.push(uiR(x + 12 * u, yy - 10 * u, w - 24 * u, 42 * u, 'rgba(255,255,255,.10)', { r:10 * u, nombre:'Opción activa' }));
+      r.push(uiT(t, x + 26 * u, yy, { w:w - 40 * u, s:15.5 * u, b: i === (o.activo || 0) ? '700' : '500', c: i === (o.activo || 0) ? '#ffffff' : '#94a3b8' })); });
+    return r; },
+  tablaUI(x, y, u, o = {}){ const cols = o.cols || ['Nombre', 'Estado', 'Fecha', 'Monto'], filas = o.filas || [], anchos = o.anchos || cols.map(() => 200), w = anchos.reduce((a, b) => a + b, 0) * u, fh = 52 * u;
+    const r = [uiR(x, y, w, fh * (filas.length + 1), '#ffffff', { r:12 * u, borde:'#eef0f3', nombre:'Tabla' }), uiR(x, y, w, fh, UI.gris, { r:12 * u, nombre:'Encabezado de tabla' })];
+    let cx = x; cols.forEach((c, j) => { r.push(uiT(c, cx + 18 * u, y + 17 * u, { w:anchos[j] * u - 24 * u, s:13 * u, b:'700', c:UI.suave })); cx += anchos[j] * u; });
+    filas.forEach((f, i) => { const yy = y + fh * (i + 1); if (i) r.push(uiR(x + 12 * u, yy, w - 24 * u, 1, '#eef0f3', { nombre:'Línea' }));
+      let xx = x; f.forEach((celda, j) => {
+        if (celda && typeof celda === 'object' && celda.insignia) r.push(...COMP.insignia(xx + 18 * u, yy + 13 * u, u, celda));
+        else r.push(uiT(celda, xx + 18 * u, yy + 16 * u, { w:anchos[j] * u - 24 * u, s:14.5 * u, b: j === 0 ? '600' : '400', c: j === 0 ? UI.texto : '#374151' }));
+        xx += anchos[j] * u; }); });
+    return r; }
+};
+const estUI = (t, tipo) => ({ insignia:true, t, w:110, fill:{ ok:'#dcfce7', pend:'#fef3c7', mal:'#fee2e2', info:'#dbeafe' }[tipo], color:{ ok:'#166534', pend:'#92400e', mal:'#991b1b', info:'#1e40af' }[tipo] });
+// ---------- marcos de dispositivo ----------
+const MARCOS_DISP = {
+  celular(x, y, u, o = {}){ const w = 390 * u, h = 844 * u;
+    return [uiR(x - 14 * u, y - 14 * u, w + 28 * u, h + 28 * u, 'rgba(0,0,0,0)', { r:58 * u, borde:o.color || '#111827', gb:14 * u, nombre:'Marco de celular' }),
+      uiR(x + w / 2 - 62 * u, y + 10 * u, 124 * u, 32 * u, o.color || '#111827', { r:16 * u, nombre:'Cámara' })]; },
+  navegador(x, y, u, o = {}){ const w = (o.w || 1280) * u, h = (o.h || 800) * u;
+    return [uiR(x, y, w, h, 'rgba(0,0,0,0)', { r:14 * u, borde:'#cbd5e1', gb:2 * u, nombre:'Marco de navegador' }), uiR(x, y, w, 48 * u, '#e5e7eb', { r:14 * u, nombre:'Barra del navegador' }),
+      uiC(x + 24 * u, y + 24 * u, 7 * u, '#ef4444'), uiC(x + 46 * u, y + 24 * u, 7 * u, '#f59e0b'), uiC(x + 68 * u, y + 24 * u, 7 * u, '#22c55e'),
+      uiR(x + 110 * u, y + 11 * u, w - 220 * u, 26 * u, '#ffffff', { r:13 * u, nombre:'Dirección' }), uiT(o.url || 'tusitio.com', x + 110 * u, y + 16 * u, { w:w - 220 * u, s:13 * u, c:UI.suave, al:'center' })]; },
+  tablet(x, y, u, o = {}){ const w = 834 * u, h = 1194 * u;
+    return [uiR(x - 22 * u, y - 22 * u, w + 44 * u, h + 44 * u, 'rgba(0,0,0,0)', { r:46 * u, borde:o.color || '#111827', gb:22 * u, nombre:'Marco de tablet' })]; }
+};
+// ---------- insertar en el lienzo ----------
+const escalaUI = () => W <= 700 ? W / 390 : W / 1440;
+function insertarComponente(tipo){
+  const u = escalaUI();
+  const objs = (COMP[tipo] || MARCOS_DISP[tipo])(0, 0, u, tipo === 'tablaUI' ? { filas:[['Ana López', estUI('Pagado', 'ok'), '12/10/2026', '$1,250'], ['Luis Pérez', estUI('Pendiente', 'pend'), '14/10/2026', '$890']] } : {});
+  const g = new fabric.Group(objs, { originX:'center', originY:'center' });
+  g.setPositionByOrigin(new fabric.Point(W / 2, H / 2), 'center', 'center');
+  agregar(g, NOMBRES_COMP[tipo] || 'Componente'); renderCapas(); guardarEstado();
+  toast('Para cambiar el texto, selecciónalo y escribe en «Escribe tu texto». Para mover sus partes, pulsa «Desagrupar».');
+}
+const NOMBRES_COMP = { boton:'Botón', campo:'Campo de texto', buscador:'Buscador', casilla:'Casilla', interruptor:'Interruptor', tarjeta:'Tarjeta', navbar:'Barra de navegación',
+  barraEstado:'Barra de estado', tabbar:'Barra de pestañas', avatar:'Avatar', insignia:'Insignia', alerta:'Alerta', progreso:'Barra de progreso', estrellas:'Calificación',
+  kpi:'Indicador', menuLateral:'Menú lateral', tablaUI:'Tabla de datos', celular:'Marco de celular', navegador:'Marco de navegador', tablet:'Marco de tablet' };
+(function(){
+  const cont = $('listaComponentes');
+  [['Básicos', ['boton', 'campo', 'buscador', 'casilla', 'interruptor', 'insignia', 'alerta', 'progreso', 'estrellas', 'avatar']],
+   ['Secciones', ['navbar', 'tarjeta', 'kpi', 'tablaUI', 'menuLateral', 'barraEstado', 'tabbar']],
+   ['Marcos de dispositivo', ['celular', 'navegador', 'tablet']]].forEach(([titulo, tipos]) => {
+    const h = document.createElement('div'); h.className = 'hint'; h.style.cssText = 'font-size:11.5px;padding:6px 0 2px'; h.textContent = titulo; cont.appendChild(h);
+    const grid = document.createElement('div'); grid.className = 'gridComp';
+    tipos.forEach(t => { const b = document.createElement('button'); b.className = 'pb'; b.textContent = NOMBRES_COMP[t]; b.onclick = () => insertarComponente(t); grid.appendChild(b); });
+    cont.appendChild(grid);
+  });
+  // tamaños de pantalla
+  const tams = [['Página web (escritorio)', 1440, 1024], ['Página web larga (con scroll)', 1440, 3200], ['Dashboard / sistema', 1440, 900], ['App de celular', 390, 844], ['Tablet', 834, 1194]];
+  tams.forEach(([n, w, h]) => {
+    TAMANOS.push([n, w, h]);
+    const b = document.createElement('button'); b.className = 'bigbtn'; b.innerHTML = `${esc(n)} <span style="float:right;color:#6b7280">${w} × ${h}</span>`;
+    b.onclick = () => aplicarTamano(w, h);
+    $('listaTamanos').appendChild(b);
+    const b2 = b.cloneNode(true); b2.onclick = () => aplicarTamano(w, h); $('tamWeb').appendChild(b2);
+  });
+})();
+
+// ---------- cuadrícula de columnas (solo se ve mientras diseñas) ----------
+let cuadriculaWeb = false;
+function alternarCuadricula(){ cuadriculaWeb = !cuadriculaWeb; $('bCuadricula').classList.toggle('on', cuadriculaWeb); canvas.requestRenderAll(); }
+canvas.on('after:render', () => {
+  if (!cuadriculaWeb || generandoVista) return;
+  const ctx = canvas.contextContainer, v = canvas.viewportTransform, movil = W <= 700;
+  const n = movil ? 4 : 12, m = movil ? 16 * W / 390 : 80 * W / 1440, g = movil ? 16 * W / 390 : 24 * W / 1440;
+  const col = (W - 2 * m - (n - 1) * g) / n;
+  ctx.save(); ctx.transform(v[0], v[1], v[2], v[3], v[4], v[5]);
+  ctx.fillStyle = 'rgba(255,75,43,.09)';
+  for (let i = 0; i < n; i++) ctx.fillRect(m + i * (col + g), 0, col, H);
+  ctx.strokeStyle = 'rgba(255,75,43,.35)'; ctx.lineWidth = 1 / zoom;
+  ctx.beginPath(); ctx.moveTo(m, 0); ctx.lineTo(m, H); ctx.moveTo(W - m, 0); ctx.lineTo(W - m, H); ctx.stroke();
+  ctx.restore();
 });
 
-(async function iniciar(){
-  try { await Promise.all(FUENTES.filter(f => !['Arial','Georgia','Times New Roman','Courier New','Verdana'].includes(f)).flatMap(f => [document.fonts.load(`400 40px "${f}"`), document.fonts.load(`700 40px "${f}"`)])); } catch(e){}
-  setTimeout(generarVistas, 300);
-  cargarMisPlantillas();
-  if (await abrirCompartidoSiHay()) return;
-  let borrador = null;
-  try { borrador = localStorage.getItem('disenador_borrador'); } catch(e){}
-  if (borrador){
-    try { $('nombreDiseno').value = localStorage.getItem('disenador_nombre') || 'Mi diseño'; } catch(e){}
-    cargarJSON(borrador, true, () => toast('Se recuperó tu último diseño'));
-  } else {
-    ajustarZoom(); guardarEstado();
-  }
+// ---------- enlaces entre pantallas (para probar el flujo en «Presentar») ----------
+function ponerEnlace(){
+  const o = activo(); if (!o) return toast('Selecciona el botón o elemento que llevará a otra pantalla');
+  const r = prompt('¿A dónde lleva al tocarlo en «Presentar»?\n• Escribe el número de página (1 a ' + paginas.length + ')\n• o una dirección web (https://…)\nDéjalo vacío para quitar el enlace.', o.enlace ? (o.enlace.startsWith('p:') ? o.enlace.slice(2) : o.enlace) : '');
+  if (r === null) return;
+  const v = r.trim();
+  if (!v){ o.enlace = null; toast('Enlace quitado'); }
+  else if (/^\d+$/.test(v)){ const n = +v; if (n < 1 || n > paginas.length) return toast('Ese número de página no existe'); o.enlace = 'p:' + n; toast('Al tocarlo en «Presentar» irá a la página ' + n); }
+  else if (/^(https?:\/\/|mailto:|tel:)/i.test(v)){ o.enlace = v; toast('Al tocarlo en «Presentar» abrirá ' + v); }
+  else return toast('Escribe un número de página o una dirección que empiece con https://');
+  actualizarPanel(); guardarEstado();
+}
+const actualizarPanelBase28 = actualizarPanel;
+actualizarPanel = function(){
+  actualizarPanelBase28.apply(this, arguments);
+  if (generandoVista) return;
+  const o = activo(); if (!o) return;
+  $('bEnlace').textContent = o.enlace ? '🔗 ' + (o.enlace.startsWith('p:') ? 'Va a la página ' + o.enlace.slice(2) : 'Enlace web') : '🔗 Enlace';
+  $('bEnlace').classList.toggle('on', !!o.enlace);
+};
+function objetoConEnlace(e){
+  if (!pres || !pres.cur) return null;
+  const el = pres.cur.wrap.querySelector('canvas'); if (!el) return null;
+  const r = el.getBoundingClientRect();
+  if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return null;
+  const p = new fabric.Point(e.clientX - r.left, e.clientY - r.top);
+  return pres.cur.sc.getObjects().slice().reverse().find(o => o.enlace && o.visible !== false && o.opacity > 0.05 && o.containsPoint(p)) || null;
+}
+$('presentacion').addEventListener('click', e => {
+  if (e.target.closest('#presControles,#presNotas')) return;
+  const o = objetoConEnlace(e); if (!o) return;
+  e.stopPropagation(); e.preventDefault();
+  if (o.enlace.startsWith('p:')){
+    const idx = pres.lista.indexOf(+o.enlace.slice(2) - 1);
+    if (idx >= 0) irA(idx, true, idx >= pres.i ? 1 : -1);
+  } else window.open(o.enlace, '_blank', 'noopener');
+}, true);
+$('presentacion').addEventListener('mousemove', e => { $('presentacion').style.cursor = objetoConEnlace(e) ? 'pointer' : ''; });
+
+// ---------- plantillas de páginas web, apps, dashboards y sistemas ----------
+const CAT_WEB = 'Web, apps y sistemas';
+function PON(objs){ objs.forEach(o => { o.id = nuevoId(); canvas.add(o); }); return objs; }
+function FOTO(x, y, w, h, tipo){ const g = crearMarcoVacio(tipo || 'rect', w, h); g.setPositionByOrigin(new fabric.Point(x + w / 2, y + h / 2), 'center', 'center'); canvas.add(g); return g; }
+function GRAF(x, y, w, h, tipo, datos, titulo){
+  const g = grupoGrafica({ tipo, titulo:titulo || '', paleta:'Vibrante', valores:false, w, h, datos });
+  g.setPositionByOrigin(new fabric.Point(x + w / 2, y + h / 2), 'center', 'center'); canvas.add(g); return g;
+}
+const PLANTILLAS_WEB = [
+  { nombre:'Página web: negocio (landing)', tam:[1440, 2300], crear(){
+    FONDO('#ffffff');
+    PON(COMP.navbar(120, 16, 1, { w:1200, marca:'TuMarca', boton:'Contáctanos' }));
+    PON([uiT('NUEVO · SERVICIO PROFESIONAL', 120, 190, { w:600, s:14, b:'700', c:UI.acento, cs:150 }),
+      uiT('Haz crecer tu negocio con un sitio que vende', 120, 228, { w:600, s:56, b:'800', lh:1.1, f:'Poppins' }),
+      uiT('Explica en dos líneas qué haces, para quién y por qué eres la mejor opción. Mantén el mensaje claro y directo.', 120, 430, { w:540, s:19, c:UI.suave, lh:1.55 })]);
+    PON(COMP.boton(120, 540, 1, { t:'Empezar ahora', w:190, h:56 })); PON(COMP.boton(330, 540, 1, { t:'Ver precios', w:170, h:56, secundario:true }));
+    PON([uiT('★★★★★  +500 clientes felices', 120, 630, { w:400, s:15, c:UI.suave })]);
+    FOTO(760, 170, 560, 520, 'rect');
+    PON([uiT('¿Por qué elegirnos?', 120, 820, { w:1200, s:40, b:'800', al:'center', f:'Poppins' }), uiT('Tres razones que hacen la diferencia', 120, 880, { w:1200, s:18, c:UI.suave, al:'center' })]);
+    [['⚡', 'Rápido', 'Entregamos en tiempo récord sin sacrificar calidad.'], ['🛡️', 'Confiable', 'Garantía y soporte en cada proyecto.'], ['💬', 'Cercano', 'Te acompañamos en cada paso por WhatsApp.']].forEach(([ic, t, d], i) => {
+      const x = 120 + i * 410; PON([uiR(x, 960, 380, 260, UI.gris, { r:20, nombre:'Tarjeta' }), uiT(ic, x + 32, 990, { w:60, s:36 }), uiT(t, x + 32, 1060, { w:316, s:24, b:'700' }), uiT(d, x + 32, 1102, { w:316, s:16, c:UI.suave, lh:1.5 })]); });
+    PON([uiR(120, 1320, 1200, 380, '#0f172a', { r:28, nombre:'Sección de precios' }), uiT('Planes a tu medida', 160, 1370, { w:1120, s:38, b:'800', c:'#ffffff', al:'center', f:'Poppins' })]);
+    [['Básico', '$499'], ['Profesional', '$999'], ['Empresa', '$1,999']].forEach(([n, p], i) => {
+      const x = 180 + i * 370, dest = i === 1;
+      PON([uiR(x, 1450, 340, 210, dest ? UI.acento : 'rgba(255,255,255,.06)', { r:18, borde: dest ? null : 'rgba(255,255,255,.15)', nombre:'Plan' }),
+        uiT(n, x + 28, 1475, { w:284, s:18, b:'600', c: dest ? '#dbeafe' : '#94a3b8' }), uiT(p + ' /mes', x + 28, 1510, { w:284, s:36, b:'800', c:'#ffffff' }),
+        uiT('✓ Beneficio uno\n✓ Beneficio dos', x + 28, 1575, { w:284, s:15, c: dest ? '#e0e7ff' : '#cbd5e1', lh:1.5 })]); });
+    PON([uiT('¿Listo para empezar?', 120, 1800, { w:1200, s:44, b:'800', al:'center', f:'Poppins' })]);
+    PON(COMP.boton(620, 1880, 1, { t:'Escríbenos por WhatsApp', w:260, h:58, fill:'#16a34a' }));
+    PON([uiR(0, 2100, 1440, 200, '#0f172a', { nombre:'Pie de página' }), uiT('© TuMarca · Aviso de privacidad · Términos', 120, 2180, { w:1200, s:15, c:'#94a3b8', al:'center' })]);
+  }},
+  { nombre:'Página web: portafolio', tam:[1440, 1820], crear(){
+    FONDO('#0b0f19');
+    PON(COMP.navbar(120, 16, 1, { w:1200, marca:'Tu Nombre', links:['Proyectos', 'Sobre mí', 'Contacto'], boton:'Descargar CV', oscuro:true, acento:'#22d3ee' }));
+    FOTO(120, 170, 300, 300, 'circulo');
+    PON([uiT('Hola, soy', 480, 200, { w:700, s:22, c:'#22d3ee', b:'600' }), uiT('Tu Nombre Apellido', 480, 236, { w:800, s:64, b:'800', c:'#ffffff', f:'Poppins' }),
+      uiT('Diseñador(a) · Desarrollador(a) · Estudiante de …\nCuenta en una línea qué haces y qué te apasiona.', 480, 330, { w:760, s:20, c:'#94a3b8', lh:1.6 })]);
+    PON(COMP.boton(480, 420, 1, { t:'Ver proyectos', w:170, h:52, fill:'#22d3ee', color:'#0b0f19' }));
+    PON([uiT('Proyectos destacados', 120, 600, { w:1200, s:36, b:'800', c:'#ffffff', f:'Poppins' })]);
+    for (let i = 0; i < 6; i++){ const x = 120 + (i % 3) * 410, y = 680 + Math.floor(i / 3) * 470;
+      FOTO(x, y, 380, 280, 'rect'); PON([uiT('Proyecto ' + (i + 1), x, y + 300, { w:380, s:22, b:'700', c:'#ffffff' }), uiT('Web · Diseño · 2026', x, y + 336, { w:380, s:15, c:'#64748b' })]); }
+    PON([uiT('¿Trabajamos juntos? → tucorreo@gmail.com', 120, 1680, { w:1200, s:24, b:'600', c:'#22d3ee', al:'center' })]);
+  }},
+  { nombre:'Página web: producto (tienda)', tam:[1440, 1100], crear(){
+    FONDO('#fff7ed');
+    PON(COMP.navbar(120, 16, 1, { w:1200, marca:'TuTienda', links:['Hombre', 'Mujer', 'Novedades'], boton:'🛒 Carrito', acento:'#ea580c' }));
+    PON([uiC(450, 560, 330, '#fed7aa', { nombre:'Fondo del producto' })]);
+    FOTO(190, 260, 520, 520, 'rect');
+    PON([uiT('NUEVA COLECCIÓN', 820, 230, { w:500, s:14, b:'700', c:'#ea580c', cs:200 }), uiT('Tenis Urban Pro', 820, 262, { w:520, s:58, b:'800', f:'Poppins' }),
+      ...COMP.estrellas(820, 345, 1, { n:5 }), uiT('(128 opiniones)', 980, 349, { w:200, s:15, c:UI.suave }),
+      uiT('$1,899 MXN', 820, 400, { w:400, s:40, b:'800', c:'#ea580c' }),
+      uiT('Ligeros, cómodos y hechos para el día a día. Describe aquí materiales, tallas y beneficios.', 820, 470, { w:500, s:17, c:UI.suave, lh:1.55 }),
+      uiT('Color', 820, 560, { w:200, s:14, b:'700', c:UI.suave })]);
+    ['#111827', '#ea580c', '#2563eb', '#16a34a'].forEach((c, i) => PON([uiC(840 + i * 52, 610, 18, c, { borde: i === 1 ? '#111827' : null, gb:3 })]));
+    PON([uiT('Talla', 820, 655, { w:200, s:14, b:'700', c:UI.suave })]);
+    ['24', '25', '26', '27', '28'].forEach((t, i) => PON([uiR(820 + i * 64, 685, 54, 44, i === 2 ? '#111827' : '#ffffff', { r:10, borde:'#d1d5db', nombre:'Talla' }), uiT(t, 820 + i * 64, 696, { w:54, s:16, b:'600', c: i === 2 ? '#ffffff' : UI.texto, al:'center' })]));
+    PON(COMP.boton(820, 770, 1, { t:'Agregar al carrito', w:300, h:58, fill:'#ea580c' }));
+    PON([uiT('🚚 Envío gratis en compras mayores a $999 · 🔄 30 días para cambios', 820, 850, { w:520, s:14, c:UI.suave })]);
+  }},
+  { nombre:'App: iniciar sesión', tam:[390, 844], crear(){
+    FONDO('#ffffff'); PON(COMP.barraEstado(0, 0, 1));
+    PON([uiC(195, 170, 44, UI.acento, { nombre:'Logo' }), uiT('A', 151, 146, { w:88, s:40, b:'800', c:'#ffffff', al:'center' }),
+      uiT('Bienvenido(a)', 24, 240, { w:342, s:30, b:'800', al:'center', f:'Poppins' }), uiT('Inicia sesión para continuar', 24, 284, { w:342, s:15, c:UI.suave, al:'center' })]);
+    PON(COMP.campo(24, 340, 1, { w:342, etiqueta:'Correo electrónico' })); PON(COMP.campo(24, 430, 1, { w:342, etiqueta:'Contraseña', ph:'••••••••' }));
+    PON(COMP.casilla(24, 528, 1, { t:'Recordarme' })); PON([uiT('¿Olvidaste tu contraseña?', 186, 529, { w:180, s:14, b:'600', c:UI.acento, al:'right' })]);
+    PON(COMP.boton(24, 580, 1, { t:'Iniciar sesión', w:342, h:54 }));
+    PON([uiT('o continúa con', 24, 660, { w:342, s:13, c:UI.suave, al:'center' })]);
+    PON(COMP.boton(24, 690, 1, { t:'G  Continuar con Google', w:342, h:50, secundario:true, fill:UI.texto }));
+    PON([uiT('¿No tienes cuenta? Regístrate', 24, 776, { w:342, s:14, b:'600', c:UI.acento, al:'center' })]);
+  }},
+  { nombre:'App: inicio / catálogo', tam:[390, 844], crear(){
+    FONDO('#f8fafc'); PON(COMP.barraEstado(0, 0, 1));
+    PON([uiT('Hola, Paola 👋', 24, 56, { w:300, s:14, c:UI.suave }), uiT('¿Qué buscas hoy?', 24, 76, { w:300, s:26, b:'800', f:'Poppins' })]); PON(COMP.avatar(310, 60, 1, { ini:'P' }));
+    PON(COMP.buscador(24, 130, 1, { w:342, fondo:'#ffffff' }));
+    PON([uiR(24, 194, 342, 140, UI.acento, { r:20, nombre:'Promoción' }), uiT('-30% en tu\nprimera compra', 44, 218, { w:200, s:22, b:'800', c:'#ffffff', lh:1.15 })]); PON(COMP.boton(44, 280, 1, { t:'Ver ofertas', w:120, h:36, fill:'#ffffff', color:UI.acento }));
+    ['Todo', 'Ropa', 'Tenis', 'Bolsas'].forEach((t, i) => PON([uiR(24 + i * 86, 356, 78, 36, i === 0 ? UI.texto : '#ffffff', { r:18, borde: i ? '#e5e7eb' : null, nombre:'Categoría' }), uiT(t, 24 + i * 86, 365, { w:78, s:14, b:'600', c: i === 0 ? '#ffffff' : UI.texto, al:'center' })]));
+    for (let i = 0; i < 4; i++){ const x = 24 + (i % 2) * 177, y = 412 + Math.floor(i / 2) * 200;
+      PON([uiR(x, y, 165, 188, '#ffffff', { r:16, borde:'#eef0f3', nombre:'Producto' })]); FOTO(x + 8, y + 8, 149, 110, 'rect');
+      PON([uiT('Producto ' + (i + 1), x + 12, y + 126, { w:140, s:14, b:'600' }), uiT('$' + (299 + i * 100), x + 12, y + 150, { w:100, s:16, b:'800', c:UI.acento })]); }
+    PON(COMP.tabbar(0, 760, 1));
+  }},
+  { nombre:'App: perfil', tam:[390, 844], crear(){
+    FONDO('#ffffff'); PON(COMP.barraEstado(0, 0, 1));
+    PON([uiR(0, 0, 390, 220, UI.acento, { nombre:'Portada' })]); PON(COMP.barraEstado(0, 0, 1, { oscuro:true }));
+    FOTO(135, 150, 120, 120, 'circulo');
+    PON([uiT('Paola Cisneros', 24, 284, { w:342, s:24, b:'800', al:'center', f:'Poppins' }), uiT('Estudiante de Derecho · CDMX', 24, 318, { w:342, s:14, c:UI.suave, al:'center' })]);
+    [['24', 'Diseños'], ['8', 'Carpetas'], ['3', 'Compartidos']].forEach(([n, t], i) => PON([uiT(n, 24 + i * 114, 360, { w:114, s:22, b:'800', al:'center' }), uiT(t, 24 + i * 114, 390, { w:114, s:13, c:UI.suave, al:'center' })]));
+    ['👤  Datos personales', '🔔  Notificaciones', '🔒  Privacidad', '❓  Ayuda', '🚪  Cerrar sesión'].forEach((t, i) => {
+      const y = 450 + i * 60; PON([uiR(24, y, 342, 52, UI.gris, { r:14, nombre:'Opción' }), uiT(t, 40, y + 15, { w:280, s:15, b:'500', c: i === 4 ? UI.rojo : UI.texto }), uiT('›', 330, y + 11, { w:20, s:22, c:'#9ca3af' })]); });
+    PON(COMP.tabbar(0, 760, 1, { activo:3 }));
+  }},
+  { nombre:'App: carrito de compras', tam:[390, 844], crear(){
+    FONDO('#f8fafc'); PON(COMP.barraEstado(0, 0, 1));
+    PON([uiT('‹', 20, 52, { w:30, s:30 }), uiT('Mi carrito', 24, 56, { w:342, s:20, b:'800', al:'center' })]);
+    [['Tenis Urban Pro', '$1,899'], ['Gorra clásica', '$349'], ['Calcetas (3 pares)', '$199']].forEach(([n, p], i) => {
+      const y = 110 + i * 116; PON([uiR(24, y, 342, 104, '#ffffff', { r:16, borde:'#eef0f3', nombre:'Artículo' })]); FOTO(36, y + 12, 80, 80, 'rect');
+      PON([uiT(n, 130, y + 18, { w:200, s:15, b:'600' }), uiT(p, 130, y + 44, { w:120, s:17, b:'800', c:UI.acento }),
+        uiR(250, y + 62, 100, 30, UI.gris, { r:15, nombre:'Cantidad' }), uiT('−   1   +', 250, y + 67, { w:100, s:14, b:'700', al:'center' })]); });
+    PON([uiR(24, 470, 342, 170, '#ffffff', { r:16, borde:'#eef0f3', nombre:'Resumen' }),
+      uiT('Subtotal', 44, 492, { w:150, s:15, c:UI.suave }), uiT('$2,447', 216, 492, { w:130, s:15, al:'right' }),
+      uiT('Envío', 44, 524, { w:150, s:15, c:UI.suave }), uiT('Gratis', 216, 524, { w:130, s:15, al:'right', c:UI.verde, b:'600' }),
+      uiR(44, 560, 302, 1, '#eef0f3', { nombre:'Línea' }), uiT('Total', 44, 578, { w:150, s:18, b:'800' }), uiT('$2,447', 196, 578, { w:150, s:22, b:'800', al:'right' })]);
+    PON(COMP.boton(24, 670, 1, { t:'Pagar ahora', w:342, h:56 }));
+  }},
+  { nombre:'Dashboard de ventas', tam:[1440, 900], crear(){
+    FONDO('#f1f5f9'); PON(COMP.menuLateral(0, 0, 1, { h:900, marca:'Ventas+' }));
+    PON([uiT('Resumen del mes', 280, 36, { w:600, s:28, b:'800', f:'Poppins' }), uiT('Octubre 2026', 280, 76, { w:300, s:15, c:UI.suave })]);
+    PON(COMP.buscador(1040, 36, 1, { w:260, fondo:'#ffffff' })); PON(COMP.avatar(1320, 30, 1, { ini:'PC' }));
+    [['Ventas del mes', '$48,250', '+12%'], ['Pedidos', '326', '+8%'], ['Clientes nuevos', '57', '+21%'], ['Devoluciones', '9', '-3%']].forEach(([t, v, c], i) => PON(COMP.kpi(280 + i * 285, 120, 1, { titulo:t, valor:v, cambio:c, w:265 })));
+    PON([uiR(280, 270, 700, 380, '#ffffff', { r:16, borde:'#eef0f3', nombre:'Panel de gráfica' }), uiT('Ventas por mes', 304, 290, { w:400, s:17, b:'700' })]);
+    GRAF(300, 320, 660, 310, 'barras', [{ e:'May', v:31 }, { e:'Jun', v:36 }, { e:'Jul', v:29 }, { e:'Ago', v:42 }, { e:'Sep', v:39 }, { e:'Oct', v:48 }]);
+    PON([uiR(1000, 270, 400, 380, '#ffffff', { r:16, borde:'#eef0f3', nombre:'Panel de gráfica' }), uiT('Ventas por canal', 1024, 290, { w:300, s:17, b:'700' })]);
+    GRAF(1015, 320, 370, 310, 'dona', [{ e:'Tienda', v:45 }, { e:'Web', v:35 }, { e:'WhatsApp', v:20 }]);
+    PON(COMP.tablaUI(280, 680, 1, { anchos:[330, 250, 260, 280], cols:['Cliente', 'Estado', 'Fecha', 'Total'],
+      filas:[['Ana López', estUI('Pagado', 'ok'), '18/10/2026', '$1,250'], ['Luis Pérez', estUI('Pendiente', 'pend'), '18/10/2026', '$890'], ['María Ruiz', estUI('Pagado', 'ok'), '17/10/2026', '$2,140']] }));
+  }},
+  { nombre:'Sistema: expedientes jurídicos', tam:[1440, 900], crear(){
+    FONDO('#f8fafc'); PON(COMP.menuLateral(0, 0, 1, { h:900, marca:'Despacho', acento:'#b8862b', fondo:'#0f2747', items:['⚖️  Expedientes', '👥  Clientes', '📅  Audiencias', '📄  Documentos', '💰  Honorarios'] }));
+    PON([uiT('Expedientes', 280, 36, { w:500, s:30, b:'800', f:'Playfair Display', c:'#0f2747' }), uiT('128 asuntos · 34 activos', 280, 80, { w:400, s:15, c:UI.suave })]);
+    PON(COMP.buscador(840, 40, 1, { w:330, fondo:'#ffffff', ph:'Buscar expediente o cliente…' })); PON(COMP.boton(1190, 36, 1, { t:'+ Nuevo expediente', w:200, h:48, fill:'#0f2747' }));
+    ['Todos', 'Civil', 'Penal', 'Familiar', 'Laboral', 'Amparo'].forEach((t, i) => PON([uiR(280 + i * 110, 130, 100, 36, i === 0 ? '#0f2747' : '#ffffff', { r:18, borde: i ? '#e2e8f0' : null, nombre:'Filtro' }), uiT(t, 280 + i * 110, 139, { w:100, s:14, b:'600', c: i === 0 ? '#ffffff' : '#334155', al:'center' })]));
+    PON(COMP.tablaUI(280, 200, 1, { anchos:[170, 250, 160, 260, 160, 120], cols:['Expediente', 'Cliente', 'Materia', 'Juzgado', 'Estado', 'Próx. fecha'],
+      filas:[['1234/2026', 'Juan Hernández', 'Civil', '5º Civil CDMX', estUI('En trámite', 'info'), '22/10'], ['0987/2026', 'María González', 'Familiar', '3º Familiar', estUI('Audiencia', 'pend'), '24/10'],
+        ['0456/2025', 'Constructora S.A.', 'Laboral', 'Tribunal Laboral', estUI('Sentencia', 'ok'), '—'], ['0321/2026', 'Pedro Ramírez', 'Penal', 'Juez de Control', estUI('Urgente', 'mal'), '20/10'],
+        ['0789/2026', 'Ana Torres', 'Amparo', '2º de Distrito', estUI('En trámite', 'info'), '30/10'], ['0654/2026', 'Luis Mendoza', 'Civil', '12º Civil', estUI('Archivado', 'ok'), '—']] }));
+    PON([uiT('Datos de ejemplo: cámbialos por los de tu despacho.', 280, 600, { w:600, s:13, c:'#94a3b8' })]);
+  }},
+  { nombre:'Sistema: agenda de citas', tam:[1440, 900], crear(){
+    FONDO('#ffffff'); PON(COMP.menuLateral(0, 0, 1, { h:900, marca:'Agenda', activo:3 }));
+    PON([uiT('Octubre 2026', 280, 36, { w:500, s:30, b:'800', f:'Poppins' }), uiT('Semana del 19 al 23', 280, 80, { w:400, s:15, c:UI.suave })]);
+    PON(COMP.boton(1210, 36, 1, { t:'+ Nueva cita', w:180, h:48 }));
+    const dias = ['Lun 19', 'Mar 20', 'Mié 21', 'Jue 22', 'Vie 23'], x0 = 360, cw = 206, y0 = 140, rh = 70;
+    dias.forEach((d, i) => PON([uiT(d, x0 + i * cw, y0, { w:cw, s:15, b:'700', al:'center', c: i === 2 ? UI.acento : UI.texto })]));
+    for (let h = 0; h < 10; h++){ PON([uiT((9 + h) + ':00', 280, y0 + 44 + h * rh, { w:60, s:13, c:'#94a3b8' }), uiR(x0, y0 + 40 + h * rh, cw * 5, 1, '#eef0f3', { nombre:'Línea' })]); }
+    [[0, 1, 1, 'Consulta · Juan H.', '#dbeafe', '#1e40af'], [1, 3, 2, 'Audiencia · Exp. 0987', '#fee2e2', '#991b1b'], [2, 0, 1, 'Firma de contrato', '#dcfce7', '#166534'],
+     [3, 5, 1, 'Llamada con cliente', '#fef3c7', '#92400e'], [4, 2, 2, 'Revisión de pruebas', '#ede9fe', '#5b21b6'], [2, 6, 1, 'Clase · Derecho Penal', '#dbeafe', '#1e40af']].forEach(([d, h, dur, t, f, c]) =>
+      PON([uiR(x0 + d * cw + 6, y0 + 44 + h * rh, cw - 12, dur * rh - 8, f, { r:10, nombre:'Cita' }), uiT(t, x0 + d * cw + 16, y0 + 54 + h * rh, { w:cw - 32, s:13.5, b:'600', c, lh:1.3 })]));
+  }},
+  { nombre:'Sistema: calificaciones escolares', tam:[1440, 900], crear(){
+    FONDO('#f8fafc'); PON(COMP.menuLateral(0, 0, 1, { h:900, marca:'Mi escuela', items:['📊  Calificaciones', '👩‍🎓  Alumnos', '📚  Materias', '🗓️  Asistencia', '⚙️  Ajustes'] }));
+    PON([uiT('Calificaciones · Grupo 6A', 280, 36, { w:700, s:28, b:'800', f:'Poppins' }), uiT('Periodo 2026-2 · 24 alumnos', 280, 76, { w:400, s:15, c:UI.suave })]);
+    PON(COMP.boton(1170, 36, 1, { t:'⬇ Exportar boleta', w:220, h:48, secundario:true }));
+    [['Promedio del grupo', '8.6', '+0.3'], ['Aprobados', '22 de 24', '+2'], ['En riesgo', '2', '-1']].forEach(([t, v, c], i) => PON(COMP.kpi(280 + i * 290, 120, 1, { titulo:t, valor:v, cambio:c, w:270, sufijo:'vs. periodo anterior' })));
+    const al = [['Ana López', 9.5, 9.0, 10, 9.5], ['Bruno Díaz', 8.0, 7.5, 8.5, 8.0], ['Carla Méndez', 6.0, 5.5, 7.0, 6.2], ['Diego Ruiz', 9.0, 8.5, 9.5, 9.0], ['Elena Soto', 7.5, 8.0, 7.0, 7.5]];
+    PON(COMP.tablaUI(280, 270, 1, { anchos:[260, 160, 160, 160, 160, 180], cols:['Alumno', 'Derecho Penal', 'Criminología', 'Amparo', 'Promedio', 'Estado'],
+      filas: al.map(([n, a, b, c, p]) => [n, a.toFixed(1), b.toFixed(1), c.toFixed(1), p.toFixed(1), p >= 8 ? estUI('Excelente', 'ok') : p >= 7 ? estUI('Aprobado', 'info') : estUI('En riesgo', 'mal')]) }));
+  }}
+];
+PLANTILLAS_WEB.forEach(p => CATALOGO.push({ nombre:p.nombre, cat:CAT_WEB, tam:p.tam, crear:p.crear, usar:() => usarPlantillaLogo(p) }));
+CATEGORIAS.splice(CATEGORIAS.indexOf(CAT_NEG) + 1, 0, CAT_WEB);
+(function(){
+  const c = document.createElement('button'); c.className = 'chip'; c.textContent = '🖥 Web y apps';
+  c.onclick = () => { catActiva = CAT_WEB; document.querySelectorAll('#chipsCat .chip').forEach(x => x.classList.toggle('on', x === c)); renderCatalogo(); };
+  const ref = [...document.querySelectorAll('#chipsCat .chip')].find(x => x.textContent.includes('Negocio'));
+  if (ref) ref.after(c); else $('chipsCat').appendChild(c);
+  renderCatalogo();
+  // también en la pestaña Web y UI
+  PLANTILLAS_WEB.forEach(p => { const b = document.createElement('button'); b.className = 'bigbtn'; b.textContent = p.nombre; b.onclick = () => usarPlantillaLogo(p); $('listaPlantillasWeb').appendChild(b); });
 })();
-window.__appLista = true;
 
 </script>

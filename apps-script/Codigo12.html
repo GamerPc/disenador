@@ -1,0 +1,34 @@
+<script>
+/*@parte Codigo12*/ (window.__partes = window.__partes || {})['Codigo12'] = true;
+
+/* =========================================================
+   PESTAÑAS E INICIO
+   ========================================================= */
+document.querySelectorAll('#pestanas button').forEach(b => b.onclick = () => {
+  if (esTel()){
+    const abierto = $('lateral').classList.contains('abierto');
+    if (abierto && b.classList.contains('activa')){ abrirLateral(false); return; }
+    abrirLateral(true);
+  }
+  document.querySelectorAll('#pestanas button').forEach(x => x.classList.remove('activa'));
+  document.querySelectorAll('.panelTab').forEach(x => x.classList.remove('activa'));
+  b.classList.add('activa'); $(b.dataset.tab).classList.add('activa');
+});
+
+(async function iniciar(){
+  try { await Promise.all(FUENTES.filter(f => !['Arial','Georgia','Times New Roman','Courier New','Verdana'].includes(f)).flatMap(f => [document.fonts.load(`400 40px "${f}"`), document.fonts.load(`700 40px "${f}"`)])); } catch(e){}
+  setTimeout(generarVistas, 300);
+  cargarMisPlantillas();
+  if (await abrirCompartidoSiHay()) return;
+  let borrador = null;
+  try { borrador = localStorage.getItem('disenador_borrador'); } catch(e){}
+  if (borrador){
+    try { $('nombreDiseno').value = localStorage.getItem('disenador_nombre') || 'Mi diseño'; } catch(e){}
+    cargarJSON(borrador, true, () => toast('Se recuperó tu último diseño'));
+  } else {
+    ajustarZoom(); guardarEstado();
+  }
+})();
+window.__appLista = true;
+
+</script>
