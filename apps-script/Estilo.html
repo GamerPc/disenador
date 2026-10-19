@@ -144,4 +144,30 @@
   #fila3D[hidden],#bFondosCamb[hidden]{display:none}
   #vivo3D{position:fixed;inset:0;background:rgba(10,12,20,.7);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px}
   #vivo3D .caja3D{background:var(--panel,#fff);color:inherit;border-radius:14px;padding:16px;width:min(760px,100%)}
+  /* ---------- accesibilidad: foco visible con teclado ---------- */
+  button:focus-visible,a:focus-visible,.chip:focus-visible,[tabindex]:focus-visible{outline:2px solid #19c8ff;outline-offset:2px;border-radius:6px}
+  #pestanas button:focus-visible{outline-offset:-3px}
+  /* ---------- letras que se leen bien ---------- */
+  #pestanas button{font-size:12px}
+  .chip{font-size:12.5px;padding:5px 11px}
+  #estadoGuardado{font-size:12px}
+  /* ---------- con el dedo: botones de al menos 40-44 px ---------- */
+  @media (max-width:820px), (pointer:coarse){
+    #pestanas button{font-size:11.5px}
+    .pb,.chip,.tb,#props button,#barra button{min-height:40px;min-width:40px}
+    #props input[type=range]{height:32px}
+    #props input[type=color]{width:44px;height:40px}
+    #props input[type=checkbox],#lateral input[type=checkbox]{width:22px;height:22px}
+    #props input[type=number],#props input[type=text],#barra input.nombre{min-height:40px}
+    .chip{padding:8px 13px}
+    .bigbtn{min-height:44px}
+    #props .grupoBtns{gap:8px}
+    #accMovil button{min-height:46px;min-width:46px}
+    #toast{bottom:210px}
+  }
+  /* ---------- menos movimiento para quien lo pide ---------- */
+  @media (prefers-reduced-motion:reduce){
+    #lateral,#props,#toast,.panelTab,.chip,.pb,.bigbtn{transition:none !important}
+    *{scroll-behavior:auto !important}
+  }
 </style>
