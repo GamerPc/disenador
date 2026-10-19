@@ -177,4 +177,30 @@
   #barra .tb .ico{width:18px;height:18px}
   #barra .tb.donar .ico{fill:currentColor}
   #accMovil .ico{width:20px;height:20px}
+  /* ---------- barra de arriba adaptable ---------- */
+  #barra{overflow:hidden !important;flex-wrap:nowrap}
+  #barra > *{flex:none}
+  #barra .esp{flex:1 1 0;min-width:4px}
+  #barra input.nombre{flex:0 1 170px;min-width:84px}
+  #barra.apretada #estadoGuardado{display:none}
+  .grupoBarra{display:flex;align-items:center;gap:4px;flex:none}
+  #barra .etqMenu{display:none}
+  #bMas[hidden]{display:none}
+  #menuMas{position:fixed;z-index:200;min-width:230px;max-width:calc(100vw - 16px);max-height:calc(100vh - 80px);overflow:auto;background:#10131b;border:1px solid var(--borde,#2a3140);
+    border-radius:12px;padding:6px;box-shadow:0 14px 40px rgba(0,0,0,.45);display:flex;flex-direction:column;gap:2px}
+  #menuMas[hidden]{display:none}
+  #menuMas > button,#menuMas .grupoBarra > button{width:100%;justify-content:flex-start;text-align:left;background:transparent;border:0;color:var(--texto,#e5e7eb);
+    padding:10px 12px;border-radius:8px;min-height:44px;display:flex;align-items:center;gap:8px;font-size:14px}
+  #menuMas > button:hover,#menuMas .grupoBarra > button:hover{background:#1b2030}
+  #menuMas .txtLargo{display:inline !important}
+  #menuMas .etqMenu{display:inline}
+  #menuMas .grupoBarra{flex-direction:column;align-items:stretch;gap:2px;border-top:1px solid var(--borde,#2a3140);border-bottom:1px solid var(--borde,#2a3140);padding:4px 0}
+  #menuMas #grupoZoom{flex-direction:row;align-items:center;justify-content:space-between;padding:4px 6px}
+  #menuMas #grupoZoom > button{width:auto;min-width:44px;justify-content:center}
+  #menuMas #zoomTxt{display:inline !important;color:var(--texto,#e5e7eb)}
+  #menuMas #tamTxt::before{content:'Tamaño: ';color:var(--suave,#9ca3af)}
+  @media (max-width:560px){ #bMas .txtMas{display:none} }
+  #barra.soloIconos > .tb{font-size:0;padding-left:10px;padding-right:10px}
+  #barra.soloIconos > .tb .ico{width:20px;height:20px}
+  #barra.soloIconos input.nombre{min-width:72px}
 </style>
