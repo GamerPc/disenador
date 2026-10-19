@@ -54,7 +54,11 @@
     },
     async listarProyectos(){
       return (await todos()).filter(x => x.tipo === 'proyecto').sort((a, b) => a.fecha < b.fecha ? 1 : -1)
-        .map(x => ({ id:x.id, nombre:x.nombre, fecha:x.fecha, tamKB:kb(x.contenido) }));
+        .map(x => ({ id:x.id, nombre:x.nombre, fecha:x.fecha, tamKB:kb(x.contenido), carpeta:x.carpeta || '' }));
+    },
+    async moverACarpeta(id, carpeta){
+      const o = await leer(id); if (!o) throw new Error('No se encontró el diseño');
+      o.carpeta = String(carpeta || '').trim().slice(0, 60); await poner(o); return { id, carpeta:o.carpeta };
     },
     async cargarProyecto(id){ const o = await leer(id); if (!o) throw new Error('No se encontró el diseño'); return o.contenido; },
     async eliminarProyecto(id){

@@ -1,5 +1,7 @@
 # Diseñador · Apik-Desing
 
+**Página de presentación:** https://gamerpc.github.io/disenador/inicio.html · **App:** https://gamerpc.github.io/disenador/
+
 Editor de diseño **gratuito** para la escuela y el trabajo: carteles, mapas mentales y conceptuales, diagramas de flujo, infografías, presentaciones con animaciones, plantillas de Derecho y más. Exporta a PNG, JPG, PDF (con marcas de corte), PowerPoint y video MP4.
 
 El sistema tiene **dos versiones** que salen del mismo código:

@@ -76,9 +76,11 @@ function guardarProyecto(nombre, contenido) {
       file.setContent(contenido);
       return { id: file.getId(), nombre: nombre };
     }
+    var descripcion = file.getDescription();   // conserva la carpeta (Mis diseños) del archivo anterior
     file.setTrashed(true);
   }
   const file = carpeta.createFile(Utilities.newBlob(contenido, 'application/json', archivo));
+  if (typeof descripcion !== 'undefined' && descripcion) file.setDescription(descripcion);
   return { id: file.getId(), nombre: nombre };
 }
 
@@ -95,7 +97,8 @@ function listarProyectos() {
       id: f.getId(),
       nombre: n.replace(/\.json$/i, ''),
       fecha: f.getLastUpdated().toISOString(),
-      tamKB: Math.round(f.getSize() / 1024)
+      tamKB: Math.round(f.getSize() / 1024),
+      carpeta: carpetaDe_(f)
     });
   }
   lista.sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
@@ -236,4 +239,21 @@ function listarPlantillas() {
   }
   lista.sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
   return lista;
+}
+
+
+/* ---------- Carpetas de "Mis diseños" (se guardan en la descripción del archivo) ---------- */
+function carpetaDe_(f) {
+  const m = String(f.getDescription() || '').match(/^carpeta:(.*)$/m);
+  return m ? m[1].trim() : '';
+}
+function moverACarpeta(id, nombreCarpeta) {
+  const f = DriveApp.getFileById(id);
+  // solo archivos que estén en la carpeta del Diseñador de esta persona
+  const padres = f.getParents(); let dentro = false; const raiz = carpeta_().getId();
+  while (padres.hasNext()) if (padres.next().getId() === raiz) dentro = true;
+  if (!dentro) throw new Error('Ese diseño no está en tu carpeta del Diseñador');
+  const c = String(nombreCarpeta || '').replace(/[\r\n]/g, ' ').trim().slice(0, 60);
+  f.setDescription(c ? 'carpeta:' + c : '');
+  return { id: id, carpeta: c };
 }

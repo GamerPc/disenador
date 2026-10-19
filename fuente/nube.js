@@ -72,14 +72,15 @@
       const ex = (await disenos().where('nombre', '==', nombre).get()).docs[0];
       const ref = ex ? disenos().doc(ex.id) : disenos().doc();
       if (ex) await guardarVersion(ref);
-      await escribirGrande(ref, { nombre, fecha:ahora() }, contenido);
+      await escribirGrande(ref, { nombre, fecha:ahora(), carpeta:(ex && ex.data().carpeta) || '' }, contenido);
       return { id:ref.id, nombre };
     },
     async listarProyectos(){
-      return (await disenos().get()).docs.map(d => ({ id:d.id, nombre:d.data().nombre, fecha:d.data().fecha, tamKB:d.data().tamKB || 0 }))
+      return (await disenos().get()).docs.map(d => ({ id:d.id, nombre:d.data().nombre, fecha:d.data().fecha, tamKB:d.data().tamKB || 0, carpeta:d.data().carpeta || '' }))
         .sort((a, b) => a.fecha < b.fecha ? 1 : -1);
     },
     async cargarProyecto(id){ return (await leerGrande(refDe(id))).texto; },
+    async moverACarpeta(id, carpeta){ await disenos().doc(id).update({ carpeta:String(carpeta || '').trim().slice(0, 60) }); return { id }; },
     async eliminarProyecto(id){
       const ref = refDe(id);
       if (!id.startsWith('pl_') && !id.includes('~')) for (const v of (await ref.collection('versiones').get()).docs) await borrarGrande(ref.collection('versiones').doc(v.id));
