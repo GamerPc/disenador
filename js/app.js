@@ -6761,6 +6761,35 @@ CATEGORIAS.splice(CATEGORIAS.indexOf(CAT_LOGO) + 1, 0, CAT_NEG);
 })();
 
 /* =========================================================
+   ESCRIBIR EL TEXTO DESDE EL PANEL (útil en celular y tablet)
+   ========================================================= */
+function textoUnico(){
+  const ts = textos(); if (ts.length === 1) return ts[0];
+  const o = activo();                       // una forma con texto adentro: se edita su texto
+  if (ts.length === 0 && o && o.type !== 'activeSelection' && o.id) return canvas.getObjects().find(x => x.textoDe === o.id && esTexto(x)) || null;
+  return null;
+}
+$('pContenido').addEventListener('input', e => {
+  const t = textoUnico(); if (!t) return;
+  t.set('text', e.target.value);
+  t.initDimensions && t.initDimensions();
+  if (t.textoDe) ajustarFormaATexto(t);
+  if (t.curva && typeof aplicarCurva === 'function') aplicarCurva(t, t.curva, true);
+  t.setCoords(); t.dirty = true; canvas.requestRenderAll();
+});
+$('pContenido').addEventListener('change', () => { guardarEstado(); renderCapas && renderCapas(); });
+$('pContenido').addEventListener('keydown', e => e.stopPropagation());   // que Supr o Ctrl+Z no actúen sobre el lienzo
+const actualizarPanelBase26 = actualizarPanel;
+actualizarPanel = function(){
+  actualizarPanelBase26.apply(this, arguments);
+  if (generandoVista || !activo()) return;
+  const t = textoUnico(), c = $('pContenido');
+  $('filaContenido').hidden = !t;
+  if (t && document.activeElement !== c) c.value = t.text || '';
+};
+canvas.on('text:changed', e => { if (document.activeElement !== $('pContenido') && e.target === textoUnico()) $('pContenido').value = e.target.text || ''; });
+
+/* =========================================================
    PESTAÑAS E INICIO
    ========================================================= */
 document.querySelectorAll('#pestanas button').forEach(b => b.onclick = () => {
