@@ -143,20 +143,20 @@ mw = list(re.finditer(r'<script>\n(.*?)</script>', w, re.S))[-1]
 w = w[:mw.start()] + '<script src="config.js"></script>\n<script src="js/almacen-local.js"></script>\n<script src="js/app.js"></script>' + w[mw.end():]
 # app instalable: manifiesto, íconos y service worker (solo en la versión web)
 w = w.replace('<head>', '<head>\n<link rel="manifest" href="manifest.webmanifest">\n<meta name="theme-color" content="#05070d">\n<link rel="icon" type="image/png" href="icons/favicon.png">\n<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">\n<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-title" content="Diseñador">\n<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">', 1)
-w = w.replace('<script src="js/app.js"></script>', '<script src="js/app.js"></script>\n<script src="js/nube.js"></script>\n<script src="js/pwa.js"></script>', 1)
+w = w.replace('<script src="js/app.js"></script>', '<script src="js/app.js"></script>\n<script src="js/nube.js"></script>\n<script src="js/escuela.js"></script>\n<script src="js/equipo.js"></script>\n<script src="js/pwa.js"></script>', 1)
 open(RAIZ + 'index.html', 'w', encoding='utf-8').write(textosWeb(w))
 open(RAIZ + 'js/app.js', 'w', encoding='utf-8').write(textosWeb(js))
 shutil.copy(FUENTE + 'almacen-local.js', RAIZ + 'js/almacen-local.js')
-for f in ('pwa.js', 'nube.js'): shutil.copy(FUENTE + f, RAIZ + 'js/' + f)
+for f in ('pwa.js', 'nube.js', 'escuela.js', 'equipo.js'): shutil.copy(FUENTE + f, RAIZ + 'js/' + f)
 import hashlib
 # cada archivo lleva su huella (?v=…): así el navegador nunca usa uno viejo
 def huellaDe(x): return hashlib.sha1(open(RAIZ + x, 'rb').read()).hexdigest()[:8]
 idx = open(RAIZ + 'index.html', encoding='utf-8').read()
-for x in ('config.js', 'js/almacen-local.js', 'js/app.js', 'js/nube.js', 'js/pwa.js'):
+for x in ('config.js', 'js/almacen-local.js', 'js/app.js', 'js/nube.js', 'js/escuela.js', 'js/equipo.js', 'js/pwa.js'):
     assert idx.count(f'src="{x}"') == 1, x
     idx = idx.replace(f'src="{x}"', f'src="{x}?v={huellaDe(x)}"')
 open(RAIZ + 'index.html', 'w', encoding='utf-8').write(idx)
-huella = hashlib.sha1(b''.join(open(RAIZ + x, 'rb').read() for x in ('index.html', 'config.js', 'js/app.js', 'js/almacen-local.js', 'js/pwa.js', 'js/nube.js'))).hexdigest()[:10]
+huella = hashlib.sha1(b''.join(open(RAIZ + x, 'rb').read() for x in ('index.html', 'config.js', 'js/app.js', 'js/almacen-local.js', 'js/pwa.js', 'js/nube.js', 'js/escuela.js', 'js/equipo.js'))).hexdigest()[:10]
 open(RAIZ + 'sw.js', 'w', encoding='utf-8').write(open(FUENTE + 'sw.plantilla.js', encoding='utf-8').read().replace('__VERSION__', huella))
 print('Service worker versión', huella)
 print('Web: index.html', len(w.encode('utf-8')), 'bytes; js/app.js', len(js.encode('utf-8')), 'bytes')

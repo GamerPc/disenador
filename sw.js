@@ -1,8 +1,8 @@
 /* Service worker del Diseñador: permite instalarlo y abrirlo aunque falle el internet.
    VERSION la pone construir.py; cuando cambia, el navegador baja la versión nueva. */
-const VERSION = 'a75adc6b37';
+const VERSION = 'a19f5dd3e6';
 const CACHE = 'disenador-' + VERSION;
-const BASE = ['./', 'index.html', 'config.js', 'js/app.js', 'js/almacen-local.js', 'js/pwa.js', 'js/nube.js', 'manifest.webmanifest',
+const BASE = ['./', 'index.html', 'config.js', 'js/app.js', 'js/almacen-local.js', 'js/pwa.js', 'js/nube.js', 'js/escuela.js', 'js/equipo.js', 'manifest.webmanifest',
   'icons/icono-192.png', 'icons/icono-512.png', 'icons/apple-touch-icon.png', 'icons/favicon.png'];
 const LIBRERIAS = ['https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'];
 const CDN = /^https:\/\/(cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com|unpkg\.com)\//;

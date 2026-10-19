@@ -81,7 +81,7 @@ Sin esto, la versión web guarda los diseños **en el navegador** de cada person
 2. **Compilación → Authentication → Comenzar → Google → Habilitar** → elige tu correo de asistencia → **Guardar**.
 3. En **Authentication → Configuración → Dominios autorizados** agrega `gamerpc.github.io` (y tu dominio propio, si lo conectas).
 4. **Compilación → Firestore Database → Crear base de datos** → ubicación `nam5` o la más cercana → **modo de producción**.
-5. En **Firestore → Reglas**, borra lo que hay, pega el contenido del archivo **`firestore.rules`** de este repositorio y pulsa **Publicar**.
+5. En **Firestore → Reglas**, borra lo que hay, pega el contenido del archivo **`firestore.rules`** de este repositorio y pulsa **Publicar**. Cada vez que este archivo cambie (por ejemplo, al agregar el modo escuela y el trabajo en equipo), vuelve a copiarlo y publicarlo.
 6. **⚙ Configuración del proyecto → Tus apps → `</>` (Web)** → ponle un nombre → **Registrar app**. Copia los datos que aparecen en `firebaseConfig`.
 7. Abre **`config.js`** y cambia `firebase: null,` por tus datos, por ejemplo:
    ```js
@@ -93,6 +93,11 @@ Sin esto, la versión web guarda los diseños **en el navegador** de cada person
 El plan gratuito (Spark) alcanza para empezar: 1 GB de almacenamiento y 50,000 lecturas al día. Firebase no pide tarjeta para este plan.
 
 ---
+
+### Funciones que usan la nube
+- **🎓 Escuela** (`fuente/escuela.js`): grupos con código, actividades con plantilla, entregas y calificaciones. Datos en `grupos/…`.
+- **👥 Equipo** (`fuente/equipo.js`): edición al mismo tiempo (cada elemento del diseño es un documento en `equipos/{id}/objetos`), quién está conectado y comentarios.
+- Solo existen en la versión web (la de Apps Script guarda en Drive).
 
 ## 4. App instalable
 

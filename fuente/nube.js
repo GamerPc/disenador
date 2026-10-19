@@ -126,6 +126,12 @@
     };
   });
   // Abrir un diseño compartido funciona aunque no hayas entrado
+  // Herramientas de la nube para otras partes (escuela, trabajo en equipo)
+  window.NUBE = {
+    listo, get db(){ return db; }, get auth(){ return auth; }, get usuario(){ return usuario; },
+    escribirGrande, leerGrande, borrarGrande, trozos, ahora,
+    entrar:() => entrar(), pedirCuenta(){ if (usuario) return true; pintarCuenta(); abrirModal('mNube'); toast('Primero entra con tu cuenta de Google'); return false; }
+  };
   window.NUBE_PUBLICAS = {
     async cargarCompartido(id){
       await listo;
@@ -212,6 +218,7 @@
     b.classList.toggle('conectado', !!usuario); document.body.classList.toggle('conNube', !!usuario);
     b.innerHTML = usuario ? '☁<span class="txtLargo"> ' + esc((usuario.displayName || 'Mi nube').split(' ')[0]) + '</span>' : '☁<span class="txtLargo"> Entrar</span>';
     cambiarTextos(!!usuario);
+    if ((usuario && usuario.uid) !== antes) window.dispatchEvent(new CustomEvent('nube-usuario', { detail:usuario }));
     if ((usuario && usuario.uid) !== antes){
       if (usuario) toast('☁ Conectado a tu nube. Lo que guardes se queda en tu cuenta.');
       try {

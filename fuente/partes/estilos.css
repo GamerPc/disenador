@@ -488,3 +488,8 @@
   #progresoIA{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);z-index:250;background:#0b1220;color:#e8f6ff;border:1px solid #19c8ff;border-radius:14px;padding:12px 16px;width:min(420px,92vw);box-shadow:0 0 18px rgba(25,200,255,.35);font-size:13px}
   #progresoIA .barraIA{height:8px;border-radius:4px;background:#1b2030;margin-top:8px;overflow:hidden}
   #progresoIA .barraIA i{display:block;height:100%;width:0;background:linear-gradient(90deg,#19c8ff,#a855f7);transition:width .2s}
+  /* ---------- asistente de escritura ---------- */
+  #mAsistente textarea{background:var(--panel2,#151821);color:var(--texto,#e5e7eb);border:1px solid var(--borde,#2a3140);border-radius:10px;padding:10px;font:14px/1.5 Inter,sans-serif;resize:vertical}
+  #mAsistente textarea:focus{border-color:var(--neon,#19c8ff);outline:none;box-shadow:0 0 0 3px rgba(25,200,255,.15)}
+  #mAsistente a,#mEscuela a,#mEquipo a{color:var(--neon,#19c8ff)}
+  #mAsistente summary{list-style-position:inside}

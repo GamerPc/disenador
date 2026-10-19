@@ -27,7 +27,7 @@
     [e => e.id === 'bAuto', 2], [e => (e.getAttribute('onclick') || '').includes('ajustarLienzoAContenido'), 3],
     [e => (e.getAttribute('onclick') || '').includes('abrirBuscar'), 4], [e => e.id === 'bInstalar', 5],
     [e => e.classList.contains('donar'), 6], [e => e.id === 'tamTxt', 7], [e => (e.getAttribute('onclick') || '') === 'nuevoDiseno()', 8],
-    [e => (e.getAttribute('onclick') || '') === 'ajustarZoom()', 9], [e => e.id === 'grupoZoom', 10], [e => e.id === 'bNube', 11],
+    [e => (e.getAttribute('onclick') || '') === 'ajustarZoom()', 9], [e => e.id === 'grupoZoom', 10], [e => e.id === 'bNube', 11], [e => e.id === 'bEscuela', 11.5], [e => e.id === 'bEquipo', 11.7],
     [e => (e.getAttribute('onclick') || '').includes('mCompartir'), 12], [e => (e.getAttribute('onclick') || '').includes('mProyectos'), 13],
     [e => e.id === 'grupoHist', 14], [e => (e.getAttribute('onclick') || '').includes('mPresentar'), 15]
   ];
