@@ -201,7 +201,7 @@ function guardarImagen(nombre, dataUrl) {
   const mime = m[1].toLowerCase();
   const ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'application/pdf': 'pdf',
     'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
-    'video/mp4': 'mp4', 'video/webm': 'webm', 'image/svg+xml': 'svg' }[mime];
+    'video/mp4': 'mp4', 'video/webm': 'webm', 'image/svg+xml': 'svg', 'text/html': 'html' }[mime];
   if (!ext) throw new Error('Tipo de archivo no permitido: ' + mime);
   nombre = (limpiarNombre_(nombre) || 'diseño') + '.' + ext;
 

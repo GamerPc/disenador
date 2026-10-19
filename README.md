@@ -2,7 +2,9 @@
 
 **Página de presentación:** https://gamerpc.github.io/disenador/inicio.html · **App:** https://gamerpc.github.io/disenador/
 
-Editor de diseño **gratuito** para la escuela y el trabajo: carteles, mapas mentales y conceptuales, diagramas de flujo, infografías, presentaciones con animaciones, plantillas de Derecho y más. Exporta a PNG, JPG, PDF (con marcas de corte), PowerPoint y video MP4.
+Editor de diseño **gratuito** para la escuela y el trabajo: carteles, mapas mentales y conceptuales, diagramas de flujo, infografías, presentaciones con animaciones, plantillas de Derecho, logos, **páginas web y pantallas de apps** (con modelos 3D) y más. Exporta a PNG, JPG, PDF (con marcas de corte), PowerPoint, SVG, video MP4 y **página web HTML** con animaciones al hacer scroll, efectos al pasar el mouse y modelos 3D.
+
+La carpeta `modelos/` tiene los modelos 3D de ejemplo (audífonos que se desarman y lata). Se cargan desde `https://gamerpc.github.io/disenador/modelos/`, así que deben quedar publicados en GitHub Pages.
 
 El sistema tiene **dos versiones** que salen del mismo código:
 
