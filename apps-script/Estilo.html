@@ -119,4 +119,11 @@
   .cajaRepetir[hidden]{display:none}
   @media (max-width:560px){ #barra .logoTxt,#barra .ver,#estadoGuardado{display:none !important} #barra .logo{display:flex !important;flex:none} #barra .logoImg{width:30px;height:30px} #barra input.nombre{width:96px} }
   #bMeterForma[hidden],#bSacarForma[hidden],#bEditarQR[hidden]{display:none}
+  #plumaAviso{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:#0b1220;border:1px solid #19c8ff;color:#e8f6ff;padding:6px 8px 6px 14px;border-radius:20px;font-size:12.5px;display:none;align-items:center;gap:6px;z-index:9;box-shadow:0 0 14px rgba(25,200,255,.35);max-width:calc(100% - 20px);flex-wrap:wrap;justify-content:center}
+  #plumaAviso button{background:#19c8ff;color:#05070d;border:0;border-radius:12px;padding:3px 10px;font-weight:600}
+  #plumaAviso button:last-child{background:#2a3140;color:#fff}
+  #bPluma.on{border-color:#19c8ff;box-shadow:0 0 0 1px #19c8ff}
+  .filaFuente{display:flex;gap:6px;align-items:stretch}
+  .filaFuente .bigbtn{flex:1;margin-bottom:6px}
+  @media (max-width:820px){ #plumaAviso span{display:none} }
 </style>
