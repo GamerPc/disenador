@@ -478,12 +478,15 @@ function actualizarConector(c){
   const ra = a ? cajaAbs(a) : punto(c.libreA), rb = b ? cajaAbs(b) : punto(c.libreB);
   const suelto = !a && !b;
   c.lockMovementX = c.lockMovementY = !suelto;
-  const [la, lb] = (c.fijo && c.ladoA && c.ladoB) ? [c.ladoA, c.ladoB] : ladosAuto(ra, rb);
+  let [la, lb] = (c.fijo && c.ladoA && c.ladoB) ? [c.ladoA, c.ladoB] : ladosAuto(ra, rb);
+  // punto exacto del borde elegido a mano (anclaA / anclaB): se mueve con la forma
+  if (a && c.anclaA) la = c.anclaA.lado; if (b && c.anclaB) lb = c.anclaB.lado;
   const redonda = o => !!o && (['circle','ellipse'].includes(o.type) || ['nube','blob'].includes(o.forma));
   const ca = { x: ra.left + ra.width/2, y: ra.top + ra.height/2 }, cb = { x: rb.left + rb.width/2, y: rb.top + rb.height/2 };
   const recta = (c.estilo || 'recta') === 'recta' && !c.fijo;
-  const p1 = recta && redonda(a) ? puntoBorde(ra, cb, a) : ladoPunto(ra, la);
-  const p2 = recta && redonda(b) ? puntoBorde(rb, ca, b) : ladoPunto(rb, lb);
+  const enAncla = (r, an, o) => { const q = { x:r.left + an.u * r.width, y:r.top + an.v * r.height }; return redonda(o) ? puntoBorde(r, { x:r.left + r.width/2 + (q.x - r.left - r.width/2) * 4, y:r.top + r.height/2 + (q.y - r.top - r.height/2) * 4 }, o) : q; };
+  const p1 = a && c.anclaA ? enAncla(ra, c.anclaA, a) : recta && redonda(a) ? puntoBorde(ra, cb, a) : ladoPunto(ra, la);
+  const p2 = b && c.anclaB ? enAncla(rb, c.anclaB, b) : recta && redonda(b) ? puntoBorde(rb, ca, b) : ladoPunto(rb, lb);
   const vA = la === 'arr' || la === 'aba', vB = lb === 'arr' || lb === 'aba';
   c.modo = vA !== vB ? (vA ? 'vh' : 'hv') : null;
   c.horiz = !vA;
@@ -546,7 +549,7 @@ const PUNTAS = [['nada','Sin punta'],['flecha','Flecha'],['abierta','Flecha abie
 });
 function invertirConector(){
   const o = conSel(); if (!o) return;
-  cambiarConector({ conA:o.conB, conB:o.conA, ladoA:o.ladoB, ladoB:o.ladoA,
+  cambiarConector({ conA:o.conB, conB:o.conA, ladoA:o.ladoB, ladoB:o.ladoA, anclaA:o.anclaB || null, anclaB:o.anclaA || null, libreA:o.libreB || null, libreB:o.libreA || null,
     inicio: o.fin || (o.flecha ? 'flecha' : 'nada'), fin: o.inicio || 'nada' });
 }
 function usarComoPredeterminado(){
@@ -557,4 +560,16 @@ function usarComoPredeterminado(){
 $('pEtiqueta').addEventListener('input', e => { const o = conSel(); if (o){ o.set('etiqueta', e.target.value); canvas.requestRenderAll(); } });
 $('pEtiqueta').addEventListener('change', guardarEstado);
 
+
+// Punto del borde de una forma más cercano a donde soltaste (cerca de la mitad, se pega al centro)
+function anclaEn(t, q){
+  const r = cajaAbs(t), w = r.width || 1, h = r.height || 1;
+  let u = Math.max(0, Math.min(1, (q.x - r.left) / w)), v = Math.max(0, Math.min(1, (q.y - r.top) / h));
+  const d = { izq:u * w, der:(1 - u) * w, arr:v * h, aba:(1 - v) * h };
+  const lado = Object.keys(d).reduce((m, k) => d[k] < d[m] ? k : m, 'izq');
+  if (lado === 'izq') u = 0; else if (lado === 'der') u = 1; else if (lado === 'arr') v = 0; else v = 1;
+  if ((lado === 'izq' || lado === 'der') && Math.abs(v - 0.5) < 0.06) v = 0.5;
+  if ((lado === 'arr' || lado === 'aba') && Math.abs(u - 0.5) < 0.06) u = 0.5;
+  return { u, v, lado, x:r.left + u * w, y:r.top + v * h };
+}
 </script>

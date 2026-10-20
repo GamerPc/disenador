@@ -2,7 +2,7 @@
    BARRA RÁPIDA (como la de Canva), MEDIDAS AL CAMBIAR EL TAMAÑO
    Y CONECTORES QUE SE AJUSTAN A MANO
    ========================================================= */
-EXTRA.push('desvio', 'libreA', 'libreB');
+EXTRA.push('desvio', 'libreA', 'libreB', 'anclaA', 'anclaB');
 
 /* ---------- medidas mientras cambias el tamaño o giras ---------- */
 (function(){

@@ -5,7 +5,7 @@
    BARRA RÁPIDA (como la de Canva), MEDIDAS AL CAMBIAR EL TAMAÑO
    Y CONECTORES QUE SE AJUSTAN A MANO
    ========================================================= */
-EXTRA.push('desvio', 'libreA', 'libreB');
+EXTRA.push('desvio', 'libreA', 'libreB', 'anclaA', 'anclaB');
 
 /* ---------- medidas mientras cambias el tamaño o giras ---------- */
 (function(){
@@ -351,12 +351,14 @@ Reglas:
 - Ordena los elementos de atrás hacia adelante (primero los fondos grandes).
 - No inventes nada que no esté en la imagen.`;
 
+const conTiempo = (p, ms) => Promise.race([p, new Promise(r => setTimeout(() => r('tiempo'), ms))]);
 async function iaImagenDisponible(){
   if (leerLS(IA_CLAVE)) return { tipo:'gemini' };
+  // la IA de Chrome solo si ya está lista para leer imágenes (si no, a veces se queda esperando sin responder)
   try {
     if ('LanguageModel' in self){
-      const a = await LanguageModel.availability({ expectedInputs:[{ type:'image' }, { type:'text', languages:['es'] }], expectedOutputs:[{ type:'text', languages:['es'] }] });
-      if (a && a !== 'unavailable') return { tipo:'chrome', estado:a };
+      const a = await conTiempo(LanguageModel.availability({ expectedInputs:[{ type:'image' }, { type:'text', languages:['es'] }], expectedOutputs:[{ type:'text', languages:['es'] }] }), 1500);
+      if (a === 'available') return { tipo:'chrome' };
     }
   } catch (e) {}
   return null;
@@ -396,11 +398,13 @@ async function leerDiagramaConIA(img, alProgreso){
     return interpretarJSONDiagrama(t);
   }
   // IA de Chrome (si acepta imágenes): menos exacta, pero gratis y sin clave
-  const s = await LanguageModel.create({ expectedInputs:[{ type:'image' }, { type:'text', languages:['es'] }], expectedOutputs:[{ type:'text', languages:['es'] }],
-    monitor(m){ m.addEventListener('downloadprogress', e => alProgreso && alProgreso(e.loaded)); } });
+  const s = await conTiempo(LanguageModel.create({ expectedInputs:[{ type:'image' }, { type:'text', languages:['es'] }], expectedOutputs:[{ type:'text', languages:['es'] }],
+    monitor(m){ m.addEventListener('downloadprogress', e => alProgreso && alProgreso(e.loaded)); } }), 60000);
+  if (s === 'tiempo') throw new Error('La IA de Chrome no respondió. Pon tu clave gratuita de Gemini en el recuadro de arriba para convertir la imagen.');
   try {
     const blob = await (await fetch(img.url)).blob();
-    const t = await s.prompt([{ role:'user', content:[{ type:'text', value:PROMPT_DIAGRAMA + '\nResponde solo con JSON con las claves fondo, elementos y conexiones.' }, { type:'image', value:blob }] }]);
+    const t = await conTiempo(s.prompt([{ role:'user', content:[{ type:'text', value:PROMPT_DIAGRAMA + '\nResponde solo con JSON con las claves fondo, elementos y conexiones.' }, { type:'image', value:blob }] }]), 150000);
+    if (t === 'tiempo') throw new Error('La IA de Chrome tardó demasiado. Pon tu clave gratuita de Gemini en el recuadro de arriba para un resultado más rápido y exacto.');
     return interpretarJSONDiagrama(t);
   } finally { s.destroy && s.destroy(); }
 }
@@ -519,7 +523,7 @@ function construirDiagramaIA(d, img, op = {}){
     <img id="idVista" alt="Vista previa" hidden>
     <label class="filaCheck"><input type="checkbox" id="idColores" checked> Copiar los colores de la imagen</label>
     <label class="filaCheck"><input type="checkbox" id="idGuia"> Poner la imagen original atrás, transparente, como guía (bórrala al terminar)</label>
-    <div id="idSinIA" hidden class="avisoIA"><b>Para usar esta función necesitas la IA de Google Gemini (gratis).</b>
+    <div id="idSinIA" hidden class="avisoIA"><b>Para convertir imágenes se usa la IA de Google Gemini (gratis, 1 minuto para activarla):</b>
       <ol><li>Entra a <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> con tu cuenta de Google.</li><li>Toca «Create API key» y cópiala.</li><li>Pégala aquí. Se guarda <b>solo en este navegador</b>.</li></ol>
       <div class="filaBusca"><input id="idClave" class="buscador" type="password" autocomplete="off" placeholder="Pega tu clave (empieza con AIza…)"><button class="pb" id="idGuardarClave">Guardar</button></div></div>
     <p id="idEstado" class="hint" role="status"></p>
@@ -545,12 +549,12 @@ function construirDiagramaIA(d, img, op = {}){
   $('idClave').addEventListener('keydown', e => e.stopPropagation());
   $('idGuardarClave').onclick = () => {
     const k = $('idClave').value.trim(); if (!/^AIza[\w-]{20,}$/.test(k)) return toast('Esa no parece una clave de Gemini (empieza con AIza…)');
-    guardarLS(IA_CLAVE, k); $('idClave').value = ''; $('idSinIA').hidden = true; toast('Clave guardada. Ya puedes convertir.');
+    guardarLS(IA_CLAVE, k); $('idClave').value = ''; $('idSinIA').hidden = true; $('idEstado').textContent = '✓ Clave guardada. Toca «Convertir en diagrama».'; toast('Clave guardada. Ya puedes convertir.');
   };
   $('idConvertir').onclick = async () => {
-    if (!img) return;
-    if (!(await iaImagenDisponible())){ $('idSinIA').hidden = false; $('idClave').focus(); return; }
-    const b = $('idConvertir'); b.disabled = true;
+    if (!img){ toast('Primero elige o pega una imagen'); return; }
+    const b = $('idConvertir'); b.disabled = true; $('idEstado').textContent = 'Preparando…';
+    if (!(await iaImagenDisponible())){ b.disabled = false; $('idEstado').textContent = '👉 Falta un paso: pon tu clave gratuita de Gemini en el recuadro de arriba y vuelve a tocar «Convertir».'; $('idSinIA').hidden = false; $('idClave').focus(); return; }
     const t0 = Date.now(), reloj = setInterval(() => { $('idEstado').textContent = '🔎 La IA está leyendo tu imagen… ' + Math.round((Date.now() - t0) / 1000) + ' s (suele tardar de 15 a 60 s)'; }, 500);
     try {
       const d = await leerDiagramaConIA(img, p => { $('idEstado').textContent = 'Descargando la IA de Chrome… ' + Math.round(p * 100) + '%'; });
@@ -561,11 +565,11 @@ function construirDiagramaIA(d, img, op = {}){
     } catch (e) {
       clearInterval(reloj);
       if (e.message === 'SIN_IA'){ $('idSinIA').hidden = false; $('idEstado').textContent = ''; }
-      else $('idEstado').textContent = '⚠ ' + e.message;
+      else { $('idEstado').textContent = '⚠ ' + e.message; if (!leerLS(IA_CLAVE)) $('idSinIA').hidden = false; }
     } finally { b.disabled = false; }
   };
   window.abrirImagenADiagrama = async (src) => {
-    abrirModal('mImgDiagrama'); $('idEstado').textContent = ''; $('idSinIA').hidden = !!(await iaImagenDisponible());
+    abrirModal('mImgDiagrama'); $('idEstado').textContent = ''; $('idSinIA').hidden = !!leerLS(IA_CLAVE);   // sin clave, se ve desde el inicio
     if (src) cargar(src);
     else if (!img){ $('idVista').hidden = true; $('idConvertir').disabled = true; }
   };

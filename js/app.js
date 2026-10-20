@@ -2069,12 +2069,15 @@ function actualizarConector(c){
   const ra = a ? cajaAbs(a) : punto(c.libreA), rb = b ? cajaAbs(b) : punto(c.libreB);
   const suelto = !a && !b;
   c.lockMovementX = c.lockMovementY = !suelto;
-  const [la, lb] = (c.fijo && c.ladoA && c.ladoB) ? [c.ladoA, c.ladoB] : ladosAuto(ra, rb);
+  let [la, lb] = (c.fijo && c.ladoA && c.ladoB) ? [c.ladoA, c.ladoB] : ladosAuto(ra, rb);
+  // punto exacto del borde elegido a mano (anclaA / anclaB): se mueve con la forma
+  if (a && c.anclaA) la = c.anclaA.lado; if (b && c.anclaB) lb = c.anclaB.lado;
   const redonda = o => !!o && (['circle','ellipse'].includes(o.type) || ['nube','blob'].includes(o.forma));
   const ca = { x: ra.left + ra.width/2, y: ra.top + ra.height/2 }, cb = { x: rb.left + rb.width/2, y: rb.top + rb.height/2 };
   const recta = (c.estilo || 'recta') === 'recta' && !c.fijo;
-  const p1 = recta && redonda(a) ? puntoBorde(ra, cb, a) : ladoPunto(ra, la);
-  const p2 = recta && redonda(b) ? puntoBorde(rb, ca, b) : ladoPunto(rb, lb);
+  const enAncla = (r, an, o) => { const q = { x:r.left + an.u * r.width, y:r.top + an.v * r.height }; return redonda(o) ? puntoBorde(r, { x:r.left + r.width/2 + (q.x - r.left - r.width/2) * 4, y:r.top + r.height/2 + (q.y - r.top - r.height/2) * 4 }, o) : q; };
+  const p1 = a && c.anclaA ? enAncla(ra, c.anclaA, a) : recta && redonda(a) ? puntoBorde(ra, cb, a) : ladoPunto(ra, la);
+  const p2 = b && c.anclaB ? enAncla(rb, c.anclaB, b) : recta && redonda(b) ? puntoBorde(rb, ca, b) : ladoPunto(rb, lb);
   const vA = la === 'arr' || la === 'aba', vB = lb === 'arr' || lb === 'aba';
   c.modo = vA !== vB ? (vA ? 'vh' : 'hv') : null;
   c.horiz = !vA;
@@ -2137,7 +2140,7 @@ const PUNTAS = [['nada','Sin punta'],['flecha','Flecha'],['abierta','Flecha abie
 });
 function invertirConector(){
   const o = conSel(); if (!o) return;
-  cambiarConector({ conA:o.conB, conB:o.conA, ladoA:o.ladoB, ladoB:o.ladoA,
+  cambiarConector({ conA:o.conB, conB:o.conA, ladoA:o.ladoB, ladoB:o.ladoA, anclaA:o.anclaB || null, anclaB:o.anclaA || null, libreA:o.libreB || null, libreB:o.libreA || null,
     inicio: o.fin || (o.flecha ? 'flecha' : 'nada'), fin: o.inicio || 'nada' });
 }
 function usarComoPredeterminado(){
@@ -2148,6 +2151,18 @@ function usarComoPredeterminado(){
 $('pEtiqueta').addEventListener('input', e => { const o = conSel(); if (o){ o.set('etiqueta', e.target.value); canvas.requestRenderAll(); } });
 $('pEtiqueta').addEventListener('change', guardarEstado);
 
+
+// Punto del borde de una forma más cercano a donde soltaste (cerca de la mitad, se pega al centro)
+function anclaEn(t, q){
+  const r = cajaAbs(t), w = r.width || 1, h = r.height || 1;
+  let u = Math.max(0, Math.min(1, (q.x - r.left) / w)), v = Math.max(0, Math.min(1, (q.y - r.top) / h));
+  const d = { izq:u * w, der:(1 - u) * w, arr:v * h, aba:(1 - v) * h };
+  const lado = Object.keys(d).reduce((m, k) => d[k] < d[m] ? k : m, 'izq');
+  if (lado === 'izq') u = 0; else if (lado === 'der') u = 1; else if (lado === 'arr') v = 0; else v = 1;
+  if ((lado === 'izq' || lado === 'der') && Math.abs(v - 0.5) < 0.06) v = 0.5;
+  if ((lado === 'arr' || lado === 'aba') && Math.abs(u - 0.5) < 0.06) u = 0.5;
+  return { u, v, lado, x:r.left + u * w, y:r.top + v * h };
+}
 /* =========================================================
    MAPAS Y DIAGRAMAS
    ========================================================= */
@@ -2277,11 +2292,11 @@ function puntoLienzo(e){
   const r = canvas.upperCanvasEl.getBoundingClientRect();
   return { x: (e.clientX - r.left) / zoom, y: (e.clientY - r.top) / zoom };
 }
-function objetivoEn(q, excluir){
+function objetivoEn(q, excluir, margen = 0){
   return canvas.getObjects().slice().reverse().find(o => {
     if (!o.visible || !nodoConectable(o) || o === excluir) return false;
-    const r = cajaAbs(o);
-    return q.x >= r.left && q.x <= r.left + r.width && q.y >= r.top && q.y <= r.top + r.height;
+    const r = cajaAbs(o), m = margen;
+    return q.x >= r.left - m && q.x <= r.left + r.width + m && q.y >= r.top - m && q.y <= r.top + r.height + m;
   });
 }
 function extremosConector(c){
@@ -2373,22 +2388,22 @@ puntosFin.forEach(el => {
   el.addEventListener('pointermove', e => {
     if (!arr) return;
     const q = puntoLienzo(e), ex = extremosConector(arr.c), fijo = arr.extremo === 'a' ? ex.b : ex.a;
-    const otro = porId(arr.extremo === 'a' ? arr.c.conB : arr.c.conA);
-    dibujarGuia(fijo, q, objetivoEn(q, otro));
+    const otro = porId(arr.extremo === 'a' ? arr.c.conB : arr.c.conA), t = objetivoEn(q, otro, 14 / zoom);
+    dibujarGuia(fijo, t ? anclaEn(t, q) : q, t);
   });
   el.addEventListener('pointerup', e => {
     if (!arr) return;
     const { c, extremo } = arr; arr = null; arrastreCon = null; limpiarGuia();
-    const q = puntoLienzo(e), otro = porId(extremo === 'a' ? c.conB : c.conA), t = objetivoEn(q, otro);
+    const q = puntoLienzo(e), otro = porId(extremo === 'a' ? c.conB : c.conA), t = objetivoEn(q, otro, 14 / zoom);
     if (t){
       // sobre una forma: se une por el lado más cercano a donde lo soltaste (y se queda ahí)
       t.id = t.id || nuevoId();
-      const lado = ladoHacia(cajaAbs(t), q), ladoOtro = extremo === 'a' ? c.ladoB : c.ladoA;
-      c.set(extremo === 'a' ? { conA:t.id, libreA:null, ladoA:lado, ladoB:ladoOtro } : { conB:t.id, libreB:null, ladoB:lado, ladoA:ladoOtro });
+      const an = anclaEn(t, q), lado = an.lado, ladoOtro = extremo === 'a' ? c.ladoB : c.ladoA, ancla = { u:an.u, v:an.v, lado };
+      c.set(extremo === 'a' ? { conA:t.id, libreA:null, ladoA:lado, ladoB:ladoOtro, anclaA:ancla } : { conB:t.id, libreB:null, ladoB:lado, ladoA:ladoOtro, anclaB:ancla });
       c.set({ orient:null, fijo:!!ladoOtro });
     } else {
       // en el vacío: el extremo se queda suelto justo ahí
-      c.set(extremo === 'a' ? { conA:null, libreA:{ x:q.x, y:q.y } } : { conB:null, libreB:{ x:q.x, y:q.y } });
+      c.set(extremo === 'a' ? { conA:null, libreA:{ x:q.x, y:q.y }, anclaA:null } : { conB:null, libreB:{ x:q.x, y:q.y }, anclaB:null });
       c.set({ orient:null, fijo:false });
     }
     actualizarConector(c); canvas.setActiveObject(c); canvas.requestRenderAll(); guardarEstado();
@@ -9076,7 +9091,7 @@ ajustarZoom = function(){
    BARRA RÁPIDA (como la de Canva), MEDIDAS AL CAMBIAR EL TAMAÑO
    Y CONECTORES QUE SE AJUSTAN A MANO
    ========================================================= */
-EXTRA.push('desvio', 'libreA', 'libreB');
+EXTRA.push('desvio', 'libreA', 'libreB', 'anclaA', 'anclaB');
 
 /* ---------- medidas mientras cambias el tamaño o giras ---------- */
 (function(){
@@ -9422,12 +9437,14 @@ Reglas:
 - Ordena los elementos de atrás hacia adelante (primero los fondos grandes).
 - No inventes nada que no esté en la imagen.`;
 
+const conTiempo = (p, ms) => Promise.race([p, new Promise(r => setTimeout(() => r('tiempo'), ms))]);
 async function iaImagenDisponible(){
   if (leerLS(IA_CLAVE)) return { tipo:'gemini' };
+  // la IA de Chrome solo si ya está lista para leer imágenes (si no, a veces se queda esperando sin responder)
   try {
     if ('LanguageModel' in self){
-      const a = await LanguageModel.availability({ expectedInputs:[{ type:'image' }, { type:'text', languages:['es'] }], expectedOutputs:[{ type:'text', languages:['es'] }] });
-      if (a && a !== 'unavailable') return { tipo:'chrome', estado:a };
+      const a = await conTiempo(LanguageModel.availability({ expectedInputs:[{ type:'image' }, { type:'text', languages:['es'] }], expectedOutputs:[{ type:'text', languages:['es'] }] }), 1500);
+      if (a === 'available') return { tipo:'chrome' };
     }
   } catch (e) {}
   return null;
@@ -9467,11 +9484,13 @@ async function leerDiagramaConIA(img, alProgreso){
     return interpretarJSONDiagrama(t);
   }
   // IA de Chrome (si acepta imágenes): menos exacta, pero gratis y sin clave
-  const s = await LanguageModel.create({ expectedInputs:[{ type:'image' }, { type:'text', languages:['es'] }], expectedOutputs:[{ type:'text', languages:['es'] }],
-    monitor(m){ m.addEventListener('downloadprogress', e => alProgreso && alProgreso(e.loaded)); } });
+  const s = await conTiempo(LanguageModel.create({ expectedInputs:[{ type:'image' }, { type:'text', languages:['es'] }], expectedOutputs:[{ type:'text', languages:['es'] }],
+    monitor(m){ m.addEventListener('downloadprogress', e => alProgreso && alProgreso(e.loaded)); } }), 60000);
+  if (s === 'tiempo') throw new Error('La IA de Chrome no respondió. Pon tu clave gratuita de Gemini en el recuadro de arriba para convertir la imagen.');
   try {
     const blob = await (await fetch(img.url)).blob();
-    const t = await s.prompt([{ role:'user', content:[{ type:'text', value:PROMPT_DIAGRAMA + '\nResponde solo con JSON con las claves fondo, elementos y conexiones.' }, { type:'image', value:blob }] }]);
+    const t = await conTiempo(s.prompt([{ role:'user', content:[{ type:'text', value:PROMPT_DIAGRAMA + '\nResponde solo con JSON con las claves fondo, elementos y conexiones.' }, { type:'image', value:blob }] }]), 150000);
+    if (t === 'tiempo') throw new Error('La IA de Chrome tardó demasiado. Pon tu clave gratuita de Gemini en el recuadro de arriba para un resultado más rápido y exacto.');
     return interpretarJSONDiagrama(t);
   } finally { s.destroy && s.destroy(); }
 }
@@ -9590,7 +9609,7 @@ function construirDiagramaIA(d, img, op = {}){
     <img id="idVista" alt="Vista previa" hidden>
     <label class="filaCheck"><input type="checkbox" id="idColores" checked> Copiar los colores de la imagen</label>
     <label class="filaCheck"><input type="checkbox" id="idGuia"> Poner la imagen original atrás, transparente, como guía (bórrala al terminar)</label>
-    <div id="idSinIA" hidden class="avisoIA"><b>Para usar esta función necesitas la IA de Google Gemini (gratis).</b>
+    <div id="idSinIA" hidden class="avisoIA"><b>Para convertir imágenes se usa la IA de Google Gemini (gratis, 1 minuto para activarla):</b>
       <ol><li>Entra a <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> con tu cuenta de Google.</li><li>Toca «Create API key» y cópiala.</li><li>Pégala aquí. Se guarda <b>solo en este navegador</b>.</li></ol>
       <div class="filaBusca"><input id="idClave" class="buscador" type="password" autocomplete="off" placeholder="Pega tu clave (empieza con AIza…)"><button class="pb" id="idGuardarClave">Guardar</button></div></div>
     <p id="idEstado" class="hint" role="status"></p>
@@ -9616,12 +9635,12 @@ function construirDiagramaIA(d, img, op = {}){
   $('idClave').addEventListener('keydown', e => e.stopPropagation());
   $('idGuardarClave').onclick = () => {
     const k = $('idClave').value.trim(); if (!/^AIza[\w-]{20,}$/.test(k)) return toast('Esa no parece una clave de Gemini (empieza con AIza…)');
-    guardarLS(IA_CLAVE, k); $('idClave').value = ''; $('idSinIA').hidden = true; toast('Clave guardada. Ya puedes convertir.');
+    guardarLS(IA_CLAVE, k); $('idClave').value = ''; $('idSinIA').hidden = true; $('idEstado').textContent = '✓ Clave guardada. Toca «Convertir en diagrama».'; toast('Clave guardada. Ya puedes convertir.');
   };
   $('idConvertir').onclick = async () => {
-    if (!img) return;
-    if (!(await iaImagenDisponible())){ $('idSinIA').hidden = false; $('idClave').focus(); return; }
-    const b = $('idConvertir'); b.disabled = true;
+    if (!img){ toast('Primero elige o pega una imagen'); return; }
+    const b = $('idConvertir'); b.disabled = true; $('idEstado').textContent = 'Preparando…';
+    if (!(await iaImagenDisponible())){ b.disabled = false; $('idEstado').textContent = '👉 Falta un paso: pon tu clave gratuita de Gemini en el recuadro de arriba y vuelve a tocar «Convertir».'; $('idSinIA').hidden = false; $('idClave').focus(); return; }
     const t0 = Date.now(), reloj = setInterval(() => { $('idEstado').textContent = '🔎 La IA está leyendo tu imagen… ' + Math.round((Date.now() - t0) / 1000) + ' s (suele tardar de 15 a 60 s)'; }, 500);
     try {
       const d = await leerDiagramaConIA(img, p => { $('idEstado').textContent = 'Descargando la IA de Chrome… ' + Math.round(p * 100) + '%'; });
@@ -9632,11 +9651,11 @@ function construirDiagramaIA(d, img, op = {}){
     } catch (e) {
       clearInterval(reloj);
       if (e.message === 'SIN_IA'){ $('idSinIA').hidden = false; $('idEstado').textContent = ''; }
-      else $('idEstado').textContent = '⚠ ' + e.message;
+      else { $('idEstado').textContent = '⚠ ' + e.message; if (!leerLS(IA_CLAVE)) $('idSinIA').hidden = false; }
     } finally { b.disabled = false; }
   };
   window.abrirImagenADiagrama = async (src) => {
-    abrirModal('mImgDiagrama'); $('idEstado').textContent = ''; $('idSinIA').hidden = !!(await iaImagenDisponible());
+    abrirModal('mImgDiagrama'); $('idEstado').textContent = ''; $('idSinIA').hidden = !!leerLS(IA_CLAVE);   // sin clave, se ve desde el inicio
     if (src) cargar(src);
     else if (!img){ $('idVista').hidden = true; $('idConvertir').disabled = true; }
   };

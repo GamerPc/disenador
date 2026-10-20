@@ -130,11 +130,11 @@ function puntoLienzo(e){
   const r = canvas.upperCanvasEl.getBoundingClientRect();
   return { x: (e.clientX - r.left) / zoom, y: (e.clientY - r.top) / zoom };
 }
-function objetivoEn(q, excluir){
+function objetivoEn(q, excluir, margen = 0){
   return canvas.getObjects().slice().reverse().find(o => {
     if (!o.visible || !nodoConectable(o) || o === excluir) return false;
-    const r = cajaAbs(o);
-    return q.x >= r.left && q.x <= r.left + r.width && q.y >= r.top && q.y <= r.top + r.height;
+    const r = cajaAbs(o), m = margen;
+    return q.x >= r.left - m && q.x <= r.left + r.width + m && q.y >= r.top - m && q.y <= r.top + r.height + m;
   });
 }
 function extremosConector(c){
@@ -226,22 +226,22 @@ puntosFin.forEach(el => {
   el.addEventListener('pointermove', e => {
     if (!arr) return;
     const q = puntoLienzo(e), ex = extremosConector(arr.c), fijo = arr.extremo === 'a' ? ex.b : ex.a;
-    const otro = porId(arr.extremo === 'a' ? arr.c.conB : arr.c.conA);
-    dibujarGuia(fijo, q, objetivoEn(q, otro));
+    const otro = porId(arr.extremo === 'a' ? arr.c.conB : arr.c.conA), t = objetivoEn(q, otro, 14 / zoom);
+    dibujarGuia(fijo, t ? anclaEn(t, q) : q, t);
   });
   el.addEventListener('pointerup', e => {
     if (!arr) return;
     const { c, extremo } = arr; arr = null; arrastreCon = null; limpiarGuia();
-    const q = puntoLienzo(e), otro = porId(extremo === 'a' ? c.conB : c.conA), t = objetivoEn(q, otro);
+    const q = puntoLienzo(e), otro = porId(extremo === 'a' ? c.conB : c.conA), t = objetivoEn(q, otro, 14 / zoom);
     if (t){
       // sobre una forma: se une por el lado más cercano a donde lo soltaste (y se queda ahí)
       t.id = t.id || nuevoId();
-      const lado = ladoHacia(cajaAbs(t), q), ladoOtro = extremo === 'a' ? c.ladoB : c.ladoA;
-      c.set(extremo === 'a' ? { conA:t.id, libreA:null, ladoA:lado, ladoB:ladoOtro } : { conB:t.id, libreB:null, ladoB:lado, ladoA:ladoOtro });
+      const an = anclaEn(t, q), lado = an.lado, ladoOtro = extremo === 'a' ? c.ladoB : c.ladoA, ancla = { u:an.u, v:an.v, lado };
+      c.set(extremo === 'a' ? { conA:t.id, libreA:null, ladoA:lado, ladoB:ladoOtro, anclaA:ancla } : { conB:t.id, libreB:null, ladoB:lado, ladoA:ladoOtro, anclaB:ancla });
       c.set({ orient:null, fijo:!!ladoOtro });
     } else {
       // en el vacío: el extremo se queda suelto justo ahí
-      c.set(extremo === 'a' ? { conA:null, libreA:{ x:q.x, y:q.y } } : { conB:null, libreB:{ x:q.x, y:q.y } });
+      c.set(extremo === 'a' ? { conA:null, libreA:{ x:q.x, y:q.y }, anclaA:null } : { conB:null, libreB:{ x:q.x, y:q.y }, anclaB:null });
       c.set({ orient:null, fijo:false });
     }
     actualizarConector(c); canvas.setActiveObject(c); canvas.requestRenderAll(); guardarEstado();
