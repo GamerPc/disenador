@@ -285,6 +285,7 @@ function opcionesMenuCtx(){
     if (o.type === 'image'){
       if (typeof iniciarRecorteRect === 'function') L.push({ t:'Recortar', i:'recortar', f:iniciarRecorteRect });
       if (typeof quitarFondoIA === 'function') L.push({ t:'Quitar el fondo (IA)', i:'varita', f:quitarFondoIA });
+      if (typeof convertirImagenSeleccionada === 'function') L.push({ t:'Convertir en diagrama editable (IA)', i:'grupo', f:convertirImagenSeleccionada });
     }
     L.push({ t:'Copiar estilo', a:'Ctrl+Alt+C', i:'estilo', des:varios, f:copiarEstilo });
     L.push({ t:'Pegar estilo', a:'Ctrl+Alt+V', i:'estilo', f:pegarEstilo });

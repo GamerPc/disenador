@@ -173,3 +173,6 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - Aviso «ancho / alto» (y grados al girar) mientras cambias el tamaño.
 - Conectores: los extremos se pueden soltar en el vacío (`libreA`/`libreB`) o en el lado exacto de una forma (`ladoA`/`ladoB` fijos); punto de en medio para doblar la línea (`desvio`); doble clic lo endereza.
 - Con la interfaz limpia, el panel derecho completo solo se abre con ⚙ o «Capas».
+
+## v41: de imagen a diagrama editable
+- `78-imagen-a-diagrama.js`: sube o pega una imagen de un diagrama; Gemini (clave del usuario, en su navegador) devuelve JSON con cajas, textos, colores, líneas y conexiones (coordenadas 0-1000) y se arma con `nodo()`, `fabric.Textbox`, conectores libres y `unir()`. Opción de dejar la imagen original atrás como guía. Accesos: pestañas Diagramas e Imágenes, clic derecho y barra rápida sobre una imagen.

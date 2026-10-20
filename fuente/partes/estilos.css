@@ -768,3 +768,16 @@
   html.claro #barraRapida,html.claro #popRapido{box-shadow:0 12px 32px rgba(20,30,50,.16)}
   html.claro #barraRapida > button.on,html.claro #barraRapida > button.abierto{background:rgba(6,121,176,.1)}
   #popRapido [hidden]{display:none !important}
+  /* ---------- de imagen a diagrama ---------- */
+  .btnImgDiag{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;border:1px dashed var(--neon,#19c8ff) !important;margin-bottom:10px}
+  .btnImgDiag span{font-size:11.5px;color:var(--suave)}
+  #mImgDiagrama .drop{cursor:pointer;padding:22px 14px;text-align:center;border:2px dashed var(--borde);border-radius:12px;margin:10px 0}
+  #mImgDiagrama .drop.sobre,#mImgDiagrama .drop:hover{border-color:var(--neon)}
+  #mImgDiagrama .drop.conImg{padding:10px}
+  #idVista{display:block;max-width:100%;max-height:300px;margin:0 auto 10px;border-radius:8px;border:1px solid var(--borde);background:#fff}
+  #idVista[hidden]{display:none}
+  #mImgDiagrama .filaCheck{display:flex;gap:8px;align-items:center;font-size:13.5px;margin:6px 0}
+  .avisoIA{background:var(--panel2);border:1px solid var(--borde);border-radius:12px;padding:10px 14px;margin:10px 0;font-size:13.5px}
+  .avisoIA ol{margin:6px 0 8px;padding-left:20px}
+  .avisoIA[hidden]{display:none}
+  #mImgDiagrama a{color:var(--neon,#19c8ff)}

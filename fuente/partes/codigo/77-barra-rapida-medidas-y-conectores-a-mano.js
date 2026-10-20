@@ -179,6 +179,7 @@ function construirBarraRapida(){
     items.push(botonBR('recortar', `${icoBR('recortar')}<span>Recortar</span>`, 'Recortar la imagen', () => iniciarRecorteRect()));
     if (typeof quitarFondoIA === 'function') items.push(botonBR('fondoIA', `${icoBR('varita')}<span>Quitar fondo</span>`, 'Quitar el fondo con IA', () => quitarFondoIA()));
     if (seVe($('secImagen'))) items.push(botonBR('filtros', `${icoBR('filtros')}<span>Ajustes</span>`, 'Brillo, contraste, filtros y recortes en forma', btn => abrirPopRapido(btn, 'Ajustes de la imagen', [$('secImagen')])));
+    if (typeof convertirImagenSeleccionada === 'function') items.push(botonBR('aDiagrama', `${icoBR('grupo')}<span>A diagrama</span>`, 'Convertir esta imagen en un diagrama editable (IA)', () => convertirImagenSeleccionada()));
     items.push(botonBR('voltear', icoBR('voltearH'), 'Voltear horizontal', () => voltear('flipX')));
   } else if (tipo === 'linea'){
     items.push(botonBR('color', `<span class="muestraBR" style="background:${esc(o.stroke || '#1f2330')}"></span>`, 'Color y grosor de la línea', btn => abrirPopRapido(btn, 'Color y grosor', [$('secBorde')])));
