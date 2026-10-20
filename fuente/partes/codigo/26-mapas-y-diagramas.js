@@ -229,10 +229,18 @@ puntosFin.forEach(el => {
   el.addEventListener('pointerup', e => {
     if (!arr) return;
     const { c, extremo } = arr; arr = null; arrastreCon = null; limpiarGuia();
-    const otro = porId(extremo === 'a' ? c.conB : c.conA), t = objetivoEn(puntoLienzo(e), otro);
-    if (!t){ toast('Suelta el extremo sobre una forma para conectarlo'); actualizarPuntos(); return; }
-    t.id = t.id || nuevoId();
-    c.set(extremo === 'a' ? { conA:t.id } : { conB:t.id }); c.set({ ladoA:null, ladoB:null, orient:null, fijo:false });
+    const q = puntoLienzo(e), otro = porId(extremo === 'a' ? c.conB : c.conA), t = objetivoEn(q, otro);
+    if (t){
+      // sobre una forma: se une por el lado más cercano a donde lo soltaste (y se queda ahí)
+      t.id = t.id || nuevoId();
+      const lado = ladoHacia(cajaAbs(t), q), ladoOtro = extremo === 'a' ? c.ladoB : c.ladoA;
+      c.set(extremo === 'a' ? { conA:t.id, libreA:null, ladoA:lado, ladoB:ladoOtro } : { conB:t.id, libreB:null, ladoB:lado, ladoA:ladoOtro });
+      c.set({ orient:null, fijo:!!ladoOtro });
+    } else {
+      // en el vacío: el extremo se queda suelto justo ahí
+      c.set(extremo === 'a' ? { conA:null, libreA:{ x:q.x, y:q.y } } : { conB:null, libreB:{ x:q.x, y:q.y } });
+      c.set({ orient:null, fijo:false });
+    }
     actualizarConector(c); canvas.setActiveObject(c); canvas.requestRenderAll(); guardarEstado();
   });
 });

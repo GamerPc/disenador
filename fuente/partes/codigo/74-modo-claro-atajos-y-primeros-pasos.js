@@ -114,7 +114,7 @@ const GRUPOS_ATAJOS = [
 const PASOS_PP = [
   { id:'plantilla', t:'Elige una plantilla', d:'Abre Plantillas y haz clic en la que más te guste.', tab:'tPlantillas', foco:'#lateral .tarjetaPl' },
   { id:'texto', t:'Cambia un texto', d:'Haz doble clic en un texto del lienzo y escribe lo que quieras.', foco:'texto' },
-  { id:'color', t:'Cambia un color', d:'Con algo seleccionado, elige otro color en el panel de la derecha.', foco:'#props' },
+  { id:'color', t:'Cambia un color', d:'Con algo seleccionado, toca el color en la barra de arriba y elige otro.', foco:'#props' },
   { id:'mover', t:'Mueve o agranda algo', d:'Arrastra un elemento o jala una de sus esquinas.', foco:'objeto' },
   { id:'agregar', t:'Agrega algo nuevo', d:'En Elementos, Formas, Texto o Imágenes, toca algo para ponerlo en tu diseño.', tab:'tElementos', foco:'#pestanas [data-tab="tElementos"]' },
   { id:'exportar', t:'Descarga tu diseño', d:'Toca ⬇ Exportar y elige PNG, PDF o PowerPoint.', foco:'#barra [onclick*="mExportar"], #menuMas [onclick*="mExportar"]' }
@@ -195,7 +195,8 @@ function mostrarPasoPP(p){
     let o = activo();
     if (!o || (p.foco === 'texto' && !/text/i.test(o.type || ''))){ o = objetoParaPP(p.foco === 'texto'); if (o){ canvas.setActiveObject(o); canvas.requestRenderAll(); } }
     if (!o){ toast(p.foco === 'texto' ? 'Primero agrega un texto (pestaña Texto) o elige una plantilla' : 'Primero agrega algo a tu diseño'); return; }
-    if (p.foco === '#props'){ if (window.innerWidth <= 820 && typeof alternarProps === 'function') try { alternarProps(true); } catch (e) {} objetivo = () => { const el = $('props'); const r = el.getBoundingClientRect(); return r.width > 0 ? r : rectObjetoPP(o); }; }
+    if (p.foco === '#props' && document.querySelector('#barraRapida:not([hidden]) [data-k="color"]')){ objetivo = () => { const q = document.querySelector('#barraRapida:not([hidden]) [data-k="color"]'); return q ? q.getBoundingClientRect() : rectObjetoPP(o); }; }
+    else if (p.foco === '#props'){ if (window.innerWidth <= 820 && typeof alternarProps === 'function') try { alternarProps(true); } catch (e) {} objetivo = () => { const el = $('props'); const r = el.getBoundingClientRect(); return r.width > 0 ? r : rectObjetoPP(o); }; }
     else objetivo = () => rectObjetoPP(o);
   } else {
     objetivo = () => { const el = [...document.querySelectorAll(p.foco)].find(x => x.getBoundingClientRect().width > 0); return el ? el.getBoundingClientRect() : null; };
@@ -222,11 +223,11 @@ document.addEventListener('click', e => {
     const antes = canvas.getObjects().length;
     setTimeout(() => { if (canvas.getObjects().length > antes) hechoPP('agregar'); }, 900);
   }
-  if (t.closest('#props') && t.closest('.sw, .swatch, [data-color]')) setTimeout(() => hechoPP('color'), 200);
+  if (t.closest('#props, #popRapido') && t.closest('.sw, .swatch, [data-color]')) setTimeout(() => hechoPP('color'), 200);
 }, true);
 document.addEventListener('input', e => {
   if (!PP.activo) return;
-  if (e.target.type === 'color' && e.target.closest('#props, #accMovil')) hechoPP('color');
+  if (e.target.type === 'color' && e.target.closest('#props, #accMovil, #popRapido')) hechoPP('color');
   if (e.target.id === 'pContenido') hechoPP('texto');
 }, true);
 canvas.on('text:changed', () => hechoPP('texto'));

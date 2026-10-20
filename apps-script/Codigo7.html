@@ -2,160 +2,429 @@
 /*@parte Codigo7*/ (window.__partes = window.__partes || {})['Codigo7'] = true;
 
 /* =========================================================
-   EXPORTAR VIDEO (MP4 con animaciones y transiciones)
+   PRESENTACIÓN EN PANTALLA COMPLETA
    ========================================================= */
-const URL_MP4MUXER = 'https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.1/build/mp4-muxer.js';
-function cargarMuxer(){
+let pres = null;
+function iniciarPresentacion(conVista){
+  const vistaOk = conVista ? abrirVentanaPresentador() : false;   // se abre aquí, justo con el clic, para que el navegador lo permita
+  presConfig = { ...presConfig, transicion:$('pTrans').value, avance:$('pAvance').value, segundos:Math.max(1, +$('pSeg').value || 6) };
+  guardarEstado();
+  cerrarModal('mPresentar');
+  presentar($('pDesde').value === 'actual' ? actual : 0, false, conVista && !vistaOk);
+}
+['pAvance'].forEach(id => $(id).addEventListener('change', () => $('filaSeg').style.display = $('pAvance').value === 'auto' ? 'flex' : 'none'));
+document.querySelector('[onclick="abrirModal(\'mPresentar\')"]').addEventListener('click', () => {
+  $('pTrans').value = presConfig.transicion; $('pAvance').value = presConfig.avance; $('pSeg').value = presConfig.segundos;
+  $('filaSeg').style.display = presConfig.avance === 'auto' ? 'flex' : 'none';
+});
+async function presentar(desde, soloEsta, verNotas){
+  if (activo() && activo().isEditing) activo().exitEditing();
+  if (canvas.isDrawingMode) activarDibujo(null);
+  canvas.discardActiveObject(); canvas.requestRenderAll();
+  paginas[actual] = jsonPagina();
+  pres = { i:-1, cur:null, timers:[], fin:false, lista: soloEsta ? [desde] : paginas.map((_, k) => k) };
+  reiniciarTiempo(); pres.reloj = setInterval(pintarTiempo, 500); prepararImagenesPres();
+  pres.verNotas = !!verNotas; $('presNotas').style.display = pres.verNotas ? 'block' : 'none';
+  $('presentacion').style.display = 'block'; $('presFin').style.display = 'none';
+  const yo = pres;
+  try { if (!document.fullscreenElement){ await $('presentacion').requestFullscreen(); yo.fs = true; } } catch(e){}
+  await new Promise(r => setTimeout(r, 120));
+  irA(soloEsta ? 0 : desde, false, 1);
+  bucleRender();
+  mostrarControles();
+}
+function salirPresentacion(){
+  if (!pres) return;
+  pres.timers.forEach(clearTimeout); clearTimeout(pres.auto); clearInterval(pres.reloj);
+  const v = ventanaAbierta(); if (v) try { v.close(); } catch(e){}
+  ventanaPres = null;
+  if (pres.cur) pres.cur.sc.dispose();
+  $('presEscenario').innerHTML = ''; $('presentacion').style.display = 'none';
+  pres = null;
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+}
+// si la persona sale de pantalla completa (por ejemplo con Esc del navegador) se cierra la presentación
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && pres && pres.fs) salirPresentacion(); });
+function bucleRender(){
+  if (!pres) return;
+  if (pres.cur && pres.cur.animando > 0) pres.cur.sc.renderAll();
+  requestAnimationFrame(bucleRender);
+}
+// Crea la diapositiva i ajustada a la pantalla
+function construirDiapositiva(i, cb){
+  const sw = window.innerWidth, sh = window.innerHeight, z = Math.min(sw / W, sh / H);
+  const wrap = document.createElement('div'); wrap.className = 'diapo';
+  const el = document.createElement('canvas'); wrap.appendChild(el);
+  $('presEscenario').appendChild(wrap);
+  const sc = new fabric.StaticCanvas(el, { width:Math.round(W * z), height:Math.round(H * z), renderOnAddRemove:false });
+  sc.loadFromJSON(paginas[i] || PAGINA_VACIA(), () => {
+    sc.setZoom(z);
+    const d = { i, wrap, sc, pasos:prepararPasos(sc), paso:0, animando:0 };
+    sc.renderAll();
+    cb(d);
+  });
+}
+// Arma la secuencia de animaciones de la página: pasos que empiezan con clic y su línea de tiempo
+function prepararPasos(sc){
+  const objs = sc.getObjects(), porIdP = {};
+  objs.forEach(o => { if (o.id) porIdP[o.id] = o; });
+  const animados = objs.filter(o => o.anim && o.anim.tipo && o.anim.tipo !== 'ninguna' && !o.esFondo)
+    .sort((a, b) => ((a.anim.orden || 0) - (b.anim.orden || 0)) || (objs.indexOf(a) - objs.indexOf(b)));
+  const pasos = []; let paso = null, prevIni = 0, prevFin = 0, ordenPrevio = null;
+  animados.forEach(o => {
+    const a = o.anim, dur = a.duracion || 700, ret = a.retraso || 0;
+    let ini;
+    const mismoGrupo = ordenPrevio !== null && a.orden === ordenPrevio;   // mismo número de orden = al mismo tiempo
+    if (!paso || (a.inicio === 'clic' && !mismoGrupo)){ paso = { items:[], clic: a.inicio === 'clic' }; pasos.push(paso); ini = ret; }
+    else if (a.inicio === 'con' || mismoGrupo) ini = prevIni + ret;
+    else ini = prevFin + ret;
+    paso.items.push({ o, a, ini, dur });
+    if (!mismoGrupo) prevIni = ini;
+    prevFin = Math.max(mismoGrupo ? prevFin : 0, ini + dur);
+    ordenPrevio = a.orden;
+  });
+  const lider = new Map();
+  pasos.forEach(p => p.items.forEach(it => lider.set(it.o, { p, it })));
+  objs.forEach(t => {                                    // el texto de una forma aparece con su forma
+    const f = t.textoDe && porIdP[t.textoDe];
+    if (f && lider.has(f) && !lider.has(t)){ const L = lider.get(f); const it = { o:t, a:L.it.a, ini:L.it.ini, dur:L.it.dur }; L.p.items.push(it); lider.set(t, { p:L.p, it }); }
+  });
+  objs.forEach(c => {                                    // las líneas aparecen después de las formas que unen
+    if (c.type !== 'conector' || lider.has(c)) return;
+    const cand = [lider.get(porIdP[c.conA]), lider.get(porIdP[c.conB])].filter(Boolean);
+    if (!cand.length) return;
+    const ult = cand.reduce((m, x) => {
+      const pm = pasos.indexOf(m.p), px = pasos.indexOf(x.p);
+      return px > pm || (px === pm && x.it.ini + x.it.dur > m.it.ini + m.it.dur) ? x : m;
+    });
+    const it = { o:c, a:{ tipo:'aparecer' }, ini:ult.it.ini + ult.it.dur * 0.7, dur:450 };
+    ult.p.items.push(it); lider.set(c, { p:ult.p, it });
+  });
+  pasos.forEach(p => p.items.forEach(it => {
+    const o = it.o;
+    if (o.originX !== 'center' || o.originY !== 'center'){ const c = o.getCenterPoint(); o.set({ originX:'center', originY:'center' }); o.setPositionByOrigin(c, 'center', 'center'); }
+    it.fin = { left:o.left, top:o.top, opacity:o.opacity ?? 1, scaleX:o.scaleX, scaleY:o.scaleY, angle:o.angle || 0, text:o.text };
+  }));
+  return pasos;
+}
+function estadoInicial(it){
+  const { o, a, fin:f } = it, dx = W * 0.18, dy = H * 0.18;
+  const base = { opacity:0 };
+  switch (a.tipo){
+    case 'arriba':    Object.assign(base, { top:f.top + dy }); break;
+    case 'abajo':     Object.assign(base, { top:f.top - dy }); break;
+    case 'izquierda': Object.assign(base, { left:f.left - dx }); break;
+    case 'derecha':   Object.assign(base, { left:f.left + dx }); break;
+    case 'zoom':      Object.assign(base, { scaleX:f.scaleX * 0.3, scaleY:f.scaleY * 0.3 }); break;
+    case 'rebote':    Object.assign(base, { scaleX:f.scaleX * 0.05, scaleY:f.scaleY * 0.05 }); break;
+    case 'girar':     Object.assign(base, { angle:f.angle - 200, scaleX:f.scaleX * 0.2, scaleY:f.scaleY * 0.2 }); break;
+    case 'escribir':  if (typeof f.text === 'string' && f.text.length){ o.set({ text:'', opacity:f.opacity }); return; } break;
+  }
+  o.set(base);
+}
+function mostrarFinal(it){ const f = it.fin; it.o.set({ left:f.left, top:f.top, opacity:f.opacity, scaleX:f.scaleX, scaleY:f.scaleY, angle:f.angle }); if (typeof f.text === 'string' && it.o.text !== undefined) it.o.set('text', f.text); }
+function animarItem(d, it){
+  const { o, a, fin:f, dur } = it;
+  d.animando++;
+  const terminar = () => { mostrarFinal(it); d.animando = Math.max(0, d.animando - 1); if (d.sc.contextContainer) d.sc.renderAll(); };
+  if (a.tipo === 'escribir' && typeof f.text === 'string' && f.text.length){
+    fabric.util.animate({ startValue:0, endValue:f.text.length, duration:Math.max(dur, f.text.length * 35),
+      onChange: v => o.set('text', f.text.slice(0, Math.round(v))), onComplete:terminar });
+    return;
+  }
+  const ini = { left:o.left, top:o.top, opacity:o.opacity, scaleX:o.scaleX, scaleY:o.scaleY, angle:o.angle };
+  const ease = a.tipo === 'rebote' ? fabric.util.ease.easeOutBack : fabric.util.ease.easeOutCubic;
+  fabric.util.animate({ startValue:0, endValue:1, duration:dur, easing:ease,
+    onChange: t => {
+      ['left','top','scaleX','scaleY','angle'].forEach(k => o.set(k, ini[k] + (f[k] - ini[k]) * t));
+      o.set('opacity', Math.max(0, Math.min(1, ini.opacity + (f.opacity - ini.opacity) * Math.min(1, t * 1.4))));
+    },
+    onComplete: terminar });
+}
+function ejecutarPaso(d, k){
+  const p = d.pasos[k]; if (!p) return 0;
+  p.items.forEach(it => pres.timers.push(setTimeout(() => { if (pres && pres.cur === d) animarItem(d, it); }, it.ini)));
+  d.paso = k + 1;
+  return Math.max(0, ...p.items.map(it => it.ini + Math.max(it.dur, it.a.tipo === 'escribir' && typeof it.fin.text === 'string' ? it.fin.text.length * 35 : 0)));
+}
+function irA(i, final, dir){
+  const n = pres.lista.length, idx = i;
+  if (idx >= n){ pres.fin = true; $('presFin').style.display = 'flex'; actualizarPresentador(); return; }
+  if (idx < 0) return;
+  pres.fin = false; $('presFin').style.display = 'none';
+  pres.timers.forEach(clearTimeout); pres.timers = []; clearTimeout(pres.auto);
+  const pagina = pres.lista[idx];
+  construirDiapositiva(pagina, d => {
+    if (!pres){ d.sc.dispose(); return; }
+    const viejo = pres.cur, tr = presConfig.transicion, w = d.wrap;
+    if (final) d.pasos.forEach(p => p.items.forEach(mostrarFinal)), d.paso = d.pasos.length;
+    else d.pasos.forEach(p => p.items.forEach(estadoInicial));
+    d.sc.renderAll();
+    if (viejo && tr !== 'ninguna'){
+      w.style.transition = 'none'; w.style.opacity = 0;
+      if (tr === 'deslizar') w.style.transform = `translateX(${dir * 100}%)`;
+      if (tr === 'zoom') w.style.transform = 'scale(.82)';
+      void w.offsetWidth; w.style.transition = '';
+      requestAnimationFrame(() => {
+        w.style.opacity = 1; w.style.transform = 'none';
+        viejo.wrap.style.opacity = 0;
+        if (tr === 'deslizar') viejo.wrap.style.transform = `translateX(${-dir * 100}%)`;
+        if (tr === 'zoom') viejo.wrap.style.transform = 'scale(1.12)';
+      });
+      setTimeout(() => { viejo.wrap.remove(); viejo.sc.dispose(); }, 700);
+    } else if (viejo){ viejo.wrap.remove(); viejo.sc.dispose(); }
+    pres.cur = d; pres.i = idx; pres.pagina = pagina;
+    $('presNum').textContent = (idx + 1) + ' / ' + n;
+    actualizarPresentador();
+    if (final) return;
+    const espera = viejo && tr !== 'ninguna' ? 450 : 150;
+    pres.timers.push(setTimeout(() => {
+      if (!pres || pres.cur !== d) return;
+      if (presConfig.avance === 'auto'){
+        let t = 0;
+        d.pasos.forEach((p, k) => { pres.timers.push(setTimeout(() => { if (pres && pres.cur === d) t = ejecutarPaso(d, k); }, t)); t += Math.max(0, ...p.items.map(it => it.ini + it.dur)) + 350; });
+        pres.auto = setTimeout(() => { if (pres && pres.cur === d) irA(pres.i + 1, false, 1); }, t + presConfig.segundos * 1000);
+      } else if (d.pasos.length && !d.pasos[0].clic) ejecutarPaso(d, 0);
+    }, espera));
+  });
+}
+function presSiguiente(){
+  if (!pres) return;
+  if (pres.fin){ salirPresentacion(); return; }
+  const d = pres.cur; if (!d) return;
+  if (d.paso < d.pasos.length){
+    if (d.animando > 0) d.pasos.slice(0, d.paso).forEach(p => p.items.forEach(mostrarFinal));   // termina lo anterior al instante
+    ejecutarPaso(d, d.paso);
+  } else irA(pres.i + 1, false, 1);
+}
+function presAnterior(){
+  if (!pres) return;
+  if (pres.fin){ pres.fin = false; $('presFin').style.display = 'none'; actualizarPresentador(); return; }
+  if (pres.i > 0) irA(pres.i - 1, true, -1);
+}
+$('presentacion').addEventListener('click', e => { if (!e.target.closest('#presControles,#presNotas')) presSiguiente(); });
+function alternarPantallaCompleta(){
+  if (!pres) return;
+  if (document.fullscreenElement){ pres.fs = false; document.exitFullscreen().catch(() => {}); }
+  else $('presentacion').requestFullscreen().then(() => { if (pres) pres.fs = true; }).catch(() => toast('Este navegador no permite pantalla completa aquí'));
+}
+window.addEventListener('keydown', e => {
+  if (!pres) return;
+  const k = e.key;
+  if (['ArrowRight','PageDown',' ','Enter','ArrowDown'].includes(k)){ e.preventDefault(); presSiguiente(); }
+  else if (['ArrowLeft','PageUp','ArrowUp','Backspace'].includes(k)){ e.preventDefault(); presAnterior(); }
+  else if (k === 'Escape'){ e.preventDefault(); salirPresentacion(); }
+  else if (k === 'n' || k === 'N'){ e.preventDefault(); alternarNotasPres(); }
+  else if (k === 'Home'){ e.preventDefault(); irA(0, false, -1); }
+  else if (k === 'End'){ e.preventDefault(); irA(pres.lista.length - 1, true, 1); }
+  e.stopPropagation();
+}, true);
+let ocultarCtl;
+function mostrarControles(){
+  $('presControles').classList.remove('oculto');
+  clearTimeout(ocultarCtl); ocultarCtl = setTimeout(() => $('presControles').classList.add('oculto'), 2500);
+}
+$('presentacion').addEventListener('mousemove', mostrarControles);
+window.addEventListener('resize', () => { if (pres && pres.cur) irA(pres.i, true, 1); });
+
+/* =========================================================
+   TEXTO CURVO
+   ========================================================= */
+// Fabric no vuelve a crear la curva al abrir un diseño guardado; aquí se la devolvemos
+['IText','Textbox'].forEach(clase => {
+  const original = fabric[clase].fromObject;
+  fabric[clase].fromObject = function(object, callback){
+    if (!object.path || object.path instanceof fabric.Path) return original.call(this, object, callback);
+    const copia = Object.assign({}, object), datosCurva = copia.path; delete copia.path;
+    return original.call(this, copia, t => fabric.Path.fromObject(datosCurva, pth => { t.set('path', pth); t.initDimensions(); t.setCoords(); callback && callback(t); }));
+  };
+});
+// Curva un texto: valores positivos lo arquean hacia arriba (∩), negativos hacia abajo (∪)
+function aplicarCurva(o, c, silencioso){
+  let t = o;
+  if (!esTexto(t) || t.textoDe || t.tabla) return;
+  const centro = t.getCenterPoint();
+  if (t.type === 'textbox' && c){           // un texto curvo es de un solo renglón
+    const datos = t.toObject(EXTRA);
+    ['type','width','height','path','styles','fill','shadow'].forEach(k => delete datos[k]);
+    const nuevo = new fabric.IText(t.text.replace(/\n+/g, ' '), datos);
+    nuevo.set({ fill:t.fill, shadow:t.shadow });
+    nuevo.id = t.id || nuevoId(); nuevo.name = t.name;
+    const idx = canvas.getObjects().indexOf(t);
+    restaurando = true; canvas.remove(t); canvas.insertAt(nuevo, idx); restaurando = false;
+    t = nuevo; canvas.setActiveObject(t);
+  }
+  t.curva = c || 0;
+  t.set('path', null); t.initDimensions();
+  if (c){
+    const w = Math.max(10, t.width), th = Math.max(0.05, Math.abs(c) / 100 * Math.PI * 1.9), r = w / th;
+    const pt = f => c > 0 ? [r * Math.sin(f), r - r * Math.cos(f)] : [r * Math.sin(f), -r + r * Math.cos(f)];
+    const [x0, y0] = pt(-th / 2), [x1, y1] = pt(th / 2);
+    const d = `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r.toFixed(2)} ${r.toFixed(2)} 0 ${th > Math.PI ? 1 : 0} ${c > 0 ? 1 : 0} ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+    t.set({ path: new fabric.Path(d, { fill:'', stroke:'', strokeWidth:0, objectCaching:false }), textAlign:'center', objectCaching:false, padding: t.fontSize * 0.6 });
+  } else t.set({ objectCaching:true, padding:4 });
+  t.setPositionByOrigin(centro, 'center', 'center'); t.setCoords();
+  canvas.requestRenderAll();
+  if (!silencioso){ actualizarPanel(); renderCapas(); }
+}
+$('pCurva').addEventListener('input', e => { const o = activo(); if (o && esTexto(o)) aplicarCurva(o, +e.target.value, true); });
+$('pCurva').addEventListener('change', () => { actualizarPanel(); guardarEstado(); });
+$('bSinCurva').onclick = () => { const o = activo(); if (o && esTexto(o)){ aplicarCurva(o, 0); $('pCurva').value = 0; guardarEstado(); } };
+
+/* =========================================================
+   EFECTOS DE TEXTO
+   ========================================================= */
+const EFECTOS_TEXTO = {
+  ninguno:  { n:'Ninguno',  css:'' },
+  sombra:   { n:'Sombra',   css:'text-shadow:2px 3px 5px rgba(0,0,0,.35)' },
+  retro:    { n:'Retro',    css:'text-shadow:3px 3px 0 #f472b6' },
+  contorno: { n:'Contorno', css:'-webkit-text-stroke:1.2px #1f2330' },
+  hueco:    { n:'Hueco',    css:'color:transparent;-webkit-text-stroke:1.2px #7c3aed' },
+  sticker:  { n:'Sticker',  css:'text-shadow:0 0 0 #fff,2px 0 #fff,-2px 0 #fff,0 2px #fff,0 -2px #fff,2px 2px #fff,-2px -2px #fff,2px -2px #fff,-2px 2px #fff,1px 3px 4px rgba(0,0,0,.4)' },
+  neon:     { n:'Neón',     css:'text-shadow:0 0 6px #a855f7,0 0 12px #a855f7' },
+  fondo:    { n:'Fondo',    css:'background:#fde047;padding:0 4px' }
+};
+function aplicarEfectoTexto(t, efecto){
+  const fs = t.fontSize;
+  if (t.efectoTexto === 'hueco' && t.rellenoOriginal) t.set('fill', t.rellenoOriginal);
+  t.set({ shadow:null, stroke:null, strokeWidth:0, paintFirst:'fill', textBackgroundColor:'' });
+  t.rellenoOriginal = null;
+  const color = typeof t.fill === 'string' ? t.fill : '#7c3aed';
+  switch (efecto){
+    case 'sombra':   t.set('shadow', new fabric.Shadow({ color:'rgba(0,0,0,.35)', blur:fs * 0.22, offsetX:fs * 0.05, offsetY:fs * 0.07 })); break;
+    case 'retro':    t.set('shadow', new fabric.Shadow({ color: esOscuro(color) ? '#f472b6' : '#1f2330', blur:0, offsetX:fs * 0.06, offsetY:fs * 0.06 })); break;
+    case 'contorno': t.set({ stroke:'#1f2330', strokeWidth:Math.max(1, fs * 0.07), paintFirst:'stroke' }); break;
+    case 'hueco':    t.rellenoOriginal = color; t.set({ fill:'rgba(0,0,0,0)', stroke:color, strokeWidth:Math.max(1, fs * 0.04) }); break;
+    case 'sticker':  t.set({ stroke:'#ffffff', strokeWidth:Math.max(2, fs * 0.2), paintFirst:'stroke', strokeLineJoin:'round',
+                       shadow:new fabric.Shadow({ color:'rgba(0,0,0,.28)', blur:fs * 0.14, offsetX:fs * 0.03, offsetY:fs * 0.05 }) }); break;
+    case 'neon':     t.set('shadow', new fabric.Shadow({ color, blur:fs * 0.55, offsetX:0, offsetY:0 })); break;
+    case 'fondo':    t.set('textBackgroundColor', '#fde047'); break;
+  }
+  t.efectoTexto = efecto === 'ninguno' ? null : efecto;
+  t.initDimensions && t.initDimensions();
+  t.dirty = true;
+}
+Object.entries(EFECTOS_TEXTO).forEach(([k, e]) => {
+  const b = document.createElement('button'); b.className = 'efectoBtn'; b.dataset.e = k; b.title = e.n;
+  b.innerHTML = `<b style="${e.css}">Aa</b>${e.n}`;
+  b.onclick = () => { textos().forEach(t => aplicarEfectoTexto(t, k)); canvas.requestRenderAll(); actualizarPanel(); guardarEstado(); };
+  $('efectosTexto').appendChild(b);
+});
+
+/* =========================================================
+   ESTILOS DE TÍTULO DE UN CLIC
+   ========================================================= */
+const ESTILOS_TITULO = [
+  { n:'Impacto',     f:'Anton',            s:120, c:'#1f2330', mayus:true, efecto:'sticker',  css:"font-family:Anton;font-size:26px;color:#1f2330;text-shadow:0 0 0 #fff,1px 2px 3px rgba(0,0,0,.3)" },
+  { n:'Burbuja',     f:'Fredoka', b:'700', s:110, c:'#ec4899', efecto:'sticker', css:"font-family:Fredoka;font-weight:700;font-size:26px;color:#ec4899;text-shadow:1px 2px 3px rgba(0,0,0,.3)" },
+  { n:'Retro',       f:'Bebas Neue',       s:130, c:'#f59e0b', efecto:'retro',    css:"font-family:'Bebas Neue';font-size:30px;color:#f59e0b;text-shadow:3px 3px 0 #1f2330" },
+  { n:'Neón',        f:'Fredoka', b:'600', s:100, c:'#a855f7', efecto:'neon',     css:"font-family:Fredoka;font-weight:600;font-size:24px;color:#a855f7;text-shadow:0 0 6px #a855f7,0 0 12px #a855f7" },
+  { n:'Manuscrito',  f:'Caveat',  b:'700', s:120, c:'#7c3aed',                   css:"font-family:Caveat;font-weight:700;font-size:28px;color:#7c3aed" },
+  { n:'Marcador',    f:'Permanent Marker', s:100, c:'#1f2330', efecto:'fondo',    css:"font-family:'Permanent Marker';font-size:22px;color:#1f2330;background:#fde047;padding:0 6px" },
+  { n:'Elegante',    f:'Playfair Display', b:'700', it:true, s:100, c:'#78350f', efecto:'sombra', css:"font-family:'Playfair Display';font-weight:700;font-style:italic;font-size:24px;color:#78350f;text-shadow:1px 2px 4px rgba(0,0,0,.25)" },
+  { n:'Hueco',       f:'Anton',            s:120, c:'#7c3aed', mayus:true, efecto:'hueco', css:"font-family:Anton;font-size:26px;color:transparent;-webkit-text-stroke:1.4px #7c3aed" },
+  { n:'Degradado',   f:'Fredoka', b:'700', s:110, grad:['#7c3aed','#ec4899'],      css:"font-family:Fredoka;font-weight:700;font-size:26px;background:linear-gradient(90deg,#7c3aed,#ec4899);-webkit-background-clip:text;background-clip:text;color:transparent" },
+  { n:'En arco',     f:'Fredoka', b:'700', s:90,  c:'#0d9488', mayus:true, curva:45, css:"font-family:Fredoka;font-weight:700;font-size:22px;color:#0d9488" },
+  { n:'Escolar',     f:'Gochi Hand',       s:110, c:'#1e3a8a', efecto:'contorno', css:"font-family:'Gochi Hand';font-size:26px;color:#1e3a8a" },
+  { n:'Pizarra',     f:'Amatic SC', b:'700', s:130, c:'#ffffff', fondoPizarra:true, css:"font-family:'Amatic SC';font-weight:700;font-size:28px;color:#fff;background:#14532d;padding:0 8px;border-radius:4px" }
+];
+function agregarTitulo(e){
+  const k = s();
+  const texto = e.mayus ? 'TU TÍTULO AQUÍ' : 'Tu título aquí';
+  if (e.fondoPizarra){                      // pizarrón con el texto adentro: se mueven y crecen juntos
+    const caja = new fabric.Rect({ left:W/2, top:H/2, originX:'center', originY:'center', width:760 * k, height:210 * k, rx:18 * k, ry:18 * k,
+      fill:'#14532d', stroke:'#a16207', strokeWidth:14 * k, strokeUniform:true });
+    restaurando = true;
+    agregar(caja, 'Pizarra');
+    const tp = crearTextoVinculado(caja, texto, { fontFamily:e.f, fontSize:e.s * k, fontWeight:e.b || '400', fill:e.c });
+    canvas.add(tp); ordenarVinculos();
+    restaurando = false;
+    const listo = () => { fabric.util.clearFabricFontCache(e.f); tp.initDimensions(); ajustarFormaATexto(tp); canvas.setActiveObject(caja); canvas.requestRenderAll(); renderCapas(); guardarEstado(); };
+    document.fonts.load(`${e.b || 400} 40px "${e.f}"`).then(listo, listo);
+    return;
+  }
+  const t = agregarTexto('titulo', { text:texto, fontFamily:e.f, fontSize:e.s * k, fontWeight:e.b || '400', fontStyle:e.it ? 'italic' : 'normal',
+    fill: e.grad ? new fabric.Gradient({ type:'linear', gradientUnits:'percentage', coords:{ x1:0, y1:0, x2:1, y2:0 },
+      colorStops:[{ offset:0, color:e.grad[0] }, { offset:1, color:e.grad[1] }] }) : e.c });
+  const termina = () => {
+    fabric.util.clearFabricFontCache(e.f); t.initDimensions();
+    if (e.efecto) aplicarEfectoTexto(t, e.efecto);
+    if (e.curva) aplicarCurva(t, e.curva, true);
+    canvas.requestRenderAll(); actualizarPanel(); guardarEstado();
+  };
+  document.fonts.load(`${e.b || 400} 40px "${e.f}"`).then(termina, termina);
+}
+ESTILOS_TITULO.forEach(e => {
+  const b = document.createElement('button'); b.className = 'tituloBtn'; b.title = e.n;
+  b.innerHTML = `<span style="${e.css}">${e.n}</span>`;
+  b.onclick = () => agregarTitulo(e);
+  $('estilosTitulo').appendChild(b);
+});
+
+/* =========================================================
+   EXPORTAR A POWERPOINT
+   ========================================================= */
+const URL_PPTX = 'https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js';
+function cargarScript(url){
   return new Promise((ok, mal) => {
-    if (window.Mp4Muxer) return ok();
-    const sc = document.createElement('script'); sc.src = URL_MP4MUXER;
-    sc.onload = ok; sc.onerror = () => mal(new Error('No se pudo cargar la librería de video (revisa tu conexión)'));
+    if (window.PptxGenJS) return ok();
+    const sc = document.createElement('script'); sc.src = url; sc.onload = ok; sc.onerror = () => mal(new Error('No se pudo cargar la librería de PowerPoint'));
     document.head.appendChild(sc);
   });
 }
-const parVideo = n => Math.max(2, Math.round(n / 2) * 2);
-// Tamaño del video: 720p o 1080p respetando la forma del diseño
-function tamVideo(calidad){
-  const largo = calidad === '1080' ? 1920 : 1280, corto = calidad === '1080' ? 1080 : 720;
-  const k = Math.min(largo / Math.max(W, H), corto / Math.min(W, H));
-  return [parVideo(W * k), parVideo(H * k)];
-}
-// Arma la línea de tiempo: cada página con sus animaciones (en orden, sin esperar clics) y unos segundos de pausa
-async function lineaDeTiempoVideo(lista, VW, VH, segundos){
-  const diapos = []; let inicio = 0;
-  for (let k = 0; k < lista.length; k++){
-    const el = document.createElement('canvas');
-    const sc = new fabric.StaticCanvas(el, { width:VW, height:VH, renderOnAddRemove:false, enableRetinaScaling:false });
-    await new Promise(ok => sc.loadFromJSON(lista[k].p || PAGINA_VACIA(), ok));
-    sc.setZoom(VW / W);
-    const pasos = prepararPasos(sc), items = [];
-    let t = k ? 650 : 250;
-    pasos.forEach(p => {
-      let fin = t;
-      p.items.forEach(it => {
-        estadoInicial(it);
-        const o = it.o;
-        it.ini0 = { left:o.left, top:o.top, opacity:o.opacity, scaleX:o.scaleX, scaleY:o.scaleY, angle:o.angle, text:o.text };
-        it.t0 = t + it.ini;
-        it.largo = it.a.tipo === 'escribir' && typeof it.fin.text === 'string' && it.fin.text.length ? Math.max(it.dur, it.fin.text.length * 35) : it.dur;
-        fin = Math.max(fin, it.t0 + it.largo);
-        items.push(it);
+// ¿Se puede pasar este texto como texto editable sin que cambie su aspecto?
+const textoParaPPTX = o => esTexto(o) && o.visible !== false && !o.path && !o.group && !o.esDeco && typeof o.fill === 'string'
+  && !(o.stroke && o.strokeWidth > 0) && !o.shadow && !o.textBackgroundColor && (o.text || '').trim();
+// Fondo de la diapositiva (todo menos los textos editables) y la lista de textos con su posición
+function prepararDiapositivaPPTX(json, escala, editable){
+  return new Promise(ok => {
+    const sc = new fabric.StaticCanvas(document.createElement('canvas'), { width:W, height:H, enableRetinaScaling:false, renderOnAddRemove:false });
+    sc.loadFromJSON(json || PAGINA_VACIA(), () => {
+      const textosP = [];
+      if (editable) sc.getObjects().forEach(o => {
+        if (!textoParaPPTX(o)) return;
+        const c = o.getCenterPoint(), w = o.width * o.scaleX, hh = o.height * o.scaleY;
+        textosP.push({ texto:o.text, x:c.x - w/2, y:c.y - hh/2, w, h:hh, px:o.fontSize * o.scaleY, fuente:o.fontFamily,
+          color:aHex(o.fill).slice(1).toUpperCase(), bold: String(o.fontWeight) === 'bold' || +o.fontWeight >= 600, italic:o.fontStyle === 'italic',
+          underline:!!o.underline, align: ['left','center','right','justify'].includes(o.textAlign) ? o.textAlign : 'left',
+          valign: o.textoDe ? 'middle' : 'top', angle:o.angle || 0, lh:o.lineHeight || 1.16 });
+        o.visible = false;
       });
-      t = fin + 350;
+      sc.renderAll();
+      const fondo = sc.toDataURL({ format:'png', multiplier:escala });
+      sc.dispose();
+      ok({ fondo, textos:textosP });
     });
-    const dur = Math.max(t, 900) + segundos * 1000;
-    diapos.push({ sc, items, inicio, dur });
-    inicio += dur;
-  }
-  return { diapos, total:inicio + 400 };
-}
-// Pone cada elemento como se ve en el momento t (milisegundos desde que empezó la página)
-function estadoEn(d, t){
-  d.items.forEach(it => {
-    const o = it.o, f = it.fin, i0 = it.ini0;
-    if (t <= it.t0){ o.set({ left:i0.left, top:i0.top, opacity:i0.opacity, scaleX:i0.scaleX, scaleY:i0.scaleY, angle:i0.angle }); if (typeof i0.text === 'string' && o.text !== undefined && o.text !== i0.text) o.set('text', i0.text); return; }
-    if (t >= it.t0 + it.largo){ mostrarFinal(it); return; }
-    const p = (t - it.t0) / it.largo;
-    if (it.a.tipo === 'escribir' && typeof f.text === 'string' && f.text.length){ o.set({ text:f.text.slice(0, Math.round(p * f.text.length)), opacity:f.opacity }); return; }
-    const ease = it.a.tipo === 'rebote' ? fabric.util.ease.easeOutBack : fabric.util.ease.easeOutCubic;
-    const e = ease(p * it.largo, 0, 1, it.largo);
-    ['left','top','scaleX','scaleY','angle'].forEach(k => o.set(k, i0[k] + (f[k] - i0[k]) * e));
-    o.set('opacity', Math.max(0, Math.min(1, i0.opacity + (f.opacity - i0.opacity) * Math.min(1, e * 1.4))));
   });
-  d.sc.renderAll();
-  return d.sc.lowerCanvasEl;
 }
-// Dibuja el cuadro del video en el momento t (incluye la transición entre páginas)
-function cuadroVideo(ctx, lt, t){
-  const VW = ctx.canvas.width, VH = ctx.canvas.height, ds = lt.diapos;
-  let k = ds.findIndex(d => t < d.inicio + d.dur); if (k < 0) k = ds.length - 1;
-  const d = ds[k], local = t - d.inicio, tr = presConfig.transicion || 'desvanecer';
-  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, VW, VH);
-  const dibujar = (img, alfa, dx, esc) => {
-    ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, alfa));
-    ctx.translate(VW / 2 + dx, VH / 2); ctx.scale(esc, esc); ctx.drawImage(img, -VW / 2, -VH / 2, VW, VH); ctx.restore();
-  };
-  if (k > 0 && tr !== 'ninguna' && local < 650){
-    const p = fabric.util.ease.easeOutCubic(local, 0, 1, 650);
-    const viejo = estadoEn(ds[k - 1], Infinity);
-    if (tr === 'deslizar') dibujar(viejo, 1, -p * VW, 1);
-    else if (tr === 'zoom') dibujar(viejo, 1 - p, 0, 1 + 0.12 * p);
-    else dibujar(viejo, 1, 0, 1);
-    const nuevo = estadoEn(d, local);
-    if (tr === 'deslizar') dibujar(nuevo, 1, (1 - p) * VW, 1);
-    else if (tr === 'zoom') dibujar(nuevo, p, 0, 0.82 + 0.18 * p);
-    else dibujar(nuevo, p, 0, 1);
-  } else dibujar(estadoEn(d, local), 1, 0, 1);
+async function crearPPTX(lista, escala, editable){
+  await cargarScript(URL_PPTX);
+  const pptx = new window.PptxGenJS();
+  const mayor = Math.max(W, H), wIn = 13.333 * W / mayor, hIn = 13.333 * H / mayor, f = wIn / W;
+  pptx.defineLayout({ name:'DISENO', width:wIn, height:hIn }); pptx.layout = 'DISENO';
+  pptx.title = nombreArchivo();
+  for (const it of lista){
+    const { fondo, textos:ts } = await prepararDiapositivaPPTX(it.p, Math.max(1, escala), editable);
+    const slide = pptx.addSlide();
+    slide.addImage({ data:fondo, x:0, y:0, w:wIn, h:hIn });
+    if (it.p && it.p.notas) slide.addNotes(it.p.notas);
+    ts.forEach(t => slide.addText(t.texto, {
+      x:t.x * f, y:t.y * f, w:Math.max(0.2, t.w * f), h:Math.max(0.2, t.h * f), margin:0,
+      fontFace:t.fuente, fontSize:Math.max(6, Math.round(t.px * f * 72 * 10) / 10), color:t.color,
+      bold:t.bold, italic:t.italic, underline: t.underline ? { style:'sng' } : undefined,
+      align:t.align, valign:t.valign, rotate:t.angle, lineSpacingMultiple:t.lh, fit:'none', wrap:true }));
+  }
+  return pptx;
 }
-// Crea el video. Usa el codificador del navegador (rápido); si no existe, graba en tiempo real.
-async function crearVideo(lista, opciones = {}){
-  const segundos = Math.max(0.5, +($('vSeg') ? $('vSeg').value : 3) || 3);
-  const [VW, VH] = tamVideo($('vCalidad') ? $('vCalidad').value : '720');
-  const fps = 30, avisar = opciones.progreso || (() => {});
-  const lt = await lineaDeTiempoVideo(lista, VW, VH, segundos);
-  const rc = document.createElement('canvas'); rc.width = VW; rc.height = VH;
-  const ctx = rc.getContext('2d');
-  const totalCuadros = Math.ceil(lt.total / 1000 * fps);
-  const liberar = () => lt.diapos.forEach(d => { try { d.sc.dispose(); } catch(e){} });
-  try {
-    if (window.VideoEncoder && window.VideoFrame){
-      const bitrate = VH * VW >= 1920 * 1000 ? 8e6 : 4e6;
-      let elegido = null;
-      for (const [codec, tipo] of [['avc1.640028', 'avc'], ['avc1.4d4028', 'avc'], ['avc1.42e028', 'avc'], ['avc1.42001f', 'avc'], ['vp09.00.40.08', 'vp9']]){
-        try { const r = await VideoEncoder.isConfigSupported({ codec, width:VW, height:VH, bitrate, framerate:fps }); if (r.supported){ elegido = { codec, tipo }; break; } } catch(e){}
-      }
-      if (elegido){
-        await cargarMuxer();
-        const muxer = new Mp4Muxer.Muxer({ target:new Mp4Muxer.ArrayBufferTarget(), video:{ codec:elegido.tipo, width:VW, height:VH, frameRate:fps }, fastStart:'in-memory' });
-        let fallo = null;
-        const enc = new VideoEncoder({ output:(chunk, meta) => muxer.addVideoChunk(chunk, meta), error:e => { fallo = e; } });
-        enc.configure({ codec:elegido.codec, width:VW, height:VH, bitrate, framerate:fps, ...(elegido.tipo === 'avc' ? { avc:{ format:'avc' } } : {}) });
-        for (let n = 0; n < totalCuadros; n++){
-          if (fallo) throw fallo;
-          cuadroVideo(ctx, lt, n * 1000 / fps);
-          const fr = new VideoFrame(rc, { timestamp:Math.round(n * 1e6 / fps), duration:Math.round(1e6 / fps) });
-          enc.encode(fr, { keyFrame: n % (fps * 2) === 0 }); fr.close();
-          if (enc.encodeQueueSize > 8) await new Promise(r => setTimeout(r, 5));
-          if (n % 15 === 0){ avisar(n / totalCuadros); await new Promise(r => setTimeout(r, 0)); }
-        }
-        await enc.flush(); enc.close();
-        if (fallo) throw fallo;
-        muxer.finalize();
-        avisar(1);
-        return { blob:new Blob([muxer.target.buffer], { type:'video/mp4' }), ext:'mp4', codec:elegido.tipo };
-      }
-    }
-    // Plan B: grabar en tiempo real lo que se dibuja
-    if (!window.MediaRecorder || !rc.captureStream) throw new Error('Este navegador no puede crear videos. Prueba con Chrome.');
-    const tipo = ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'].find(x => MediaRecorder.isTypeSupported(x)) || '';
-    const stream = rc.captureStream(fps), partes = [];
-    const rec = new MediaRecorder(stream, tipo ? { mimeType:tipo, videoBitsPerSecond:4e6 } : {});
-    rec.ondataavailable = e => { if (e.data && e.data.size) partes.push(e.data); };
-    const terminado = new Promise(ok => rec.onstop = ok);
-    cuadroVideo(ctx, lt, 0); rec.start(500);
-    const t0 = performance.now();
-    await new Promise(ok => {
-      const paso = () => {
-        const t = performance.now() - t0;
-        cuadroVideo(ctx, lt, Math.min(t, lt.total));
-        avisar(t / lt.total);
-        if (t >= lt.total) return ok();
-        requestAnimationFrame(paso);
-      };
-      requestAnimationFrame(paso);
-    });
-    rec.stop(); await terminado;
-    const mime = rec.mimeType || tipo || 'video/webm';
-    return { blob:new Blob(partes, { type:mime.split(';')[0] }), ext:mime.includes('mp4') ? 'mp4' : 'webm', codec:'grabado' };
-  } finally { liberar(); }
-}
-async function videoConProgreso(lista){
-  const msg = $('cargando'), antes = msg.textContent;
-  cargando(true);
-  try {
-    return await crearVideo(lista, { progreso:p => { msg.textContent = 'Creando video… ' + Math.min(100, Math.round(p * 100)) + '%'; } });
-  } finally { msg.textContent = antes; cargando(false); }
-}
-const blobADataURL = blob => new Promise((ok, mal) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => mal(r.error); r.readAsDataURL(blob); });
+$('eFormato').addEventListener('change', () => {
+  const f = $('eFormato').value;
+  $('filaPptx').style.display = f === 'pptx' ? 'flex' : 'none';
+  $('filaVideo').style.display = f === 'video' ? 'block' : 'none';
+  $('filaImprimir').style.display = f === 'pdf' ? 'block' : 'none'; infoImpresion();
+  $('eEscala').closest('.fila').style.display = f === 'video' ? 'none' : 'flex';
+  $('eTransp').closest('.fila').style.display = f === 'video' ? 'none' : 'flex';
+  $('eTransp').disabled = f !== 'png';
+  if (f === 'video' && paginas.length > 1) $('ePaginas').value = 'todas';
+});
 
 </script>

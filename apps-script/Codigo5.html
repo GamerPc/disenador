@@ -2,6 +2,513 @@
 /*@parte Codigo5*/ (window.__partes = window.__partes || {})['Codigo5'] = true;
 
 /* =========================================================
+   ORGANIZADORES ESCOLARES (plantillas)
+   ========================================================= */
+// utilidades para armar plantillas
+function T(texto, x, y, o = {}){
+  const t = new fabric.Textbox(texto, { left:x, top:y, originX:'center', originY:'center', width:o.w || 600,
+    fontFamily:o.f || 'Poppins', fontSize:o.s || 32, fontWeight:o.b || '400', fill:o.c || '#1f2330', textAlign:o.al || 'center',
+    lineHeight:o.lh || 1.2, charSpacing:o.cs || 0, angle:o.ang || 0, fontStyle:o.it ? 'italic' : 'normal' });
+  t.id = nuevoId(); t.name = 'Texto'; canvas.add(t); return t;
+}
+function DECO(tipo, x, y, w, o = {}){
+  const d = crearDeco(tipo, { ...o, w }); d.setPositionByOrigin(new fabric.Point(x, y), 'center', 'center'); d.setCoords();
+  d.id = nuevoId(); canvas.add(d); return d;
+}
+function LLAVE(x, y, alto, ancho, color, grosor){
+  const p = new fabric.Path(pathLlave(alto, ancho), { left:x, top:y, fill:null, stroke:color, strokeWidth:grosor,
+    strokeLineCap:'round', strokeLineJoin:'round', strokeUniform:true, esDeco:true, name:'Llave', id:nuevoId() });
+  canvas.add(p); return p;
+}
+function FONDO(c){ canvas.backgroundColor = c; }
+function DEGRADADO(a, b){ fijarFondo(new fabric.Rect({ left:0, top:0, width:W, height:H, fill: crearDegradado(a, b) })); }
+
+const ORGANIZADORES = [
+  { nombre:'Análisis FODA', tam:[1920,1080], prev:'linear-gradient(135deg,#fdf4ff,#ddd6fe)', txt:'FODA', f:'Fredoka', c:'#6b21a8', crear(){
+    DEGRADADO('#fdf4ff', '#ede9fe');
+    T('ANÁLISIS FODA', 960, 105, { f:'Fredoka', s:96, b:'700', c:'#3b0764', w:1400, cs:60 });
+    DECO('subrayado', 960, 172, 440, { c:'#c026d3', sw:6 });
+    [['F','#a855f7',820,440],['O','#ec4899',1100,440],['D','#c026d3',820,720],['A','#f472b6',1100,720]].forEach(([l, c, x, y]) => {
+      const n = nodo('circulo', l, x, y, { w:300, h:300, fill:c, color:'#ffffff', tam:130, peso:'700', fuente:'Fredoka' });
+      n.set('opacity', 0.9);
+    });
+    [['FORTALEZAS','¿Qué hacemos bien?\n¿Qué recursos y habilidades nos distinguen?',360,360,'left'],
+     ['OPORTUNIDADES','¿Qué tendencias o apoyos externos podemos aprovechar?',1560,360,'right'],
+     ['DEBILIDADES','¿Qué podemos mejorar?\n¿Qué nos hace falta?',360,790,'left'],
+     ['AMENAZAS','¿Qué obstáculos externos enfrentamos?\n¿Qué riesgos hay en el entorno?',1560,790,'right']].forEach(([tit, txt, x, y, al]) => {
+      T(tit, x, y - 70, { f:'Montserrat', s:34, b:'800', c:'#6b21a8', w:480, al, cs:150 });
+      T(txt, x, y + 40, { f:'Poppins', s:26, c:'#374151', w:480, al, lh:1.35 });
+    });
+    DECO('destello', 1730, 150, 90, { c:'#ffffff' }); DECO('destello', 1650, 230, 45, { c:'#c084fc' });
+    DECO('destello', 230, 960, 70, { c:'#c084fc' }); DECO('estrella', 1700, 960, 56, { c:'#7c3aed' });
+    DECO('confeti', 230, 140, 120, { c:'#f472b6' });
+  }},
+  { nombre:'Ciclo de 4 pasos', tam:[1920,1080], prev:'#f0fdfa', txt:'Ciclo ↻', f:'Caveat', c:'#0f766e', crear(){
+    FONDO('#f0fdfa'); fondoPapel('puntos', '#f0fdfa');
+    T('Ciclo de', 960, 450, { f:'Caveat', s:72, c:'#0f766e', w:400 });
+    T('aprendizaje', 960, 545, { f:'Fredoka', s:80, b:'700', c:'#0d9488', w:540 });
+    DECO('subrayado', 960, 615, 380, { c:'#5eead4', sw:7 });
+    const datos = [
+      ['Planea\nDefine tu meta y organiza tus tiempos.', 960, 175, '#ccfbf1', '1'],
+      ['Investiga\nBusca fuentes confiables y toma notas.', 1530, 540, '#e0e7ff', '2'],
+      ['Practica\nAplica lo aprendido con ejercicios.', 960, 905, '#fce7f3', '3'],
+      ['Evalúa\nRevisa qué funcionó y qué mejorar.', 390, 540, '#fef9c3', '4']];
+    const n = datos.map(([txt, x, y, col, num]) => {
+      const f = nodo('redondo', txt, x, y, { anchoMax:420, w:500, h:160, fill:col, color:'#134e4a', tam:30, fuente:'Poppins' });
+      T(num, x > 960 ? x + 310 : x - 310, y, { f:'Amatic SC', s:130, b:'700', c:'#0f766e', w:90 });
+      return f;
+    });
+    const op = { estilo:'curva', fin:'flecha', color:'#5eead4', ancho:7 };
+    unir(n[0], n[1], { ...op, lados:['der','arr'] }); unir(n[1], n[2], { ...op, lados:['aba','der'] });
+    unir(n[2], n[3], { ...op, lados:['izq','aba'] }); unir(n[3], n[0], { ...op, lados:['arr','izq'] });
+    DECO('destello', 1700, 160, 70, { c:'#2dd4bf' }); DECO('destello', 220, 930, 60, { c:'#a78bfa' });
+  }},
+  { nombre:'Tabla comparativa', tam:[1920,1080], prev:'#fefce8', txt:'Tabla comparativa', f:'Caveat', c:'#1f2330', crear(){
+    FONDO('#fefce8'); fondoPapel('cuadros', '#fefce8');
+    T('Tabla comparativa', 960, 110, { f:'Caveat', s:110, b:'700', w:1200 });
+    DECO('foco', 520, 105, 80, { c:'#facc15' }); DECO('enfasis', 470, 55, 60, { c:'#1f2330', sw:4 });
+    DECO('estrella', 1410, 85, 60, { c:'#facc15' }); DECO('estrella', 1480, 145, 34, { c:'#facc15' });
+    crearTabla(960, 600, 5, 4, { ...ESTILOS_TABLA['Pastel a mano'], anchos:[300,430,430,430], alto:120, tam:28, tamEnc:34 },
+      [['Aspecto','Opción A','Opción B','Opción C'], ['Definición'], ['Características'], ['Ventajas'], ['Desventajas']]);
+    DECO('destello', 150, 980, 60, { c:'#a3e635' }); DECO('flecha', 1790, 960, 120, { c:'#1f2330', sw:4, ang:-20 });
+  }},
+  { nombre:'Cuadro sinóptico', tam:[1920,1080], prev:'#fffbeb', txt:'{ Sinóptico', f:'Playfair Display', c:'#92400e', crear(){
+    FONDO('#fffbeb'); fondoPapel('rayas', '#fffbeb');
+    T('Cuadro sinóptico', 230, 120, { f:'Caveat', s:58, c:'#92400e', w:380 });
+    T('Tema\nprincipal', 230, 540, { f:'Playfair Display', s:66, b:'700', c:'#78350f', w:360 });
+    LLAVE(420, 130, 820, 60, '#92400e', 6);
+    [220, 420, 640, 860].forEach((y, i) => {
+      T('Subtema ' + (i + 1), 615, y, { f:'Fredoka', s:40, b:'600', c:'#b45309', w:300 });
+      LLAVE(790, y - 75, 150, 34, '#d97706', 4);
+      T('• Idea o característica importante\n• Ejemplo o dato que lo explique', 1240, y, { f:'Patrick Hand', s:34, al:'left', w:760 });
+    });
+    DECO('destello', 1760, 110, 70, { c:'#f59e0b' }); DECO('flor', 1790, 980, 90, { c:'#fcd34d' });
+  }},
+  { nombre:'Mapa conceptual', tam:[1920,1080], prev:'#ffffff', txt:'Mapa conceptual', f:'Gochi Hand', c:'#db2777', crear(){
+    FONDO('#ffffff'); fondoPapel('cuadros', '#ffffff');
+    DECO('cinta', 960, 105, 640, { c:'#f9a8d4', op:0.55, ang:-2 });
+    T('Mapa conceptual', 960, 105, { f:'Gochi Hand', s:80, w:900 });
+    const est = { stroke:'#1f2330', grosor:3, color:'#1f2330', fuente:'Fredoka', peso:'600' };
+    const main = nodo('redondo', 'Concepto principal', 960, 290, { ...est, w:460, h:110, fill:'#fbcfe8', tam:40 });
+    const cols = ['#fde68a', '#bbf7d0', '#bae6fd'], enl = ['se define como', 'incluye', 'permite'];
+    [420, 960, 1500].forEach((x, i) => {
+      const n2 = nodo('redondo', 'Idea ' + (i + 1), x, 560, { ...est, w:320, h:100, fill:cols[i], tam:34 });
+      unir(main, n2, { estilo:'codo', fin:'flecha', color:'#1f2330', ancho:4, etiqueta:enl[i] });
+      const n3 = nodo('nota', 'Explica aquí la idea con tus propias palabras.', x, 855, { anchoMax:300, w:380, h:150, fill:'#ffffff', stroke:'#1f2330', grosor:2, color:'#374151', tam:28, fuente:'Patrick Hand' });
+      unir(n2, n3, { estilo:'recta', fin:'flecha', color:'#1f2330', ancho:3 });
+    });
+    DECO('estrella', 1700, 120, 60, { c:'#facc15' }); DECO('destello', 220, 140, 70, { c:'#f472b6' });
+    DECO('foco', 1760, 900, 90, { c:'#facc15' }); DECO('enfasis', 1700, 830, 70, { c:'#1f2330', sw:4 });
+  }},
+  { nombre:'Mapa mental de nubes', tam:[1920,1080], prev:'#ffffff', txt:'MAPA MENTAL', f:'Fredoka', c:'#1f2330', crear(){
+    FONDO('#ffffff'); fondoPapel('puntos', '#ffffff');
+    const centro = nodo('blob', 'MAPA\nMENTAL', 960, 540, { w:480, h:370, fill:'#fef3c7', color:'#1f2330', tam:96, peso:'700', fuente:'Fredoka' });
+    const nombres = ['Idea creativa','Idea genial','Idea práctica','Idea fantástica','Idea técnica','Idea brillante'];
+    const cols = ['#ddd6fe','#bbf7d0','#fbcfe8','#bae6fd','#fde68a','#fecaca'];
+    [[290,210],[290,540],[290,870],[1630,210],[1630,540],[1630,870]].forEach(([x, y], i) => {
+      const n = nodo('nube', nombres[i], x, y, { w:400, h:230, fill:cols[i], color:'#1f2330', tam:36, peso:'700', fuente:'Fredoka' });
+      unir(centro, n, { estilo:'curva', fin:'abierta', color:'#1f2330', ancho:4 });
+    });
+    DECO('destello', 960, 150, 70, { c:'#a78bfa' }); DECO('destello', 960, 940, 60, { c:'#f472b6' });
+  }},
+  { nombre:'Planeación de proyecto', tam:[1920,1080], prev:'#f5f0e6', txt:'Planeación', f:'Bebas Neue', c:'#1f2330', crear(){
+    FONDO('#f5f0e6');
+    nodo('redondo', 'Planeación\nde proyecto', 250, 540, { w:330, h:150, fill:'#ffffff', stroke:'#1f2330', grosor:3, color:'#1f2330', tam:46, fuente:'Bebas Neue' });
+    LLAVE(450, 150, 780, 50, '#1f2330', 5);
+    const etapas = ['Planteamiento','Investigación','Ejecución','Gestión','Seguimiento'];
+    const cols = ['#fde68a','#bbf7d0','#c7d2fe','#a5f3fc','#fbcfe8'];
+    etapas.forEach((e, i) => {
+      const y = 180 + i * 180;
+      const a = nodo('pildora', e, 690, y, { w:300, h:90, fill:cols[i], stroke:'#1f2330', grosor:3, color:'#1f2330', tam:36, fuente:'Bebas Neue' });
+      const d = nodo('redondo', 'Describe qué harás en esta etapa, quién participa y en qué fecha.', 1320, y, { anchoMax:660, w:760, h:120, fill:'#ffffff', stroke:'#1f2330', grosor:2, color:'#374151', tam:26, fuente:'Poppins' });
+      unir(a, d, { estilo:'recta', inicio:'circulo', fin:'flecha', color:'#1f2330', ancho:3 });
+    });
+  }},
+  { nombre:'Portada de proyecto', tam:[1240,1754], prev:'linear-gradient(135deg,#ede9fe,#fdf2f8)', txt:'PROYECTO', f:'Permanent Marker', c:'#7c3aed', crear(){
+    FONDO('#fffdf8');
+    DECO('mancha', 120, 150, 460, { c:'#c4b5fd', op:0.75 }); DECO('mancha', 1160, 280, 320, { c:'#fde68a', op:0.85 });
+    DECO('mancha', 1110, 1620, 520, { c:'#fbcfe8', op:0.8 }); DECO('mancha', 140, 1600, 340, { c:'#a5f3fc', op:0.8 });
+    DECO('flor', 1120, 1450, 110, { c:'#f472b6' }); DECO('flor', 230, 1430, 80, { c:'#a78bfa' });
+    DECO('destello', 1050, 520, 60, { c:'#7c3aed' }); DECO('destello', 200, 470, 44, { c:'#ec4899' });
+    nodo('pildora', 'Fecha de entrega', 620, 560, { w:340, h:70, fill:'#ec4899', color:'#ffffff', tam:28, fuente:'Poppins', peso:'600' });
+    T('PORTADA DE', 620, 700, { f:'Fredoka', s:80, b:'600', w:1000, cs:100 });
+    T('PROYECTO', 620, 830, { f:'Permanent Marker', s:150, c:'#7c3aed', w:1100 });
+    T('Escribe aquí una breve descripción del proyecto o el nombre de la asignatura.', 620, 990, { f:'Poppins', s:30, c:'#6b7280', w:820, lh:1.4 });
+    T('Nombre del alumno(a)', 620, 1160, { f:'Caveat', s:60, w:800 });
+    DECO('subrayado', 620, 1210, 400, { c:'#ec4899', sw:5 });
+    T('Grupo · Docente · Escuela', 620, 1275, { f:'Poppins', s:28, c:'#6b7280', w:800 });
+  }},
+  { nombre:'Tabla por categorías', tam:[1920,1080], prev:'#ffffff', txt:'Categorías', f:'Fredoka', c:'#7c3aed', crear(){
+    FONDO('#ffffff');
+    T('Clasificación por categorías', 960, 100, { f:'Fredoka', s:66, b:'700', w:1500 });
+    DECO('rizo', 1590, 110, 140, { c:'#a78bfa', sw:5 }); DECO('destello', 330, 95, 60, { c:'#f472b6' });
+    crearTabla(960, 600, 6, 4, { ...ESTILOS_TABLA['Por categorías'], anchos:[320,420,420,420], alto:115, tam:26, tamEnc:32 },
+      [['Categoría','Características','Elementos','Ejemplo'], ['Categoría 1'], ['Categoría 2'], ['Categoría 3'], ['Categoría 4'], ['Categoría 5']]);
+  }}
+];
+function usarOrganizador(p){
+  if (canvas.getObjects().length && !confirm('Esto reemplazará el contenido de esta página. ¿Continuar?')) return;
+  fijarTamano(p.tam[0], p.tam[1]);
+  restaurando = true;
+  canvas.clear(); canvas.backgroundColor = '#ffffff';
+  p.crear(); ordenarVinculos();
+  restaurando = false;
+  canvas.discardActiveObject(); canvas.requestRenderAll(); renderCapas(); guardarEstado();
+}
+function ICONO(nombre, x, y, w, color){
+  const pth = new fabric.Path(ICONOS[nombre], { fill:color, fillRule:'evenodd', originX:'center', originY:'center', esDeco:true, name:nombre, id:nuevoId() });
+  pth.scaleToWidth(w); pth.setPositionByOrigin(new fabric.Point(x, y), 'center', 'center'); canvas.add(pth); return pth;
+}
+function LINEA(x1, y1, x2, y2, color, grosor){
+  const l = new fabric.Line([x1, y1, x2, y2], { stroke:color, strokeWidth:grosor, strokeLineCap:'round', name:'Línea', id:nuevoId() });
+  canvas.add(l); return l;
+}
+const CAT_MAPAS = 'Mapas conceptuales y mentales', CAT_TABLAS = 'Tablas y cuadros', CAT_PROC = 'Procesos y análisis', CAT_PORT = 'Portadas, carteles y redes';
+const CATEGORIA_ORG = { 'Análisis FODA':CAT_PROC, 'Ciclo de 4 pasos':CAT_PROC, 'Tabla comparativa':CAT_TABLAS, 'Cuadro sinóptico':CAT_TABLAS,
+  'Mapa conceptual':CAT_MAPAS, 'Mapa mental de nubes':CAT_MAPAS, 'Planeación de proyecto':CAT_PROC, 'Portada de proyecto':CAT_PORT, 'Tabla por categorías':CAT_TABLAS };
+ORGANIZADORES.forEach(o => { o.cat = o.cat || CATEGORIA_ORG[o.nombre] || CAT_MAPAS; });
+
+ORGANIZADORES.push(
+  { nombre:'Mapa conceptual jerárquico', cat:CAT_MAPAS, tam:[1920,1080], crear(){
+    FONDO('#f5f3ff'); fondoPapel('cuadros', '#f5f3ff');
+    const borde = { stroke:'#1f2330', grosor:3, color:'#1f2330' };
+    const tit = nodo('redondo', 'Título aquí', 960, 95, { ...borde, w:420, h:90, fill:'#ecfccb', tam:40, fuente:'Fredoka', peso:'700' });
+    const def = nodo('redondo', 'Escribe aquí la definición del tema principal con tus propias palabras, de forma breve y clara.', 960, 300,
+      { anchoMax:880, w:1000, h:130, fill:'#ffffff', stroke:'#1f2330', grosor:2, color:'#374151', tam:28, fuente:'Poppins' });
+    unir(tit, def, { estilo:'recta', fin:'flecha', color:'#1f2330', ancho:3, etiqueta:'¿Qué es?' });
+    [390, 770, 1150, 1530].forEach((x, i) => {
+      const idea = nodo('redondo', 'Idea ' + (i + 1), x, 500, { ...borde, w:280, h:80, fill:'#ecfccb', tam:32, fuente:'Fredoka', peso:'700' });
+      unir(def, idea, { estilo:'codo', fin:'flecha', color:'#1f2330', ancho:3 });
+      const d = nodo('redondo', 'Explica la idea en dos o tres renglones.', x, 690, { anchoMax:260, w:330, h:150, fill:'#ffffff', stroke:'#1f2330', grosor:2, color:'#374151', tam:24, fuente:'Poppins' });
+      unir(idea, d, { estilo:'recta', fin:'flecha', color:'#1f2330', ancho:3 });
+      const ej = nodo('pildora', 'ejemplo', x, 865, { w:170, h:54, fill:'#ddd6fe', color:'#4c1d95', tam:30, fuente:'Caveat', peso:'700' });
+      unir(d, ej, { estilo:'recta', fin:'nada', color:'#1f2330', ancho:2 });
+      T('Escribe un ejemplo concreto.', x, 960, { f:'Poppins', s:22, c:'#4b5563', w:300 });
+    });
+    DECO('destello', 1760, 90, 60, { c:'#a78bfa' }); DECO('destello', 160, 980, 50, { c:'#84cc16' });
+  }},
+  { nombre:'Mapa de 8 ideas', cat:CAT_MAPAS, tam:[1920,1080], crear(){
+    FONDO('#ffffff'); fondoPapel('cuadros', '#ffffff');
+    const centro = nodo('proceso', 'MAPA\nCONCEPTUAL', 960, 540, { w:300, h:150, fill:'#fde047', stroke:'#1f2330', grosor:3, color:'#1f2330', tam:46, fuente:'Bebas Neue' });
+    const nombres = ['NOVEDOSA','ECOLÓGICA','ECONÓMICA','EFICIENTE','TECNOLÓGICA','EDUCATIVA','MODERNA','SOSTENIBLE'];
+    const cols = ['#d9f99d','#fbcfe8','#fde68a','#bae6fd','#a7f3d0','#fecaca','#ddd6fe','#e5e7eb'];
+    [165, 415, 665, 915].forEach((y, i) => [0, 1].forEach(lado => {
+      const n = i + lado * 4, x = lado ? 1490 : 430;
+      const c = nodo('proceso', 'IDEA ' + nombres[n] + '\nEscribe aquí una breve explicación de esta idea.', x, y,
+        { anchoMax:560, w:640, h:190, fill:cols[n], stroke:'#1f2330', grosor:3, color:'#1f2330', tam:26, fuente:'Poppins' });
+      T(String(n + 1), lado ? 1860 : 60, y, { f:'Bebas Neue', s:96, w:80 });
+      unir(centro, c, { estilo:'curva', fin:'flecha', color:'#1f2330', ancho:3, lados: lado ? ['der','izq'] : ['izq','der'] });
+    }));
+  }},
+  { nombre:'Mapa de columnas de colores', cat:CAT_MAPAS, tam:[1920,1080], crear(){
+    FONDO('#fffdf7');
+    T('MAPA CONCEPTUAL', 960, 105, { f:'Fredoka', s:80, b:'700', w:1100 });
+    DECO('foco', 520, 95, 70, { c:'#facc15' }); DECO('rizo', 1400, 105, 120, { c:'#1f2330', sw:4 });
+    T('Escribe aquí una introducción breve que explique de qué trata el tema y por qué es importante.', 960, 215, { f:'Poppins', s:26, c:'#4b5563', w:1300 });
+    const fuertes = ['#bae6fd','#fed7aa','#fbcfe8','#ddd6fe','#bbf7d0'], suaves = ['#f0f9ff','#fff7ed','#fdf2f8','#f5f3ff','#f0fdf4'];
+    [260, 610, 960, 1310, 1660].forEach((x, i) => {
+      const pill = nodo('pildora', 'IDEA ' + (i + 1), x, 340, { w:300, h:72, fill:fuertes[i], stroke:'#1f2330', grosor:2, color:'#1f2330', tam:30, fuente:'Fredoka', peso:'700' });
+      const col = nodo('redondo', 'Desarrolla aquí la idea: qué es, cómo funciona y un ejemplo que la explique.', x, 630,
+        { anchoMax:240, w:300, h:400, fill:suaves[i], color:'#1f2330', tam:28, fuente:'Patrick Hand' });
+      unir(pill, col, { estilo:'recta', fin:'nada', color:'#1f2330', ancho:3 });
+    });
+    DECO('estrella', 160, 980, 46, { c:'#facc15' }); DECO('destello', 1760, 980, 54, { c:'#f472b6' });
+  }},
+  { nombre:'Mapa de burbujas', cat:CAT_MAPAS, tam:[1920,1080], crear(){
+    FONDO('#ffffff'); fondoPapel('puntos', '#ffffff');
+    const centro = nodo('circulo', 'MAPA\nCONCEPTUAL', 960, 540, { w:300, h:300, fill:'#ffffff', stroke:'#0f766e', grosor:6, color:'#0f766e', tam:40, fuente:'Fredoka', peso:'700' });
+    const nombres = ['SIMPLE','SENCILLA','CREATIVA','BONITA','BÁSICA','DIVERTIDA'];
+    const cols = ['#fbcfe8','#bbf7d0','#fde68a','#bae6fd','#ddd6fe','#fecaca'];
+    [[620,250],[1300,250],[420,560],[1500,560],[620,860],[1300,860]].forEach(([x, y], i) => {
+      const b = nodo('circulo', 'IDEA ' + nombres[i] + '\nUna frase corta que la explique.', x, y, { anchoMax:190, w:320, h:320, fill:cols[i], color:'#1f2330', tam:23, fuente:'Poppins' });
+      unir(centro, b, { estilo:'recta', fin:'nada', color:'#0f766e', ancho:4 });
+    });
+    DECO('destello', 960, 160, 60, { c:'#14b8a6' }); DECO('espiral', 960, 930, 90, { c:'#0f766e', sw:4 });
+  }},
+  { nombre:'Mapa conceptual con notas', cat:CAT_MAPAS, tam:[1920,1080], crear(){
+    FONDO('#fafaf9'); fondoPapel('cuadros', '#fafaf9');
+    DECO('cinta', 960, 95, 620, { c:'#a5f3fc', op:0.6, ang:-2 });
+    T('Mapa conceptual', 960, 95, { f:'Gochi Hand', s:76, w:900 });
+    const main = nodo('nota', 'Tema principal', 960, 265, { w:380, h:120, fill:'#fde68a', color:'#1f2330', tam:42, fuente:'Gochi Hand' });
+    const cols = ['#fbcfe8','#bbf7d0','#bae6fd'];
+    [430, 960, 1490].forEach((x, i) => {
+      const sub = nodo('nota', 'Subtema ' + (i + 1), x, 520, { w:320, h:110, fill:cols[i], color:'#1f2330', tam:38, fuente:'Gochi Hand' });
+      unir(main, sub, { estilo:'curva', fin:'abierta', color:'#1f2330', ancho:4 });
+      [-135, 135].forEach(dx => {
+        const det = nodo('nota', 'Detalle o ejemplo', x + dx, 820, { anchoMax:180, w:230, h:170, fill:'#ffffff', color:'#374151', tam:30, fuente:'Patrick Hand' });
+        unir(sub, det, { estilo:'codo', fin:'flecha', color:'#1f2330', ancho:3 });
+      });
+    });
+    DECO('estrella', 1720, 120, 56, { c:'#facc15' }); DECO('foco', 200, 130, 80, { c:'#facc15' }); DECO('espiral', 1780, 960, 90, { c:'#1f2330', sw:4 });
+  }},
+  { nombre:'Cuadro comparativo de ideas', cat:CAT_TABLAS, tam:[1920,1080], crear(){
+    FONDO('#fefce8'); fondoPapel('cuadros', '#fefce8');
+    T('CUADRO COMPARATIVO', 960, 95, { f:'Amatic SC', s:100, b:'700', w:1200 });
+    DECO('estrella', 1400, 80, 50, { c:'#1f2330' }); DECO('destello', 1460, 125, 40, { c:'#f472b6' }); DECO('destello', 470, 90, 50, { c:'#a78bfa' });
+    crearTabla(960, 590, 5, 4, { sep:12, rx:12, borde:'#1f2330', grosor:2.5, enc:['#ede9fe','#fed7aa','#bbf7d0','#bae6fd'], encTexto:'#1f2330',
+      filasColores:['#c7d2fe'], celda:'#ffffff', fuente:'Patrick Hand', fuenteEnc:'Amatic SC', anchos:[300,440,440,440], alto:130, altoEnc:110, tam:26, tamEnc:46 },
+      [['', 'IDEA GRANDIOSA', 'IDEA BRILLANTE', 'IDEA FANTÁSTICA'], ['DEFINICIÓN'], ['OBJETIVOS'], ['INDICADORES'], ['EJEMPLOS']]);
+  }},
+  { nombre:'Cuadro S·Q·A', cat:CAT_TABLAS, tam:[1920,1080], crear(){
+    FONDO('#ffffff'); fondoPapel('rayas', '#ffffff');
+    T('Cuadro S · Q · A', 960, 95, { f:'Fredoka', s:72, b:'700', w:1200 });
+    T('Tema: ______________________', 960, 175, { f:'Patrick Hand', s:38, c:'#4b5563', w:900 });
+    crearTabla(960, 620, 2, 3, { sep:16, rx:18, borde:'#cbd5e1', grosor:2, enc:['#bae6fd','#fde68a','#bbf7d0'], encTexto:'#1f2330', celda:'#ffffff',
+      fuente:'Patrick Hand', fuenteEnc:'Fredoka', anchos:[540,540,540], alto:560, altoEnc:130, tam:30, tamEnc:34 },
+      [['S · Lo que sé', 'Q · Lo que quiero saber', 'A · Lo que aprendí'], ['', '', '']]);
+    DECO('destello', 1760, 90, 56, { c:'#38bdf8' }); DECO('foco', 160, 100, 70, { c:'#facc15' });
+  }},
+  { nombre:'Pros y contras', cat:CAT_TABLAS, tam:[1920,1080], crear(){
+    FONDO('#f8fafc');
+    T('Pros y contras', 960, 95, { f:'Fredoka', s:72, b:'700', w:1200 });
+    T('Decisión o tema a analizar', 960, 175, { f:'Caveat', s:50, c:'#475569', w:900 });
+    [[520,'A FAVOR','#22c55e','#f0fdf4','#86efac','#14532d','Palomita','✓'],[1400,'EN CONTRA','#ef4444','#fef2f2','#fca5a5','#7f1d1d','Tache','✗']]
+      .forEach(([x, tit, fuerte, suave, borde, txtc, icono, marca]) => {
+        nodo('pildora', tit, x, 290, { w:320, h:84, fill:fuerte, color:'#ffffff', tam:38, fuente:'Fredoka', peso:'700' });
+        ICONO(icono, x - 230, 290, 60, fuerte);
+        const lista = nodo('redondo', `${marca} Primer punto\n${marca} Segundo punto\n${marca} Tercer punto\n${marca} Cuarto punto`, x, 640,
+          { anchoMax:600, w:720, h:520, fill:suave, stroke:borde, grosor:3, color:txtc, tam:46, fuente:'Patrick Hand' });
+        porId(lista.formaTexto).set('textAlign', 'left');
+      });
+  }},
+  { nombre:'Proceso en 5 pasos', cat:CAT_PROC, tam:[1920,1080], crear(){
+    FONDO('#ffffff');
+    T('Proceso en 5 pasos', 960, 115, { f:'Fredoka', s:72, b:'700', w:1200 });
+    DECO('subrayado', 960, 180, 360, { c:'#f97316', sw:6 });
+    const cols = ['#f97316','#eab308','#22c55e','#06b6d4','#8b5cf6'];
+    const c = [240, 600, 960, 1320, 1680].map((x, i) => {
+      const n = nodo('circulo', String(i + 1), x, 420, { w:150, h:150, fill:cols[i], color:'#ffffff', tam:64, fuente:'Fredoka', peso:'700' });
+      T('Paso ' + (i + 1), x, 560, { f:'Fredoka', s:38, b:'600', c:cols[i], w:300 });
+      T('Describe brevemente qué se hace en este paso.', x, 650, { f:'Poppins', s:24, c:'#4b5563', w:290 });
+      return n;
+    });
+    for (let i = 0; i < 4; i++) unir(c[i], c[i + 1], { estilo:'recta', fin:'flecha', color:'#cbd5e1', ancho:6, patron:'guiones' });
+    nodo('redondo', 'Resultado final: escribe aquí lo que se logra al terminar el proceso.', 960, 880, { anchoMax:1000, w:1100, h:110, fill:'#f1f5f9', color:'#1f2330', tam:28, fuente:'Poppins' });
+  }},
+  { nombre:'Diagrama de Venn', cat:CAT_PROC, tam:[1920,1080], crear(){
+    FONDO('#ffffff');
+    T('Diagrama de Venn', 960, 100, { f:'Fredoka', s:72, b:'700', w:1200 });
+    [[760,'#60a5fa'],[1160,'#f472b6']].forEach(([x, c]) => canvas.add(new fabric.Circle({ left:x, top:575, radius:330, originX:'center', originY:'center', fill:c, opacity:0.4, name:'Conjunto', id:nuevoId() })));
+    T('TEMA A', 650, 360, { f:'Fredoka', s:46, b:'700', c:'#1e40af', w:300 });
+    T('TEMA B', 1270, 360, { f:'Fredoka', s:46, b:'700', c:'#9d174d', w:300 });
+    T('Características que solo tiene A', 610, 580, { f:'Poppins', s:28, w:260 });
+    T('Lo que tienen en común', 960, 580, { f:'Poppins', s:28, b:'600', w:170 });
+    T('Características que solo tiene B', 1310, 580, { f:'Poppins', s:28, w:260 });
+    DECO('destello', 1760, 110, 60, { c:'#a78bfa' }); DECO('destello', 170, 960, 50, { c:'#60a5fa' });
+  }},
+  { nombre:'Causa y efecto (espina de pescado)', cat:CAT_PROC, tam:[1920,1080], crear(){
+    FONDO('#f8fafc');
+    T('Diagrama de causa y efecto', 820, 90, { f:'Fredoka', s:60, b:'700', w:1400 });
+    LINEA(180, 540, 1480, 540, '#1f2330', 8);
+    nodo('redondo', 'Problema o efecto', 1670, 540, { anchoMax:260, w:330, h:200, fill:'#ef4444', color:'#ffffff', tam:34, fuente:'Fredoka', peso:'700' });
+    const cats = ['Métodos','Materiales','Personas','Entorno','Tiempo','Recursos'];
+    const cols = ['#bae6fd','#fde68a','#bbf7d0','#fbcfe8','#ddd6fe','#fed7aa'];
+    [420, 820, 1220].forEach((x, i) => [0, 1].forEach(abajo => {
+      const n = i + abajo * 3, yE = abajo ? 820 : 260;
+      LINEA(x - 140, yE, x + 60, 540, '#1f2330', 5);
+      nodo('pildora', cats[n], x - 140, abajo ? 870 : 210, { w:230, h:62, fill:cols[n], color:'#1f2330', tam:28, fuente:'Fredoka', peso:'600' });
+      T('• Causa principal\n• Otra causa', x + 95, abajo ? 690 : 390, { f:'Patrick Hand', s:28, al:'left', w:200 });
+    }));
+  }}
+);
+
+ORGANIZADORES.forEach(p => {
+  const b = document.createElement('button'); b.className = 'plantilla';
+  b.innerHTML = `<div class="t">${esc(p.nombre)}</div>`;
+  b.onclick = () => usarOrganizador(p);
+  $('listaOrganizadores').appendChild(b);
+});
+
+const DIAGRAMAS = [
+  { nombre:'Mapa mental', desc:'Idea central con ramas de colores', tam:[1920, 1080], crear(){
+    const centro = nodo('elipse', 'Idea central', 960, 540, { w:460, h:230, fill:'#7c3aed', color:'#ffffff', tam:56, peso:'700', fuente:'Montserrat' });
+    const colores = ['#f97316','#06b6d4','#10b981','#ec4899','#eab308','#3b82f6'];
+    [[1480,230],[1520,540],[1480,850],[440,230],[400,540],[440,850]].forEach(([x, y], i) => {
+      const r = nodo('redondo', 'Idea ' + (i+1), x, y, { w:320, h:110, fill:colores[i], color:'#ffffff', tam:38, peso:'600' });
+      unir(centro, r, { estilo:'curva', flecha:false, color:colores[i], ancho:9, orient:'h', dir: x > 960 ? 'der' : 'izq' });
+    });
+  }},
+  { nombre:'Mapa conceptual', desc:'Conceptos unidos con palabras de enlace', tam:[1920, 1080], crear(){
+    const est = { fill:'#eef2ff', stroke:'#1e3a8a', grosor:4, color:'#1e3a8a', tam:34, peso:'600' };
+    const raiz = nodo('redondo', 'Concepto principal', 960, 130, { ...est, w:440, h:110, fill:'#1e3a8a', color:'#ffffff', tam:40, peso:'700' });
+    const n2 = [400, 960, 1520].map((x, i) => nodo('redondo', 'Concepto ' + (i+1), x, 470, { ...est, w:320, h:100 }));
+    const enlaces = ['se divide en', 'incluye', 'se relaciona con'];
+    n2.forEach((n, i) => unir(raiz, n, { etiqueta:enlaces[i], color:'#334155', ancho:4 }));
+    [[230, 0], [570, 0], [1350, 2], [1690, 2]].forEach(([x, i], j) => {
+      const h3 = nodo('redondo', 'Ejemplo', x, 840, { ...est, w:280, h:96, fill:'#ffffff' });
+      unir(n2[i], h3, { etiqueta: j % 2 ? 'como' : 'por ejemplo', color:'#334155', ancho:4 });
+    });
+  }},
+  { nombre:'Diagrama de flujo', desc:'Inicio, procesos, decisión y fin', tam:[1400, 1920], crear(){
+    const blanco = { color:'#ffffff', tam:38, peso:'600' };
+    const ini = nodo('pildora', 'Inicio', 600, 160, { ...blanco, w:340, h:110, fill:'#10b981' });
+    const p1 = nodo('proceso', 'Proceso', 600, 420, { ...blanco, w:380, h:130, fill:'#3b82f6' });
+    const dec = nodo('rombo', '¿Condición?', 600, 760, { ...blanco, w:440, h:260, fill:'#f59e0b', tam:34 });
+    const otra = nodo('proceso', 'Otra acción', 1170, 760, { ...blanco, w:300, h:120, fill:'#64748b' });
+    const p2 = nodo('proceso', 'Siguiente paso', 600, 1120, { ...blanco, w:380, h:130, fill:'#3b82f6' });
+    const dat = nodo('paralelo', 'Resultado', 600, 1420, { ...blanco, w:400, h:130, fill:'#8b5cf6' });
+    const fin = nodo('pildora', 'Fin', 600, 1720, { ...blanco, w:340, h:110, fill:'#ef4444' });
+    const lin = { estilo:'codo', color:'#1f2330', ancho:5 };
+    unir(ini, p1, { ...lin, orient:'v' }); unir(p1, dec, { ...lin, orient:'v' });
+    unir(dec, p2, { ...lin, orient:'v', etiqueta:'Sí' }); unir(dec, otra, { ...lin, orient:'h', etiqueta:'No' });
+    unir(otra, dat, { ...lin, lados:['aba','der'] });
+    unir(p2, dat, { ...lin, orient:'v' }); unir(dat, fin, { ...lin, orient:'v' });
+  }},
+  { nombre:'Organigrama / árbol', desc:'Jerarquía de arriba hacia abajo', tam:[1920, 1080], crear(){
+    const raiz = nodo('redondo', 'Dirección', 960, 150, { w:360, h:110, fill:'#0f172a', color:'#ffffff', tam:40, peso:'700' });
+    const cols = ['#2563eb', '#0891b2', '#7c3aed'];
+    [400, 960, 1520].forEach((x, i) => {
+      const n = nodo('redondo', 'Área ' + (i+1), x, 480, { w:300, h:100, fill:cols[i], color:'#ffffff', tam:34, peso:'600' });
+      unir(raiz, n, { estilo:'codo', flecha:false, orient:'v', color:'#475569', ancho:4 });
+      [-140, 140].forEach(dx => {
+        const m = nodo('redondo', 'Puesto', x + dx, 820, { w:250, h:92, fill:'#f1f5f9', stroke:cols[i], grosor:4, color:'#1f2330', tam:30 });
+        unir(n, m, { estilo:'codo', flecha:false, orient:'v', color:'#94a3b8', ancho:4 });
+      });
+    });
+  }},
+  { nombre:'Línea del tiempo', desc:'Acontecimientos en orden', tam:[1920, 1080], crear(){
+    agregar(new fabric.Rect({ left:960, top:540, originX:'center', originY:'center', width:1640, height:12, rx:6, ry:6, fill:'#334155' }), 'Línea');
+    [260, 610, 960, 1310, 1660].forEach((x, i) => {
+      const punto = nodo('circulo', String(2020 + i), x, 540, { w:130, h:130, fill:'#7c3aed', color:'#ffffff', tam:30, peso:'700' });
+      const y = i % 2 ? 820 : 260;
+      const caja = nodo('redondo', 'Acontecimiento importante', x, y, { w:300, h:130, fill:'#f1f5f9', stroke:'#cbd5e1', grosor:3, color:'#1f2330', tam:30 });
+      unir(punto, caja, { flecha:false, color:'#94a3b8', ancho:4 });
+    });
+  }}
+];
+DIAGRAMAS.forEach(d => {
+  const b = document.createElement('button'); b.className = 'bigbtn';
+  b.innerHTML = `<b>${esc(d.nombre)}</b><br><span style="color:#6b7280;font-size:12px">${esc(d.desc)}</span>`;
+  b.onclick = () => {
+    if (canvas.getObjects().length && !confirm('Esto reemplazará el contenido de esta página. ¿Continuar?')) return;
+    fijarTamano(d.tam[0], d.tam[1]);
+    restaurando = true;
+    canvas.clear(); canvas.backgroundColor = '#ffffff';
+    d.crear(); ordenarVinculos();
+    restaurando = false;
+    canvas.discardActiveObject(); canvas.requestRenderAll(); renderCapas(); guardarEstado();
+  };
+  $('listaDiagramas').appendChild(b);
+});
+canvas.targetFindTolerance = 8;
+
+function toggleFlecha(){
+  const o = conSel(); if (!o) return;
+  const fin = (o.fin || (o.flecha ? 'flecha' : 'nada')) === 'nada' ? 'flecha' : 'nada';
+  cambiarConector({ fin, flecha: fin !== 'nada' });
+}
+
+/* =========================================================
+   LIENZO FLEXIBLE
+   ========================================================= */
+let lienzoAuto = true;
+try { lienzoAuto = localStorage.getItem('disenador_auto2') !== '0'; } catch(e){}
+$('lienzoAuto').checked = lienzoAuto;
+$('bAuto').classList.toggle('on', lienzoAuto);
+$('bAuto').onclick = () => { $('lienzoAuto').checked = !lienzoAuto; $('lienzoAuto').onchange({ target:$('lienzoAuto') });
+  toast(lienzoAuto ? 'Lienzo automático: crece solo cuando algo se sale' : 'Lienzo automático apagado'); };
+$('lienzoAuto').onchange = e => {
+  lienzoAuto = e.target.checked;
+  $('bAuto').classList.toggle('on', lienzoAuto);
+  try { localStorage.setItem('disenador_auto2', lienzoAuto ? '1' : '0'); } catch(_){}
+  if (lienzoAuto) ajustarLienzoAContenido(true);
+};
+// Mientras arrastras algo hacia la derecha o hacia abajo, el lienzo crece contigo
+function crecerAlArrastrar(o){
+  if (!lienzoAuto || !o) return;
+  const r = cajaAbs(o), m = 40 * s();
+  let nw = W, nh = H;
+  if (r.left + r.width > W) nw = Math.ceil(r.left + r.width + m);
+  if (r.top + r.height > H) nh = Math.ceil(r.top + r.height + m);
+  if (nw === W && nh === H) return;
+  W = Math.min(8000, nw); H = Math.min(8000, nh);
+  canvas.setDimensions({ width: Math.round(W*zoom), height: Math.round(H*zoom) });
+  $('tamTxt').textContent = W + ' × ' + H;
+  const f = canvas.getObjects().find(x => x.esFondo); if (f) ajustarRectFondo(f);
+  miniaturas = []; crecioArrastrando = true;
+}
+let crecioArrastrando = false;
+// al soltar, se reajusta el zoom para ver todo el lienzo
+canvas.on('mouse:up', () => { if (crecioArrastrando){ crecioArrastrando = false; setTimeout(() => { ajustarZoom(); guardarEstado(); }, 320); } });
+function revisarAuto(){
+  if (!lienzoAuto || restaurando || generandoVista) return;
+  clearTimeout(revisarAuto._t);
+  revisarAuto._t = setTimeout(() => ajustarLienzoAContenido(true), 300);
+}
+function limitesContenido(){
+  const objs = canvas.getObjects().filter(o => !o.esFondo && o.visible);
+  if (!objs.length) return null;
+  const b = { x1:Infinity, y1:Infinity, x2:-Infinity, y2:-Infinity };
+  objs.forEach(o => {
+    const r = cajaAbs(o);
+    b.x1 = Math.min(b.x1, r.left); b.y1 = Math.min(b.y1, r.top);
+    b.x2 = Math.max(b.x2, r.left + r.width); b.y2 = Math.max(b.y2, r.top + r.height);
+  });
+  return b;
+}
+function moverTodo(dx, dy){
+  const a = activo();
+  if (a && a.type === 'activeSelection'){ a.set({ left: a.left + dx, top: a.top + dy }); a.setCoords(); }
+  canvas.getObjects().filter(o => !o.esFondo && !o.group).forEach(o => { o.set({ left: o.left + dx, top: o.top + dy }); o.setCoords(); });
+  actualizarTodasConexiones();
+}
+// soloCrecer = true: solo agranda si algo se sale. false: recorta/ajusta el lienzo justo al contenido con margen
+function ajustarLienzoAContenido(soloCrecer){
+  const b = limitesContenido();
+  if (!b){ if (!soloCrecer) toast('Agrega algo al diseño primero'); return; }
+  const m = Math.round(40 * s());
+  let dx = 0, dy = 0, nw, nh;
+  if (soloCrecer){
+    if (b.x1 < -1) dx = Math.ceil(-b.x1) + m;
+    if (b.y1 < -1) dy = Math.ceil(-b.y1) + m;
+    nw = b.x2 > W + 1 ? Math.ceil(b.x2 + dx + m) : W + dx;
+    nh = b.y2 > H + 1 ? Math.ceil(b.y2 + dy + m) : H + dy;
+  } else {
+    dx = Math.round(m - b.x1); dy = Math.round(m - b.y1);
+    nw = Math.ceil(b.x2 - b.x1 + 2*m); nh = Math.ceil(b.y2 - b.y1 + 2*m);
+  }
+  nw = Math.max(50, Math.min(8000, nw)); nh = Math.max(50, Math.min(8000, nh));
+  if (!dx && !dy && nw === W && nh === H) return;
+  if (dx || dy) moverTodo(dx, dy);
+  cambiarTamano(nw, nh);
+}
+// Asas para cambiar el tamaño del lienzo desde cualquier lado o esquina
+document.querySelectorAll('.asa').forEach(asa => {
+  let ini = null;
+  asa.addEventListener('pointerdown', e => {
+    e.preventDefault(); e.stopPropagation(); asa.setPointerCapture(e.pointerId);
+    canvas.discardActiveObject();
+    ini = { x:e.clientX, y:e.clientY, w:W, h:H, d:asa.dataset.d, ox:0, oy:0 };
+  });
+  asa.addEventListener('pointermove', e => {
+    if (!ini) return;
+    const dx = (e.clientX - ini.x) / zoom, dy = (e.clientY - ini.y) / zoom, d = ini.d;
+    let w = ini.w, hh = ini.h;
+    if (d.includes('e')) w = ini.w + dx;
+    if (d.includes('w')) w = ini.w - dx;
+    if (d.includes('s')) hh = ini.h + dy;
+    if (d.includes('n')) hh = ini.h - dy;
+    w = Math.round(Math.max(50, Math.min(8000, w))); hh = Math.round(Math.max(50, Math.min(8000, hh)));
+    // al jalar desde la izquierda o arriba, el contenido se queda en su lugar
+    ini.ox = d.includes('w') ? w - ini.w : 0;
+    ini.oy = d.includes('n') ? hh - ini.h : 0;
+    W = w; H = hh;
+    canvas.setDimensions({ width: Math.round(W*zoom), height: Math.round(H*zoom) });
+    canvas.setViewportTransform([zoom, 0, 0, zoom, ini.ox*zoom, ini.oy*zoom]);
+    $('tamTxt').textContent = W + ' × ' + H;
+  });
+  const soltar = () => {
+    if (!ini) return;
+    const { ox, oy } = ini; ini = null;
+    canvas.setViewportTransform([zoom, 0, 0, zoom, 0, 0]);
+    if (ox || oy) moverTodo(ox, oy);
+    cambiarTamano(W, H);
+  };
+  asa.addEventListener('pointerup', soltar);
+  asa.addEventListener('pointercancel', soltar);
+});
+
+/* =========================================================
    GRÁFICAS EDITABLES
    ========================================================= */
 const PALETAS_GRAF = {
@@ -283,393 +790,5 @@ function sacarDeMarco(){
     $('gridMarcos').appendChild(b);
   });
 })();
-
-/* =========================================================
-   PLANTILLAS DE INFOGRAFÍAS Y FOTOS
-   ========================================================= */
-const CAT_INFO = 'Infografías y fotos';
-function GRAFICA(tipo, x, y, w, hh, datos, o = {}){
-  const g = grupoGrafica({ tipo, titulo:o.titulo || '', paleta:o.paleta || 'Vibrante', valores:o.valores !== false, w, h:hh, datos });
-  g.setPositionByOrigin(new fabric.Point(x, y), 'center', 'center'); g.setCoords(); canvas.add(g); return g;
-}
-function MARCO(tipo, x, y, w, hh, ang = 0){
-  const g = crearMarcoVacio(tipo, w, hh); g.set({ angle:ang });
-  g.setPositionByOrigin(new fabric.Point(x, y), 'center', 'center'); g.setCoords(); canvas.add(g); return g;
-}
-const izquierda = n => { const t = porId(n.formaTexto); if (t) t.set('textAlign', 'left'); return n; };
-ORGANIZADORES.push(
-  { nombre:'Infografía con datos', cat:CAT_INFO, tam:[1080,1920], crear(){
-    FONDO('#f8fafc');
-    canvas.add(new fabric.Rect({ left:0, top:0, width:1080, height:400, fill:'#4f46e5', name:'Banda', id:nuevoId() }));
-    DECO('destello', 960, 80, 60, { c:'#a5b4fc' }); DECO('destello', 110, 340, 44, { c:'#c7d2fe' });
-    T('INFOGRAFÍA', 540, 105, { f:'Montserrat', s:30, b:'800', c:'#c7d2fe', cs:400, w:900 });
-    T('Título del tema', 540, 200, { f:'Fredoka', s:84, b:'700', c:'#ffffff', w:950 });
-    T('Una frase que resuma de qué trata esta infografía.', 540, 300, { f:'Poppins', s:30, c:'#e0e7ff', w:850 });
-    [['75%',220,'#4f46e5'],['3/5',540,'#0891b2'],['+20',860,'#db2777']].forEach(([v, x, c]) => {
-      nodo('circulo', v, x, 545, { w:190, h:190, fill:c, color:'#ffffff', tam:48, fuente:'Fredoka', peso:'700' });
-      T('Dato importante que explica la cifra', x, 700, { s:24, w:260, c:'#475569' });
-    });
-    GRAFICA('barras', 540, 1040, 920, 520, [{e:'2021',v:35},{e:'2022',v:48},{e:'2023',v:62},{e:'2024',v:71}], { titulo:'Comparación de resultados', paleta:'Escolar' });
-    MARCO('redondo', 280, 1535, 400, 330);
-    T('Explica aquí la imagen o agrega un dato curioso relacionado con el tema.', 760, 1535, { s:30, w:500, al:'left', c:'#334155' });
-    nodo('redondo', 'Conclusión: escribe aquí la idea más importante que debe recordar quien lea.', 540, 1805, { anchoMax:860, w:960, h:130, fill:'#e0e7ff', color:'#1e1b4b', tam:28, fuente:'Poppins' });
-  }},
-  { nombre:'Reporte de resultados', cat:CAT_INFO, tam:[1920,1080], crear(){
-    FONDO('#ffffff');
-    T('Reporte de resultados', 960, 90, { f:'Fredoka', s:68, b:'700', w:1400 });
-    T('Encuesta aplicada a 30 estudiantes · Grupo 6A', 960, 160, { f:'Poppins', s:28, c:'#64748b', w:1200 });
-    GRAFICA('dona', 500, 520, 820, 540, [{e:'Sí',v:18},{e:'No',v:7},{e:'No sé',v:5}], { titulo:'¿Te gusta leer?', paleta:'Pastel' });
-    GRAFICA('barras', 1420, 520, 820, 540, [{e:'Novela',v:12},{e:'Cómic',v:9},{e:'Poesía',v:4},{e:'Ciencia',v:5}], { titulo:'Género favorito', paleta:'Vibrante' });
-    [[340,'#ede9fe','#3b0764'],[960,'#fce7f3','#831843'],[1580,'#e0f2fe','#0c4a6e']].forEach(([x, f, c], i) =>
-      nodo('redondo', `Hallazgo ${i + 1}: escribe aquí una conclusión de los datos.`, x, 935, { anchoMax:480, w:560, h:120, fill:f, color:c, tam:26, fuente:'Poppins' }));
-  }},
-  { nombre:'Sobre mí', cat:CAT_INFO, tam:[1080,1350], crear(){
-    FONDO('#fff7ed'); fondoPapel('puntos', '#fff7ed');
-    MARCO('circulo', 540, 320, 400, 400);
-    DECO('destello', 810, 150, 60, { c:'#fb923c' }); DECO('flor', 270, 500, 70, { c:'#f472b6' }); DECO('estrella', 840, 470, 40, { c:'#facc15' });
-    T('¡Hola! Soy', 540, 585, { f:'Caveat', s:56, c:'#9a3412' });
-    T('Tu nombre', 540, 665, { f:'Fredoka', s:84, b:'700', w:900 });
-    DECO('subrayado', 540, 725, 360, { c:'#fb923c', sw:6 });
-    [['🎂\nEdad\n__ años',220,'#fed7aa'],['📍\nVivo en\nCiudad',540,'#fbcfe8'],['🎓\nEstudio\nCarrera',860,'#bbf7d0']].forEach(([t, x, f]) =>
-      nodo('redondo', t, x, 925, { w:280, h:230, fill:f, color:'#1f2330', tam:30, fuente:'Poppins', peso:'600' }));
-    izquierda(nodo('redondo', 'Me gusta: escribe tus pasatiempos, música o comida favorita.\nMi meta: algo que quieras lograr este año.', 540, 1190,
-      { anchoMax:860, w:960, h:200, fill:'#ffffff', stroke:'#fdba74', grosor:3, color:'#431407', tam:32, fuente:'Patrick Hand' }));
-  }},
-  { nombre:'Biografía', cat:CAT_INFO, tam:[1920,1080], crear(){
-    FONDO('#fdf6e3');
-    MARCO('arco', 400, 560, 520, 720);
-    T('BIOGRAFÍA', 1240, 110, { f:'Montserrat', s:30, b:'800', c:'#b45309', cs:500, w:900 });
-    T('Nombre del personaje', 1240, 190, { f:'Playfair Display', s:72, b:'700', w:1100 });
-    T('Lugar y fecha de nacimiento — fecha de fallecimiento', 1240, 265, { f:'Poppins', s:28, c:'#78716c', w:1100 });
-    LINEA(880, 420, 1640, 420, '#d97706', 4);
-    [[880,'1900'],[1133,'1920'],[1386,'1950'],[1640,'1980']].forEach(([x, a]) => {
-      nodo('circulo', a, x, 420, { w:120, h:120, fill:'#f59e0b', color:'#ffffff', tam:28, fuente:'Fredoka', peso:'700' });
-      T('Acontecimiento importante', x, 530, { s:24, w:220, c:'#57534e' });
-    });
-    nodo('pildora', 'Aportaciones', 900, 655, { w:270, h:64, fill:'#f59e0b', color:'#ffffff', tam:30, fuente:'Fredoka', peso:'700' });
-    izquierda(nodo('redondo', '• Primera aportación importante\n• Segunda aportación\n• Por qué se le recuerda hoy', 1240, 850,
-      { anchoMax:900, w:1000, h:260, fill:'#ffffff', stroke:'#f59e0b', grosor:3, color:'#292524', tam:34, fuente:'Patrick Hand' }));
-    DECO('destello', 1820, 90, 60, { c:'#f59e0b' });
-  }},
-  { nombre:'Álbum de fotos', cat:CAT_INFO, tam:[1920,1080], crear(){
-    FONDO('#fef3c7'); fondoPapel('cuadros', '#fef3c7');
-    T('Nuestro álbum', 960, 100, { f:'Caveat', s:96, b:'700', c:'#92400e', w:900 });
-    [[330,-6,'#f9a8d4'],[760,4,'#a5f3fc'],[1170,-3,'#bbf7d0'],[1600,6,'#fde68a']].forEach(([x, a, cinta]) => {
-      canvas.add(new fabric.Rect({ left:x, top:575, width:380, height:470, originX:'center', originY:'center', fill:'#ffffff', angle:a,
-        shadow:new fabric.Shadow({ color:'rgba(0,0,0,.18)', blur:18, offsetX:4, offsetY:8 }), name:'Polaroid', id:nuevoId() }));
-      MARCO('rect', x, 535, 330, 330, a);
-      T('Pie de foto', x, 760, { f:'Caveat', s:44, w:300, ang:a });
-      DECO('cinta', x, 345, 170, { c:cinta, op:0.65, ang:a - 4 });
-    });
-    DECO('destello', 1820, 110, 60, { c:'#f59e0b' }); DECO('corazon', 110, 980, 60, { c:'#f472b6' });
-  }},
-  { nombre:'Ficha de lectura', cat:CAT_INFO, tam:[1240,1754], crear(){
-    FONDO('#f0f9ff');
-    T('FICHA DE LECTURA', 620, 110, { f:'Fredoka', s:70, b:'700', c:'#0c4a6e', w:1100 });
-    DECO('subrayado', 620, 170, 420, { c:'#38bdf8', sw:6 });
-    MARCO('rect', 300, 480, 380, 520);
-    const campo = { anchoMax:520, w:600, h:90, fill:'#ffffff', stroke:'#7dd3fc', grosor:2, color:'#0c4a6e', tam:32, fuente:'Patrick Hand' };
-    ['Título: ______________','Autor: ______________','Género: ______________','Calificación: ★★★★☆'].forEach((t, i) => izquierda(nodo('redondo', t, 870, 300 + i * 120, campo)));
-    nodo('pildora', 'Resumen', 620, 820, { w:240, h:64, fill:'#0ea5e9', color:'#ffffff', tam:30, fuente:'Fredoka', peso:'700' });
-    izquierda(nodo('redondo', 'Escribe aquí de qué trata el libro: inicio, problema principal y final.', 620, 1035,
-      { anchoMax:1000, w:1100, h:330, fill:'#ffffff', stroke:'#7dd3fc', grosor:2, color:'#334155', tam:32, fuente:'Patrick Hand' }));
-    [[340,'Personajes','• Protagonista:\n• Otros personajes:'],[900,'Mi opinión','¿Te gustó? ¿Lo recomendarías? ¿Por qué?']].forEach(([x, tit, txt]) => {
-      nodo('pildora', tit, x, 1290, { w:250, h:60, fill:'#38bdf8', color:'#ffffff', tam:28, fuente:'Fredoka', peso:'700' });
-      izquierda(nodo('redondo', txt, x, 1480, { anchoMax:440, w:520, h:310, fill:'#ffffff', stroke:'#7dd3fc', grosor:2, color:'#334155', tam:30, fuente:'Patrick Hand' }));
-    });
-  }}
-);
-
-/* =========================================================
-   PRESENTACIONES (temas completos con varias diapositivas)
-   ========================================================= */
-const CAT_PRES = 'Presentaciones';
-const TEMAS_PRES = {
-  escolar: { nombre:'Escolar colorido', fondo:'#fffdf7', texto:'#1f2330', suave:'#64748b', pri:'#7c3aed', sec:'#f97316', acento:'#06b6d4',
-    tarjeta:'#f5f3ff', textoTarjeta:'#2e1065', borde:null, tit:'Fredoka', titPeso:'700', cuerpo:'Poppins', paleta:'Vibrante', trans:'deslizar', anim:'dinamica' },
-  formal: { nombre:'Formal (Derecho)', fondo:'#f8f6f1', texto:'#0f2747', suave:'#5b6b80', pri:'#0f2747', sec:'#b8862b', acento:'#b8862b',
-    tarjeta:'#ffffff', textoTarjeta:'#0f2747', borde:'#d6c7a1', tit:'Playfair Display', titPeso:'700', cuerpo:'Inter', paleta:'Escolar', trans:'desvanecer', anim:'suave',
-    zona:{ x:1240, w:1080 } },
-  minimal: { nombre:'Minimalista', fondo:'#ffffff', texto:'#111827', suave:'#6b7280', pri:'#111827', sec:'#2563eb', acento:'#2563eb',
-    tarjeta:'#f3f4f6', textoTarjeta:'#111827', borde:null, tit:'Montserrat', titPeso:'800', cuerpo:'Inter', paleta:'Escolar', trans:'desvanecer', anim:'suave' },
-  oscuro: { nombre:'Moderno oscuro', fondo:'#0f172a', texto:'#f8fafc', suave:'#94a3b8', pri:'#22d3ee', sec:'#a78bfa', acento:'#f472b6',
-    tarjeta:'#1e293b', textoTarjeta:'#e2e8f0', borde:'#334155', tit:'Montserrat', titPeso:'800', cuerpo:'Inter', paleta:'Vibrante', trans:'zoom', anim:'dinamica' },
-  pizarron: { nombre:'Pizarrón', fondo:'#1f3b2d', texto:'#f8fafc', suave:'#d1dccb', pri:'#fde047', sec:'#f9a8d4', acento:'#7dd3fc',
-    tarjeta:'#2a4d3b', textoTarjeta:'#f8fafc', borde:'#e2e8f0', tit:'Gochi Hand', titPeso:'400', cuerpo:'Patrick Hand', paleta:'Pastel', trans:'desvanecer', anim:'suave' },
-  cuaderno: { nombre:'Cuaderno', fondo:'#fffef6', texto:'#1e293b', suave:'#475569', pri:'#2563eb', sec:'#ef4444', acento:'#16a34a',
-    tarjeta:'#ffffff', textoTarjeta:'#1e293b', borde:'#93c5fd', tit:'Caveat', titPeso:'700', cuerpo:'Patrick Hand', paleta:'Escolar', trans:'deslizar', anim:'divertida' },
-  pastel: { nombre:'Pastel', fondo:'#fdf4ff', texto:'#3b0764', suave:'#7e6a8a', pri:'#c084fc', sec:'#f472b6', acento:'#38bdf8',
-    tarjeta:'#ffffff', textoTarjeta:'#3b0764', borde:'#f0abfc', tit:'Fredoka', titPeso:'600', cuerpo:'Poppins', paleta:'Pastel', trans:'deslizar', anim:'divertida' }
-};
-Object.entries(TEMAS_PRES).forEach(([id, t]) => { t.id = id; });
-const sobre = c => esOscuro(c) ? '#ffffff' : '#1f2330';          // color de texto que se lee bien encima de c
-function RECT(x, y, w, hh, fill, o = {}){
-  const r = new fabric.Rect({ left:x, top:y, width:w, height:hh, fill, opacity:o.op ?? 1, rx:o.r || 0, ry:o.r || 0, angle:o.ang || 0,
-    stroke:o.stroke || null, strokeWidth:o.sw || 0, esDeco:true, name:o.nombre || 'Decoración', id:nuevoId() });
-  canvas.add(r); return r;
-}
-function CIRC(x, y, r, fill, o = {}){
-  const c = new fabric.Circle({ left:x, top:y, radius:r, originX:'center', originY:'center', fill, opacity:o.op ?? 1,
-    stroke:o.stroke || null, strokeWidth:o.sw || 0, esDeco:true, name:o.nombre || 'Círculo decorativo', id:nuevoId() });
-  canvas.add(c); return c;
-}
-// Dibuja el fondo y los adornos del tema. Devuelve los colores que se leen bien en esa diapositiva.
-function fondoPres(t, k){
-  const c = { texto:t.texto, suave:t.suave, acento:t.pri };
-  const portada = k === 'portada' || k === 'final', barra = k === 'normal';
-  switch (t.id){
-    case 'escolar':
-      if (k === 'seccion'){ FONDO(t.pri); DECO('mancha', 1700, 160, 520, { c:'#8b5cf6' }); DECO('destello', 240, 860, 90, { c:'#fde047' });
-        return { texto:'#ffffff', suave:'#ede9fe', acento:'#fde047' }; }
-      FONDO(t.fondo);
-      if (portada){
-        DECO('mancha', 1720, 230, 640, { c:'#ede9fe' }); DECO('mancha', 170, 960, 520, { c:'#ffedd5' });
-        DECO('destello', 1660, 860, 90, { c:t.sec }); DECO('destello', 250, 170, 70, { c:t.acento }); DECO('confeti', 1560, 180, 260, { c:t.pri });
-      } else {
-        RECT(0, 0, 1920, 16, t.pri); if (barra) RECT(120, 192, 120, 10, t.sec, { r:5 }); DECO('destello', 1830, 85, 56, { c:t.sec });
-      }
-      return c;
-    case 'formal':
-      if (k === 'seccion'){ FONDO(t.pri); RECT(0, 0, 1920, 1080, null, { stroke:t.sec, sw:6, nombre:'Marco' });
-        return { texto:'#ffffff', suave:'#cbd5e1', acento:t.sec }; }
-      FONDO(t.fondo);
-      if (portada){
-        RECT(0, 0, 640, 1080, t.pri, { nombre:'Banda' }); RECT(640, 0, 14, 1080, t.sec);
-        ICONO(k === 'final' ? 'Libro' : 'Balanza', 320, 520, 250, t.sec);
-        RECT(200, 720, 240, 3, t.sec);
-      } else {
-        if (barra){ RECT(120, 196, 180, 4, t.sec); RECT(120, 206, 90, 4, t.sec); } RECT(0, 1048, 1920, 32, t.pri, { nombre:'Banda' });
-      }
-      return { ...c, acento:t.sec };
-    case 'minimal':
-      if (k === 'seccion'){ FONDO('#111827'); RECT(120, 120, 16, 840, t.sec);
-        return { texto:'#ffffff', suave:'#9ca3af', acento:'#60a5fa' }; }
-      FONDO(t.fondo);
-      if (portada){ RECT(160, 150, 1600, 2, '#e5e7eb'); RECT(160, 930, 1600, 2, '#e5e7eb'); CIRC(1760, 151, 10, t.sec); }
-      else { if (barra) RECT(120, 192, 90, 8, t.sec); RECT(1700, 1000, 100, 2, '#d1d5db'); }
-      return { ...c, acento:t.sec };
-    case 'oscuro':
-      if (k === 'seccion'){ DEGRADADO('#0e7490', '#312e81'); CIRC(1650, 260, 300, '#ffffff', { op:0.07 });
-        return { texto:'#ffffff', suave:'#cffafe', acento:'#f0abfc' }; }
-      DEGRADADO('#0f172a', '#1e1b4b');
-      if (portada){ CIRC(1640, 300, 420, t.pri, { op:0.12 }); CIRC(260, 900, 260, t.sec, { op:0.15 }); CIRC(1500, 860, 70, t.acento, { op:0.5 }); }
-      else { if (barra) RECT(120, 192, 110, 8, t.pri, { r:4 }); CIRC(1820, 90, 26, t.sec, { op:0.6 }); CIRC(1870, 140, 12, t.acento, { op:0.7 }); }
-      return c;
-    case 'pizarron':
-      fijarFondo(new fabric.Rect({ left:0, top:0, width:1920, height:1080, fill:t.fondo, stroke:'#8b5a2b', strokeWidth:44 }));
-      if (portada){ DECO('destello', 1650, 220, 80, { c:t.pri }); DECO('estrella', 280, 230, 60, { c:t.sec }); DECO('espiral', 1600, 850, 150, { c:t.acento, sw:5 }); DECO('flecha', 330, 860, 200, { c:t.pri, sw:6 }); }
-      else if (k === 'seccion'){ DECO('marcador', 960, 400, 520, { c:t.pri, sw:6 }); }
-      else { if (barra) DECO('subrayado', 330, 205, 420, { c:t.pri, sw:6 }); DECO('enfasis', 1800, 110, 70, { c:t.sec, sw:5 }); }
-      return c;
-    case 'cuaderno':
-      fondoPapel('rayas', t.fondo);
-      RECT(92, 0, 4, 1080, '#fca5a5', { nombre:'Margen' });
-      [200, 540, 880].forEach(y => CIRC(44, y, 20, '#e5e7eb', { nombre:'Perforación' }));
-      if (portada){ DECO('cinta', 470, 120, 260, { c:'#fde68a', op:0.8, ang:-8 }); DECO('cinta', 1650, 120, 260, { c:'#bae6fd', op:0.8, ang:7 }); DECO('rizo', 1620, 880, 200, { c:t.sec, sw:6 }); DECO('estrella', 420, 880, 70, { c:'#facc15' }); }
-      else if (k === 'seccion'){ DECO('marcador', 960, 400, 520, { c:t.sec, sw:6 }); }
-      else if (barra) DECO('subrayado', 350, 205, 420, { c:t.sec, sw:6 });
-      return { ...c, acento:t.sec };
-    case 'marca': return fondoMarca(t, k);
-    case 'pastel':
-      FONDO(k === 'seccion' ? '#f5d0fe' : t.fondo);
-      DECO('mancha', 1760, 130, 460, { c:'#fbcfe8', op:0.8 }); DECO('mancha', 140, 990, 420, { c:'#bae6fd', op:0.8 });
-      if (portada){ DECO('flor', 1600, 850, 120, { c:t.sec }); DECO('corazon', 330, 220, 70, { c:t.sec }); DECO('destello', 1500, 200, 60, { c:t.pri }); }
-      else if (barra) RECT(120, 192, 110, 10, t.pri, { r:5 });
-      return c;
-  }
-  FONDO(t.fondo); return c;
-}
-// Acomoda objetos uno debajo de otro (centrados verticalmente en "centro"); sirve para que nada se encime
-function apilar(lst, centro, gap){
-  const alto = lst.reduce((a, [o, g]) => a + o.getScaledHeight() + (g ?? gap), 0) - (lst.length ? (lst[lst.length - 1][1] ?? gap) : 0);
-  let y = centro - alto / 2;
-  lst.forEach(([o, g]) => { const hh = o.getScaledHeight(); o.set('top', y + hh / 2); o.setCoords(); y += hh + (g ?? gap); });
-  return y;
-}
-const presTitulo = (t, c, txt, o = {}) => T(txt, o.x || 960, o.y || 125, { w:o.w || 1680, al:o.al || 'left', f:t.tit, s:o.s || 76, b:t.titPeso, c:c.texto, lh:1.1 });
-const presTexto = (t, c, txt, x, y, w, o = {}) => T(txt, x, y, { w, al:o.al || 'left', f:t.cuerpo, s:o.s || 38, c:o.c || c.suave, lh:1.4, b:o.b });
-function presCaja(t, txt, x, y, o = {}){
-  const n = nodo(o.tipo || 'redondo', txt, x, y, { w:o.w || 500, h:o.h || 200, anchoMax:o.anchoMax || (o.w || 500) - 70, fill:o.fill || t.tarjeta,
-    stroke:o.stroke !== undefined ? o.stroke : t.borde, grosor:3, color:o.color || t.textoTarjeta, tam:o.tam || 32, fuente:o.fuente || t.cuerpo, peso:o.peso });
-  if (o.izq) izquierda(n);
-  return n;
-}
-const DIAPOS = [
-  { id:'portada', notas:'Saluda y di tu nombre.\nPresenta el tema en una sola frase y explica por qué es importante.', nombre:'Portada', crear(t){
-    const c = fondoPres(t, 'portada'), z = t.zona || { x:960, w:1500 };
-    const a = T('PRESENTACIÓN', z.x, 0, { f:t.cuerpo, s:30, b:'700', c:c.acento, cs:500, w:z.w });
-    const b = T('Título de la presentación', z.x, 0, { f:t.tit, s:z.w < 1300 ? 100 : 120, b:t.titPeso, c:c.texto, w:z.w, lh:1.05 });
-    const d = T('Una frase corta que explique el tema', z.x, 0, { f:t.cuerpo, s:38, c:c.suave, w:z.w });
-    const y = apilar([[a, 34], [b, 34], [d, 60]], 500, 30);
-    nodo('pildora', 'Materia · Tu nombre · Fecha', z.x, y + 38, { w:640, h:76, fill:c.acento, color:sobre(c.acento), tam:28, fuente:t.cuerpo, peso:'600' });
-  }},
-  { id:'indice', notas:'Cuenta en qué orden vas a exponer.\nNo leas la lista: menciona cada parte en pocas palabras.', nombre:'Contenido', crear(t){
-    const c = fondoPres(t, 'normal');
-    presTitulo(t, c, 'Contenido');
-    ['Introducción al tema', 'Ideas principales', 'Ejemplos y datos', 'Conclusiones'].forEach((txt, i) => {
-      const x = i % 2 ? 1060 : 200, y = i < 2 ? 470 : 760, col = [t.pri, t.sec, t.acento, t.pri][i];
-      nodo('circulo', '0' + (i + 1), x + 70, y, { w:140, h:140, fill:col, color:sobre(col), tam:46, fuente:t.tit, peso:'700' });
-      presTexto(t, c, txt + '\nUna línea que describa esta parte.', x + 180 + 290, y, 580, { s:38, c:c.texto });
-    });
-  }},
-  { id:'seccion', notas:'Haz una pausa y anuncia esta nueva parte.\nConecta con lo que acabas de explicar.', nombre:'Separador de sección', crear(t){
-    const c = fondoPres(t, 'seccion');
-    const a = T('01', 960, 0, { f:t.tit, s:240, b:t.titPeso, c:c.acento, w:1200, lh:1 });
-    const b = T('Nombre de la sección', 960, 0, { f:t.tit, s:100, b:t.titPeso, c:c.texto, w:1500, lh:1.05 });
-    const d = T('Breve descripción de lo que veremos', 960, 0, { f:t.cuerpo, s:38, c:c.suave, w:1300 });
-    apilar([[a, 30], [b, 30], [d]], 540, 30);
-  }},
-  { id:'contenido', notas:'Explica cada punto con tus palabras y da un ejemplo.\nIdea clave que deben recordar: …', nombre:'Título y viñetas', crear(t){
-    const c = fondoPres(t, 'normal');
-    presTitulo(t, c, 'Título de la diapositiva');
-    presCaja(t, '• Primera idea importante del tema\n• Segunda idea con un ejemplo\n• Un dato curioso o una definición\n• Lo que debemos recordar',
-      700, 620, { w:1160, h:560, anchoMax:1060, tam:50, izq:true });
-    CIRC(1530, 620, 230, t.tarjeta, { stroke:t.borde, sw:t.borde ? 3 : 0 });
-    ICONO('Foco', 1530, 620, 230, t.id === 'pizarron' || t.id === 'oscuro' ? t.pri : (t.id === 'formal' ? t.sec : t.pri));
-  }},
-  { id:'imagen', notas:'Describe lo que se ve en la imagen y relaciónalo con el tema.', nombre:'Imagen y texto', crear(t){
-    const c = fondoPres(t, 'libre');
-    MARCO('redondo', 560, 600, 800, 720);
-    const a = T('Título de esta parte', 1430, 0, { w:760, al:'left', f:t.tit, s:76, b:t.titPeso, c:c.texto, lh:1.1 });
-    const b = presTexto(t, c, 'Explica aquí lo que muestra la imagen. Usa frases cortas y claras para que tu público entienda la idea principal.', 1430, 0, 760, { s:38 });
-    const y = apilar([[a, 40], [b]], 520, 40);
-    presCaja(t, '💡 Dato clave: escribe aquí algo importante.', 1430, y + 120, { w:760, h:150, anchoMax:690, tam:36, peso:'600', izq:true });
-  }},
-  { id:'tres', notas:'Presenta las tres ideas en orden; dedica más tiempo a la más importante.', nombre:'Tres ideas', crear(t){
-    const c = fondoPres(t, 'normal');
-    presTitulo(t, c, 'Tres ideas principales');
-    [['Foco', 'Primera idea'], ['Libro', 'Segunda idea'], ['Palomita', 'Tercera idea']].forEach(([ic, tit], i) => {
-      const x = 400 + i * 560, col = [t.pri, t.sec, t.acento][i];
-      presCaja(t, tit + '\nExplica aquí la idea con pocas palabras.', x, 690, { w:480, h:420, anchoMax:410, tam:38 });
-      CIRC(x, 480, 80, col);
-      ICONO(ic, x, 480, 90, sobre(col));
-    });
-  }},
-  { id:'comparar', notas:'Explica primero en qué se parecen y después en qué se diferencian.\nCierra con tu conclusión.', nombre:'Comparación', crear(t){
-    const c = fondoPres(t, 'normal');
-    presTitulo(t, c, 'Comparación');
-    [[520, 'Opción A', t.pri], [1400, 'Opción B', t.sec]].forEach(([x, tit, col]) => {
-      presCaja(t, '• Característica importante\n• Ventaja o diferencia\n• Un ejemplo concreto', x, 650, { w:780, h:520, anchoMax:680, tam:46, izq:true });
-      nodo('pildora', tit, x, 390, { w:320, h:84, fill:col, color:sobre(col), tam:36, fuente:t.tit, peso:'700' });
-    });
-  }},
-  { id:'datos', notas:'Di de dónde salen los datos (fuente y fecha).\nSeñala el dato más importante y qué significa.', nombre:'Datos y gráfica', crear(t){
-    const c = fondoPres(t, 'normal');
-    presTitulo(t, c, 'Lo que dicen los datos');
-    GRAFICA('barras', 700, 640, 1080, 640, [{e:'Grupo A',v:42},{e:'Grupo B',v:65},{e:'Grupo C',v:30},{e:'Grupo D',v:78}], { titulo:'Título de la gráfica', paleta:t.paleta });
-    presCaja(t, '78%\nde los participantes dijo que sí', 1520, 470, { w:520, h:260, anchoMax:450, tam:44, peso:'600' });
-    presCaja(t, '3 de cada 5\nprefieren la opción B', 1520, 810, { w:520, h:260, anchoMax:450, tam:44, peso:'600' });
-  }},
-  { id:'proceso', notas:'Recorre los pasos en orden. Menciona qué pasa si se omite alguno.', nombre:'Proceso en pasos', crear(t){
-    const c = fondoPres(t, 'normal');
-    presTitulo(t, c, '¿Cómo funciona?');
-    const cols = [t.pri, t.sec, t.acento, t.pri], pasos = [];
-    [330, 750, 1170, 1590].forEach((x, i) => {
-      pasos.push(nodo('circulo', String(i + 1), x, 500, { w:190, h:190, fill:cols[i], color:sobre(cols[i]), tam:72, fuente:t.tit, peso:'700' }));
-      presTexto(t, c, 'Paso ' + (i + 1) + '\nQué pasa en este paso.', x, 770, 380, { al:'center', s:38, c:c.texto });
-    });
-    for (let i = 0; i < 3; i++) unir(pasos[i], pasos[i + 1], { color:c.suave, ancho:6, estilo:'recta', lados:['der', 'izq'] });
-  }},
-  { id:'cita', notas:'Lee la cita despacio, di quién la dijo y por qué la elegiste.', nombre:'Frase o cita', crear(t){
-    const c = fondoPres(t, 'libre');
-    const a = T('“', 960, 0, { f:'Playfair Display', s:300, b:'700', c:c.acento, w:400, lh:0.8 });
-    const b = T('Escribe aquí una frase importante, una definición o una cita que resuma tu tema.', 960, 0, { f:t.tit, s:68, b:t.titPeso, c:c.texto, w:1400, lh:1.2, it:t.id === 'formal' });
-    const d = presTexto(t, c, '— Nombre del autor', 960, 0, 1000, { al:'center', s:38 });
-    apilar([[a, 10], [b, 50], [d]], 560, 30);
-  }},
-  { id:'final', notas:'Resume en una frase lo más importante.\nAgradece y abre espacio para preguntas.', nombre:'Gracias / preguntas', crear(t){
-    const c = fondoPres(t, 'final'), z = t.zona || { x:960, w:1500 };
-    const a = T('¡Gracias!', z.x, 0, { f:t.tit, s:170, b:t.titPeso, c:c.texto, w:z.w, lh:1 });
-    const b = T('¿Tienen alguna pregunta?', z.x, 0, { f:t.cuerpo, s:46, c:c.suave, w:z.w });
-    const y = apilar([[a, 40], [b, 60]], 480, 30);
-    nodo('pildora', 'tu.correo@escuela.edu.mx', z.x, y + 38, { w:620, h:76, fill:c.acento, color:sobre(c.acento), tam:28, fuente:t.cuerpo, peso:'600' });
-  }}
-];
-// Crea una diapositiva en un lienzo invisible y devuelve su contenido (para insertarla como página)
-function diapositivaJSON(tema, diapo, conAnim){
-  const tam = [1920, 1080];
-  const el = document.createElement('canvas');
-  const tmp = new fabric.Canvas(el, { width:tam[0], height:tam[1], enableRetinaScaling:false, renderOnAddRemove:false, preserveObjectStacking:true });
-  const prev = { canvas, W, H, zoom, restaurando };
-  generandoVista = true; canvas = tmp; W = tam[0]; H = tam[1]; zoom = 1; restaurando = true;
-  let json = null;
-  try {
-    tmp.backgroundColor = '#ffffff';
-    diapo.crear(tema); ordenarVinculos(); tmp.discardActiveObject();
-    if (conAnim) animarObjetos(tmp.getObjects(), PRESETS_ANIM[tema.anim] || PRESETS_ANIM.dinamica);
-    json = tmp.toJSON(EXTRA);
-    if (diapo.notas) json.notas = diapo.notas;
-  } finally {
-    canvas = prev.canvas; W = prev.W; H = prev.H; zoom = prev.zoom; restaurando = prev.restaurando; generandoVista = false;
-    try { tmp.dispose(); } catch(_){}
-  }
-  return json;
-}
-function usarPresentacion(tema){
-  const hayAlgo = paginas.length > 1 || canvas.getObjects().length;
-  if (hayAlgo && !confirm('Se creará una presentación de ' + DIAPOS.length + ' diapositivas con el tema “' + tema.nombre + '”.\nEsto reemplazará TODO tu diseño actual (todas las páginas). ¿Continuar?')) return;
-  cargando(true);
-  setTimeout(() => {
-    try {
-      const nuevas = DIAPOS.map(d => diapositivaJSON(tema, d, true));
-      fijarTamano(1920, 1080);
-      paginas = nuevas; miniaturas = []; actual = 0;
-      presConfig = { ...presConfig, tema:tema.id, transicion:tema.trans };
-      if ($('nombreDiseno').value === 'Mi diseño') $('nombreDiseno').value = 'Mi presentación';
-      cargarPaginaActual(true);
-      setTimeout(ajustarZoom, 60);
-      toast('Presentación lista: ' + nuevas.length + ' diapositivas con animaciones. Pulsa ▶ Presentar para verla.');
-    } catch (e) { console.error(e); toast('No se pudo crear la presentación: ' + e.message); }
-    finally { cargando(false); }
-  }, 30);
-}
-// ---------- Ventana "Agregar diapositiva con diseño" ----------
-let temaDiapo = null;
-const vistasDiapo = {};
-function abrirDiapositivas(){
-  temaDiapo = TEMAS_PRES[presConfig.tema] || temaDiapo || TEMAS_PRES.escolar;
-  $('temasDiapo').innerHTML = '';
-  Object.values(TEMAS_PRES).forEach(t => {
-    const ch = document.createElement('button'); ch.className = 'chip' + (t === temaDiapo ? ' on' : ''); ch.textContent = t.nombre;
-    ch.onclick = () => { temaDiapo = t; [...$('temasDiapo').children].forEach(x => x.classList.toggle('on', x === ch)); renderDiapositivas(); };
-    $('temasDiapo').appendChild(ch);
-  });
-  $('avisoDiapo').hidden = (W === 1920 && H === 1080);
-  abrirModal('mDiapositiva'); renderDiapositivas();
-}
-function renderDiapositivas(){
-  const g = $('gridDiapo'); g.innerHTML = '';
-  const t = temaDiapo, pend = [];
-  DIAPOS.forEach(d => {
-    const b = document.createElement('button'); b.className = 'tarjetaPl'; b.title = d.nombre;
-    const clave = t.id + '/' + d.id;
-    b.innerHTML = `<div class="mini" style="aspect-ratio:16/9">${vistasDiapo[clave] ? `<img src="${vistasDiapo[clave]}" alt="">` : 'Preparando…'}</div><span>${esc(d.nombre)}</span>`;
-    b.onclick = () => insertarDiapositiva(t, d);
-    if (!vistasDiapo[clave]) pend.push([clave, d, b]);
-    g.appendChild(b);
-  });
-  (async () => {
-    for (const [clave, d, b] of pend){
-      await new Promise(r => setTimeout(r, 20));
-      if (temaDiapo !== t) return;
-      vistasDiapo[clave] = vistaDe([1920, 1080], () => d.crear(t));
-      if (vistasDiapo[clave]) b.querySelector('.mini').innerHTML = `<img src="${vistasDiapo[clave]}" alt="">`;
-    }
-  })();
-}
-function insertarDiapositiva(t, d){
-  const vacio = paginas.length === 1 && !canvas.getObjects().length;
-  if (!(W === 1920 && H === 1080)){
-    if (!vacio && !confirm('Las diapositivas con diseño son de 16:9 (1920 × 1080) y tu diseño mide ' + W + ' × ' + H + '.\n¿Cambiar el tamaño de todo el diseño a 1920 × 1080?')) return;
-    guardarPaginaActual(); cambiarTamano(1920, 1080);
-  }
-  guardarPaginaActual();
-  const json = diapositivaJSON(t, d, true);
-  if (vacio){ paginas[0] = json; miniaturas = []; }
-  else { paginas.splice(actual + 1, 0, json); miniaturas.splice(actual + 1, 0, undefined); actual++; }
-  if (!presConfig.tema) presConfig = { ...presConfig, tema:t.id };
-  cerrarModal('mDiapositiva'); cargarPaginaActual(true);
-  toast('Diapositiva “' + d.nombre + '” agregada');
-}
 
 </script>

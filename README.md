@@ -167,3 +167,9 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - `76-interfaz-limpia.js`: menú «Archivo» (nuevo, abrir, buscar, ayuda, modo claro, apoyar…), panel izquierdo que se oculta (flecha o clic en la pestaña activa), panel derecho flotante que solo aparece con algo seleccionado (o con «Capas»), barra flotante junto a lo seleccionado, pie con notas · páginas (ocultables) · zoom, y modo enfoque (Ctrl + \). Se puede volver a la interfaz clásica desde Archivo.
 - `75-menu-de-clic-derecho.js`: menú contextual (clic derecho, dedo presionado o Shift + F10).
 - `69`: los elementos con `data-fuera` viven fuera de la barra (menú Archivo o pie) y la barra adaptable los respeta.
+
+## v40: barra rápida, medidas y conectores a mano
+- `77-barra-rapida-medidas-y-conectores-a-mano.js`: barra arriba del lienzo según lo seleccionado (texto, forma, imagen, línea, varios). Cada botón abre una ventanita que usa los controles reales del panel (se prestan y se regresan). «Posición» trae orden, alinear y medidas exactas; la brocha copia el estilo al siguiente elemento que tocas.
+- Aviso «ancho / alto» (y grados al girar) mientras cambias el tamaño.
+- Conectores: los extremos se pueden soltar en el vacío (`libreA`/`libreB`) o en el lado exacto de una forma (`ladoA`/`ladoB` fijos); punto de en medio para doblar la línea (`desvio`); doble clic lo endereza.
+- Con la interfaz limpia, el panel derecho completo solo se abre con ⚙ o «Capas».

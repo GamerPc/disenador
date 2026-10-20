@@ -2,627 +2,350 @@
 /*@parte Codigo12*/ (window.__partes = window.__partes || {})['Codigo12'] = true;
 
 /* =========================================================
-   PÁGINA WEB REAL: EXPORTAR A HTML CON EFECTOS, MODELOS 3D Y CAMBIADOR DE PRODUCTOS
+   DISEÑO WEB Y UI: componentes, marcos, cuadrícula, enlaces y plantillas
    ========================================================= */
-EXTRA.push('hover', 'scrollFx', 'modelo3d', 'variantes');
-const URL_MV = 'https://cdn.jsdelivr.net/npm/@google/model-viewer@4.3.1/dist/model-viewer-umd.min.js';
-const URL_MODELOS = 'https://gamerpc.github.io/disenador/modelos/';
-let promesaMV = null;
-function cargarModelViewer(){
-  if (customElements.get('model-viewer')) return Promise.resolve();
-  return promesaMV = promesaMV || new Promise((ok, mal) => {
-    const s = document.createElement('script'); s.src = URL_MV;
-    s.onload = () => customElements.whenDefined('model-viewer').then(ok);
-    s.onerror = () => { promesaMV = null; mal(new Error('No se pudo cargar el visor 3D. Revisa tu conexión a internet.')); };
-    document.head.appendChild(s);
-  });
+EXTRA.push('enlace');
+const UI = { acento:'#2563eb', acento2:'#1d4ed8', texto:'#111827', suave:'#6b7280', borde:'#d1d5db', fondo:'#ffffff', gris:'#f3f4f6', gris2:'#e5e7eb', verde:'#16a34a', rojo:'#dc2626', ambar:'#d97706' };
+// ---------- piezas básicas (coordenadas de esquina superior izquierda) ----------
+function uiT(texto, x, y, o = {}){
+  return new fabric.Textbox(String(texto), { left:x, top:y, width:o.w || 300, fontSize:o.s || 16, fontFamily:o.f || 'Inter', fontWeight:o.b || '400',
+    fill:o.c || UI.texto, textAlign:o.al || 'left', lineHeight:o.lh || 1.25, charSpacing:o.cs || 0, originX:'left', originY:'top', name:o.nombre || 'Texto' });
 }
-// ---------- modelo 3D: en el editor se ve como una foto (póster) y en la página web gira de verdad ----------
-function posterVacio3D(w, h, texto, comoCanvas){
-  const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d');
-  const g = x.createLinearGradient(0, 0, w, h); g.addColorStop(0, 'rgba(99,102,241,.18)'); g.addColorStop(1, 'rgba(236,72,153,.18)');
-  x.fillStyle = g; x.fillRect(0, 0, w, h); x.strokeStyle = 'rgba(99,102,241,.6)'; x.setLineDash([12, 8]); x.lineWidth = 3; x.strokeRect(2, 2, w - 4, h - 4);
-  x.fillStyle = '#4f46e5'; x.textAlign = 'center'; x.font = `${Math.round(Math.min(w, h) / 5)}px sans-serif`; x.fillText('🧊', w / 2, h / 2);
-  x.font = `600 ${Math.max(14, Math.round(Math.min(w, h) / 16))}px Inter, sans-serif`; x.fillText(texto || 'Cargando modelo 3D…', w / 2, h / 2 + Math.min(w, h) / 8);
-  return comoCanvas ? c : c.toDataURL('image/png');
+function uiR(x, y, w, h, fill, o = {}){
+  return new fabric.Rect({ left:x, top:y, width:w, height:h, rx:o.r || 0, ry:o.r || 0, fill, stroke:o.borde || null, strokeWidth:o.borde ? (o.gb || 1) : 0,
+    strokeUniform:true, opacity:o.op ?? 1, name:o.nombre || 'Rectángulo', shadow:o.sombra ? new fabric.Shadow({ color:'rgba(15,23,42,.10)', blur:24, offsetX:0, offsetY:8 }) : null });
 }
-async function fotoDeModelo(cfg, w, h, color){
-  await cargarModelViewer();
-  const k = Math.min(1, 700 / Math.max(w, h)), mv = document.createElement('model-viewer');
-  mv.style.cssText = `position:fixed;left:0;top:0;width:${Math.round(w * k)}px;height:${Math.round(h * k)}px;opacity:.01;pointer-events:none;z-index:-1;background:transparent`;
-  mv.setAttribute('src', cfg.src); mv.setAttribute('camera-orbit', cfg.camara || '30deg 75deg auto'); mv.setAttribute('shadow-intensity', '1');
-  mv.setAttribute('exposure', '1.1'); mv.setAttribute('interaction-prompt', 'none'); mv.setAttribute('disable-tap', '');
-  document.body.appendChild(mv);
-  try {
-    await new Promise((ok, mal) => { mv.addEventListener('load', ok, { once:true }); mv.addEventListener('error', () => mal(new Error('No se pudo abrir el modelo 3D (usa un archivo .glb)')), { once:true }); setTimeout(() => mal(new Error('El modelo 3D tardó demasiado')), 25000); });
-    if (color) pintarModelo(mv, color, cfg.material);
-    await new Promise(r => setTimeout(r, 500));
-    for (let i = 0; i < 3; i++) await new Promise(r => requestAnimationFrame(r));
-    const animaciones = mv.availableAnimations || [];
-    return { url: mv.toDataURL('image/png'), animaciones };
-  } finally { mv.style.visibility = 'hidden'; setTimeout(() => mv.remove(), 3000); }
+function uiC(cx, cy, r, fill, o = {}){
+  return new fabric.Circle({ left:cx, top:cy, radius:r, originX:'center', originY:'center', fill, stroke:o.borde || null, strokeWidth:o.borde ? (o.gb || 1) : 0, name:o.nombre || 'Círculo' });
 }
-function pintarModelo(mv, color, mat){
-  const mats = mv.model ? mv.model.materials : [];
-  const m = mats.find(x => x.name === mat) || mats[+mat || 0]; if (!m) return;
-  const c = new fabric.Color(color).getSource(); m.pbrMetallicRoughness.setBaseColorFactor([c[0] / 255, c[1] / 255, c[2] / 255, 1]);
-}
-function crearObjeto3D(cfg, cx, cy, w, h){
-  const el = posterVacio3D(Math.round(w), Math.round(h), null, true);
-  const img = new fabric.Image(el, { originX:'center', originY:'center', left:cx, top:cy, name:'Modelo 3D', id:nuevoId() });
-  img.modelo3d = Object.assign({ giro:true, scroll:'no', camara:'30deg 75deg auto', colores:[], material:0, animacion:'' }, cfg);
-  if (!generandoVista) actualizarPoster(img, w, h);
-  return img;
-}
-async function actualizarPoster(o, w, h){
-  w = w || o.getScaledWidth(); h = h || o.getScaledHeight();
-  try {
-    const col = o.modelo3d.colores && o.modelo3d.colores[0];
-    const r = await fotoDeModelo(o.modelo3d, w, h, col && col.color);
-    if (!o.modelo3d.animacion && r.animaciones.length) o.modelo3d.animacion = r.animaciones[0];
-    o.modelo3d.listaAnim = r.animaciones;
-    await new Promise(ok => o.setSrc(r.url, ok));
-  } catch (e) {
-    await new Promise(ok => o.setSrc(posterVacio3D(Math.round(w), Math.round(h), 'Modelo 3D (se ve en la página web)'), ok));
-    toast(e.message);
-  }
-  o.set({ scaleX:w / o.width, scaleY:h / o.height }); o.setCoords();
-  const c = o.canvas; if (c && c.contextContainer) c.requestRenderAll();
-  if (o.canvas === canvas && !generandoVista){ actualizarPanel(); guardarEstado(); }
-}
-const MAX_GLB = 8 * 1024 * 1024;
-function subirModelo3D(file){
-  if (!file) return;
-  if (!/\.(glb|gltf)$/i.test(file.name)) return toast('Usa un modelo 3D en formato .glb');
-  if (file.size > MAX_GLB) return toast('El modelo pesa ' + (file.size / 1048576).toFixed(1) + ' MB. Usa uno de menos de 8 MB, o pega su dirección web con «🔗 Modelo desde internet».');
-  const r = new FileReader();
-  r.onload = () => insertarModelo3D({ src:r.result, nombre:file.name.replace(/\.[^.]+$/, '') });
-  r.readAsDataURL(file);
-}
-function modeloDesdeURL(){
-  const u = prompt('Pega la dirección del modelo 3D (.glb). Debe permitir abrirse desde otras páginas, por ejemplo uno subido a tu GitHub Pages.');
-  if (u && /^https:\/\//i.test(u.trim())) insertarModelo3D({ src:u.trim(), nombre:'Modelo 3D' });
-}
-function insertarModelo3D(cfg){
-  const s = Math.min(W, H) * 0.6;
-  const o = crearObjeto3D(cfg, W / 2, H / 2, s, s);
-  agregar(o, 'Modelo 3D'); renderCapas(); guardarEstado();
-  toast('Modelo 3D agregado. En «Presentar» y en la página web (Descargar → Página web) se puede girar con el dedo o el mouse.');
-}
-const EJEMPLOS_3D = {
-  audifonos:{ src:URL_MODELOS + 'audifonos-demo.glb', nombre:'Audífonos (se desarman)', camara:'25deg 80deg auto', scroll:'ambos' },
-  lata:{ src:URL_MODELOS + 'lata-demo.glb', nombre:'Lata de bebida', camara:'0deg 80deg auto', material:'lata',
-    colores:[{ nombre:'Cereza', color:'#d61f1f', fondo:'#ffe1e1' }, { nombre:'Limón', color:'#3fae2a', fondo:'#e6f9dc' }, { nombre:'Mango', color:'#f08c00', fondo:'#fff0d6' }] }
+// ---------- componentes (devuelven una lista de objetos; u = escala) ----------
+const COMP = {
+  boton(x, y, u, o = {}){ const w = (o.w || 160) * u, h = (o.h || 48) * u, sec = o.secundario;
+    return [uiR(x, y, w, h, sec ? 'rgba(0,0,0,0)' : (o.fill || UI.acento), { r:(o.r ?? 12) * u, borde: sec ? (o.fill || UI.acento) : null, gb:2 * u, nombre:'Botón' }),
+      uiT(o.t || 'Botón', x, y + h / 2 - 10 * u, { w, s:16 * u, b:'600', c: sec ? (o.fill || UI.acento) : (o.color || '#ffffff'), al:'center' })]; },
+  campo(x, y, u, o = {}){ const w = (o.w || 320) * u;
+    return [uiT(o.etiqueta || 'Correo electrónico', x, y, { w, s:13 * u, b:'600', c:UI.suave }),
+      uiR(x, y + 22 * u, w, 48 * u, '#ffffff', { r:10 * u, borde:UI.borde, gb:1.5 * u, nombre:'Campo de texto' }),
+      uiT(o.ph || 'tucorreo@ejemplo.com', x + 14 * u, y + 37 * u, { w:w - 28 * u, s:15 * u, c:'#9ca3af' })]; },
+  buscador(x, y, u, o = {}){ const w = (o.w || 320) * u;
+    return [uiR(x, y, w, 44 * u, o.fondo || UI.gris, { r:22 * u, nombre:'Buscador' }), uiT('🔍', x + 14 * u, y + 11 * u, { w:24 * u, s:16 * u }),
+      uiT(o.ph || 'Buscar…', x + 42 * u, y + 12 * u, { w:w - 56 * u, s:15 * u, c:'#9ca3af' })]; },
+  casilla(x, y, u, o = {}){ const on = o.on !== false;
+    return [uiR(x, y, 20 * u, 20 * u, on ? UI.acento : '#ffffff', { r:5 * u, borde: on ? null : UI.borde, gb:1.5 * u, nombre:'Casilla' }),
+      ...(on ? [uiT('✓', x, y + 1 * u, { w:20 * u, s:14 * u, b:'700', c:'#ffffff', al:'center' })] : []),
+      uiT(o.t || 'Recordarme', x + 30 * u, y + 1 * u, { w:(o.w || 200) * u, s:15 * u })]; },
+  interruptor(x, y, u, o = {}){ const on = o.on !== false;
+    return [uiR(x, y, 52 * u, 30 * u, on ? UI.acento : '#cbd5e1', { r:15 * u, nombre:'Interruptor' }), uiC(x + (on ? 37 : 15) * u, y + 15 * u, 11 * u, '#ffffff'),
+      uiT(o.t || 'Notificaciones', x + 64 * u, y + 5 * u, { w:(o.w || 200) * u, s:15 * u })]; },
+  tarjeta(x, y, u, o = {}){ const w = (o.w || 300) * u, h = (o.h || 360) * u, ih = (o.img ?? 170) * u;
+    return [uiR(x, y, w, h, '#ffffff', { r:16 * u, sombra:true, borde:'#eef0f3', nombre:'Tarjeta' }),
+      ...(ih ? [uiR(x, y, w, ih, o.colorImg || UI.gris2, { r:16 * u, nombre:'Imagen' }), uiT('🖼', x, y + ih / 2 - 18 * u, { w, s:30 * u, al:'center', c:'#9ca3af' })] : []),
+      uiT(o.titulo || 'Título de la tarjeta', x + 20 * u, y + ih + 18 * u, { w:w - 40 * u, s:19 * u, b:'700' }),
+      uiT(o.texto || 'Describe aquí este elemento en una o dos líneas.', x + 20 * u, y + ih + 50 * u, { w:w - 40 * u, s:14.5 * u, c:UI.suave, lh:1.4 }),
+      ...(o.boton !== false ? COMP.boton(x + 20 * u, y + h - 64 * u, u, { t:o.boton || 'Ver más', w:120, h:42 }) : [])]; },
+  navbar(x, y, u, o = {}){ const w = (o.w || 1200) * u, h = 72 * u, c = o.oscuro ? '#ffffff' : UI.texto;
+    const r = [uiR(x, y, w, h, o.fondo || 'rgba(0,0,0,0)', { nombre:'Barra de navegación' }), uiC(x + 20 * u, y + h / 2, 16 * u, o.acento || UI.acento),
+      uiT(o.marca || 'TuMarca', x + 46 * u, y + h / 2 - 13 * u, { w:220 * u, s:21 * u, b:'800', c })];
+    const links = o.links || ['Inicio', 'Servicios', 'Precios', 'Contacto'];
+    links.forEach((l, i) => r.push(uiT(l, x + w - (150 + (links.length - i) * 110) * u, y + h / 2 - 10 * u, { w:100 * u, s:16 * u, b:'500', c: o.oscuro ? '#cbd5e1' : UI.suave, al:'center' })));
+    r.push(...COMP.boton(x + w - 140 * u, y + h / 2 - 22 * u, u, { t:o.boton || 'Empezar', w:140, h:44, fill:o.acento }));
+    return r; },
+  barraEstado(x, y, u, o = {}){ const w = (o.w || 390) * u, c = o.oscuro ? '#ffffff' : UI.texto;
+    return [uiT('9:41', x + 28 * u, y + 14 * u, { w:80 * u, s:16 * u, b:'700', c }), uiT('📶 🔋', x + w - 108 * u, y + 13 * u, { w:84 * u, s:15 * u, al:'right', c })]; },
+  tabbar(x, y, u, o = {}){ const w = (o.w || 390) * u, h = 84 * u, items = o.items || [['🏠', 'Inicio'], ['🔍', 'Buscar'], ['🛒', 'Carrito'], ['👤', 'Perfil']];
+    const r = [uiR(x, y, w, h, '#ffffff', { borde:'#eef0f3', nombre:'Barra de pestañas' })];
+    items.forEach(([ic, t], i) => { const cx = x + (i + 0.5) * w / items.length, on = i === (o.activo || 0);
+      r.push(uiT(ic, cx - 30 * u, y + 12 * u, { w:60 * u, s:22 * u, al:'center' }), uiT(t, cx - 40 * u, y + 44 * u, { w:80 * u, s:12 * u, b: on ? '700' : '500', c: on ? (o.acento || UI.acento) : UI.suave, al:'center' })); });
+    return r; },
+  avatar(x, y, u, o = {}){ const r = (o.r || 28) * u; return [uiC(x + r, y + r, r, o.fill || '#c7d2fe', { nombre:'Avatar' }), uiT(o.ini || 'AB', x, y + r - 11 * u * (r / (28 * u)), { w:2 * r, s:18 * u * (r / (28 * u)), b:'700', c:o.color || '#3730a3', al:'center' })]; },
+  insignia(x, y, u, o = {}){ const w = (o.w || 84) * u;
+    return [uiR(x, y, w, 26 * u, o.fill || '#dcfce7', { r:13 * u, nombre:'Insignia' }), uiT(o.t || 'Activo', x, y + 5 * u, { w, s:12.5 * u, b:'700', c:o.color || '#166534', al:'center' })]; },
+  alerta(x, y, u, o = {}){ const w = (o.w || 380) * u, ok = o.tipo !== 'error';
+    return [uiR(x, y, w, 56 * u, ok ? '#ecfdf5' : '#fef2f2', { r:12 * u, borde: ok ? '#a7f3d0' : '#fecaca', nombre:'Alerta' }),
+      uiT(ok ? '✅' : '⚠️', x + 16 * u, y + 15 * u, { w:28 * u, s:18 * u }), uiT(o.t || (ok ? 'Cambios guardados correctamente' : 'Revisa los datos marcados'), x + 50 * u, y + 17 * u, { w:w - 66 * u, s:15 * u, b:'500', c: ok ? '#065f46' : '#991b1b' })]; },
+  progreso(x, y, u, o = {}){ const w = (o.w || 300) * u, p = (o.pct ?? 65) / 100;
+    return [uiR(x, y, w, 10 * u, UI.gris2, { r:5 * u, nombre:'Barra de progreso' }), uiR(x, y, w * p, 10 * u, o.fill || UI.acento, { r:5 * u, nombre:'Progreso' })]; },
+  estrellas(x, y, u, o = {}){ const n = o.n ?? 4; return [uiT('★'.repeat(n) + '☆'.repeat(5 - n), x, y, { w:140 * u, s:22 * u, c:'#f59e0b', cs:80 })]; },
+  kpi(x, y, u, o = {}){ const w = (o.w || 260) * u, sube = !String(o.cambio || '+12%').startsWith('-');
+    return [uiR(x, y, w, 120 * u, '#ffffff', { r:14 * u, sombra:true, borde:'#eef0f3', nombre:'Indicador' }),
+      uiT(o.titulo || 'Ventas del mes', x + 20 * u, y + 18 * u, { w:w - 40 * u, s:14 * u, b:'500', c:UI.suave }),
+      uiT(o.valor || '$48,250', x + 20 * u, y + 44 * u, { w:w - 40 * u, s:30 * u, b:'800' }),
+      uiT((sube ? '▲ ' : '▼ ') + (o.cambio || '+12%') + ' ' + (o.sufijo || 'vs. mes anterior'), x + 20 * u, y + 88 * u, { w:w - 40 * u, s:13 * u, b:'600', c: sube ? UI.verde : UI.rojo })]; },
+  menuLateral(x, y, u, o = {}){ const w = (o.w || 240) * u, h = (o.h || 900) * u, items = o.items || ['📊  Panel', '📁  Proyectos', '👥  Clientes', '📅  Agenda', '⚙️  Ajustes'];
+    const r = [uiR(x, y, w, h, o.fondo || '#0f172a', { nombre:'Menú lateral' }), uiC(x + 36 * u, y + 44 * u, 14 * u, o.acento || '#38bdf8'),
+      uiT(o.marca || 'Mi sistema', x + 58 * u, y + 32 * u, { w:w - 70 * u, s:19 * u, b:'800', c:'#ffffff' })];
+    items.forEach((t, i) => { const yy = y + (110 + i * 52) * u;
+      if (i === (o.activo || 0)) r.push(uiR(x + 12 * u, yy - 10 * u, w - 24 * u, 42 * u, 'rgba(255,255,255,.10)', { r:10 * u, nombre:'Opción activa' }));
+      r.push(uiT(t, x + 26 * u, yy, { w:w - 40 * u, s:15.5 * u, b: i === (o.activo || 0) ? '700' : '500', c: i === (o.activo || 0) ? '#ffffff' : '#94a3b8' })); });
+    return r; },
+  tablaUI(x, y, u, o = {}){ const cols = o.cols || ['Nombre', 'Estado', 'Fecha', 'Monto'], filas = o.filas || [], anchos = o.anchos || cols.map(() => 200), w = anchos.reduce((a, b) => a + b, 0) * u, fh = 52 * u;
+    const r = [uiR(x, y, w, fh * (filas.length + 1), '#ffffff', { r:12 * u, borde:'#eef0f3', nombre:'Tabla' }), uiR(x, y, w, fh, UI.gris, { r:12 * u, nombre:'Encabezado de tabla' })];
+    let cx = x; cols.forEach((c, j) => { r.push(uiT(c, cx + 18 * u, y + 17 * u, { w:anchos[j] * u - 24 * u, s:13 * u, b:'700', c:UI.suave })); cx += anchos[j] * u; });
+    filas.forEach((f, i) => { const yy = y + fh * (i + 1); if (i) r.push(uiR(x + 12 * u, yy, w - 24 * u, 1, '#eef0f3', { nombre:'Línea' }));
+      let xx = x; f.forEach((celda, j) => {
+        if (celda && typeof celda === 'object' && celda.insignia) r.push(...COMP.insignia(xx + 18 * u, yy + 13 * u, u, celda));
+        else r.push(uiT(celda, xx + 18 * u, yy + 16 * u, { w:anchos[j] * u - 24 * u, s:14.5 * u, b: j === 0 ? '600' : '400', c: j === 0 ? UI.texto : '#374151' }));
+        xx += anchos[j] * u; }); });
+    return r; }
 };
-// ---------- cambiador de productos (fotos que se cambian y el fondo cambia de color) ----------
-function colorDominante(img){
-  const c = document.createElement('canvas'); c.width = c.height = 32; const x = c.getContext('2d');
-  try { x.drawImage(img, 0, 0, 32, 32); const d = x.getImageData(0, 0, 32, 32).data; let r = 0, g = 0, b = 0, n = 0;
-    for (let i = 0; i < d.length; i += 4){ if (d[i + 3] < 128) continue; const mx = Math.max(d[i], d[i + 1], d[i + 2]), mn = Math.min(d[i], d[i + 1], d[i + 2]);
-      const w = (mx - mn) + 8; if (mx > 245 && mn > 235) continue; r += d[i] * w; g += d[i + 1] * w; b += d[i + 2] * w; n += w; }
-    if (!n) return '#f3f4f6';
-    const mez = v => Math.round(v / n * 0.35 + 255 * 0.65);
-    return '#' + [mez(r), mez(g), mez(b)].map(v => v.toString(16).padStart(2, '0')).join('');
-  } catch (e) { return '#f3f4f6'; }
+const estUI = (t, tipo) => ({ insignia:true, t, w:110, fill:{ ok:'#dcfce7', pend:'#fef3c7', mal:'#fee2e2', info:'#dbeafe' }[tipo], color:{ ok:'#166534', pend:'#92400e', mal:'#991b1b', info:'#1e40af' }[tipo] });
+// ---------- marcos de dispositivo ----------
+const MARCOS_DISP = {
+  celular(x, y, u, o = {}){ const w = 390 * u, h = 844 * u;
+    return [uiR(x - 14 * u, y - 14 * u, w + 28 * u, h + 28 * u, 'rgba(0,0,0,0)', { r:58 * u, borde:o.color || '#111827', gb:14 * u, nombre:'Marco de celular' }),
+      uiR(x + w / 2 - 62 * u, y + 10 * u, 124 * u, 32 * u, o.color || '#111827', { r:16 * u, nombre:'Cámara' })]; },
+  navegador(x, y, u, o = {}){ const w = (o.w || 1280) * u, h = (o.h || 800) * u;
+    return [uiR(x, y, w, h, 'rgba(0,0,0,0)', { r:14 * u, borde:'#cbd5e1', gb:2 * u, nombre:'Marco de navegador' }), uiR(x, y, w, 48 * u, '#e5e7eb', { r:14 * u, nombre:'Barra del navegador' }),
+      uiC(x + 24 * u, y + 24 * u, 7 * u, '#ef4444'), uiC(x + 46 * u, y + 24 * u, 7 * u, '#f59e0b'), uiC(x + 68 * u, y + 24 * u, 7 * u, '#22c55e'),
+      uiR(x + 110 * u, y + 11 * u, w - 220 * u, 26 * u, '#ffffff', { r:13 * u, nombre:'Dirección' }), uiT(o.url || 'tusitio.com', x + 110 * u, y + 16 * u, { w:w - 220 * u, s:13 * u, c:UI.suave, al:'center' })]; },
+  tablet(x, y, u, o = {}){ const w = 834 * u, h = 1194 * u;
+    return [uiR(x - 22 * u, y - 22 * u, w + 44 * u, h + 44 * u, 'rgba(0,0,0,0)', { r:46 * u, borde:o.color || '#111827', gb:22 * u, nombre:'Marco de tablet' })]; }
+};
+// ---------- insertar en el lienzo ----------
+const escalaUI = () => W <= 700 ? W / 390 : W / 1440;
+function insertarComponente(tipo){
+  const u = escalaUI();
+  const objs = (COMP[tipo] || MARCOS_DISP[tipo])(0, 0, u, tipo === 'tablaUI' ? { filas:[['Ana López', estUI('Pagado', 'ok'), '12/10/2026', '$1,250'], ['Luis Pérez', estUI('Pendiente', 'pend'), '14/10/2026', '$890']] } : {});
+  const g = new fabric.Group(objs, { originX:'center', originY:'center' });
+  g.setPositionByOrigin(new fabric.Point(W / 2, H / 2), 'center', 'center');
+  agregar(g, NOMBRES_COMP[tipo] || 'Componente'); renderCapas(); guardarEstado();
+  toast('Para cambiar el texto, selecciónalo y escribe en «Escribe tu texto». Para mover sus partes, pulsa «Desagrupar».');
 }
-function grupoCambiador(variantes, w, h, i0){
-  return new Promise(ok => {
-    const v = variantes[i0 || 0];
-    fabric.Image.fromURL(v.src, img => {
-      const zona = h - 40, k = Math.min(w / img.width, zona / img.height);
-      img.set({ originX:'center', originY:'center', left:0, top:-20, scaleX:k, scaleY:k });
-      const partes = [new fabric.Rect({ originX:'center', originY:'center', left:0, top:0, width:w, height:h, fill:'rgba(0,0,0,0)' }), img];
-      const n = variantes.length, sep = 22;
-      variantes.forEach((x, i) => partes.push(new fabric.Circle({ originX:'center', originY:'center', left:(i - (n - 1) / 2) * sep, top:h / 2 - 10, radius: i === (i0 || 0) ? 7 : 5, fill: i === (i0 || 0) ? '#111827' : 'rgba(17,24,39,.3)' })));
-      partes.push(new fabric.Text('‹', { originX:'center', originY:'center', left:-w / 2 + 18, top:-20, fontSize:54, fill:'rgba(17,24,39,.55)', fontFamily:'Inter' }),
-        new fabric.Text('›', { originX:'center', originY:'center', left:w / 2 - 18, top:-20, fontSize:54, fill:'rgba(17,24,39,.55)', fontFamily:'Inter' }));
-      const g = new fabric.Group(partes, { name:'Cambiador de productos', id:nuevoId() });
-      g.variantes = variantes.map(x => ({ src:x.src, fondo:x.fondo, nombre:x.nombre || '' }));
-      ok(g);
-    }, { crossOrigin:'anonymous' });
+const NOMBRES_COMP = { boton:'Botón', campo:'Campo de texto', buscador:'Buscador', casilla:'Casilla', interruptor:'Interruptor', tarjeta:'Tarjeta', navbar:'Barra de navegación',
+  barraEstado:'Barra de estado', tabbar:'Barra de pestañas', avatar:'Avatar', insignia:'Insignia', alerta:'Alerta', progreso:'Barra de progreso', estrellas:'Calificación',
+  kpi:'Indicador', menuLateral:'Menú lateral', tablaUI:'Tabla de datos', celular:'Marco de celular', navegador:'Marco de navegador', tablet:'Marco de tablet' };
+(function(){
+  const cont = $('listaComponentes');
+  [['Básicos', ['boton', 'campo', 'buscador', 'casilla', 'interruptor', 'insignia', 'alerta', 'progreso', 'estrellas', 'avatar']],
+   ['Secciones', ['navbar', 'tarjeta', 'kpi', 'tablaUI', 'menuLateral', 'barraEstado', 'tabbar']],
+   ['Marcos de dispositivo', ['celular', 'navegador', 'tablet']]].forEach(([titulo, tipos]) => {
+    const h = document.createElement('div'); h.className = 'hint'; h.style.cssText = 'font-size:11.5px;padding:6px 0 2px'; h.textContent = titulo; cont.appendChild(h);
+    const grid = document.createElement('div'); grid.className = 'gridComp';
+    tipos.forEach(t => { const b = document.createElement('button'); b.className = 'pb'; b.textContent = NOMBRES_COMP[t]; b.onclick = () => insertarComponente(t); grid.appendChild(b); });
+    cont.appendChild(grid);
   });
-}
-async function crearCambiador(){
-  const sel = canvas.getActiveObjects().filter(o => o.type === 'image' && !o.modelo3d);
-  if (sel.length < 2) return toast('Selecciona 2 o más fotos de tus productos (con Shift o arrastrando un recuadro) y vuelve a pulsar «Cambiador de productos».');
-  const variantes = sel.sort((a, b) => a.left - b.left).map(o => {
-    const el = o.getElement(); return { src:o.toDataURL({ format:'png', multiplier:Math.min(2, 900 / Math.max(o.getScaledWidth(), o.getScaledHeight())) }), fondo:colorDominante(el), nombre:o.name || '' }; });
-  const w = Math.max(...sel.map(o => o.getScaledWidth())) * 1.25, h = Math.max(...sel.map(o => o.getScaledHeight())) + 60;
-  const c = canvas.getActiveObject().getCenterPoint();
-  canvas.discardActiveObject(); sel.forEach(o => canvas.remove(o));
-  const g = await grupoCambiador(variantes, w, h);
-  g.setPositionByOrigin(c, 'center', 'center');
-  agregar(g, 'Cambiador de productos'); fondoColor(variantes[0].fondo); renderCapas(); guardarEstado();
-  toast('¡Listo! En la página web cada producto aparece con una animación y el fondo cambia de color. Cambia los colores con «🎨 Fondos».');
-}
-function editarFondosCambiador(){
-  const o = activo(); if (!o) return;
-  const lista = o.variantes || (o.modelo3d && o.modelo3d.colores);
-  if (!lista || !lista.length) return;
-  const r = prompt('Color de fondo de cada producto, separados por comas (en orden):', lista.map(x => x.fondo).join(', '));
+  // tamaños de pantalla
+  const tams = [['Página web (escritorio)', 1440, 1024], ['Página web larga (con scroll)', 1440, 3200], ['Dashboard / sistema', 1440, 900], ['App de celular', 390, 844], ['Tablet', 834, 1194]];
+  tams.forEach(([n, w, h]) => {
+    TAMANOS.push([n, w, h]);
+    const b = document.createElement('button'); b.className = 'bigbtn'; b.innerHTML = `${esc(n)} <span style="float:right;color:#6b7280">${w} × ${h}</span>`;
+    b.onclick = () => aplicarTamano(w, h);
+    $('listaTamanos').appendChild(b);
+    const b2 = b.cloneNode(true); b2.onclick = () => aplicarTamano(w, h); $('tamWeb').appendChild(b2);
+  });
+})();
+
+// ---------- cuadrícula de columnas (solo se ve mientras diseñas) ----------
+let cuadriculaWeb = false;
+function alternarCuadricula(){ cuadriculaWeb = !cuadriculaWeb; $('bCuadricula').classList.toggle('on', cuadriculaWeb); canvas.requestRenderAll(); }
+canvas.on('after:render', () => {
+  if (!cuadriculaWeb || generandoVista) return;
+  const ctx = canvas.contextContainer, v = canvas.viewportTransform, movil = W <= 700;
+  const n = movil ? 4 : 12, m = movil ? 16 * W / 390 : 80 * W / 1440, g = movil ? 16 * W / 390 : 24 * W / 1440;
+  const col = (W - 2 * m - (n - 1) * g) / n;
+  ctx.save(); ctx.transform(v[0], v[1], v[2], v[3], v[4], v[5]);
+  ctx.fillStyle = 'rgba(255,75,43,.09)';
+  for (let i = 0; i < n; i++) ctx.fillRect(m + i * (col + g), 0, col, H);
+  ctx.strokeStyle = 'rgba(255,75,43,.35)'; ctx.lineWidth = 1 / zoom;
+  ctx.beginPath(); ctx.moveTo(m, 0); ctx.lineTo(m, H); ctx.moveTo(W - m, 0); ctx.lineTo(W - m, H); ctx.stroke();
+  ctx.restore();
+});
+
+// ---------- enlaces entre pantallas (para probar el flujo en «Presentar») ----------
+function ponerEnlace(){
+  const o = activo(); if (!o) return toast('Selecciona el botón o elemento que llevará a otra pantalla');
+  const r = prompt('¿A dónde lleva al tocarlo en «Presentar»?\n• Escribe el número de página (1 a ' + paginas.length + ')\n• o una dirección web (https://…)\nDéjalo vacío para quitar el enlace.', o.enlace ? (o.enlace.startsWith('p:') ? o.enlace.slice(2) : o.enlace) : '');
   if (r === null) return;
-  const cs = r.split(',').map(s => s.trim()).filter(Boolean);
-  if (cs.some(c => !/^#[0-9a-f]{3,8}$/i.test(c))) return toast('Escribe colores como #ffe1e1');
-  lista.forEach((x, i) => { if (cs[i]) x.fondo = cs[i]; });
-  if (cs[0]) fondoColor(cs[0]); guardarEstado(); toast('Fondos actualizados');
+  const v = r.trim();
+  if (!v){ o.enlace = null; toast('Enlace quitado'); }
+  else if (/^\d+$/.test(v)){ const n = +v; if (n < 1 || n > paginas.length) return toast('Ese número de página no existe'); o.enlace = 'p:' + n; toast('Al tocarlo en «Presentar» irá a la página ' + n); }
+  else if (/^(https?:\/\/|mailto:|tel:)/i.test(v)){ o.enlace = v; toast('Al tocarlo en «Presentar» abrirá ' + v); }
+  else return toast('Escribe un número de página o una dirección que empiece con https://');
+  actualizarPanel(); guardarEstado();
 }
-function editarColores3D(){
-  const o = activo(); if (!o || !o.modelo3d) return;
-  const m = o.modelo3d;
-  const r = prompt('Colores del producto (la persona los elige en la página web). Escribe nombre=color de producto/color de fondo, separados por comas.\nEjemplo: Cereza=#d61f1f/#ffe1e1, Limón=#3fae2a/#e6f9dc\nDéjalo vacío para quitar los colores.',
-    (m.colores || []).map(c => `${c.nombre}=${c.color}/${c.fondo}`).join(', '));
-  if (r === null) return;
-  const res = [];
-  for (const parte of r.split(',').map(s => s.trim()).filter(Boolean)){
-    const mm = parte.match(/^(.*?)=\s*(#[0-9a-f]{3,8})\s*(?:\/\s*(#[0-9a-f]{3,8}))?$/i);
-    if (!mm) return toast('No entendí «' + parte + '». Usa nombre=#color/#fondo');
-    res.push({ nombre:mm[1].trim(), color:mm[2], fondo:mm[3] || '#ffffff' });
-  }
-  m.colores = res; if (res[0]) fondoColor(res[0].fondo);
-  actualizarPoster(o); toast(res.length ? 'Colores guardados: en la página web aparecen botones para cambiarlo' : 'Colores quitados');
-}
-function vista3DEnVivo(){
-  const o = activo(); if (!o || !o.modelo3d) return;
-  cargarModelViewer().then(() => {
-    const m = o.modelo3d, fondo = document.createElement('div');
-    fondo.id = 'vivo3D'; fondo.innerHTML = `<div class="caja3D"><model-viewer src="${esc(m.src)}" camera-controls camera-orbit="${esc(m.camara)}" shadow-intensity="1" exposure="1.1" style="width:100%;height:60vh;background:#f3f4f6;border-radius:12px"></model-viewer>
-      <p class="hint">Gira el modelo con el mouse o el dedo hasta el ángulo que quieras.</p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btnP" id="v3Usar">✔ Usar este ángulo</button>${(m.listaAnim || []).length ? '<button class="pb" id="v3Anim">▶ Ver animación</button>' : ''}<button class="pb" id="v3Cerrar">Cerrar</button></div></div>`;
-    document.body.appendChild(fondo);
-    const mv = fondo.querySelector('model-viewer');
-    if (m.colores && m.colores[0]) mv.addEventListener('load', () => pintarModelo(mv, m.colores[0].color, m.material), { once:true });
-    fondo.querySelector('#v3Cerrar').onclick = () => fondo.remove();
-    const ba = fondo.querySelector('#v3Anim'); if (ba) ba.onclick = () => { mv.animationName = m.animacion; mv.play({ repetitions:1, pingpong:true }); };
-    fondo.querySelector('#v3Usar').onclick = () => { const c = mv.getCameraOrbit(); m.camara = `${(c.theta * 180 / Math.PI).toFixed(1)}deg ${(c.phi * 180 / Math.PI).toFixed(1)}deg auto`; fondo.remove(); actualizarPoster(o); };
-  }, e => toast(e.message));
-}
-// ---------- panel de propiedades: efectos para la página web ----------
 alActualizarPanel(function(){
   if (generandoVista) return;
   const o = activo(); if (!o) return;
-  $('pHover').value = o.hover || ''; $('pScrollFx').value = o.scrollFx || '';
-  const es3D = !!o.modelo3d;
-  $('fila3D').hidden = !es3D;
-  if (es3D){ $('p3Giro').checked = o.modelo3d.giro !== false; $('p3Scroll').value = o.modelo3d.scroll || 'no';
-    $('p3Scroll').querySelectorAll('option[data-anim]').forEach(op => op.disabled = !(o.modelo3d.listaAnim || []).length && !o.modelo3d.animacion); }
-  $('bFondosCamb').hidden = !(o.variantes || (es3D && o.modelo3d.colores && o.modelo3d.colores.length));
+  $('bEnlace').textContent = o.enlace ? '🔗 ' + (o.enlace.startsWith('p:') ? 'Va a la página ' + o.enlace.slice(2) : 'Enlace web') : '🔗 Enlace';
+  $('bEnlace').classList.toggle('on', !!o.enlace);
 });
-$('pHover').onchange = e => { const o = activo(); if (!o) return; o.hover = e.target.value || null; guardarEstado(); };
-$('pScrollFx').onchange = e => { const o = activo(); if (!o) return; o.scrollFx = e.target.value || null; guardarEstado(); };
-$('p3Giro').onchange = e => { const o = activo(); if (o && o.modelo3d){ o.modelo3d.giro = e.target.checked; guardarEstado(); } };
-$('p3Scroll').onchange = e => { const o = activo(); if (o && o.modelo3d){ o.modelo3d.scroll = e.target.value; guardarEstado(); } };
-$('archivo3D').addEventListener('change', e => { subirModelo3D(e.target.files[0]); e.target.value = ''; });
+function objetoConEnlace(e){
+  if (!pres || !pres.cur) return null;
+  const el = pres.cur.wrap.querySelector('canvas'); if (!el) return null;
+  const r = el.getBoundingClientRect();
+  if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return null;
+  const p = new fabric.Point(e.clientX - r.left, e.clientY - r.top);
+  return pres.cur.sc.getObjects().slice().reverse().find(o => o.enlace && o.visible !== false && o.opacity > 0.05 && o.containsPoint(p)) || null;
+}
+$('presentacion').addEventListener('click', e => {
+  if (e.target.closest('#presControles,#presNotas')) return;
+  const o = objetoConEnlace(e); if (!o) return;
+  e.stopPropagation(); e.preventDefault();
+  if (o.enlace.startsWith('p:')){
+    const idx = pres.lista.indexOf(+o.enlace.slice(2) - 1);
+    if (idx >= 0) irA(idx, true, idx >= pres.i ? 1 : -1);
+  } else window.open(o.enlace, '_blank', 'noopener');
+}, true);
+$('presentacion').addEventListener('mousemove', e => { $('presentacion').style.cursor = objetoConEnlace(e) ? 'pointer' : ''; });
 
-// ---------- en «Presentar» los modelos 3D se pueden girar ----------
-const construirDiapositivaBase29 = construirDiapositiva;
-construirDiapositiva = function(i, cb){
-  construirDiapositivaBase29(i, d => {
-    const objs = d.sc.getObjects().filter(o => o.modelo3d);
-    if (objs.length) cargarModelViewer().then(() => {
-      const z = d.sc.getZoom(), el = d.wrap.querySelector('canvas');
-      objs.forEach(o => {
-        const r = o.getBoundingRect(true, true), m = o.modelo3d, mv = document.createElement('model-viewer');
-        mv.className = 'mv3DPres'; mv.setAttribute('src', m.src); mv.setAttribute('camera-orbit', m.camara); mv.setAttribute('camera-controls', '');
-        if (m.giro !== false) mv.setAttribute('auto-rotate', ''); mv.setAttribute('shadow-intensity', '1'); mv.setAttribute('interaction-prompt', 'none');
-        mv.style.cssText = `position:absolute;left:${el.offsetLeft + r.left * z}px;top:${el.offsetTop + r.top * z}px;width:${r.width * z}px;height:${r.height * z}px;background:transparent`;
-        mv.addEventListener('load', () => { if (m.colores && m.colores[0]) pintarModelo(mv, m.colores[0].color, m.material); o.visible = false; d.sc.requestRenderAll(); }, { once:true });
-        mv.addEventListener('click', e => e.stopPropagation());
-        d.wrap.appendChild(mv);
-      });
-    }, () => {});
-    cb(d);
-  });
-};
-
-/* ---------- convertir el diseño en una página web ---------- */
-function textoHTMLSimple(o){
-  if (!['textbox', 'i-text', 'text'].includes(o.type) || typeof o.fill !== 'string' || o.path || o.clipPath || o.skewX || o.skewY) return false;
-  const st = o.styles || {}; if (Object.values(st).some(l => l && Object.keys(l).length)) return false;
-  return !(o.fill.toLive || (o.stroke && o.stroke.toLive));
+// ---------- plantillas de páginas web, apps, dashboards y sistemas ----------
+const CAT_WEB = 'Web, apps y sistemas';
+function PON(objs){ objs.forEach(o => { o.id = nuevoId(); canvas.add(o); }); return objs; }
+function FOTO(x, y, w, h, tipo){ const g = crearMarcoVacio(tipo || 'rect', w, h); g.setPositionByOrigin(new fabric.Point(x + w / 2, y + h / 2), 'center', 'center'); canvas.add(g); return g; }
+function GRAF(x, y, w, h, tipo, datos, titulo){
+  const g = grupoGrafica({ tipo, titulo:titulo || '', paleta:'Vibrante', valores:false, w, h, datos });
+  g.setPositionByOrigin(new fabric.Point(x + w / 2, y + h / 2), 'center', 'center'); canvas.add(g); return g;
 }
-const escH = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-function htmlDeTexto(o, bx, by){
-  const m = o.calcTransformMatrix(); m[4] -= bx; m[5] -= by;
-  const fs = o.fontSize, lh = fs * o.lineHeight * o._fontSizeMult;
-  const crudas = o.textLines || String(o.text).split('\n');
-  const lineas = crudas.map(l => escH(l).replace(/ /g, '&#32;') || '&nbsp;');
-  const duro = i => o.type !== 'textbox' || !o.isEndOfWrapping || o.isEndOfWrapping(i);
-  const sombra = o.shadow ? `text-shadow:${o.shadow.offsetX || 0}px ${o.shadow.offsetY || 0}px ${o.shadow.blur || 0}px ${o.shadow.color};` : '';
-  const borde = o.stroke && o.strokeWidth ? `-webkit-text-stroke:${o.strokeWidth}px ${o.stroke};paint-order:stroke fill;` : '';
-  const deco = [o.underline && 'underline', o.linethrough && 'line-through', o.overline && 'overline'].filter(Boolean).join(' ');
-  const css = `position:absolute;left:0;top:0;width:${o.width}px;height:${o.height}px;transform-origin:0 0;transform:matrix(${m.map(v => +v.toFixed(4)).join(',')}) translate(-50%,-50%);` +
-    `font-family:'${o.fontFamily}',sans-serif;font-size:${fs}px;font-weight:${o.fontWeight};font-style:${o.fontStyle || 'normal'};line-height:${lh}px;color:${o.fill};` +
-    `text-align:${o.textAlign === 'justify' ? 'justify' : o.textAlign};letter-spacing:${(o.charSpacing || 0) / 1000}em;white-space:nowrap;` +
-    (deco ? `text-decoration:${deco};` : '') + (o.backgroundColor ? `background:${o.backgroundColor};` : '') + sombra + borde +
-    (o.opacity < 1 ? `opacity:${o.opacity};` : '');
-  return `<div class="t" style="${css}">${lineas.map((l, i) => l + (i < lineas.length - 1 ? (duro(i) ? '<br>' : ' <br class="w">') : '')).join('')}</div>`;
-}
-function rectSimple(o){
-  return o.type === 'rect' && typeof o.fill === 'string' && !((o.angle || 0) % 360) && !o.skewX && !o.skewY && !o.clipPath && !(o.stroke && o.stroke.toLive);
-}
-function htmlDeRect(o){
-  const sx = o.scaleX || 1, sy = o.scaleY || 1, sw = o.stroke && o.strokeWidth ? o.strokeWidth * (o.strokeUniform ? 1 : sx) : 0;
-  const sh = o.shadow ? `box-shadow:${o.shadow.offsetX || 0}px ${o.shadow.offsetY || 0}px ${o.shadow.blur || 0}px ${o.shadow.color};` : '';
-  return `<div class="r" style="position:absolute;inset:0;background:${o.fill};border-radius:${(o.rx || 0) * sx}px/${(o.ry || o.rx || 0) * sy}px;` +
-    (sw ? `border:${sw}px ${o.strokeDashArray ? 'dashed' : 'solid'} ${o.stroke};` : '') + sh + (o.opacity < 1 ? `opacity:${o.opacity};` : '') + '"></div>';
-}
-function svgDeObjeto(o, r){
-  const svg = o.toSVG();
-  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="100%" height="100%" viewBox="${r.left} ${r.top} ${r.width} ${r.height}" style="overflow:visible;display:block">${svg}</svg>`;
-}
-function cajaDe(o){
-  const r = o.getBoundingRect(true, true), pad = Math.ceil((o.shadow ? (o.shadow.blur || 0) + Math.max(Math.abs(o.shadow.offsetX || 0), Math.abs(o.shadow.offsetY || 0)) : 0) + (o.strokeWidth || 0) + 2);
-  return { left:Math.floor(r.left - pad), top:Math.floor(r.top - pad), width:Math.ceil(r.width + 2 * pad), height:Math.ceil(r.height + 2 * pad) };
-}
-const ANIM_CSS = { arriba:'arriba', abajo:'abajo', izquierda:'izquierda', derecha:'derecha', zoom:'zoom', rebote:'rebote', girar:'girar', aparecer:'aparecer', escribir:'aparecer' };
-async function paginaAHTML(json, num, ctx){
-  const sc = new fabric.StaticCanvas(document.createElement('canvas'), { width:W, height:H, enableRetinaScaling:false, renderOnAddRemove:false });
-  const j = JSON.parse(JSON.stringify(json || PAGINA_VACIA()));
-  await new Promise(ok => sc.loadFromJSON(j, ok));
-  let fondo = typeof sc.backgroundColor === 'string' && sc.backgroundColor ? sc.backgroundColor : '#ffffff', fondoImg = '';
-  if ((sc.backgroundColor && typeof sc.backgroundColor !== 'string') || sc.backgroundImage){
-    const objs = sc.getObjects().slice(); objs.forEach(o => o.visible = false); sc.renderAll();
-    fondoImg = sc.toDataURL({ format:'jpeg', quality:.9 }); objs.forEach(o => o.visible = true); fondo = '#ffffff';
-  }
-  Object.assign(ctx.fuentes, fuentesDe(sc.getObjects()));
-  const animados = sc.getObjects().filter(o => o.anim && o.anim.tipo && o.anim.tipo !== 'ninguna').sort((a, b) => (a.anim.orden || 0) - (b.anim.orden || 0));
-  const items = [];
-  let primerCambio = null, idx = 0;
-  for (const o of sc.getObjects()){
-    idx++;
-    if (o.visible === false) continue;
-    if (o.marcoVacio){ ctx.vacios++; continue; }
-    if (o.type === 'conector' && (o.opacity === 0)) continue;
-    const esRect = rectSimple(o);
-    const r = o.modelo3d || esRect ? o.getBoundingRect(true, true) : cajaDe(o);
-    let dentro, tipo = 'otro';
-    if (o.modelo3d){
-      const m = o.modelo3d; ctx.usa3D = true;
-      const at = [`src="${escH(m.src)}"`, `camera-orbit="${escH(m.camara)}"`, 'shadow-intensity="1"', 'exposure="1.1"', 'interaction-prompt="none"', 'camera-controls', 'disable-zoom', 'touch-action="pan-y"'];
-      if (m.giro !== false && !['girar', 'ambos'].includes(m.scroll)) at.push('auto-rotate', 'auto-rotate-delay="0"', 'rotation-per-second="20deg"');
-      if (m.animacion) at.push(`animation-name="${escH(m.animacion)}"`);
-      const cols = m.colores || [];
-      dentro = `<model-viewer ${at.join(' ')} data-scroll="${m.scroll || 'no'}" data-material="${escH(m.material ?? 0)}" data-colores='${escH(JSON.stringify(cols))}' poster="${o.getSrc ? o.getSrc() : ''}" style="width:100%;height:100%;background:transparent;--poster-color:transparent"></model-viewer>` +
-        (cols.length > 1 ? `<div class="colores3d">${cols.map((c, i) => `<button aria-label="${escH(c.nombre)}" title="${escH(c.nombre)}" data-i="${i}" class="${i ? '' : 'on'}" style="background:${escH(c.color)}"></button>`).join('')}</div>` : '');
-      if (cols.length && !primerCambio) primerCambio = cols[0].fondo;
-    } else if (o.variantes){
-      ctx.usaCambiador = true;
-      dentro = `<div class="camb" data-fondos='${escH(JSON.stringify(o.variantes.map(v => v.fondo)))}'>` +
-        o.variantes.map((v, i) => `<img src="${v.src}" alt="${escH(v.nombre || 'Producto ' + (i + 1))}" class="${i ? '' : 'on'}">`).join('') +
-        `<button class="ant" aria-label="Anterior">‹</button><button class="sig" aria-label="Siguiente">›</button><div class="pts">${o.variantes.map((v, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div></div>`;
-      if (!primerCambio) primerCambio = o.variantes[0].fondo;
-    } else if (textoHTMLSimple(o)){ dentro = htmlDeTexto(o, r.left, r.top); tipo = 'texto'; }
-    else if (esRect){ dentro = htmlDeRect(o); tipo = 'rect'; }
-    else dentro = svgDeObjeto(o, r);
-    if (o.modelo3d) tipo = '3d'; else if (o.variantes) tipo = 'camb';
-    const a = o.anim && ANIM_CSS[o.anim.tipo] ? o.anim : null;
-    const retraso = a ? Math.min(1500, (a.retraso || 0) + Math.max(0, animados.indexOf(o)) * 110) : 0;
-    let html = `<div class="h${o.hover ? ' h-' + o.hover : ''}">${dentro}</div>`;
-    html = `<div class="a${a ? ' a-' + ANIM_CSS[a.tipo] : ''}"${a ? ` style="--d:${a.duracion || 700}ms;--r:${retraso}ms"` : ''}>${html}</div>`;
-    if (o.enlace){
-      const href = o.enlace.startsWith('p:') ? '#p' + o.enlace.slice(2) : o.enlace;
-      html = `<a href="${escH(href)}"${o.enlace.startsWith('p:') ? '' : ' target="_blank" rel="noopener"'} class="lnk">${html}</a>`;
-    }
-    const fs = tipo === 'texto' ? o.fontSize * (o.scaleY || 1) : 0;
-    const rt = o.getBoundingRect(true, true);   // caja justa, sin margen para sombras
-    items.push({ r:{ left:Math.round(r.left), top:Math.round(r.top), width:Math.round(r.width), height:Math.round(r.height) }, rt, html, tipo, idx, fs,
-      al:o.textAlign || 'left', scrollFx:o.scrollFx || '', hijos:[], padre:null, enlace:!!o.enlace });
-  }
-  sc.dispose();
-  // ¿qué está dentro de qué? (una tarjeta y su texto, un botón y su letrero…)
-  const dentroDe = (a, b) => a.rt.left >= b.rt.left - 3 && a.rt.top >= b.rt.top - 3 && a.rt.left + a.rt.width <= b.rt.left + b.rt.width + 3 && a.rt.top + a.rt.height <= b.rt.top + b.rt.height + 3;
-  const area = x => Math.max(1, x.rt.width * x.rt.height);
-  items.forEach(c => {
-    let mejor = null;
-    items.forEach(p => {
-      if (p === c || p.idx > c.idx || p.tipo === 'texto' || p.tipo === '3d' || p.tipo === 'camb') return;
-      if (area(p) < area(c) * 1.2 || !dentroDe(c, p)) return;
-      if (!mejor || area(p) < area(mejor)) mejor = p;
-    });
-    if (mejor){ c.padre = mejor; mejor.hijos.push(c); }
-  });
-  // orden de lectura (corte en X y Y): primero renglones separados por espacios en blanco; dentro de cada uno, columnas de izquierda a derecha
-  const ordenar = lista => {
-    if (lista.length <= 1) return lista.slice();
-    const caja = x => x.rt;
-    const cortar = (eje) => {
-      const ini = eje === 'y' ? (x => caja(x).top) : (x => caja(x).left), tam = eje === 'y' ? (x => caja(x).height) : (x => caja(x).width);
-      const l = lista.slice().sort((a, b) => ini(a) - ini(b)), grupos = []; let g = [], fin = -Infinity;
-      l.forEach(x => { if (g.length && ini(x) >= fin - 2){ grupos.push(g); g = []; } g.push(x); fin = Math.max(fin, ini(x) + tam(x)); });
-      grupos.push(g); return grupos;
-    };
-    let gr = cortar('y');
-    if (gr.length > 1) return gr.flatMap(ordenar);
-    gr = cortar('x');
-    if (gr.length > 1) return gr.flatMap(ordenar);
-    return lista.slice().sort((a, b) => (caja(a).top - caja(b).top) || (caja(a).left - caja(b).left));
-  };
-  // cosas pequeñas en el mismo renglón (botones, tallas, colores, íconos) se quedan juntas en el celular
-  const chico = x => x.rt.height <= 90 && x.rt.width <= (x.tipo === 'texto' ? 220 : W * 0.3);
-  const juntar = (lista, base) => {
-    const out = []; let run = [];
-    const soltar = () => { if (run.length >= 2) out.push('<div class="filaM">' + run.map(x => nodo(x, base)).join('') + '</div>'); else run.forEach(x => out.push(nodo(x, base))); run = []; };
-    lista.forEach(x => {
-      const u = run[run.length - 1];
-      const mismo = u && chico(x) && Math.min(u.rt.top + u.rt.height, x.rt.top + x.rt.height) - Math.max(u.rt.top, x.rt.top) > Math.min(u.rt.height, x.rt.height) * 0.5;
-      if (chico(x) && (!u || mismo)) run.push(x); else { soltar(); if (chico(x)) run.push(x); else out.push(nodo(x, base)); }
-    });
-    soltar(); return out.join('');
-  };
-  const nodo = (x, base) => {
-    const cls = ['o'], st = [`left:${x.r.left - base.left}px`, `top:${x.r.top - base.top}px`, `width:${x.r.width}px`, `height:${x.r.height}px`, `z-index:${x.idx}`];
-    if (x.hijos.length){ cls.push('cont'); if (x.r.height <= 140 && x.r.width / x.r.height > 2.5) cls.push('fila');
-      st.push(`--pad:${Math.round(Math.min(18, x.r.height * 0.22, x.r.width * 0.08))}px`); }
-    else if (x.tipo === 'texto'){ cls.push('tx'); if (!x.enlace) cls.push('sinClic');
-      const f = x.fs, m = f >= 40 ? Math.max(26, f * 0.55) : f >= 22 ? Math.max(18, f * 0.75) : Math.max(13, f * 0.95);
-      st.push(`--fsm:${Math.round(m)}px`, `--al:${x.al === 'center' ? 'center' : x.al === 'right' ? 'flex-end' : 'stretch'}`); }
-    else { const w0 = x.r.width, mw = w0 >= W * 0.5 || x.tipo === '3d' || x.tipo === 'camb' ? '100%' : Math.round(Math.max(Math.min(w0, 64), w0 * 0.62)) + 'px';
-      st.push(`--mw:${mw}`, `--ar:${x.r.width}/${Math.max(1, x.r.height)}`); }
-    const at = x.scrollFx ? ` data-scroll="${x.scrollFx}"` : '';
-    return `<div class="${cls.join(' ')}" style="${st.join(';')}"${at}>${x.html}${juntar(ordenar(x.hijos), x.r)}</div>`;
-  };
-  const partes = [juntar(ordenar(items.filter(x => !x.padre)), { left:0, top:0 })];
-  const flujo = W > 900 && ctx.modo !== 'pantallas';
-  return `<section class="pag${flujo ? ' flujo' : ''}" id="p${num}" data-w="${W}" data-h="${H}" style="--w:${W};--h:${H};background:${primerCambio || fondo}">` +
-    `<div class="lienzo" style="width:${W}px;height:${H}px${fondoImg ? `;background:url(${fondoImg}) center/cover` : ''}">${partes.join('\n')}</div></section>`;
-}
-async function crearHTML(lista, modo){
-  const ctx = { fuentes:{}, vacios:0, usa3D:false, usaCambiador:false, modo };
-  const secciones = []; for (const it of lista) secciones.push(await paginaAHTML(it.p, it.i + 1, ctx));
-  const fams = Object.entries(ctx.fuentes);
-  let cssFuentes = '', linkFuentes = '';
-  const google = fams.filter(([f]) => !misFuentes[f]);
-  if (google.length) linkFuentes = `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?${google.map(([f, p]) => 'family=' + encodeURIComponent(f).replace(/%20/g, '+') + ':wght@' + [...p].sort((a, b) => a - b).join(';')).join('&')}&display=swap">`;
-  for (const [f] of fams.filter(([f]) => misFuentes[f])) cssFuentes += await cssDeFuente(f, [400]);
-  const titulo = escH(nombreArchivo() || 'Mi página');
-  const html = `<!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${titulo}</title><meta name="generator" content="Diseñador · Apik-Desing">
-${linkFuentes}
-${ctx.usa3D ? `<script type="module" src="${URL_MV.replace('-umd', '')}"><\/script>` : ''}
-<style>${cssFuentes}
-*{box-sizing:border-box}html,body{margin:0;padding:0}body{background:${modo === 'pantallas' ? '#0f172a' : '#fff'};overflow-x:hidden;-webkit-font-smoothing:antialiased}
-.pag{position:relative;overflow:hidden;height:calc(var(--h) * var(--k,1) * 1px);transition:background-color .8s ease}
-.lienzo{position:absolute;top:0;left:50%;transform-origin:0 0;transform:translateX(calc(var(--w) * var(--k,1) * -.5px)) scale(var(--k,1))}
-.o{position:absolute;will-change:transform}.a,.h{width:100%;height:100%;position:relative}.t{pointer-events:none}.o svg{position:absolute;inset:0}
-a.lnk{display:block;width:100%;height:100%;color:inherit;text-decoration:none}
-.a[class*="a-"]{opacity:0;transition:opacity var(--d) ease var(--r),transform var(--d) cubic-bezier(.2,.8,.2,1) var(--r)}
-.a-arriba{transform:translateY(80px)}.a-abajo{transform:translateY(-80px)}.a-izquierda{transform:translateX(-120px)}.a-derecha{transform:translateX(120px)}
-.a-zoom{transform:scale(.4)}.a-rebote{transform:scale(.1);transition-timing-function:ease,cubic-bezier(.34,1.56,.64,1)!important}.a-girar{transform:rotate(-180deg) scale(.2)}
-.a.visto{opacity:1;transform:none}
-.h{transition:transform .35s cubic-bezier(.2,.8,.2,1),filter .35s}
-.h-crecer:hover{transform:scale(1.07)}.h-elevar:hover{transform:translateY(-10px);filter:drop-shadow(0 18px 22px rgba(0,0,0,.22))}
-.h-brillo:hover{filter:brightness(1.12) drop-shadow(0 0 18px rgba(255,255,255,.75))}.h-girar:hover{transform:rotate(-4deg) scale(1.04)}
-.h-sacudir:hover{animation:sacudir .45s}@keyframes sacudir{25%{transform:translateX(-6px) rotate(-2deg)}75%{transform:translateX(6px) rotate(2deg)}}
-.h-latido{animation:latido 1.6s ease-in-out infinite}@keyframes latido{50%{transform:scale(1.06)}}
-.lnk .h,.camb button,.colores3d button{cursor:pointer}
-.camb{position:relative;width:100%;height:100%}.camb img{position:absolute;left:0;top:0;width:100%;height:calc(100% - 40px);object-fit:contain;opacity:0;transform:translateY(60%) rotate(18deg) scale(.7);transition:transform .8s cubic-bezier(.2,.8,.2,1),opacity .6s}
-.camb img.on{opacity:1;transform:none}.camb img.sale{opacity:0;transform:translateY(-60%) rotate(-18deg) scale(.7)}
-.camb button{position:absolute;top:calc(50% - 50px);width:56px;height:56px;border-radius:50%;border:0;background:rgba(255,255,255,.75);font-size:34px;line-height:1;color:#111;box-shadow:0 6px 16px rgba(0,0,0,.15)}
-.camb .ant{left:0}.camb .sig{right:0}.camb .pts{position:absolute;bottom:6px;left:0;right:0;display:flex;gap:10px;justify-content:center}.camb .pts i{width:10px;height:10px;border-radius:50%;background:rgba(17,24,39,.3);transition:.3s}.camb .pts i.on{background:#111827;transform:scale(1.4)}
-model-viewer::part(default-progress-bar){display:none}
-.colores3d{position:absolute;bottom:-10px;left:0;right:0;display:flex;gap:14px;justify-content:center}.colores3d button{width:38px;height:38px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.25);transition:transform .2s}.colores3d button.on{transform:scale(1.25);outline:2px solid #111;outline-offset:2px}
-${modo === 'pantallas' ? '.pag{display:none;margin:0 auto}.pag.activa{display:block}' : ''}
-@media (prefers-reduced-motion:reduce){.a[class*="a-"]{opacity:1;transform:none;transition:none}.h-latido{animation:none}}
-/* en el celular, las páginas anchas se reacomodan en una columna */
-@media (max-width:700px){
- .pag.flujo{height:auto!important}
- .pag.flujo>.lienzo{position:relative;left:auto;top:auto;transform:none!important;width:auto!important;height:auto!important;display:flex;flex-direction:column;gap:16px;padding:28px 18px 36px}
- .pag.flujo .o{position:relative!important;left:auto!important;top:auto!important;width:auto!important;height:auto!important;transform:none!important;z-index:auto!important;will-change:auto}
- .pag.flujo .o:not(.cont):not(.tx){width:min(100%,var(--mw))!important;aspect-ratio:var(--ar);align-self:center}
- .pag.flujo .o.tx{align-self:var(--al,stretch)}.pag.flujo .o.tx .a,.pag.flujo .o.tx .h,.pag.flujo .o.tx a.lnk{height:auto}
- .pag.flujo .o.tx .t{position:static!important;transform:none!important;width:auto!important;height:auto!important;white-space:normal!important;font-size:var(--fsm)!important;line-height:1.3!important;letter-spacing:normal!important;overflow-wrap:anywhere}
- .pag.flujo .o.tx .t br.w{display:none}
- .pag.flujo .o.cont{display:flex;flex-direction:column;gap:10px;padding:var(--pad,14px)}
- .pag.flujo .o.cont>.a,.pag.flujo .o.cont>a.lnk{position:absolute;inset:0;width:auto;height:auto;z-index:0}
- .pag.flujo .o.cont>.o{z-index:1!important}
- .pag.flujo .o.cont.fila{flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 14px}
- .pag.flujo .o.fila>.o.tx{align-self:center}
- .pag.flujo .filaM{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center}
- .pag.flujo .filaM>.o:not(.cont):not(.tx){width:var(--mw)!important;max-width:100%}
- .pag.flujo .filaM>.o.cont{min-width:44px}
- .pag.flujo .o.fila>.o:not(.cont):not(.tx){width:min(100%,var(--mw),48px)!important}
-}
-.filaM{display:contents}.o.sinClic{pointer-events:none}.o.sinClic .o{pointer-events:auto}
-</style></head><body>
-${secciones.join('\n')}
-<script>
-(function(){
-var MODO=${JSON.stringify(modo)};
-var pags=[].slice.call(document.querySelectorAll('.pag'));
-function ajustar(){var vw=document.documentElement.clientWidth,vh=innerHeight;pags.forEach(function(p){var w=+p.dataset.w,h=+p.dataset.h,k;
- if(MODO==='pantallas')k=Math.min(vw/w,vh/h);else k=w<=900?Math.min(1.25,vw/w):vw/w;p.style.setProperty('--k',k);p._k=k;});scroll();}
-function ir(n){if(MODO!=='pantallas')return;pags.forEach(function(p){p.classList.toggle('activa',p.id==='p'+n);});revelar();scrollTo(0,0);}
-if(MODO==='pantallas'){addEventListener('hashchange',function(){ir((location.hash||'#p1').slice(2));});ir((location.hash||'#p1').slice(2)||1);}
-var io='IntersectionObserver' in window?new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('visto');io.unobserve(e.target);}});},{threshold:.15}):null;
-function revelar(){[].forEach.call(document.querySelectorAll('.a[class*="a-"]:not(.visto)'),function(a){if(io)io.observe(a);else a.classList.add('visto');});}
-revelar();
-var conScroll=[].slice.call(document.querySelectorAll('.o[data-scroll]'));
-var mvs=[].slice.call(document.querySelectorAll('model-viewer'));
-function cl(v,a,b){return Math.max(a,Math.min(b,v));}
-function progresoElem(el){var r=el.getBoundingClientRect(),vh=innerHeight;return cl((vh-r.top)/(vh+r.height),0,1);}
-function progresoSeccion(el){var p=el.closest('.pag'),r=p.getBoundingClientRect(),vh=innerHeight;return r.height<=vh?cl((vh-r.top)/(vh+r.height),0,1):cl(-r.top/(r.height-vh),0,1);}
-var mqFlujo=matchMedia('(max-width:700px)');
-function scroll(){var vh=innerHeight;
- conScroll.forEach(function(o){if(mqFlujo.matches&&o.closest('.pag.flujo')){o.style.transform='';return;}var p=o.closest('.pag'),k=p._k||1,fx=o.dataset.scroll,r=o.getBoundingClientRect(),c=(r.top+r.height/2-vh/2)/vh,t='';
-  if(fx==='paralaje')t='translateY('+(c*-120)+'px)';
-  else if(fx==='girar')t='rotate('+(c*-90)+'deg)';
-  else if(fx==='acercar')t='scale('+cl(1.25-Math.abs(c)*0.6,0.6,1.25)+')';
-  else if(fx==='fijo'){var pr=p.getBoundingClientRect(),top=parseFloat(o.style.top),h=parseFloat(o.style.height),H=+p.dataset.h;var desea=(-pr.top)/k+(vh/k-h)/2;t='translateY('+(cl(desea,top,H-h)-top)+'px)';}
-  o.style.transform=t;});
- mvs.forEach(function(mv){var fx=mv.dataset.scroll;if(!fx||fx==='no')return;var p=(mqFlujo.matches&&mv.closest('.pag.flujo'))?progresoElem(mv):progresoSeccion(mv);
-  if((fx==='girar'||fx==='ambos')&&mv._orb){mv.cameraOrbit=(mv._orb[0]+p*360)+'deg '+mv._orb[1]+' '+mv._orb[2];}
-  if((fx==='animar'||fx==='ambos')&&mv.duration){mv.currentTime=Math.min(mv.duration-0.001,p*mv.duration*1.15);}});
-}
-mvs.forEach(function(mv){var orb=(mv.getAttribute('camera-orbit')||'0deg 75deg auto').split(/\\s+/);mv._orb=[parseFloat(orb[0])||0,orb[1]||'75deg',orb[2]||'auto'];
- mv.addEventListener('load',function(){var cols=JSON.parse(mv.dataset.colores||'[]');if(cols[0])pintar(mv,cols[0].color);
-  if(mv.dataset.scroll==='animar'||mv.dataset.scroll==='ambos'){mv.play();mv.pause();}scroll();});
- var caja=mv.parentNode.querySelector('.colores3d');if(caja)[].forEach.call(caja.children,function(b){b.addEventListener('click',function(e){e.preventDefault();var cols=JSON.parse(mv.dataset.colores);var c=cols[+b.dataset.i];
-  pintar(mv,c.color);var p=mv.closest('.pag');if(c.fondo)p.style.background=c.fondo;[].forEach.call(caja.children,function(x){x.classList.toggle('on',x===b);});});});});
-function pintar(mv,hex){if(!mv.model)return;var mats=mv.model.materials,m=mv.dataset.material;var mt=null;for(var i=0;i<mats.length;i++)if(mats[i].name===m)mt=mats[i];mt=mt||mats[+m||0];if(!mt)return;
- var n=parseInt(hex.slice(1).length===3?hex.slice(1).replace(/./g,'$&$&'):hex.slice(1,7),16);mt.pbrMetallicRoughness.setBaseColorFactor([(n>>16&255)/255,(n>>8&255)/255,(n&255)/255,1]);}
-[].forEach.call(document.querySelectorAll('.camb'),function(c){var imgs=[].slice.call(c.querySelectorAll('img')),pts=[].slice.call(c.querySelectorAll('.pts i')),f=JSON.parse(c.dataset.fondos||'[]'),i=0;
- function a(n){var v=imgs[i];v.classList.remove('on');v.classList.add('sale');setTimeout(function(){v.classList.remove('sale');},800);i=(n+imgs.length)%imgs.length;imgs[i].classList.add('on');
-  pts.forEach(function(p,j){p.classList.toggle('on',j===i);});if(f[i])c.closest('.pag').style.background=f[i];}
- c.querySelector('.ant').addEventListener('click',function(e){e.preventDefault();a(i-1);});c.querySelector('.sig').addEventListener('click',function(e){e.preventDefault();a(i+1);});
- pts.forEach(function(p,j){p.addEventListener('click',function(){a(j);});});
- var x0=null;c.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;},{passive:true});c.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.changedTouches[0].clientX-x0;if(Math.abs(dx)>40)a(i+(dx<0?1:-1));x0=null;});});
-if(MODO!=='pantallas'&&pags[0])document.body.style.background=getComputedStyle(pags[pags.length-1]).backgroundColor;
-addEventListener('resize',ajustar);addEventListener('scroll',scroll,{passive:true});ajustar();
-})();
-<\/script>
-</body></html>`;
-  return { html, ctx };
-}
-const modoHTML = () => $('eModoHTML').value === 'auto' ? (W <= 900 ? 'pantallas' : 'scroll') : $('eModoHTML').value;
-async function htmlParaExportar(){
-  canvas.discardActiveObject(); canvas.requestRenderAll();
-  const lista = paginasAExportar();
-  const r = await crearHTML(lista, modoHTML());
-  if (r.ctx.vacios) toast(r.ctx.vacios + (r.ctx.vacios === 1 ? ' marco de foto vacío no se incluyó' : ' marcos de foto vacíos no se incluyeron') + ' en la página. Sube tus fotos para que aparezcan.');
-  return r.html;
-}
-FORMATO('html').descargar = async function(){
-  cargando(true);
-  try { const h = await htmlParaExportar(); bajarBlob(new Blob([h], { type:'text/html' }), nombreArchivo() + '.html');
-    toast('Página web descargada. Ábrela con doble clic, o súbela gratis a GitHub Pages o Netlify para tener tu sitio en internet.'); }
-  catch (e) { console.error(e); toast('Error al crear la página: ' + e.message); }
-  finally { cargando(false); }
-};
-FORMATO('html').vista = async function(){
-  cargando(true);
-  try {
-    const h = await htmlParaExportar(), url = URL.createObjectURL(new Blob([h], { type:'text/html' }));
-    $('vista').innerHTML = `<p class="hint">Así se verá tu página. Haz scroll dentro del recuadro, pasa el mouse por los elementos y toca los botones. <a href="${url}" target="_blank">Abrir en otra pestaña ↗</a></p>` +
-      `<iframe id="vistaHTML" src="${url}" style="width:100%;height:70vh;border:1px solid var(--borde,#ddd);border-radius:8px;background:#fff"></iframe>`;
-  } finally { cargando(false); }
-};
-FORMATO('html').drive = async function(){
-  cargando(true);
-  try {
-    const h = await htmlParaExportar();
-    const r = await gs('guardarImagen', nombreArchivo(), 'data:text/html;base64,' + btoa(unescape(encodeURIComponent(h))));
-    $('eInfo').innerHTML = `Guardado: <a href="${r.url}" target="_blank">${esc(r.nombre)}</a>`; toast('Página web guardada');
-  } catch (e) { toast('No se pudo guardar: ' + e.message); }
-  finally { cargando(false); }
-};
-(function(){
-  const sel = $('eFormato'), op = document.createElement('option'); op.value = 'html'; op.textContent = '🌐 Página web (HTML con efectos y 3D)';
-  sel.appendChild(op);
-  const fila = document.createElement('div'); fila.className = 'fila'; fila.id = 'filaModoHTML'; fila.hidden = true;
-  fila.innerHTML = '<label>Páginas</label><select id="eModoHTML"><option value="auto">Automático</option><option value="scroll">Una debajo de otra (sitio web)</option><option value="pantallas">Una pantalla a la vez (prototipo de app)</option></select>';
-  sel.closest('.fila').after(fila);
-  const ver = () => { fila.hidden = sel.value !== 'html'; };
-  sel.addEventListener('change', ver); ver();
-})();
-
-/* ---------- plantillas con 3D y cambiador ---------- */
-function dibujoProducto(tipo, color, color2){
-  const c = document.createElement('canvas'); c.width = 400; c.height = 640; const x = c.getContext('2d');
-  const g = x.createLinearGradient(60, 0, 340, 0); g.addColorStop(0, color2); g.addColorStop(0.45, color); g.addColorStop(1, color2);
-  x.fillStyle = g;
-  if (tipo === 'botella'){
-    x.beginPath(); x.moveTo(165, 20); x.lineTo(235, 20); x.lineTo(235, 110); x.bezierCurveTo(235, 170, 320, 180, 320, 260); x.lineTo(320, 580);
-    x.quadraticCurveTo(320, 620, 280, 620); x.lineTo(120, 620); x.quadraticCurveTo(80, 620, 80, 580); x.lineTo(80, 260); x.bezierCurveTo(80, 180, 165, 170, 165, 110); x.closePath(); x.fill();
-    x.fillStyle = '#ffffff'; x.globalAlpha = .9; x.fillRect(80, 330, 240, 150); x.globalAlpha = 1;
-    x.fillStyle = color2; x.font = '800 44px Poppins, sans-serif'; x.textAlign = 'center'; x.fillText('FRESH', 200, 420);
-    x.fillStyle = '#222'; x.fillRect(160, 0, 80, 34);
-  } else {
-    x.beginPath(); x.roundRect(80, 60, 240, 540, 36); x.fill();
-    x.fillStyle = '#d9dde3'; x.beginPath(); x.ellipse(200, 66, 112, 18, 0, 0, Math.PI * 2); x.fill();
-    x.fillStyle = 'rgba(255,255,255,.92)'; x.font = '900 64px Poppins, sans-serif'; x.textAlign = 'center'; x.save(); x.translate(200, 340); x.rotate(-Math.PI / 2); x.fillText('SODA', 0, 22); x.restore();
-  }
-  x.fillStyle = 'rgba(255,255,255,.25)'; x.fillRect(120, 70, 26, 520);
-  return c.toDataURL('image/png');
-}
-const PLANTILLAS_3D = [
-  { nombre:'Web 3D: audífonos que se desarman con el scroll', tam:[1440, 3200], crear(){
-    FONDO('#0b0b10');
-    PON(COMP.navbar(120, 16, 1, { w:1200, marca:'SONIQ', links:['Producto', 'Sonido', 'Batería'], boton:'Comprar', oscuro:true, acento:'#ef4444' }));
-    const m = crearObjeto3D(EJEMPLOS_3D.audifonos, 470, 560, 780, 780); m.scrollFx = 'fijo'; canvas.add(m);
-    const bloques = [['Sonido que se siente', 'Bocinas de 40 mm con imanes de neodimio. Graves profundos y agudos limpios.', 260],
-      ['Mira lo que hay adentro', 'Al bajar, el audífono se desarma pieza por pieza: copa, cojín, bocina y circuito.', 980],
-      ['40 horas de batería', 'Carga rápida: 10 minutos te dan 5 horas de música.', 1700],
-      ['Cómodos todo el día', 'Cojines de espuma con memoria y diadema ajustable.', 2420]];
-    bloques.forEach(([t, d, y], i) => { const a = [uiT(t, 900, y, { w:440, s:46, b:'800', c:'#ffffff', f:'Poppins', lh:1.1 }), uiT(d, 900, y + 130, { w:420, s:19, c:'#9ca3af', lh:1.55 })];
-      a.forEach((o, k) => { o.anim = { tipo:'arriba', inicio:'despues', duracion:800, retraso:k * 150, orden:i * 2 + k + 1 }; }); PON(a); });
-    PON([uiT('Tip: el modelo de ejemplo se cambia por el tuyo. Selecciónalo y pulsa «🔁 Cambiar modelo».', 900, 3080, { w:440, s:13, c:'#4b5563' })]);
-    const b = COMP.boton(900, 2680, 1, { t:'Comprar · $1,499', w:240, h:58, fill:'#ef4444' }); b.forEach(o => o.hover = 'crecer'); PON(b);
+const PLANTILLAS_WEB = [
+  { nombre:'Página web: negocio (landing)', tam:[1440, 2300], crear(){
+    FONDO('#ffffff');
+    PON(COMP.navbar(120, 16, 1, { w:1200, marca:'TuMarca', boton:'Contáctanos' }));
+    PON([uiT('NUEVO · SERVICIO PROFESIONAL', 120, 190, { w:600, s:14, b:'700', c:UI.acento, cs:150 }),
+      uiT('Haz crecer tu negocio con un sitio que vende', 120, 228, { w:600, s:56, b:'800', lh:1.1, f:'Poppins' }),
+      uiT('Explica en dos líneas qué haces, para quién y por qué eres la mejor opción. Mantén el mensaje claro y directo.', 120, 430, { w:540, s:19, c:UI.suave, lh:1.55 })]);
+    PON(COMP.boton(120, 540, 1, { t:'Empezar ahora', w:190, h:56 })); PON(COMP.boton(330, 540, 1, { t:'Ver precios', w:170, h:56, secundario:true }));
+    PON([uiT('★★★★★  +500 clientes felices', 120, 630, { w:400, s:15, c:UI.suave })]);
+    FOTO(760, 170, 560, 520, 'rect');
+    PON([uiT('¿Por qué elegirnos?', 120, 820, { w:1200, s:40, b:'800', al:'center', f:'Poppins' }), uiT('Tres razones que hacen la diferencia', 120, 880, { w:1200, s:18, c:UI.suave, al:'center' })]);
+    [['⚡', 'Rápido', 'Entregamos en tiempo récord sin sacrificar calidad.'], ['🛡️', 'Confiable', 'Garantía y soporte en cada proyecto.'], ['💬', 'Cercano', 'Te acompañamos en cada paso por WhatsApp.']].forEach(([ic, t, d], i) => {
+      const x = 120 + i * 410; PON([uiR(x, 960, 380, 260, UI.gris, { r:20, nombre:'Tarjeta' }), uiT(ic, x + 32, 990, { w:60, s:36 }), uiT(t, x + 32, 1060, { w:316, s:24, b:'700' }), uiT(d, x + 32, 1102, { w:316, s:16, c:UI.suave, lh:1.5 })]); });
+    PON([uiR(120, 1320, 1200, 380, '#0f172a', { r:28, nombre:'Sección de precios' }), uiT('Planes a tu medida', 160, 1370, { w:1120, s:38, b:'800', c:'#ffffff', al:'center', f:'Poppins' })]);
+    [['Básico', '$499'], ['Profesional', '$999'], ['Empresa', '$1,999']].forEach(([n, p], i) => {
+      const x = 180 + i * 370, dest = i === 1;
+      PON([uiR(x, 1450, 340, 210, dest ? UI.acento : 'rgba(255,255,255,.06)', { r:18, borde: dest ? null : 'rgba(255,255,255,.15)', nombre:'Plan' }),
+        uiT(n, x + 28, 1475, { w:284, s:18, b:'600', c: dest ? '#dbeafe' : '#94a3b8' }), uiT(p + ' /mes', x + 28, 1510, { w:284, s:36, b:'800', c:'#ffffff' }),
+        uiT('✓ Beneficio uno\n✓ Beneficio dos', x + 28, 1575, { w:284, s:15, c: dest ? '#e0e7ff' : '#cbd5e1', lh:1.5 })]); });
+    PON([uiT('¿Listo para empezar?', 120, 1800, { w:1200, s:44, b:'800', al:'center', f:'Poppins' })]);
+    PON(COMP.boton(620, 1880, 1, { t:'Escríbenos por WhatsApp', w:260, h:58, fill:'#16a34a' }));
+    PON([uiR(0, 2100, 1440, 200, '#0f172a', { nombre:'Pie de página' }), uiT('© TuMarca · Aviso de privacidad · Términos', 120, 2180, { w:1200, s:15, c:'#94a3b8', al:'center' })]);
   }},
-  { nombre:'Web 3D: bebida que cambia de sabor', tam:[1440, 1000], crear(){
-    FONDO('#ffe1e1');
-    PON(COMP.navbar(120, 16, 1, { w:1200, marca:'Burbuja', links:['Sabores', 'Nosotros', 'Tiendas'], boton:'Pedir', acento:'#d61f1f' }));
-    const t = [uiT('REFRESCO ARTESANAL', 120, 230, { w:560, s:15, b:'700', c:'#d61f1f', cs:250 }), uiT('Elige tu sabor favorito', 120, 270, { w:560, s:72, b:'900', f:'Poppins', lh:1.02 }),
-      uiT('Toca los colores debajo de la lata: cambia el sabor, el color y el fondo de la página. Gira la lata con el dedo.', 120, 470, { w:500, s:19, c:'#4b5563', lh:1.55 })];
-    t.forEach((o, i) => o.anim = { tipo:'izquierda', inicio:'despues', duracion:800, retraso:0, orden:i + 1 }); PON(t);
-    const b = COMP.boton(120, 590, 1, { t:'Comprar 6-pack', w:220, h:58, fill:'#111827' }); b.forEach(o => o.hover = 'elevar'); PON(b);
-    const m = crearObjeto3D(EJEMPLOS_3D.lata, 1010, 560, 560, 700); m.hover = null; canvas.add(m);
+  { nombre:'Página web: portafolio', tam:[1440, 1820], crear(){
+    FONDO('#0b0f19');
+    PON(COMP.navbar(120, 16, 1, { w:1200, marca:'Tu Nombre', links:['Proyectos', 'Sobre mí', 'Contacto'], boton:'Descargar CV', oscuro:true, acento:'#22d3ee' }));
+    FOTO(120, 170, 300, 300, 'circulo');
+    PON([uiT('Hola, soy', 480, 200, { w:700, s:22, c:'#22d3ee', b:'600' }), uiT('Tu Nombre Apellido', 480, 236, { w:800, s:64, b:'800', c:'#ffffff', f:'Poppins' }),
+      uiT('Diseñador(a) · Desarrollador(a) · Estudiante de …\nCuenta en una línea qué haces y qué te apasiona.', 480, 330, { w:760, s:20, c:'#94a3b8', lh:1.6 })]);
+    PON(COMP.boton(480, 420, 1, { t:'Ver proyectos', w:170, h:52, fill:'#22d3ee', color:'#0b0f19' }));
+    PON([uiT('Proyectos destacados', 120, 600, { w:1200, s:36, b:'800', c:'#ffffff', f:'Poppins' })]);
+    for (let i = 0; i < 6; i++){ const x = 120 + (i % 3) * 410, y = 680 + Math.floor(i / 3) * 470;
+      FOTO(x, y, 380, 280, 'rect'); PON([uiT('Proyecto ' + (i + 1), x, y + 300, { w:380, s:22, b:'700', c:'#ffffff' }), uiT('Web · Diseño · 2026', x, y + 336, { w:380, s:15, c:'#64748b' })]); }
+    PON([uiT('¿Trabajamos juntos? → tucorreo@gmail.com', 120, 1680, { w:1200, s:24, b:'600', c:'#22d3ee', al:'center' })]);
   }},
-  { nombre:'Web: cambiador de productos (fotos)', tam:[1440, 1000], crear(){
-    FONDO('#e8f7ff');
-    PON(COMP.navbar(120, 16, 1, { w:1200, marca:'Fresh', links:['Bebidas', 'Promos', 'Contacto'], boton:'Ordenar', acento:'#0ea5e9' }));
-    const t = [uiT('Nuevos sabores', 120, 260, { w:560, s:76, b:'900', f:'Poppins', lh:1.02 }),
-      uiT('Usa las flechas para ver cada bebida: el fondo cambia de color. Cambia las fotos por las tuyas: desagrupa, pon tus fotos, selecciónalas y pulsa «Cambiador de productos».', 120, 440, { w:500, s:19, c:'#4b5563', lh:1.55 })];
-    t.forEach((o, i) => o.anim = { tipo:'arriba', inicio:'despues', duracion:800, retraso:0, orden:i + 1 }); PON(t);
-    const vs = [['#0ea5e9', '#0369a1', '#e0f2fe', 'Mora azul'], ['#22c55e', '#15803d', '#dcfce7', 'Limón'], ['#f97316', '#c2410c', '#ffedd5', 'Mandarina'], ['#e11d48', '#9f1239', '#ffe4e6', 'Frutos rojos']]
-      .map(([c, c2, f, n], i) => ({ src:dibujoProducto(i % 2 ? 'lata' : 'botella', c, c2), fondo:f, nombre:n }));
-    FONDO(vs[0].fondo);
-    const lienzo = canvas, esVista = generandoVista;   // se guarda a qué lienzo va: si es la vista previa del catálogo, no debe caer en tu diseño
-    grupoCambiador(vs, 520, 760).then(g => {
-      if (!lienzo.contextContainer) return;
-      g.setPositionByOrigin(new fabric.Point(1000, 560), 'center', 'center'); lienzo.add(g); lienzo.requestRenderAll();
-      if (!esVista && lienzo === canvas && !restaurando) guardarEstado(); });
+  { nombre:'Página web: producto (tienda)', tam:[1440, 1100], crear(){
+    FONDO('#fff7ed');
+    PON(COMP.navbar(120, 16, 1, { w:1200, marca:'TuTienda', links:['Hombre', 'Mujer', 'Novedades'], boton:'🛒 Carrito', acento:'#ea580c' }));
+    PON([uiC(450, 560, 330, '#fed7aa', { nombre:'Fondo del producto' })]);
+    FOTO(190, 260, 520, 520, 'rect');
+    PON([uiT('NUEVA COLECCIÓN', 820, 230, { w:500, s:14, b:'700', c:'#ea580c', cs:200 }), uiT('Tenis Urban Pro', 820, 262, { w:520, s:58, b:'800', f:'Poppins' }),
+      ...COMP.estrellas(820, 345, 1, { n:5 }), uiT('(128 opiniones)', 980, 349, { w:200, s:15, c:UI.suave }),
+      uiT('$1,899 MXN', 820, 400, { w:400, s:40, b:'800', c:'#ea580c' }),
+      uiT('Ligeros, cómodos y hechos para el día a día. Describe aquí materiales, tallas y beneficios.', 820, 470, { w:500, s:17, c:UI.suave, lh:1.55 }),
+      uiT('Color', 820, 560, { w:200, s:14, b:'700', c:UI.suave })]);
+    ['#111827', '#ea580c', '#2563eb', '#16a34a'].forEach((c, i) => PON([uiC(840 + i * 52, 610, 18, c, { borde: i === 1 ? '#111827' : null, gb:3 })]));
+    PON([uiT('Talla', 820, 655, { w:200, s:14, b:'700', c:UI.suave })]);
+    ['24', '25', '26', '27', '28'].forEach((t, i) => PON([uiR(820 + i * 64, 685, 54, 44, i === 2 ? '#111827' : '#ffffff', { r:10, borde:'#d1d5db', nombre:'Talla' }), uiT(t, 820 + i * 64, 696, { w:54, s:16, b:'600', c: i === 2 ? '#ffffff' : UI.texto, al:'center' })]));
+    PON(COMP.boton(820, 770, 1, { t:'Agregar al carrito', w:300, h:58, fill:'#ea580c' }));
+    PON([uiT('🚚 Envío gratis en compras mayores a $999 · 🔄 30 días para cambios', 820, 850, { w:520, s:14, c:UI.suave })]);
+  }},
+  { nombre:'App: iniciar sesión', tam:[390, 844], crear(){
+    FONDO('#ffffff'); PON(COMP.barraEstado(0, 0, 1));
+    PON([uiC(195, 170, 44, UI.acento, { nombre:'Logo' }), uiT('A', 151, 146, { w:88, s:40, b:'800', c:'#ffffff', al:'center' }),
+      uiT('Bienvenido(a)', 24, 240, { w:342, s:30, b:'800', al:'center', f:'Poppins' }), uiT('Inicia sesión para continuar', 24, 284, { w:342, s:15, c:UI.suave, al:'center' })]);
+    PON(COMP.campo(24, 340, 1, { w:342, etiqueta:'Correo electrónico' })); PON(COMP.campo(24, 430, 1, { w:342, etiqueta:'Contraseña', ph:'••••••••' }));
+    PON(COMP.casilla(24, 528, 1, { t:'Recordarme' })); PON([uiT('¿Olvidaste tu contraseña?', 186, 529, { w:180, s:14, b:'600', c:UI.acento, al:'right' })]);
+    PON(COMP.boton(24, 580, 1, { t:'Iniciar sesión', w:342, h:54 }));
+    PON([uiT('o continúa con', 24, 660, { w:342, s:13, c:UI.suave, al:'center' })]);
+    PON(COMP.boton(24, 690, 1, { t:'G  Continuar con Google', w:342, h:50, secundario:true, fill:UI.texto }));
+    PON([uiT('¿No tienes cuenta? Regístrate', 24, 776, { w:342, s:14, b:'600', c:UI.acento, al:'center' })]);
+  }},
+  { nombre:'App: inicio / catálogo', tam:[390, 844], crear(){
+    FONDO('#f8fafc'); PON(COMP.barraEstado(0, 0, 1));
+    PON([uiT('Hola, Lorem 👋', 24, 56, { w:300, s:14, c:UI.suave }), uiT('¿Qué buscas hoy?', 24, 76, { w:300, s:26, b:'800', f:'Poppins' })]); PON(COMP.avatar(310, 60, 1, { ini:'L' }));
+    PON(COMP.buscador(24, 130, 1, { w:342, fondo:'#ffffff' }));
+    PON([uiR(24, 194, 342, 140, UI.acento, { r:20, nombre:'Promoción' }), uiT('-30% en tu\nprimera compra', 44, 218, { w:200, s:22, b:'800', c:'#ffffff', lh:1.15 })]); PON(COMP.boton(44, 280, 1, { t:'Ver ofertas', w:120, h:36, fill:'#ffffff', color:UI.acento }));
+    ['Todo', 'Ropa', 'Tenis', 'Bolsas'].forEach((t, i) => PON([uiR(24 + i * 86, 356, 78, 36, i === 0 ? UI.texto : '#ffffff', { r:18, borde: i ? '#e5e7eb' : null, nombre:'Categoría' }), uiT(t, 24 + i * 86, 365, { w:78, s:14, b:'600', c: i === 0 ? '#ffffff' : UI.texto, al:'center' })]));
+    for (let i = 0; i < 4; i++){ const x = 24 + (i % 2) * 177, y = 412 + Math.floor(i / 2) * 200;
+      PON([uiR(x, y, 165, 188, '#ffffff', { r:16, borde:'#eef0f3', nombre:'Producto' })]); FOTO(x + 8, y + 8, 149, 110, 'rect');
+      PON([uiT('Producto ' + (i + 1), x + 12, y + 126, { w:140, s:14, b:'600' }), uiT('$' + (299 + i * 100), x + 12, y + 150, { w:100, s:16, b:'800', c:UI.acento })]); }
+    PON(COMP.tabbar(0, 760, 1));
+  }},
+  { nombre:'App: perfil', tam:[390, 844], crear(){
+    FONDO('#ffffff'); PON(COMP.barraEstado(0, 0, 1));
+    PON([uiR(0, 0, 390, 220, UI.acento, { nombre:'Portada' })]); PON(COMP.barraEstado(0, 0, 1, { oscuro:true }));
+    FOTO(135, 150, 120, 120, 'circulo');
+    PON([uiT('Lorem Ipsum', 24, 284, { w:342, s:24, b:'800', al:'center', f:'Poppins' }), uiT('Lorem ipsum dolor sit amet', 24, 318, { w:342, s:14, c:UI.suave, al:'center' })]);
+    [['24', 'Diseños'], ['8', 'Carpetas'], ['3', 'Compartidos']].forEach(([n, t], i) => PON([uiT(n, 24 + i * 114, 360, { w:114, s:22, b:'800', al:'center' }), uiT(t, 24 + i * 114, 390, { w:114, s:13, c:UI.suave, al:'center' })]));
+    ['👤  Datos personales', '🔔  Notificaciones', '🔒  Privacidad', '❓  Ayuda', '🚪  Cerrar sesión'].forEach((t, i) => {
+      const y = 450 + i * 60; PON([uiR(24, y, 342, 52, UI.gris, { r:14, nombre:'Opción' }), uiT(t, 40, y + 15, { w:280, s:15, b:'500', c: i === 4 ? UI.rojo : UI.texto }), uiT('›', 330, y + 11, { w:20, s:22, c:'#9ca3af' })]); });
+    PON(COMP.tabbar(0, 760, 1, { activo:3 }));
+  }},
+  { nombre:'App: carrito de compras', tam:[390, 844], crear(){
+    FONDO('#f8fafc'); PON(COMP.barraEstado(0, 0, 1));
+    PON([uiT('‹', 20, 52, { w:30, s:30 }), uiT('Mi carrito', 24, 56, { w:342, s:20, b:'800', al:'center' })]);
+    [['Tenis Urban Pro', '$1,899'], ['Gorra clásica', '$349'], ['Calcetas (3 pares)', '$199']].forEach(([n, p], i) => {
+      const y = 110 + i * 116; PON([uiR(24, y, 342, 104, '#ffffff', { r:16, borde:'#eef0f3', nombre:'Artículo' })]); FOTO(36, y + 12, 80, 80, 'rect');
+      PON([uiT(n, 130, y + 18, { w:200, s:15, b:'600' }), uiT(p, 130, y + 44, { w:120, s:17, b:'800', c:UI.acento }),
+        uiR(250, y + 62, 100, 30, UI.gris, { r:15, nombre:'Cantidad' }), uiT('−   1   +', 250, y + 67, { w:100, s:14, b:'700', al:'center' })]); });
+    PON([uiR(24, 470, 342, 170, '#ffffff', { r:16, borde:'#eef0f3', nombre:'Resumen' }),
+      uiT('Subtotal', 44, 492, { w:150, s:15, c:UI.suave }), uiT('$2,447', 216, 492, { w:130, s:15, al:'right' }),
+      uiT('Envío', 44, 524, { w:150, s:15, c:UI.suave }), uiT('Gratis', 216, 524, { w:130, s:15, al:'right', c:UI.verde, b:'600' }),
+      uiR(44, 560, 302, 1, '#eef0f3', { nombre:'Línea' }), uiT('Total', 44, 578, { w:150, s:18, b:'800' }), uiT('$2,447', 196, 578, { w:150, s:22, b:'800', al:'right' })]);
+    PON(COMP.boton(24, 670, 1, { t:'Pagar ahora', w:342, h:56 }));
+  }},
+  { nombre:'Dashboard de ventas', tam:[1440, 900], crear(){
+    FONDO('#f1f5f9'); PON(COMP.menuLateral(0, 0, 1, { h:900, marca:'Ventas+' }));
+    PON([uiT('Resumen del mes', 280, 36, { w:600, s:28, b:'800', f:'Poppins' }), uiT('Octubre 2026', 280, 76, { w:300, s:15, c:UI.suave })]);
+    PON(COMP.buscador(1040, 36, 1, { w:260, fondo:'#ffffff' })); PON(COMP.avatar(1320, 30, 1, { ini:'LI' }));
+    [['Ventas del mes', '$48,250', '+12%'], ['Pedidos', '326', '+8%'], ['Clientes nuevos', '57', '+21%'], ['Devoluciones', '9', '-3%']].forEach(([t, v, c], i) => PON(COMP.kpi(280 + i * 285, 120, 1, { titulo:t, valor:v, cambio:c, w:265 })));
+    PON([uiR(280, 270, 700, 380, '#ffffff', { r:16, borde:'#eef0f3', nombre:'Panel de gráfica' }), uiT('Ventas por mes', 304, 290, { w:400, s:17, b:'700' })]);
+    GRAF(300, 320, 660, 310, 'barras', [{ e:'May', v:31 }, { e:'Jun', v:36 }, { e:'Jul', v:29 }, { e:'Ago', v:42 }, { e:'Sep', v:39 }, { e:'Oct', v:48 }]);
+    PON([uiR(1000, 270, 400, 380, '#ffffff', { r:16, borde:'#eef0f3', nombre:'Panel de gráfica' }), uiT('Ventas por canal', 1024, 290, { w:300, s:17, b:'700' })]);
+    GRAF(1015, 320, 370, 310, 'dona', [{ e:'Tienda', v:45 }, { e:'Web', v:35 }, { e:'WhatsApp', v:20 }]);
+    PON(COMP.tablaUI(280, 680, 1, { anchos:[330, 250, 260, 280], cols:['Cliente', 'Estado', 'Fecha', 'Total'],
+      filas:[['Ana López', estUI('Pagado', 'ok'), '18/10/2026', '$1,250'], ['Luis Pérez', estUI('Pendiente', 'pend'), '18/10/2026', '$890'], ['María Ruiz', estUI('Pagado', 'ok'), '17/10/2026', '$2,140']] }));
+  }},
+  { nombre:'Sistema: expedientes jurídicos', tam:[1440, 900], crear(){
+    FONDO('#f8fafc'); PON(COMP.menuLateral(0, 0, 1, { h:900, marca:'Despacho', acento:'#b8862b', fondo:'#0f2747', items:['⚖️  Expedientes', '👥  Clientes', '📅  Audiencias', '📄  Documentos', '💰  Honorarios'] }));
+    PON([uiT('Expedientes', 280, 36, { w:500, s:30, b:'800', f:'Playfair Display', c:'#0f2747' }), uiT('128 asuntos · 34 activos', 280, 80, { w:400, s:15, c:UI.suave })]);
+    PON(COMP.buscador(840, 40, 1, { w:330, fondo:'#ffffff', ph:'Buscar expediente o cliente…' })); PON(COMP.boton(1190, 36, 1, { t:'+ Nuevo expediente', w:200, h:48, fill:'#0f2747' }));
+    ['Todos', 'Civil', 'Penal', 'Familiar', 'Laboral', 'Amparo'].forEach((t, i) => PON([uiR(280 + i * 110, 130, 100, 36, i === 0 ? '#0f2747' : '#ffffff', { r:18, borde: i ? '#e2e8f0' : null, nombre:'Filtro' }), uiT(t, 280 + i * 110, 139, { w:100, s:14, b:'600', c: i === 0 ? '#ffffff' : '#334155', al:'center' })]));
+    PON(COMP.tablaUI(280, 200, 1, { anchos:[170, 250, 160, 260, 160, 120], cols:['Expediente', 'Cliente', 'Materia', 'Juzgado', 'Estado', 'Próx. fecha'],
+      filas:[['1234/2026', 'Juan Hernández', 'Civil', '5º Civil CDMX', estUI('En trámite', 'info'), '22/10'], ['0987/2026', 'María González', 'Familiar', '3º Familiar', estUI('Audiencia', 'pend'), '24/10'],
+        ['0456/2025', 'Constructora S.A.', 'Laboral', 'Tribunal Laboral', estUI('Sentencia', 'ok'), '—'], ['0321/2026', 'Pedro Ramírez', 'Penal', 'Juez de Control', estUI('Urgente', 'mal'), '20/10'],
+        ['0789/2026', 'Ana Torres', 'Amparo', '2º de Distrito', estUI('En trámite', 'info'), '30/10'], ['0654/2026', 'Luis Mendoza', 'Civil', '12º Civil', estUI('Archivado', 'ok'), '—']] }));
+    PON([uiT('Datos de ejemplo: cámbialos por los de tu despacho.', 280, 600, { w:600, s:13, c:'#94a3b8' })]);
+  }},
+  { nombre:'Sistema: agenda de citas', tam:[1440, 900], crear(){
+    FONDO('#ffffff'); PON(COMP.menuLateral(0, 0, 1, { h:900, marca:'Agenda', activo:3 }));
+    PON([uiT('Octubre 2026', 280, 36, { w:500, s:30, b:'800', f:'Poppins' }), uiT('Semana del 19 al 23', 280, 80, { w:400, s:15, c:UI.suave })]);
+    PON(COMP.boton(1210, 36, 1, { t:'+ Nueva cita', w:180, h:48 }));
+    const dias = ['Lun 19', 'Mar 20', 'Mié 21', 'Jue 22', 'Vie 23'], x0 = 360, cw = 206, y0 = 140, rh = 70;
+    dias.forEach((d, i) => PON([uiT(d, x0 + i * cw, y0, { w:cw, s:15, b:'700', al:'center', c: i === 2 ? UI.acento : UI.texto })]));
+    for (let h = 0; h < 10; h++){ PON([uiT((9 + h) + ':00', 280, y0 + 44 + h * rh, { w:60, s:13, c:'#94a3b8' }), uiR(x0, y0 + 40 + h * rh, cw * 5, 1, '#eef0f3', { nombre:'Línea' })]); }
+    [[0, 1, 1, 'Consulta · Juan H.', '#dbeafe', '#1e40af'], [1, 3, 2, 'Audiencia · Exp. 0987', '#fee2e2', '#991b1b'], [2, 0, 1, 'Firma de contrato', '#dcfce7', '#166534'],
+     [3, 5, 1, 'Llamada con cliente', '#fef3c7', '#92400e'], [4, 2, 2, 'Revisión de pruebas', '#ede9fe', '#5b21b6'], [2, 6, 1, 'Clase · Derecho Penal', '#dbeafe', '#1e40af']].forEach(([d, h, dur, t, f, c]) =>
+      PON([uiR(x0 + d * cw + 6, y0 + 44 + h * rh, cw - 12, dur * rh - 8, f, { r:10, nombre:'Cita' }), uiT(t, x0 + d * cw + 16, y0 + 54 + h * rh, { w:cw - 32, s:13.5, b:'600', c, lh:1.3 })]));
+  }},
+  { nombre:'Sistema: calificaciones escolares', tam:[1440, 900], crear(){
+    FONDO('#f8fafc'); PON(COMP.menuLateral(0, 0, 1, { h:900, marca:'Mi escuela', items:['📊  Calificaciones', '👩‍🎓  Alumnos', '📚  Materias', '🗓️  Asistencia', '⚙️  Ajustes'] }));
+    PON([uiT('Calificaciones · Grupo 6A', 280, 36, { w:700, s:28, b:'800', f:'Poppins' }), uiT('Periodo 2026-2 · 24 alumnos', 280, 76, { w:400, s:15, c:UI.suave })]);
+    PON(COMP.boton(1170, 36, 1, { t:'⬇ Exportar boleta', w:220, h:48, secundario:true }));
+    [['Promedio del grupo', '8.6', '+0.3'], ['Aprobados', '22 de 24', '+2'], ['En riesgo', '2', '-1']].forEach(([t, v, c], i) => PON(COMP.kpi(280 + i * 290, 120, 1, { titulo:t, valor:v, cambio:c, w:270, sufijo:'vs. periodo anterior' })));
+    const al = [['Ana López', 9.5, 9.0, 10, 9.5], ['Bruno Díaz', 8.0, 7.5, 8.5, 8.0], ['Carla Méndez', 6.0, 5.5, 7.0, 6.2], ['Diego Ruiz', 9.0, 8.5, 9.5, 9.0], ['Elena Soto', 7.5, 8.0, 7.0, 7.5]];
+    PON(COMP.tablaUI(280, 270, 1, { anchos:[260, 160, 160, 160, 160, 180], cols:['Alumno', 'Derecho Penal', 'Criminología', 'Amparo', 'Promedio', 'Estado'],
+      filas: al.map(([n, a, b, c, p]) => [n, a.toFixed(1), b.toFixed(1), c.toFixed(1), p.toFixed(1), p >= 8 ? estUI('Excelente', 'ok') : p >= 7 ? estUI('Aprobado', 'info') : estUI('En riesgo', 'mal')]) }));
   }}
 ];
-PLANTILLAS_3D.forEach(p => {
-  CATALOGO.push({ nombre:p.nombre, cat:CAT_WEB, tam:p.tam, crear:p.crear, usar:() => usarPlantillaLogo(p) });
-  const b = document.createElement('button'); b.className = 'bigbtn'; b.textContent = '✨ ' + p.nombre; b.onclick = () => usarPlantillaLogo(p);
-  $('listaPlantillasWeb').prepend(b);
-});
-function cambiarModelo(){
-  const o = activo(); if (!o || !o.modelo3d) return;
-  $('archivo3D').dataset.reemplazar = '1'; $('archivo3D').click();
-}
-const subirModelo3DBase = subirModelo3D;
-subirModelo3D = function(file){
-  const o = activo();
-  if ($('archivo3D').dataset.reemplazar && o && o.modelo3d && file){
-    delete $('archivo3D').dataset.reemplazar;
-    if (file.size > MAX_GLB) return toast('El modelo pesa demasiado (máximo 8 MB)');
-    const r = new FileReader(); r.onload = () => { Object.assign(o.modelo3d, { src:r.result, nombre:file.name, animacion:'', colores:[], material:0 }); actualizarPoster(o); }; r.readAsDataURL(file);
-    return;
-  }
-  delete $('archivo3D').dataset.reemplazar;
-  return subirModelo3DBase(file);
-};
-renderCatalogo();
-
-/* =========================================================
-   ACCESIBILIDAD Y USO CON EL DEDO
-   ========================================================= */
+PLANTILLAS_WEB.forEach(p => CATALOGO.push({ nombre:p.nombre, cat:CAT_WEB, tam:p.tam, crear:p.crear, usar:() => usarPlantillaLogo(p) }));
+CATEGORIAS.splice(CATEGORIAS.indexOf(CAT_NEG) + 1, 0, CAT_WEB);
 (function(){
-  // nombres para lectores de pantalla en botones que solo tienen un símbolo
-  const nombrar = raiz => (raiz || document).querySelectorAll('button:not([aria-label])').forEach(b => {
-    const t = (b.textContent || '').trim();
-    if (b.title) b.setAttribute('aria-label', b.title);
-    else if (t === '−' || t === '-') b.setAttribute('aria-label', 'Alejar');
-    else if (t === '+') b.setAttribute('aria-label', 'Acercar');
-  });
-  nombrar();
-  new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) nombrar(n.parentNode || n); }))).observe(document.body, { childList:true, subtree:true });
-  // los avisos se leen en voz alta
-  const t = $('toast'); if (t){ t.setAttribute('role', 'status'); t.setAttribute('aria-live', 'polite'); }
-  // pestañas: se anuncia cuál está abierta
-  const nav = $('pestanas'); if (nav){ nav.setAttribute('aria-label', 'Herramientas');
-    const marcar = () => nav.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.classList.contains('activa') ? 'true' : 'false'));
-    marcar(); new MutationObserver(marcar).observe(nav, { attributes:true, subtree:true, attributeFilter:['class'] }); }
-  // los botones del celular no tapan la barra de páginas
-  const ajustarFab = () => { const p = $('paginas'), a = $('accMovil'); if (!p || !a || innerWidth > 820) { if (a){ a.style.bottom = ''; a.style.visibility = ''; } return; }
-    const n = $('barraNotas'), ref = n && n.offsetParent ? n : p, r = ref.getBoundingClientRect();
-    a.style.bottom = Math.max(76, innerHeight - r.top + 10) + 'px';
-    a.style.visibility = $('lateral') && $('lateral').classList.contains('abierto') ? 'hidden' : ''; };
-  new MutationObserver(ajustarFab).observe($('lateral'), { attributes:true, attributeFilter:['class'] });
-  addEventListener('resize', ajustarFab); setInterval(ajustarFab, 1500); ajustarFab();
+  const c = document.createElement('button'); c.className = 'chip'; c.textContent = '🖥 Web y apps';
+  c.onclick = () => { catActiva = CAT_WEB; document.querySelectorAll('#chipsCat .chip').forEach(x => x.classList.toggle('on', x === c)); renderCatalogo(); };
+  const ref = [...document.querySelectorAll('#chipsCat .chip')].find(x => x.textContent.includes('Negocio'));
+  if (ref) ref.after(c); else $('chipsCat').appendChild(c);
+  renderCatalogo();
+  // también en la pestaña Web y UI
+  PLANTILLAS_WEB.forEach(p => { const b = document.createElement('button'); b.className = 'bigbtn'; b.textContent = p.nombre; b.onclick = () => usarPlantillaLogo(p); $('listaPlantillasWeb').appendChild(b); });
 })();
 
 </script>

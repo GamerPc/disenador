@@ -2,289 +2,823 @@
 /*@parte Codigo10*/ (window.__partes = window.__partes || {})['Codigo10'] = true;
 
 /* =========================================================
-   MÁS PLANTILLAS: DERECHO PENAL, CRIMINOLOGÍA, NEGOCIO Y REDES
+   LOGOS Y TARJETAS: rellenos, resplandor, formas, repetir
    ========================================================= */
-const CAT_NEG = 'Negocio y redes';
-const PLANTILLAS_V25 = [
-  // ---------- Derecho y Criminología ----------
-  { nombre:'Proceso penal acusatorio (etapas)', cat:CAT_DER, tam:[1920,1080], crear(){
-    FONDO(DER.crema);
-    T('PROCESO PENAL ACUSATORIO', 960, 86, { f:'Playfair Display', s:60, b:'700', c:DER.navy, w:1600 });
-    T('Etapas del procedimiento ordinario (Código Nacional de Procedimientos Penales, art. 211)', 960, 148, { f:'Inter', s:26, c:DER.gris, w:1600 });
-    const et = [
-      ['1. Investigación inicial', 'Desde la denuncia o querella hasta que el imputado queda a disposición del juez de control para la imputación.', '#1e3a8a'],
-      ['2. Investigación complementaria', 'Desde la formulación de la imputación hasta el cierre de la investigación.', '#1d4ed8'],
-      ['3. Etapa intermedia', 'Desde la acusación hasta el auto de apertura a juicio: se depuran y admiten las pruebas.', DER.oro],
-      ['4. Juicio oral', 'Desde el auto de apertura hasta la sentencia del tribunal de enjuiciamiento.', '#7c2d12']
-    ];
-    LINEA(150, 470, 1770, 470, DER.navy, 6);
-    et.forEach(([tit, txt, col], i) => {
-      const x = 270 + i * 460;
-      nodo('circulo', String(i + 1), x, 470, { w:96, h:96, fill:col, color:'#ffffff', tam:40, fuente:'Playfair Display', peso:'700' });
-      nodo('redondo', tit + '\n' + txt, x, 700, { w:410, h:280, anchoMax:370, fill:'#ffffff', stroke:col, grosor:3, color:DER.navy, tam:25, fuente:'Inter' });
-    });
-    nodo('pildora', 'Salidas alternas: acuerdo reparatorio · suspensión condicional del proceso · procedimiento abreviado', 960, 300, { w:1500, h:74, anchoMax:1440, fill:DER.oroClaro, stroke:DER.oro, grosor:2, color:DER.navy, tam:24, fuente:'Inter' });
-    T('Agrega tu fundamento: artículos del CNPP y criterios que revisaste en clase.', 960, 1000, { f:'Inter', s:24, it:true, c:DER.gris, w:1600 });
-  }},
-  { nombre:'Ficha de análisis de caso penal', cat:CAT_DER, tam:[1240,1754], crear(){
-    FONDO('#ffffff');
-    canvas.add(new fabric.Rect({ left:0, top:0, width:1240, height:210, fill:DER.navy, name:'Encabezado', id:nuevoId() }));
-    RECT(0, 210, 1240, 10, DER.oro);
-    ICONO('Balanza', 130, 105, 100, DER.oro);
-    T('ANÁLISIS DE CASO PENAL', 680, 82, { f:'Playfair Display', s:56, b:'700', c:'#ffffff', w:900 });
-    T('Asignatura · Nombre del alumno · Fecha', 680, 148, { f:'Inter', s:26, c:'#cbd5e1', w:900 });
-    const sec = (t, y, h, txt) => {
-      nodo('pildora', t, 230, y, { w:340, h:62, fill:DER.oro, color:'#ffffff', tam:28, fuente:'Inter', peso:'700' });
-      nodo('redondo', txt, 620, y + h / 2 + 46, { w:1100, h, anchoMax:1040, fill:'#ffffff', stroke:'#cbd5e1', grosor:2, color:DER.navy, tam:30, fuente:'Inter' });
-    };
-    sec('Hechos', 290, 190, 'Resume los hechos relevantes: quién, qué, cuándo, dónde y cómo.');
-    sec('Tipo penal', 600, 150, 'Delito que se configura y artículo del código penal aplicable.');
-    sec('Elementos del tipo', 870, 230, 'Conducta · resultado · nexo causal · sujeto activo · sujeto pasivo · bien jurídico tutelado · objeto material · medios o circunstancias.');
-    sec('Pruebas', 1220, 150, 'Datos o medios de prueba con los que se acredita cada elemento.');
-    sec('Teoría del caso', 1490, 150, 'Postura de la defensa o de la fiscalía y su conclusión.');
-  }},
-  { nombre:'Cuadro de tipos penales', cat:CAT_DER, tam:[1920,1080], crear(){
-    FONDO('#ffffff');
-    T('CUADRO DE TIPOS PENALES', 960, 86, { f:'Playfair Display', s:58, b:'700', c:DER.navy, w:1600 });
-    T('Compara delitos por sus elementos · verifica cada dato en el código penal aplicable', 960, 148, { f:'Inter', s:26, c:DER.gris, w:1600 });
-    crearTabla(960, 600, 5, 5, { sep:8, rx:10, borde:'#cbd5e1', grosor:2, enc:[DER.navy, DER.navy, DER.navy, DER.navy, DER.oro], encTexto:'#ffffff',
-      filasColores:[DER.claro], celda:'#ffffff', fuente:'Inter', fuenteEnc:'Inter', anchos:[300,340,380,340,360], alto:160, altoEnc:96, tam:22, tamEnc:28 },
-      [['Delito', 'Bien jurídico', 'Conducta típica', 'Sujetos', 'Fundamento'], ['Delito 1'], ['Delito 2'], ['Delito 3'], ['Delito 4']]);
-  }},
-  { nombre:'Ficha criminológica', cat:CAT_DER, tam:[1240,1754], crear(){
-    FONDO('#f7f7fb');
-    canvas.add(new fabric.Rect({ left:0, top:0, width:1240, height:210, fill:'#1f2937', name:'Encabezado', id:nuevoId() }));
-    RECT(0, 210, 1240, 10, '#b91c1c');
-    T('FICHA CRIMINOLÓGICA', 620, 82, { f:'Montserrat', s:58, b:'900', c:'#ffffff', w:1100, cs:60 });
-    T('Estudio de la conducta antisocial · caso o expediente', 620, 148, { f:'Inter', s:26, c:'#d1d5db', w:1100 });
-    const caja = (t, x, y, w, h, col) => nodo('redondo', t, x, y, { w, h, anchoMax:w - 60, fill:'#ffffff', stroke:col, grosor:3, color:'#111827', tam:30, fuente:'Inter' });
-    caja('Conducta antisocial\nDescribe la conducta y su contexto.', 620, 380, 1100, 200, '#b91c1c');
-    caja('Factores endógenos\n(biológicos y psicológicos)', 340, 680, 540, 260, '#1d4ed8');
-    caja('Factores exógenos\n(familiares, sociales, económicos, culturales)', 900, 680, 540, 260, '#1d4ed8');
-    caja('Víctima (victimología)\nPerfil, relación con el victimario y daño.', 340, 1010, 540, 260, '#7c3aed');
-    caja('Antecedentes\nConductas previas y entorno.', 900, 1010, 540, 260, '#7c3aed');
-    caja('Diagnóstico criminológico\nIntegra los factores: ¿por qué ocurrió?', 620, 1320, 1100, 200, '#0f766e');
-    caja('Propuesta de prevención o tratamiento', 620, 1560, 1100, 160, '#0f766e');
-  }},
-  { nombre:'Línea del tiempo de los hechos', cat:CAT_DER, tam:[1920,1080], crear(){
-    FONDO('#ffffff');
-    T('LÍNEA DEL TIEMPO DE LOS HECHOS', 960, 86, { f:'Playfair Display', s:58, b:'700', c:DER.navy, w:1600 });
-    T('Ordena los hechos del caso con fecha, hora y fuente (declaración, peritaje, documento)', 960, 148, { f:'Inter', s:26, c:DER.gris, w:1600 });
-    LINEA(120, 560, 1800, 560, DER.navy, 6);
-    for (let i = 0; i < 6; i++){
-      const x = 230 + i * 292, arriba = i % 2 === 0, col = arriba ? DER.navy : DER.oro;
-      const p = nodo('circulo', '', x, 560, { w:44, h:44, fill:col, color:'#ffffff', tam:20 });
-      const c = nodo('redondo', 'Fecha · hora\nQué pasó\nFuente', x, arriba ? 350 : 770, { w:270, h:200, anchoMax:240, fill:'#ffffff', stroke:col, grosor:3, color:DER.navy, tam:24, fuente:'Inter' });
-      unir(p, c, { flecha:false, color:col, ancho:3 });
+EXTRA.push('relleno');
+// ---------- Rellenos: sólido, degradado, rayas, puntos, cuadrícula o sin relleno ----------
+const TIPOS_PATRON = ['rayas', 'puntos', 'cuadros'];
+function crearPatron(r, factor){
+  const Q = 4;                                   // se dibuja 4 veces más grande para que se vea nítido al exportar
+  const g = Math.max(0.5, r.gros * factor), sp = Math.max(0.5, r.sep * factor);
+  const n = Math.max(2, Math.round((g + sp) * Q)), gq = Math.max(1, Math.round(g * Q));
+  const c = document.createElement('canvas'); c.width = n; c.height = n;
+  const ctx = c.getContext('2d');
+  if (!r.transp){ ctx.fillStyle = r.c2; ctx.fillRect(0, 0, n, n); }
+  ctx.fillStyle = r.c1;
+  if (r.tipo === 'rayas') ctx.fillRect(0, 0, gq, n);
+  else if (r.tipo === 'puntos'){ ctx.beginPath(); ctx.arc(n / 2, n / 2, gq / 2, 0, Math.PI * 2); ctx.fill(); }
+  else { ctx.fillRect(0, 0, gq, n); ctx.fillRect(0, 0, n, gq); }
+  const a = (r.ang || 0) * Math.PI / 180, cs = Math.cos(a) / Q, sn = Math.sin(a) / Q;
+  return new fabric.Pattern({ source:c, repeat:'repeat', patternTransform:[cs, sn, -sn, cs, 0, 0] });
+}
+function crearRelleno(o, r, k){
+  if (r.tipo === 'ninguno') return 'rgba(0,0,0,0)';
+  if (r.tipo === 'degradado' || r.tipo === 'radial'){
+    const stops = [{ offset:0, color:r.c1 }, { offset:1, color:r.c2 }];
+    if (r.tipo === 'radial') return new fabric.Gradient({ type:'radial', gradientUnits:'percentage',
+      coords:{ x1:0.5, y1:0.5, r1:0, x2:0.5, y2:0.5, r2:0.5 }, colorStops:stops });
+    const a = (r.ang || 0) * Math.PI / 180, cx = Math.cos(a) / 2, cy = Math.sin(a) / 2;
+    return new fabric.Gradient({ type:'linear', gradientUnits:'percentage',
+      coords:{ x1:0.5 - cx, y1:0.5 - cy, x2:0.5 + cx, y2:0.5 + cy }, colorStops:stops });
+  }
+  if (TIPOS_PATRON.includes(r.tipo)) return crearPatron(r, k / Math.max(0.01, Math.abs(o.scaleX || 1)));
+  return r.c1;
+}
+const admiteRelleno = x => x && x.type !== 'image' && !esLinea(x) && !x.trazoLibre && x.type !== 'conector' && x.type !== 'group' && x.type !== 'activeSelection';
+// Pone el relleno en un objeto. k = tamaño de las rayas (por defecto, según el tamaño del diseño)
+function aplicarRelleno(o, r, k){
+  if (!admiteRelleno(o)) return;
+  const datos = { tipo:r.tipo, c1:r.c1, c2:r.c2, ang:r.ang ?? 45, gros:r.gros ?? 14, sep:r.sep ?? 14, transp:r.transp !== false };
+  if (o.efectoTexto === 'hueco' || o.efectoTexto === 'neonHueco') o.rellenoOriginal = null;
+  o.set('fill', crearRelleno(o, datos, k ?? s()));
+  o.relleno = datos.tipo === 'solido' ? null : datos;
+  if (esTexto(o) && o.initDimensions) o.initDimensions();
+  o.dirty = true;
+}
+function rellenoDelPanel(){
+  return { tipo:$('pTipoRelleno').value, c1:$('pRelleno').value, c2:$('pRelleno2').value, ang:+$('pRellAng').value,
+    gros:+$('pRellGros').value, sep:+$('pRellSep').value, transp:$('pRellTransp').checked };
+}
+function objetivosRelleno(){
+  const ts = objetivos();
+  return ts.flatMap(hojas).filter(x => admiteRelleno(x) && !(x.textoDe && ts.includes(porId(x.textoDe))));
+}
+function aplicarRellenoPanel(guardar){
+  const r = rellenoDelPanel();
+  objetivosRelleno().forEach(x => aplicarRelleno(x, r));
+  objetivos().forEach(o => { o.dirty = true; if (o.type === 'group' && o.addWithUpdate) o.addWithUpdate(); });
+  objetivos().flatMap(hojas).filter(x => x.textoDe).forEach(ajustarFormaATexto);
+  mostrarOpcionesRelleno();
+  canvas.requestRenderAll();
+  if (guardar) guardarEstado();
+}
+function mostrarOpcionesRelleno(){
+  const t = $('pTipoRelleno').value, patron = TIPOS_PATRON.includes(t), grad = t === 'degradado' || t === 'radial';
+  $('filaRelleno2').hidden = !(grad || (patron && !$('pRellTransp').checked));
+  $('filaRelleno2').querySelector('label').textContent = patron ? 'Fondo' : 'Color 2';
+  $('filaRellAng').hidden = !(t === 'degradado' || t === 'rayas' || t === 'cuadros');
+  $('filaRellGros').hidden = $('filaRellSep').hidden = $('filaRellTransp').hidden = !patron;
+  $('filaRellGros').querySelector('label').textContent = t === 'puntos' ? 'Tamaño' : 'Grosor';
+}
+function tipoRellenoDe(x){
+  if (!x) return 'solido';
+  if (x.relleno && x.relleno.tipo) return x.relleno.tipo;
+  if (x.fill instanceof fabric.Gradient) return x.fill.type === 'radial' ? 'radial' : 'degradado';
+  if (x.fill instanceof fabric.Pattern) return 'rayas';
+  return 'solido';
+}
+$('pTipoRelleno').addEventListener('change', () => {
+  if ($('pTipoRelleno').value === 'degradado' || $('pTipoRelleno').value === 'radial') $('pRellAng').value = $('pRellAng').value || 45;
+  aplicarRellenoPanel(true);
+});
+['pRelleno2', 'pRellAng', 'pRellGros', 'pRellSep'].forEach(id => {
+  $(id).addEventListener('input', () => aplicarRellenoPanel(false));
+  $(id).addEventListener('change', guardarEstado);
+});
+$('pRellTransp').addEventListener('change', () => aplicarRellenoPanel(true));
+// Al cambiar el color principal: si el relleno no es sólido, se rehace con el color nuevo
+$('pRelleno').addEventListener('input', () => {
+  if ($('pTipoRelleno').value === 'solido'){ objetivosRelleno().forEach(x => { x.relleno = null; }); return; }
+  aplicarRellenoPanel(false);
+});
+// Colores rápidos para degradados y rayas
+const COMBOS_RELLENO = [['#19c8ff','#0a3d91'],['#ff4b2b','#ffb199'],['#ff4b2b','#2b2d42'],['#7c3aed','#06b6d4'],['#f97316','#ec4899'],['#10b981','#3b82f6'],['#facc15','#f97316'],['#111827','#4b5563']];
+COMBOS_RELLENO.forEach(([a, b]) => {
+  const d = document.createElement('div'); d.className = 'sw'; d.title = 'Usar estos dos colores';
+  d.style.background = `linear-gradient(135deg,${a},${b})`;
+  d.onclick = () => {
+    $('pRelleno').value = a; $('pRelleno2').value = b;
+    if ($('pTipoRelleno').value === 'solido') $('pTipoRelleno').value = 'degradado';
+    aplicarRellenoPanel(true);
+  };
+  $('combosRelleno').appendChild(d);
+});
+
+// ---------- Resplandor neón (sombra sin desplazamiento, del color que elijas) ----------
+function aplicarResplandor(){
+  if ($('pSombraTipo').value !== 'brillo' || !$('pSombra').checked) return;
+  const sh = new fabric.Shadow({ color:$('pSombraColor').value, blur:+$('pSombraBlur').value * s() * 1.4, offsetX:0, offsetY:0 });
+  objetivos().forEach(o => o.set('shadow', sh)); canvas.requestRenderAll();
+}
+$('pSombra').addEventListener('change', () => { if ($('pSombraTipo').value === 'brillo' && $('pSombra').checked){ aplicarResplandor(); guardarEstado(); } });
+$('pSombraColor').addEventListener('input', aplicarResplandor);
+$('pSombraBlur').addEventListener('input', aplicarResplandor);
+$('pSombraTipo').addEventListener('change', () => {
+  if (!$('pSombra').checked){ $('pSombra').checked = true; }
+  if ($('pSombraTipo').value === 'brillo'){
+    const ref = objetivos().flatMap(hojas)[0];
+    if (ref && $('pSombraColor').value === '#000000') $('pSombraColor').value = aHex(typeof ref.fill === 'string' && ref.fill !== 'rgba(0,0,0,0)' ? ref.fill : (ref.stroke || '#19c8ff'));
+    if (+$('pSombraBlur').value < 20) $('pSombraBlur').value = 30;
+    aplicarResplandor();
+  } else aplicarSombra();
+  guardarEstado();
+});
+const esResplandor = sh => !!sh && !sh.offsetX && !sh.offsetY;
+
+// Al seleccionar algo, el panel muestra su tipo de relleno y de sombra
+alActualizarPanel(function(){
+  if (generandoVista) return;
+  const o = activo(); if (!o) return;
+  const ref = objetivos().flatMap(hojas).find(admiteRelleno);
+  $('filaTipoRelleno').hidden = !ref;
+  if (ref){
+    const t = tipoRellenoDe(ref), r = ref.relleno;
+    $('pTipoRelleno').value = t;
+    if (r){
+      $('pRelleno').value = aHex(r.c1); $('pRelleno2').value = aHex(r.c2);
+      $('pRellAng').value = r.ang; $('pRellGros').value = r.gros; $('pRellSep').value = r.sep; $('pRellTransp').checked = r.transp !== false;
+    } else if (ref.fill instanceof fabric.Gradient){
+      const cs = ref.fill.colorStops || [];
+      if (cs[0]) $('pRelleno').value = aHex(cs[0].color);
+      if (cs[cs.length - 1]) $('pRelleno2').value = aHex(cs[cs.length - 1].color);
     }
-  }},
-  // ---------- Negocio y redes ----------
-  { nombre:'Post de promoción (neón)', cat:CAT_NEG, tam:[1080,1080], crear(){
-    FONDO('#05070d');
-    CIRC(1090, -10, 190, ROJO, { nombre:'Círculo' }).set('opacity', 0.9);
-    RAYAS(-40, 1000, 520, 120, ROJO, { inclin:25, gros:12, sep:16 }).set('opacity', 0.8);
-    TITULO_NEON('PROMOCIÓN', 540, 300, 96, 1000);
-    T('20%', 540, 520, { f:'Montserrat', s:260, b:'900', c:'#ffffff', w:900, lh:1 });
-    T('de descuento en tu primer diseño', 540, 690, { f:'Poppins', s:44, c:'#cfe9ff', w:900 });
-    nodo('pildora', 'Escríbenos por WhatsApp', 540, 830, { w:560, h:100, fill:NEON, color:'#05070d', tam:36, fuente:'Poppins', peso:'700' });
-    T('@tu_negocio · válido hasta el 30 de noviembre', 540, 960, { f:'Inter', s:28, c:'#9fdcff', w:1000 });
-  }},
-  { nombre:'Post de servicios (lista)', cat:CAT_NEG, tam:[1080,1350], crear(){
+    if (t === 'ninguno' && ref.stroke) $('pRelleno').value = aHex(ref.relleno ? ref.relleno.c1 : ref.stroke);
+  }
+  mostrarOpcionesRelleno();
+  const sh = (objetivos().flatMap(hojas)[0] || o).shadow;
+  $('pSombraTipo').value = esResplandor(sh) ? 'brillo' : 'sombra';
+  if (esResplandor(sh)) $('pSombraBlur').value = Math.round(sh.blur / (1.4 * s()));
+});
+
+// ---------- Efecto de texto: Neón hueco (solo contorno que brilla) ----------
+const aplicarEfectoTextoBase22 = aplicarEfectoTexto;
+aplicarEfectoTexto = function(t, efecto){
+  if (t.efectoTexto === 'neonHueco') t.efectoTexto = 'hueco';
+  if (efecto !== 'neonHueco') return aplicarEfectoTextoBase22(t, efecto);
+  aplicarEfectoTextoBase22(t, 'hueco');
+  const color = t.rellenoOriginal || '#19c8ff';
+  t.set({ strokeWidth:Math.max(1.5, t.fontSize * 0.035), shadow:new fabric.Shadow({ color, blur:t.fontSize * 0.35, offsetX:0, offsetY:0 }) });
+  t.efectoTexto = 'neonHueco'; t.dirty = true;
+};
+EFECTOS_TEXTO.neonHueco = { n:'Neón hueco', css:'color:transparent;-webkit-text-stroke:1.2px #19c8ff;text-shadow:0 0 6px #19c8ff' };
+(function(){
+  const b = document.createElement('button'); b.className = 'efectoBtn'; b.dataset.e = 'neonHueco'; b.title = 'Neón hueco';
+  b.innerHTML = `<b style="${EFECTOS_TEXTO.neonHueco.css}">Aa</b>Neón hueco`;
+  b.onclick = () => { textos().forEach(t => aplicarEfectoTexto(t, 'neonHueco')); canvas.requestRenderAll(); actualizarPanel(); guardarEstado(); };
+  $('efectosTexto').appendChild(b);
+})();
+
+// ---------- Formas nuevas para logos y tarjetas ----------
+const FORMAS_LOGO = {
+  semicirculo: 'M0 100 A100 100 0 0 1 200 100 Z',
+  onda:        'M0 70 C70 0 150 140 240 70 C330 0 410 140 480 70 L480 220 L0 220 Z',
+  esquina:     'M0 300 C60 200 120 170 180 120 C240 70 270 30 300 0 L300 300 Z',
+  mancha:      'M120 10 C175 0 225 45 230 100 C236 160 200 215 140 228 C80 240 18 205 8 140 C-2 80 50 22 120 10 Z',
+  gota:        'M50 0 C70 30 92 55 92 72 C92 96 73 114 50 114 C27 114 8 96 8 72 C8 55 30 30 50 0 Z',
+  escudo:      'M50 0 L95 15 C95 60 80 90 50 110 C20 90 5 60 5 15 Z',
+  insignia:    'M50 0 L61 12 L77 8 L80 24 L95 30 L88 45 L97 60 L83 69 L84 86 L67 86 L58 100 L50 92 L42 100 L33 86 L16 86 L17 69 L3 60 L12 45 L5 30 L20 24 L23 8 L39 12 Z'
+};
+const NOMBRES_FORMA_LOGO = { semicirculo:'Semicírculo', onda:'Onda', esquina:'Esquina en curva', mancha:'Mancha', gota:'Gota', escudo:'Escudo', insignia:'Insignia' };
+const agregarFormaBase22 = agregarForma;
+agregarForma = function(tipo){
+  const k = s(), color = $('colorForma').value;
+  const base = { left:W/2, top:H/2, originX:'center', originY:'center', fill:color, strokeWidth:0, stroke:null };
+  if (FORMAS_LOGO[tipo]){
+    const o = new fabric.Path(FORMAS_LOGO[tipo], base);
+    o.scaleToWidth((tipo === 'onda' ? 520 : 320) * k);
+    o.setPositionByOrigin(new fabric.Point(W/2, H/2), 'center', 'center');
+    return agregar(o, NOMBRES_FORMA_LOGO[tipo]);
+  }
+  if (tipo === 'anillo'){
+    const o = new fabric.Circle({ ...base, radius:160*k, fill:'rgba(0,0,0,0)', stroke:color, strokeWidth:26*k, strokeUniform:true });
+    o.relleno = { tipo:'ninguno', c1:color, c2:'#ffffff', ang:45, gros:14, sep:14, transp:true };
+    return agregar(o, 'Anillo');
+  }
+  if (tipo === 'rayas' || tipo === 'puntos'){
+    const o = new fabric.Rect({ ...base, width:420*k, height:260*k });
+    aplicarRelleno(o, { tipo, c1:color, c2:'#ffffff', ang: tipo === 'rayas' ? 60 : 0, gros: tipo === 'rayas' ? 14 : 12, sep: tipo === 'rayas' ? 16 : 18, transp:true });
+    return agregar(o, tipo === 'rayas' ? 'Rayas' : 'Puntos');
+  }
+  return agregarFormaBase22(tipo);
+};
+(function(){
+  const iconos = [
+    ['anillo', 'Anillo (círculo sin relleno)', '<circle cx="5" cy="5" r="3.6" fill="none" stroke="currentColor" stroke-width="1.4"/>'],
+    ['semicirculo', 'Semicírculo', '<path d="M1 7 A4 4 0 0 1 9 7 Z"/>'],
+    ['onda', 'Onda', '<path d="M0 4 C1.5 2 3 6 5 4 C7 2 8.5 6 10 4 L10 9 L0 9 Z"/>'],
+    ['esquina', 'Esquina en curva (para tarjetas)', '<path d="M1 9 C3 6 6 5 9 1 L9 9 Z"/>'],
+    ['mancha', 'Mancha orgánica', '<path d="M5 1 C7.5 0.8 9.3 3 9.2 5.2 C9 7.8 6.8 9.4 4.6 9.2 C2.2 9 0.8 7 0.9 5 C1 2.8 2.8 1.2 5 1 Z"/>'],
+    ['gota', 'Gota', '<path d="M5 0.5 C6.4 2.8 8 4.4 8 6.2 C8 8 6.7 9.4 5 9.4 C3.3 9.4 2 8 2 6.2 C2 4.4 3.6 2.8 5 0.5 Z"/>'],
+    ['escudo', 'Escudo', '<path d="M5 0.6 L9 2 C9 5.6 7.6 8 5 9.5 C2.4 8 1 5.6 1 2 Z"/>'],
+    ['insignia', 'Insignia / sello', '<polygon points="5,0.5 6,1.6 7.6,1.3 7.9,2.8 9.4,3.4 8.7,4.8 9.6,6.2 8.2,7 8.3,8.6 6.7,8.6 5.8,9.8 5,9 4.2,9.8 3.3,8.6 1.7,8.6 1.8,7 0.4,6.2 1.3,4.8 0.6,3.4 2.1,2.8 2.4,1.3 4,1.6"/>'],
+    ['rayas', 'Bloque de rayas', '<path d="M1 9 L3 1 M4 9 L6 1 M7 9 L9 1" stroke="currentColor" stroke-width="1.2" fill="none"/>'],
+    ['puntos', 'Bloque de puntos', '<circle cx="2" cy="2" r="0.9"/><circle cx="5" cy="2" r="0.9"/><circle cx="8" cy="2" r="0.9"/><circle cx="2" cy="5" r="0.9"/><circle cx="5" cy="5" r="0.9"/><circle cx="8" cy="5" r="0.9"/><circle cx="2" cy="8" r="0.9"/><circle cx="5" cy="8" r="0.9"/><circle cx="8" cy="8" r="0.9"/>']
+  ];
+  const grid = document.querySelector('#tFormas .grid');
+  iconos.forEach(([tipo, titulo, svg]) => {
+    const b = document.createElement('button'); b.className = 'forma'; b.title = titulo;
+    b.innerHTML = `<svg viewBox="0 0 10 10">${svg}</svg>`;
+    b.onclick = () => agregarForma(tipo);
+    grid.appendChild(b);
+  });
+})();
+
+// ---------- Repetir en serie (para rayas, puntos, filas de íconos…) ----------
+const clonarPromesa = o => new Promise(ok => o.clone(ok, EXTRA));
+async function repetirSerie(){
+  const sel = activo();
+  if (!sel) return toast('Primero selecciona lo que quieres repetir');
+  const n = Math.max(1, Math.min(60, Math.round(+$('repN').value || 1)));
+  const k = s(), dx = (+$('repX').value || 0) * k, dy = (+$('repY').value || 0) * k, giro = +$('repGiro').value || 0;
+  if (!dx && !dy && !giro) return toast('Escribe cuánto se mueve cada copia (X o Y) o cuánto gira');
+  const lista = sel.type === 'activeSelection' ? sel.getObjects().slice() : [sel];
+  canvas.discardActiveObject();
+  const nuevos = [];
+  restaurando = true;
+  try {
+    for (const o of lista){
+      for (let i = 1; i <= n; i++){
+        const c = await clonarPromesa(o);
+        limpiarVinculosClon(c);
+        c.id = nuevoId();
+        c.set({ left:o.left + dx * i, top:o.top + dy * i, angle:(o.angle || 0) + giro * i, evented:true });
+        canvas.add(c); c.setCoords(); nuevos.push(c);
+      }
+    }
+  } finally { restaurando = false; }
+  const todos = [...lista, ...nuevos];
+  canvas.setActiveObject(new fabric.ActiveSelection(todos, { canvas }));
+  canvas.requestRenderAll(); renderCapas(); guardarEstado();
+  toast(`Listo: ${nuevos.length} copias. Si quieres moverlas juntas, pulsa “Agrupar”.`);
+}
+
+// ---------- Fuentes para logos ----------
+['Orbitron', 'UnifrakturMaguntia', 'Audiowide', 'Exo 2', 'Righteous'].forEach(f => {
+  try { document.fonts.load(`400 40px "${f}"`); document.fonts.load(`800 40px "${f}"`); } catch(e){}
+});
+
+// ---------- Plantillas de logos y tarjetas ----------
+const CAT_LOGO = 'Logos y tarjetas';
+const NEON = '#19c8ff', ROJO = '#ff4b2b';
+function TL(texto, x, y, o = {}){            // texto alineado a la izquierda desde x
+  const w = o.w || 600;
+  const t = T(texto, x + w / 2, y, { ...o, al:'left', w });
+  return t;
+}
+function FORMA_PATH(d, fill, o = {}){
+  const p = new fabric.Path(d, { fill, stroke:o.stroke || null, strokeWidth:o.sw || 0, opacity:o.op ?? 1, name:o.nombre || 'Forma', id:nuevoId() });
+  canvas.add(p); return p;
+}
+function BRILLO(o, color, blur){ o.set('shadow', new fabric.Shadow({ color, blur, offsetX:0, offsetY:0 })); return o; }
+function ANILLO(x, y, r, color, grosor, o = {}){
+  const c = new fabric.Circle({ left:x, top:y, radius:r, originX:'center', originY:'center', fill:o.fill || 'rgba(0,0,0,0)', stroke:color, strokeWidth:grosor, name:'Anillo', id:nuevoId() });
+  canvas.add(c); return c;
+}
+function RAYAS(x, y, w, h, color, o = {}){
+  const r = new fabric.Rect({ left:x, top:y, width:w, height:h, angle:o.ang || 0, fill:color, name:o.nombre || 'Rayas', id:nuevoId() });
+  aplicarRelleno(r, { tipo:'rayas', c1:color, c2:'#ffffff', ang:o.inclin ?? 70, gros:o.gros || 12, sep:o.sep || 14, transp:true }, 1);
+  canvas.add(r); return r;
+}
+function LETRA_A(x, y, tam, o = {}){
+  const t = T(o.texto || 'A', x, y, { f:'UnifrakturMaguntia', s:tam, w:tam * 1.4, c:NEON, lh:1 });
+  t.set('fill', new fabric.Gradient({ type:'linear', gradientUnits:'percentage', coords:{ x1:0, y1:0, x2:1, y2:1 },
+    colorStops:[{ offset:0, color:o.c1 || '#5ee7ff' }, { offset:1, color:o.c2 || '#0a84ff' }] }));
+  t.relleno = { tipo:'degradado', c1:o.c1 || '#5ee7ff', c2:o.c2 || '#0a84ff', ang:45, gros:14, sep:14, transp:true };
+  BRILLO(t, 'rgba(25,200,255,.75)', tam * 0.12);
+  return t;
+}
+function TITULO_NEON(texto, x, y, tam, w){
+  const t = T(texto, x, y, { f:'Orbitron', s:tam, b:'800', c:NEON, w:w || 900, cs:80 });
+  t.set({ fill:'rgba(0,0,0,0)', stroke:NEON, strokeWidth:Math.max(1.5, tam * 0.035), rellenoOriginal:NEON, efectoTexto:'neonHueco' });
+  BRILLO(t, NEON, tam * 0.35);
+  return t;
+}
+const PLANTILLAS_LOGO = [
+  { nombre:'Tarjeta de presentación clara (rayas rojas)', tam:[1063, 591], crear(){
     FONDO('#f4f2ef');
-    const ola = FORMA_PATH('M 0 1350 L 0 1120 C 260 1010 520 1220 760 1120 C 900 1060 1000 1040 1080 1050 L 1080 1350 Z', ROJO, { nombre:'Ola' });
-    aplicarRelleno(ola, { tipo:'rayas', c1:'#e8452c', c2:'#ffffff', ang:60, gros:10, sep:10 }, 1);
-    T('NUESTROS SERVICIOS', 540, 150, { f:'Montserrat', s:76, b:'900', c:'#2b2b2b', w:980 });
-    RECT(390, 215, 300, 6, ROJO, { nombre:'Línea' });
-    ['Diseño de logotipos', 'Páginas web', 'Tarjetas de presentación', 'Publicaciones para redes', 'Sistemas a la medida'].forEach((t, i) => {
-      const y = 340 + i * 140;
-      nodo('circulo', String(i + 1), 170, y, { w:90, h:90, fill:ROJO, color:'#ffffff', tam:40, fuente:'Montserrat', peso:'900' });
-      TL(t, 250, y, { f:'Poppins', s:44, b:'600', c:'#2b2b2b', w:760 });
+    const ola1 = FORMA_PATH('M 610 591 C 690 470 780 470 860 380 C 930 300 990 250 1063 230 L 1063 591 Z', ROJO, { nombre:'Ola de rayas roja' });
+    aplicarRelleno(ola1, { tipo:'rayas', c1:'#e8452c', c2:'#ffffff', ang:60, gros:9, sep:9, transp:true }, 1);
+    const ola2 = FORMA_PATH('M 760 591 C 830 520 900 520 960 470 C 1000 440 1030 420 1063 410 L 1063 591 Z', '#2b2d42', { nombre:'Ola de rayas oscura' });
+    aplicarRelleno(ola2, { tipo:'rayas', c1:'#2b2d42', c2:'#ffffff', ang:60, gros:9, sep:9, transp:true }, 1);
+    TL('Ing. Tu Nombre', 56, 52, { f:'Poppins', s:24, b:'600', c:'#2b2b2b', w:500 });
+    TL('SOLUCIONES\nINFORMÁTICAS', 56, 140, { f:'Montserrat', s:56, b:'900', c:'#2b2b2b', w:620, lh:1.02 });
+    RECT(56, 222, 951, 3, '#e8452c', { nombre:'Línea' });
+    TL('Si lo puedes imaginar, lo puedes programar', 56, 270, { f:'Poppins', s:24, b:'600', c:'#2b2b2b', w:560 });
+    [['📞', '55 0000 0000 (celular)'], ['✉️', 'tucorreo@gmail.com'], ['📍', 'Tu colonia, tu ciudad'], ['🌐', 'facebook.com/tu-pagina']].forEach(([ic, tx], i) => {
+      TL(ic, 56, 345 + i * 52, { f:'Inter', s:26, c:'#e8452c', w:44 });
+      TL(tx, 108, 345 + i * 52, { f:'Inter', s:22, c:'#2b2b2b', w:470 });
     });
-    T('Cotiza sin compromiso · 55 0000 0000', 540, 1050, { f:'Poppins', s:36, b:'600', c:'#2b2b2b', w:980 });
   }},
-  { nombre:'Historia: ¡Nuevo!', cat:CAT_NEG, tam:[1080,1920], crear(){
-    DEGRADADO('#0b1220', '#05070d');
-    BRILLO(ANILLO(540, 640, 330, NEON, 16, { fill:'#060a12' }), NEON, 50);
-    T('¡NUEVO!', 540, 640, { f:'Montserrat', s:118, b:'900', c:'#ffffff', w:900 });
-    TITULO_NEON('TU PRODUCTO', 540, 1120, 92, 1000);
-    T('Describe aquí en una línea por qué te va a encantar.', 540, 1260, { f:'Poppins', s:42, c:'#cfe9ff', w:900 });
-    nodo('pildora', 'Desliza para ver más ↑', 540, 1680, { w:600, h:110, fill:ROJO, color:'#ffffff', tam:40, fuente:'Poppins', peso:'700' });
-  }},
-  { nombre:'Menú de comida', cat:CAT_NEG, tam:[1240,1754], crear(){
-    FONDO('#fdf6ec');
-    canvas.add(new fabric.Rect({ left:0, top:0, width:1240, height:300, fill:'#7f1d1d', name:'Encabezado', id:nuevoId() }));
-    T('MENÚ', 620, 120, { f:'Bebas Neue', s:170, c:'#fde68a', w:1000 });
-    T('Nombre de tu negocio · Cocina casera', 620, 230, { f:'Poppins', s:34, c:'#ffffff', w:1100 });
-    const seccion = (t, y, platos) => {
-      T(t, 620, y, { f:'Playfair Display', s:56, b:'700', c:'#7f1d1d', w:1000 });
-      platos.forEach(([n, d, pr], i) => {
-        const yy = y + 100 + i * 110;
-        TL(n, 110, yy - 18, { f:'Poppins', s:34, b:'600', c:'#1f2330', w:800 });
-        TL(d, 110, yy + 26, { f:'Inter', s:24, c:'#6b7280', w:800 });
-        T(pr, 1060, yy, { f:'Poppins', s:36, b:'700', c:'#7f1d1d', w:180 });
-      });
-    };
-    seccion('Desayunos', 400, [['Chilaquiles', 'Verdes o rojos, con pollo o huevo', '$85'], ['Molletes', 'Con pico de gallo', '$65'], ['Huevos al gusto', 'Con frijoles y tortillas', '$70']]);
-    seccion('Comidas', 860, [['Comida corrida', 'Sopa, guisado del día y agua', '$95'], ['Enchiladas', 'Suizas o de mole', '$90'], ['Tacos dorados', 'Orden de 4 con crema y queso', '$75']]);
-    seccion('Bebidas', 1320, [['Agua del día', 'Medio litro', '$25'], ['Café de olla', '', '$30']]);
-    T('📍 Tu dirección  ·  📞 55 0000 0000', 620, 1690, { f:'Inter', s:28, c:'#7f1d1d', w:1100 });
-  }},
-  { nombre:'Volante de servicios', cat:CAT_NEG, tam:[1240,1754], crear(){
+  { nombre:'Tarjeta de presentación oscura (reverso)', tam:[1063, 591], crear(){
     FONDO('#1b1c26');
-    CIRC(1180, 80, 300, ROJO, { nombre:'Círculo' });
-    RAYAS(760, -30, 380, 200, ROJO, { inclin:0, gros:14, sep:16 });
-    RAYAS(-30, 1400, 420, 260, ROJO, { inclin:25, gros:14, sep:16 });
-    TL('TU NEGOCIO\nAQUÍ', 90, 330, { f:'Montserrat', s:120, b:'900', c:ROJO, w:900, lh:0.95 });
-    TL('Lo que haces en una frase corta y clara.', 90, 560, { f:'Poppins', s:40, c:'#ffffff', w:900 });
-    ['Servicio número uno', 'Servicio número dos', 'Servicio número tres', 'Servicio número cuatro'].forEach((t, i) => {
-      TL('✔', 100, 720 + i * 100, { f:'Inter', s:44, c:ROJO, w:60 });
-      TL(t, 180, 720 + i * 100, { f:'Poppins', s:40, c:'#ffffff', w:900 });
-    });
-    nodo('pildora', 'Llámanos: 55 0000 0000', 620, 1230, { w:760, h:120, fill:ROJO, color:'#ffffff', tam:46, fuente:'Poppins', peso:'700' });
-    T('tucorreo@gmail.com · facebook.com/tu-pagina', 760, 1620, { f:'Inter', s:30, c:'#d1d5db', w:900 });
+    RAYAS(600, -30, 360, 150, ROJO, { inclin:0, gros:12, sep:14, nombre:'Rayas superiores' });
+    CIRC(1010, 70, 190, ROJO, { nombre:'Círculo rojo' });
+    CIRC(930, 270, 70, '#ff6a4d', { nombre:'Círculo pequeño' });
+    RAYAS(-20, 420, 330, 190, ROJO, { inclin:25, gros:12, sep:14, nombre:'Rayas inferiores' });
+    CIRC(200, 650, 200, ROJO, { nombre:'Círculo inferior' });
+    TL('APIK\nDESING', 56, 150, { f:'Montserrat', s:112, b:'900', c:ROJO, w:560, lh:0.95 });
+    TL('DISEÑO WEB Y\nDESARROLLO DE\nSOFTWARE', 600, 470, { f:'Montserrat', s:26, b:'600', c:'#ffffff', w:420, cs:260, lh:1.35 });
+  }},
+  { nombre:'Tarjeta de presentación neón', tam:[1063, 591], crear(){
+    FONDO('#05070d');
+    CIRC(1080, -60, 190, '#0b1a2e', { nombre:'Brillo de fondo' }).set('opacity', 0.8);
+    BRILLO(ANILLO(230, 295, 150, NEON, 9, { fill:'#060a12' }), NEON, 28);
+    LETRA_A(232, 300, 230);
+    TITULO_NEON('APIK-DESING', 700, 220, 54, 620);
+    T('Diseño web y desarrollo de software', 700, 300, { f:'Poppins', s:24, c:'#cfe9ff', w:600 });
+    RECT(470, 345, 460, 2, NEON, { nombre:'Línea' }).set('opacity', 0.6);
+    T('55 0000 0000  ·  tucorreo@gmail.com', 700, 395, { f:'Inter', s:21, c:'#9fdcff', w:620 });
+    T('facebook.com/tu-pagina', 700, 435, { f:'Inter', s:21, c:'#9fdcff', w:620 });
+  }},
+  { nombre:'Logo neón con letra gótica', tam:[1000, 1000], crear(){
+    FONDO('#05070d');
+    CIRC(500, 500, 470, '#0a1422', { nombre:'Brillo de fondo' }).set('opacity', 0.8);
+    BRILLO(ANILLO(500, 500, 400, NEON, 22, { fill:'#060a12' }), NEON, 60);
+    LETRA_A(505, 515, 640);
+  }},
+  { nombre:'Logo de marca con nombre (banner)', tam:[1200, 630], crear(){
+    DEGRADADO('#05080d', '#140a0a');
+    CIRC(1190, -50, 210, ROJO, { nombre:'Círculo rojo' }).set('opacity', 0.9);
+    RAYAS(-40, 505, 380, 170, ROJO, { inclin:25, gros:12, sep:14, nombre:'Rayas' }).set('opacity', 0.75);
+    BRILLO(ANILLO(240, 315, 150, NEON, 9, { fill:'#060a12' }), NEON, 30);
+    LETRA_A(242, 320, 230);
+    TITULO_NEON('APIK-DESING', 760, 250, 70, 760);
+    T('Tu frase o lo que haces, en una línea', 760, 350, { f:'Poppins', s:28, c:'#e8f6ff', w:700 });
+  }},
+  { nombre:'Logo monograma (iniciales)', tam:[1000, 1000], crear(){
+    FONDO('#ffffff');
+    const c = CIRC(500, 430, 300, ROJO, { nombre:'Círculo' });
+    aplicarRelleno(c, { tipo:'degradado', c1:'#ff4b2b', c2:'#ff9a3c', ang:45 }, 1);
+    BRILLO(ANILLO(500, 430, 340, '#2b2d42', 10), 'rgba(0,0,0,0)', 0).set('shadow', null);
+    T('AD', 500, 440, { f:'Montserrat', s:260, b:'900', c:'#ffffff', w:600, lh:1 });
+    T('TU MARCA', 500, 845, { f:'Orbitron', s:72, b:'800', c:'#2b2d42', w:900, cs:200 });
+    T('Diseño · Software', 500, 925, { f:'Poppins', s:34, c:'#6b7280', w:800 });
   }}
 ];
-PLANTILLAS_V25.forEach(p => CATALOGO.push({ nombre:p.nombre, cat:p.cat, tam:p.tam, crear:p.crear, usar:() => usarPlantillaLogo(p) }));
-CATEGORIAS.splice(CATEGORIAS.indexOf(CAT_LOGO) + 1, 0, CAT_NEG);
+const FUENTES_LOGO = ['Orbitron', 'UnifrakturMaguntia', 'Montserrat', 'Poppins', 'Inter'];
+function cargarFuentesLogo(){
+  return Promise.all(FUENTES_LOGO.flatMap(f => [`400 40px "${f}"`, `800 40px "${f}"`, `900 40px "${f}"`]
+    .map(q => document.fonts.load(q).catch(() => null)))).catch(() => null);
+}
+function usarPlantillaLogo(p){
+  const fin = () => { FUENTES_LOGO.forEach(f => fabric.util.clearFabricFontCache(f)); usarOrganizador(p); };
+  Promise.race([cargarFuentesLogo(), new Promise(r => setTimeout(r, 2500))]).then(fin, fin);
+}
+PLANTILLAS_LOGO.forEach(p => CATALOGO.push({ nombre:p.nombre, cat:CAT_LOGO, tam:p.tam, crear:p.crear, usar:() => usarPlantillaLogo(p) }));
+CATEGORIAS.splice(CATEGORIAS.indexOf(CAT_DER) + 1, 0, CAT_LOGO);
 (function(){
-  const c = document.createElement('button'); c.className = 'chip'; c.textContent = '🛍 Negocio y redes';
-  c.onclick = () => { catActiva = CAT_NEG; document.querySelectorAll('#chipsCat .chip').forEach(x => x.classList.toggle('on', x === c)); renderCatalogo(); };
-  const logo = [...document.querySelectorAll('#chipsCat .chip')].find(x => x.textContent.includes('Logos'));
-  if (logo) logo.after(c); else $('chipsCat').appendChild(c);
+  const c = document.createElement('button'); c.className = 'chip'; c.textContent = '🪪 Logos y tarjetas';
+  c.onclick = () => { catActiva = CAT_LOGO; document.querySelectorAll('#chipsCat .chip').forEach(x => x.classList.toggle('on', x === c)); renderCatalogo(); };
+  const der = [...document.querySelectorAll('#chipsCat .chip')].find(x => x.textContent.includes('Derecho'));
+  if (der) der.after(c); else $('chipsCat').appendChild(c);
   renderCatalogo();
 })();
 
 /* =========================================================
-   ESCRIBIR EL TEXTO DESDE EL PANEL (útil en celular y tablet)
+   CÓDIGO QR, SVG, METER EN FORMA Y GOTERO
    ========================================================= */
-function textoUnico(){
-  const ts = textos(); if (ts.length === 1) return ts[0];
-  const o = activo();                       // una forma con texto adentro: se edita su texto
-  if (ts.length === 0 && o && o.type !== 'activeSelection' && o.id) return canvas.getObjects().find(x => x.textoDe === o.id && esTexto(x)) || null;
-  return null;
+EXTRA.push('qr', 'mascara');
+// ---------- Código QR (se dibuja con figuras: se ve nítido a cualquier tamaño) ----------
+const URL_QR = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js';
+function cargarQR(){
+  return new Promise((ok, mal) => {
+    if (window.qrcode) return ok();
+    const sc = document.createElement('script'); sc.src = URL_QR; sc.onload = ok;
+    sc.onerror = () => mal(new Error('No se pudo cargar el generador de QR. Revisa tu conexión a internet.'));
+    document.head.appendChild(sc);
+  });
 }
-$('pContenido').addEventListener('input', e => {
-  const t = textoUnico(); if (!t) return;
-  t.set('text', e.target.value);
-  t.initDimensions && t.initDimensions();
-  if (t.textoDe) ajustarFormaATexto(t);
-  if (t.curva && typeof aplicarCurva === 'function') aplicarCurva(t, t.curva, true);
-  t.setCoords(); t.dirty = true; canvas.requestRenderAll();
-});
-$('pContenido').addEventListener('change', () => { guardarEstado(); renderCapas && renderCapas(); });
-$('pContenido').addEventListener('keydown', e => e.stopPropagation());   // que Supr o Ctrl+Z no actúen sobre el lienzo
-alActualizarPanel(function(){
-  if (generandoVista || !activo()) return;
-  const t = textoUnico(), c = $('pContenido');
-  $('filaContenido').hidden = !t;
-  if (t && document.activeElement !== c) c.value = t.text || '';
-});
-canvas.on('text:changed', e => { if (document.activeElement !== $('pContenido') && e.target === textoUnico()) $('pContenido').value = e.target.text || ''; });
-// Cambiar la fuente: carga el grosor y estilo que de verdad usa cada texto (antes solo se pedía la negrita
-// y en algunas computadoras se quedaba dibujada la letra anterior hasta recargar)
-$('pFuente').onchange = e => {
-  const f = e.target.value, ts = textos();
-  if (!ts.length) return;
-  ts.forEach(t => { t.set('fontFamily', f); t.initDimensions && t.initDimensions(); });
-  aplicar('dirty', true);
-  const pedidos = ts.flatMap(t => [`${t.fontStyle === 'italic' ? 'italic ' : ''}${t.fontWeight || 400} 40px "${f}"`, `400 40px "${f}"`, `700 40px "${f}"`]);
-  Promise.all([...new Set(pedidos)].map(q => document.fonts.load(q).catch(() => null))).then(() => redibujarTextos(f));
-};
-function redibujarTextos(familia){
-  if (familia) fabric.util.clearFabricFontCache(familia); else fabric.util.clearFabricFontCache();
-  canvas.getObjects().forEach(o => (o.getObjects ? o.getObjects() : [o]).forEach(t => {
-    if (!esTexto(t) || (familia && t.fontFamily !== familia)) return;
-    t.initDimensions && t.initDimensions(); t.dirty = true;
-    if (t.textoDe) ajustarFormaATexto(t);
-  }));
-  canvas.requestRenderAll();
+function crearObjetoQR(texto, color, fondo, transp, tam){
+  const qr = window.qrcode(0, 'M');
+  qr.stringToBytes = window.qrcode.stringToBytesFuncs['UTF-8'];
+  window.qrcode.stringToBytes = window.qrcode.stringToBytesFuncs['UTF-8'];
+  qr.addData(texto); qr.make();
+  const n = qr.getModuleCount(), borde = 2, total = n + borde * 2, c = tam / total;
+  let d = '';
+  for (let r = 0; r < n; r++){
+    let col = 0;
+    while (col < n){
+      if (!qr.isDark(r, col)){ col++; continue; }
+      let fin = col; while (fin < n && qr.isDark(r, fin)) fin++;
+      const x = (col + borde) * c, y = (r + borde) * c;
+      d += `M${x.toFixed(2)} ${y.toFixed(2)}h${((fin - col) * c).toFixed(2)}v${c.toFixed(2)}h${(-(fin - col) * c).toFixed(2)}z`;
+      col = fin;
+    }
+  }
+  const caja = new fabric.Rect({ left:0, top:0, width:tam, height:tam, fill: transp ? 'rgba(0,0,0,0)' : fondo, rx:tam * 0.03, ry:tam * 0.03, name:'Fondo del QR' });
+  const puntos = new fabric.Path(d, { fill:color, name:'Puntos del QR' });   // sin left/top: queda en su lugar exacto
+  const g = new fabric.Group([caja, puntos], { name:'Código QR' });
+  g.qr = { texto, color, fondo, transp:!!transp };
+  return g;
 }
-// Cuando termina de descargarse cualquier fuente, se vuelven a dibujar los textos (así no se quedan con la letra provisional)
-if (document.fonts && document.fonts.addEventListener){
-  let pendiente = null;
-  document.fonts.addEventListener('loadingdone', () => { clearTimeout(pendiente); pendiente = setTimeout(() => redibujarTextos(), 60); });
+async function crearQR(){
+  const texto = $('qrTexto').value.trim();
+  if (!texto) return toast('Escribe el enlace, teléfono o texto para el código QR');
+  if (texto.length > 900) return toast('El texto es muy largo para un código QR (máximo unas 900 letras)');
+  try { await cargarQR(); } catch (e) { return toast(e.message); }
+  const sel = activo(), k = s();
+  let g;
+  try { g = crearObjetoQR(texto, $('qrColor').value, $('qrFondo').value, $('qrTransp').checked, 520 * k); }
+  catch (e) { return toast('No se pudo crear el QR: ' + e.message); }
+  if (sel && sel.qr){                         // si hay un QR seleccionado, se reemplaza en el mismo lugar y tamaño
+    const c = sel.getCenterPoint(), lado = sel.getScaledWidth(), idx = canvas.getObjects().indexOf(sel);
+    g.scaleToWidth(lado); g.set({ angle:sel.angle || 0 });
+    g.setPositionByOrigin(c, 'center', 'center');
+    restaurando = true; canvas.remove(sel); restaurando = false;
+    g.id = nuevoId(); canvas.insertAt(g, idx); canvas.setActiveObject(g);
+    canvas.requestRenderAll(); renderCapas(); guardarEstado();
+    return toast('Código QR actualizado');
+  }
+  g.setPositionByOrigin(new fabric.Point(W / 2, H / 2), 'center', 'center');
+  agregar(g, 'Código QR'); renderCapas(); guardarEstado();
+  toast('Código QR listo. Pruébalo con la cámara de tu celular antes de imprimir.');
 }
 
-/* =========================================================
-   MIS DISEÑOS: CARPETAS Y BUSCADOR
-   ========================================================= */
-let listaProyCache = [], carpetaActiva = '';           // '' = todas · '__sin' = sin carpeta
-(function(){
-  const barra = document.createElement('div'); barra.id = 'barraProy';
-  barra.innerHTML = `<input type="search" id="buscarProy" class="buscador" placeholder="🔎 Buscar por nombre…">
-    <select id="filtroCarpeta" title="Ver solo una carpeta"></select>
-    <button class="btnS" id="bNuevaCarpeta" title="Crea una carpeta y mueve ahí el diseño abierto">＋ Carpeta</button>`;
-  $('listaProy').before(barra);
-  $('buscarProy').addEventListener('input', pintarProyectos);
-  $('buscarProy').addEventListener('keydown', e => e.stopPropagation());
-  $('filtroCarpeta').addEventListener('change', e => { carpetaActiva = e.target.value; pintarProyectos(); });
-  $('bNuevaCarpeta').onclick = async () => {
-    const n = (prompt('Nombre de la carpeta nueva (por ejemplo: Derecho Penal, Clientes, Logos):') || '').trim();
-    if (!n) return;
-    const actual = listaProyCache.find(p => p.nombre === nombreArchivo().replace(/[\\/:*?"<>|]/g, '').trim());
-    if (!actual) return toast('Guarda primero tu diseño (💾 Guardar) y luego usa 📁 en la lista para moverlo a “' + n + '”.');
-    await moverDiseno(actual, n);
+// ---------- Exportar en SVG (vectorial: para logos, imprenta, lonas y playeras) ----------
+function fuentesDe(objs){
+  const f = {};
+  const peso = w => w === 'bold' ? 700 : w === 'normal' || !w ? 400 : Math.round(+w / 100) * 100 || 400;
+  const ver = o => {
+    if (o.fontFamily && !['Arial','Georgia','Times New Roman','Courier New','Verdana'].includes(o.fontFamily)) (f[o.fontFamily] = f[o.fontFamily] || new Set()).add(peso(o.fontWeight));
+    if (o.getObjects) o.getObjects().forEach(ver);
   };
-})();
-const nombreCarpeta = c => c || 'Sin carpeta';
-async function moverDiseno(p, carpeta){
-  try {
-    await gs('moverACarpeta', p.id, carpeta);
-    p.carpeta = carpeta; toast(carpeta ? '“' + p.nombre + '” ahora está en 📁 ' + carpeta : '“' + p.nombre + '” quedó sin carpeta');
-    pintarProyectos();
-  } catch (e) { toast('No se pudo mover: ' + e.message); }
+  objs.forEach(ver);
+  return f;
 }
-function pedirCarpeta(p){
-  const existentes = [...new Set(listaProyCache.map(x => x.carpeta).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
-  const r = prompt('¿A qué carpeta mueves “' + p.nombre + '”?\n' + (existentes.length ? 'Tus carpetas: ' + existentes.join(' · ') + '\n' : '') +
-    'Escribe el nombre (si no existe, se crea). Déjalo vacío para quitarlo de su carpeta.', p.carpeta || '');
-  if (r === null) return;
-  moverDiseno(p, r.trim().slice(0, 60));
+// Mete las letras dentro del SVG (así se ve igual en otra computadora). Si no hay internet, solo deja el enlace.
+const cacheFuentesSVG = {};
+const aDataURL = blob => new Promise(ok => { const r = new FileReader(); r.onload = () => ok(r.result); r.readAsDataURL(blob); });
+async function cssDeFuente(familia, pesos){
+  const base = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(familia).replace(/%20/g, '+');
+  const clave = familia + '|' + pesos.join(';');
+  if (cacheFuentesSVG[clave]) return cacheFuentesSVG[clave];
+  let res = pesos.length && !(pesos.length === 1 && pesos[0] === 400) ? await fetch(base + ':wght@' + pesos.join(';') + '&display=swap') : null;
+  if (!res || !res.ok) res = await fetch(base + '&display=swap');        // la fuente no tiene esos grosores: se usa la normal
+  if (!res.ok) throw new Error('sin fuente');
+  let css = (await res.text()).split(/(?=\/\*)/).filter(b => /\/\* (latin|latin-ext) \*\//.test(b) || !/\/\*/.test(b)).join('');
+  for (const u of [...new Set([...css.matchAll(/url\((https:[^)]+)\)/g)].map(m => m[1]))])
+    css = css.split(u).join(await aDataURL(await (await fetch(u)).blob()));
+  return (cacheFuentesSVG[clave] = css);
 }
-listar = function(){
-  $('listaProy').innerHTML = 'Cargando…';
-  google.script.run
-    .withSuccessHandler(lista => { listaProyCache = Array.isArray(lista) ? lista : []; pintarProyectos(); })
-    .withFailureHandler(e => $('listaProy').textContent = 'Error: ' + e.message)
-    .listarProyectos();
-};
-function pintarProyectos(){
-  const lista = listaProyCache, cont = $('listaProy');
-  const carpetas = [...new Set(lista.map(p => p.carpeta).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
-  const sel = $('filtroCarpeta');
-  if (carpetaActiva && carpetaActiva !== '__sin' && !carpetas.includes(carpetaActiva)) carpetaActiva = '';
-  sel.innerHTML = `<option value="">📁 Todas (${lista.length})</option>` +
-    carpetas.map(c => `<option value="${esc(c)}">📁 ${esc(c)} (${lista.filter(p => p.carpeta === c).length})</option>`).join('') +
-    (carpetas.length ? `<option value="__sin">Sin carpeta (${lista.filter(p => !p.carpeta).length})</option>` : '');
-  sel.value = carpetaActiva;
-  if (!lista.length){ cont.innerHTML = '<p class="hint">Aún no tienes diseños guardados.</p>'; return; }
-  const q = sinAcentos($('buscarProy').value.trim());
-  const vista = lista.filter(p => (!q || sinAcentos(p.nombre).includes(q)) &&
-    (!carpetaActiva || (carpetaActiva === '__sin' ? !p.carpeta : p.carpeta === carpetaActiva)));
-  cont.innerHTML = '';
-  if (!vista.length){ cont.innerHTML = '<p class="hint">No hay diseños con ese nombre en esta carpeta.</p>'; return; }
-  // Agrupados por carpeta cuando se ven todas
-  const grupos = carpetaActiva ? [[carpetaActiva === '__sin' ? '' : carpetaActiva, vista]]
-    : [...carpetas, ''].map(c => [c, vista.filter(p => (p.carpeta || '') === c)]).filter(([, v]) => v.length);
-  grupos.forEach(([c, items]) => {
-    if (!carpetaActiva && carpetas.length){
-      const h = document.createElement('div'); h.className = 'tituloCarpeta';
-      h.innerHTML = `<span>${c ? '📁 ' + esc(c) : '📄 Sin carpeta'}</span><small>${items.length}</small>`;
-      if (c) h.onclick = () => { carpetaActiva = c; pintarProyectos(); };
-      cont.appendChild(h);
-    }
-    items.forEach(p => {
-      const d = document.createElement('div'); d.className = 'proy';
-      d.innerHTML = `<div class="n"><b>${esc(p.nombre)}</b><small>${new Date(p.fecha).toLocaleString('es-MX')} · ${p.tamKB} KB${p.carpeta && carpetaActiva !== p.carpeta && !carpetas.length ? '' : ''}</small></div>
-        <button class="btnP">Abrir</button><button class="btnS" title="Mover a una carpeta">📁</button><button class="btnS" title="Versiones anteriores">🕘</button><button class="btnS" title="Eliminar">🗑</button>`;
-      const [ba, bc, bv, be] = d.querySelectorAll('button');
-      ba.onclick = () => abrirProyecto(p);
-      bc.onclick = () => pedirCarpeta(p);
-      bv.onclick = () => verVersiones(p, d);
-      be.onclick = () => { if (confirm('¿Mandar “' + p.nombre + '” a la papelera de Drive?')) google.script.run.withSuccessHandler(listar).eliminarProyecto(p.id); };
-      cont.appendChild(d);
+async function incrustarFuentes(fuentes){
+  let css = '';
+  for (const [f, pesos] of Object.entries(fuentes)){
+    try { css += await cssDeFuente(f, [...pesos].sort((a, b) => a - b)); }
+    catch (e) { css += `@import url('https://fonts.googleapis.com/css2?family=${encodeURIComponent(f).replace(/%20/g, '+')}&amp;display=swap');`; }
+  }
+  return css;
+}
+function crearSVG(json, transp){
+  return new Promise(ok => {
+    const sc = new fabric.StaticCanvas(document.createElement('canvas'), { width:W, height:H, enableRetinaScaling:false, renderOnAddRemove:false });
+    const j = JSON.parse(JSON.stringify(json || PAGINA_VACIA()));
+    if (transp) j.background = null;
+    sc.loadFromJSON(j, () => {
+      let svg = sc.toSVG({ width:W, height:H, viewBox:{ x:0, y:0, width:W, height:H } });
+      const fs = fuentesDe(sc.getObjects());
+      sc.dispose();
+      if (!Object.keys(fs).length) return ok(svg);
+      incrustarFuentes(fs).then(css => {
+        const i = svg.indexOf('>', svg.indexOf('<svg'));
+        ok(svg.slice(0, i + 1) + `\n<style>${css}</style>` + svg.slice(i + 1));
+      });
+      return;
     });
   });
 }
+// fabric no pasa al SVG el giro ni la escala de las rayas: aquí se escribe el patrón completo
+fabric.Pattern.prototype.toSVG = function(object){
+  const src = typeof this.source === 'function' ? this.source() : this.source;
+  const url = src.src || (src.toDataURL ? src.toDataURL() : '');
+  const po = (object.type === 'path' && object.pathOffset) ? object.pathOffset : { x:0, y:0 };
+  const ox = -object.width / 2 + po.x + (this.offsetX || 0), oy = -object.height / 2 + po.y + (this.offsetY || 0);
+  const m = this.patternTransform ? ' matrix(' + this.patternTransform.join(' ') + ')' : '';
+  return '<pattern id="SVGID_' + this.id + '" patternUnits="userSpaceOnUse" x="0" y="0" width="' + src.width + '" height="' + src.height +
+    '" patternTransform="translate(' + ox + ' ' + oy + ')' + m + '">\n<image x="0" y="0" width="' + src.width + '" height="' + src.height +
+    '" xlink:href="' + url + '"></image>\n</pattern>\n';
+};
+const svgADataURL = t => 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(t)));
+FORMATO('svg').descargar = async function(){
+  canvas.discardActiveObject(); canvas.requestRenderAll();
+  const lista = paginasAExportar(), transp = $('eTransp').checked;
+  cargando(true);
+  try {
+    for (const it of lista){
+      const svg = await crearSVG(it.p, transp), suf = lista.length > 1 ? '-' + (it.i + 1) : '';
+      bajarBlob(new Blob([svg], { type:'image/svg+xml' }), nombreArchivo() + suf + '.svg');
+      await new Promise(r => setTimeout(r, 400));
+    }
+    toast('SVG descargado. Las letras se ven igual si la computadora o la imprenta tiene esa fuente; si no, pide que lo abran con internet o usa PDF.');
+  } catch (e) { toast('Error al exportar: ' + e.message); }
+  finally { cargando(false); }
+};
+FORMATO('svg').vista = async function(){
+  const lista = paginasAExportar(), transp = $('eTransp').checked;
+  cargando(true);
+  try {
+    const imgs = []; for (const it of lista) imgs.push(svgADataURL(await crearSVG(it.p, transp)));
+    $('vista').innerHTML = '<p class="hint">Vista del SVG (vectorial: puedes agrandarlo sin que pierda calidad).</p>' +
+      imgs.map(u => `<img src="${u}" style="margin-bottom:8px;background:repeating-conic-gradient(#ccc 0 25%,#fff 0 50%) 0 0/16px 16px">`).join('');
+  } finally { cargando(false); }
+};
+FORMATO('svg').drive = async function(){
+  const lista = paginasAExportar(), transp = $('eTransp').checked;
+  cargando(true);
+  try {
+    const hechos = [];
+    for (const it of lista){
+      const suf = lista.length > 1 ? ' (' + (it.i + 1) + ')' : '';
+      hechos.push(await gs('guardarImagen', nombreArchivo() + suf, svgADataURL(await crearSVG(it.p, transp))));
+    }
+    $('eInfo').innerHTML = 'Guardado: ' + hechos.map(r => `<a href="${r.url}" target="_blank">${esc(r.nombre)}</a>`).join(', ');
+    toast('SVG guardado');
+  } catch (e) { toast('Error: ' + e.message); }
+  finally { cargando(false); }
+};
+(function(){
+  const op = document.createElement('option'); op.value = 'svg'; op.textContent = 'SVG (vectorial, para logos e imprenta)';
+  const pdf = $('eFormato').querySelector('option[value="pdf"]'); pdf.after(op);
+  $('eFormato').addEventListener('change', () => { if ($('eFormato').value === 'svg') $('eTransp').disabled = false; });
+})();
+
+// ---------- Meter en una forma (lo de abajo solo se ve dentro de la forma de arriba) ----------
+async function meterEnForma(){
+  const sel = activo();
+  if (!sel || sel.type !== 'activeSelection' || sel.getObjects().length < 2)
+    return toast('Selecciona lo que quieres meter y la forma que va encima (Shift + clic en los dos)');
+  const orden = o => canvas.getObjects().indexOf(o);
+  const objs = sel.getObjects().slice().sort((a, b) => orden(a) - orden(b));
+  const forma = objs[objs.length - 1], contenido = objs.slice(0, -1);
+  if (forma.type === 'image' || forma.esFondo) return toast('Pon encima una forma (círculo, estrella, letra…): esa será el molde');
+  canvas.discardActiveObject();
+  const idx = orden(contenido[0]);
+  const datosForma = forma.toObject(EXTRA);
+  const molde = await clonarPromesa(forma);
+  restaurando = true;
+  [...contenido, forma].forEach(o => canvas.remove(o));
+  const g = new fabric.Group(contenido, { name:'Dentro de ' + (forma.name || 'una forma') });
+  const c = g.getCenterPoint(), fc = forma.getCenterPoint();
+  molde.set({ originX:'center', originY:'center', left:fc.x - c.x, top:fc.y - c.y, shadow:null, opacity:1 });
+  g.clipPath = molde; g.mascara = datosForma; g.id = nuevoId();
+  canvas.insertAt(g, idx);
+  restaurando = false;
+  canvas.setActiveObject(g); canvas.requestRenderAll(); renderCapas(); actualizarPanel(); guardarEstado();
+  toast('Listo. Para mover lo de adentro o cambiar la forma, pulsa “Sacar de la forma”.');
+}
+function sacarDeForma(){
+  const g = activo();
+  if (!g || !g.mascara) return;
+  const datos = g.mascara, idx = canvas.getObjects().indexOf(g);
+  restaurando = true;
+  g.clipPath = null; g.mascara = null;
+  const sel = g.toActiveSelection();
+  restaurando = false;
+  fabric.util.enlivenObjects([datos], ([forma]) => {
+    restaurando = true;
+    canvas.insertAt(forma, idx + sel.getObjects().length);
+    restaurando = false;
+    canvas.discardActiveObject(); canvas.setActiveObject(forma);
+    canvas.requestRenderAll(); renderCapas(); actualizarPanel(); guardarEstado();
+  });
+}
+const agruparToggleBase23 = agruparToggle;
+agruparToggle = function(){ const o = activo(); if (o && o.mascara) return sacarDeForma(); return agruparToggleBase23.apply(this, arguments); };
+
+// ---------- Gotero: tomar un color del diseño o de la pantalla ----------
+function ponerColorTomado(hex){
+  hex = aHex(hex);
+  if (activo()){
+    $('pRelleno').value = hex;
+    $('pRelleno').dispatchEvent(new Event('input')); $('pRelleno').dispatchEvent(new Event('change'));
+    toast('Color aplicado: ' + hex.toUpperCase());
+  } else {
+    $('colorForma').value = hex;
+    toast('Color tomado: ' + hex.toUpperCase() + '. Se usará en las formas nuevas.');
+  }
+}
+async function gotero(){
+  if (window.EyeDropper){
+    try { const r = await new window.EyeDropper().open(); return ponerColorTomado(r.sRGBHex); }
+    catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  // Sin gotero del navegador (celular, Firefox, Safari): toca un punto de tu diseño
+  const el = canvas.lowerCanvasEl, r = el.getBoundingClientRect();
+  const capa = document.createElement('div');
+  capa.style.cssText = `position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;z-index:60;cursor:crosshair;touch-action:none`;
+  const salir = () => { capa.remove(); document.removeEventListener('keydown', esc_); };
+  const esc_ = e => { if (e.key === 'Escape') salir(); };
+  capa.addEventListener('pointerdown', e => {
+    e.preventDefault(); e.stopPropagation();
+    try {
+      const x = Math.floor((e.clientX - r.left) * el.width / r.width), y = Math.floor((e.clientY - r.top) * el.height / r.height);
+      const d = el.getContext('2d').getImageData(x, y, 1, 1).data;
+      ponerColorTomado(d[3] < 10 ? '#ffffff' : '#' + [d[0], d[1], d[2]].map(v => v.toString(16).padStart(2, '0')).join(''));
+    } catch (err) { toast('No se pudo leer ese color (imagen de otra página). Prueba en otra parte del diseño.'); }
+    salir();
+  });
+  document.addEventListener('keydown', esc_);
+  document.body.appendChild(capa);
+  if (document.body.classList.contains('tactil')) alternarProps(false);
+  toast('Toca o haz clic en el lugar de tu diseño del que quieres el color (Esc para cancelar)');
+}
+
+// ---------- Panel: mostrar los botones que tocan según lo seleccionado ----------
+alActualizarPanel(function(){
+  if (generandoVista) return;
+  const o = activo(); if (!o) return;
+  $('bMeterForma').hidden = !(o.type === 'activeSelection' && o.getObjects().length >= 2);
+  $('bSacarForma').hidden = !o.mascara;
+  if (o.mascara) $('bAgrupar').hidden = true;
+  if (o.qr){ $('qrTexto').value = o.qr.texto; $('qrColor').value = aHex(o.qr.color); $('qrFondo').value = aHex(o.qr.fondo); $('qrTransp').checked = !!o.qr.transp; }
+  $('bEditarQR').hidden = !o.qr;
+});
+function editarQRSeleccionado(){
+  const b = document.querySelector('#pestanas button[data-tab="tElementos"]'); if (b) b.click();
+  setTimeout(() => { const t = $('qrTexto'); t.scrollIntoView({ block:'center' }); t.focus(); t.select(); }, 150);
+}
+
+/* =========================================================
+   PLUMA (formas a tu medida) Y MIS FUENTES
+   ========================================================= */
+// ---------- Pluma: clic = punto recto · arrastrar = curva · clic en el primer punto = cerrar ----------
+let pluma = null;   // { pts:[{x,y,h}], arrastre, mouse }
+function avisoPluma(texto){
+  let d = $('plumaAviso');
+  if (!d){ d = document.createElement('div'); d.id = 'plumaAviso'; $('dibujoAviso').parentNode.appendChild(d); }
+  d.innerHTML = texto; d.style.display = texto ? 'flex' : 'none';
+}
+function activarPluma(on){
+  if (on && pluma) return;
+  if (!on){
+    if (!pluma) return;
+    pluma = null; canvas.skipTargetFind = false; canvas.selection = true; canvas.defaultCursor = 'default';
+    canvas.clearContext(canvas.contextTop); avisoPluma(''); $('bPluma') && $('bPluma').classList.remove('on');
+    canvas.requestRenderAll(); return;
+  }
+  if (canvas.isDrawingMode) activarDibujo(null);
+  if (typeof modoConector !== 'undefined' && modoConector) activarModoConector(false);
+  if (activo() && activo().isEditing) activo().exitEditing();
+  canvas.discardActiveObject(); canvas.requestRenderAll();
+  pluma = { pts:[], arrastre:null, mouse:null };
+  canvas.skipTargetFind = true; canvas.selection = false; canvas.defaultCursor = 'crosshair';
+  $('bPluma') && $('bPluma').classList.add('on');
+  if (document.body.classList.contains('tactil')){ abrirLateral && abrirLateral(false); alternarProps && alternarProps(false); }
+  avisoPluma('✒ <span>Toca para poner puntos · arrastra para hacer curvas · toca el primer punto para cerrar</span>' +
+    '<button onclick="deshacerPuntoPluma()">↶ Punto</button><button onclick="terminarPluma(false)">✓ Terminar</button><button onclick="activarPluma(false)">✕</button>');
+}
+const puntoCtrl = (p, signo) => p.h ? { x:p.x + p.h.x * signo, y:p.y + p.h.y * signo } : { x:p.x, y:p.y };
+function trazoPluma(pts, cerrar){
+  if (!pts.length) return '';
+  const f = n => +n.toFixed(2);
+  let d = `M ${f(pts[0].x)} ${f(pts[0].y)}`;
+  const seg = (a, b) => (a.h || b.h)
+    ? (() => { const c1 = puntoCtrl(a, 1), c2 = puntoCtrl(b, -1); return ` C ${f(c1.x)} ${f(c1.y)} ${f(c2.x)} ${f(c2.y)} ${f(b.x)} ${f(b.y)}`; })()
+    : ` L ${f(b.x)} ${f(b.y)}`;
+  for (let i = 1; i < pts.length; i++) d += seg(pts[i - 1], pts[i]);
+  if (cerrar && pts.length > 2) d += seg(pts[pts.length - 1], pts[0]) + ' Z';
+  return d;
+}
+function dibujarPluma(){
+  if (!pluma) return;
+  const ctx = canvas.contextTop; canvas.clearContext(ctx);
+  const pts = pluma.pts.slice();
+  if (!pts.length) return;
+  ctx.save(); ctx.scale(zoom, zoom);
+  const lw = 2 / zoom;
+  // vista previa del tramo que sigue (hasta el mouse)
+  const prev = pluma.mouse && !pluma.arrastre ? [...pts, { x:pluma.mouse.x, y:pluma.mouse.y, h:null }] : pts;
+  const p2 = new Path2D(trazoPluma(prev, false));
+  if (pts.length > 2){ ctx.fillStyle = 'rgba(25,200,255,.10)'; ctx.fill(new Path2D(trazoPluma(pts, true))); }
+  ctx.strokeStyle = '#19c8ff'; ctx.lineWidth = lw * 1.5; ctx.stroke(p2);
+  pts.forEach((p, i) => {
+    if (p.h){
+      const a = puntoCtrl(p, -1), b = puntoCtrl(p, 1);
+      ctx.strokeStyle = 'rgba(255,75,43,.9)'; ctx.lineWidth = lw; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      [a, b].forEach(q => { ctx.fillStyle = '#ff4b2b'; ctx.beginPath(); ctx.arc(q.x, q.y, 4 / zoom, 0, 7); ctx.fill(); });
+    }
+    ctx.fillStyle = i === 0 ? '#ff4b2b' : '#ffffff'; ctx.strokeStyle = '#19c8ff'; ctx.lineWidth = lw;
+    const r = (i === 0 && pts.length > 2 ? 9 : 6) / zoom;
+    ctx.beginPath(); ctx.rect(p.x - r, p.y - r, r * 2, r * 2); ctx.fill(); ctx.stroke();
+  });
+  ctx.restore();
+}
+function deshacerPuntoPluma(){ if (pluma && pluma.pts.length){ pluma.pts.pop(); dibujarPluma(); } }
+function terminarPluma(cerrar){
+  if (!pluma) return;
+  const pts = pluma.pts;
+  if (pts.length < 2){ toast('Pon por lo menos dos puntos'); return; }
+  const k = s(), color = $('colorForma').value;
+  const cerrada = cerrar && pts.length > 2;
+  const o = new fabric.Path(trazoPluma(pts, cerrada), cerrada
+    ? { fill:color, stroke:null, strokeWidth:0 }
+    : { fill:'rgba(0,0,0,0)', stroke:color, strokeWidth:Math.max(2, 8 * k), strokeLineCap:'round', strokeLineJoin:'round', strokeUniform:true });
+  if (!cerrada) o.relleno = { tipo:'ninguno', c1:color, c2:'#ffffff', ang:45, gros:14, sep:14, transp:true };
+  activarPluma(false);
+  agregar(o, cerrada ? 'Forma con pluma' : 'Línea con pluma');
+  renderCapas(); actualizarPanel(); guardarEstado();
+  toast(cerrada ? 'Forma lista: cámbiale el color, el relleno o ponle resplandor en el panel derecho.' : 'Línea lista. Para que tenga relleno, ciérrala tocando el primer punto.');
+}
+canvas.on('mouse:down', e => {
+  if (!pluma) return;
+  const p = canvas.getPointer(e.e), pts = pluma.pts, tol = 12 / zoom;
+  if (pts.length > 2 && Math.hypot(p.x - pts[0].x, p.y - pts[0].y) < tol){ terminarPluma(true); return; }
+  const nuevo = { x:p.x, y:p.y, h:null };
+  pts.push(nuevo); pluma.arrastre = nuevo; dibujarPluma();
+});
+canvas.on('mouse:move', e => {
+  if (!pluma) return;
+  const p = canvas.getPointer(e.e);
+  pluma.mouse = p;
+  const a = pluma.arrastre;
+  if (a){ const dx = p.x - a.x, dy = p.y - a.y; a.h = Math.hypot(dx, dy) > 4 / zoom ? { x:dx, y:dy } : null; }
+  dibujarPluma();
+});
+canvas.on('mouse:up', () => { if (pluma){ pluma.arrastre = null; dibujarPluma(); } });
+canvas.on('mouse:dblclick', () => { if (pluma){ pluma.pts.pop(); terminarPluma(false); } });
+window.addEventListener('keydown', e => {
+  if (!pluma) return;
+  if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); activarPluma(false); }
+  else if (e.key === 'Enter'){ e.preventDefault(); e.stopPropagation(); terminarPluma(false); }
+  else if (e.key === 'Backspace' || e.key === 'Delete'){ e.preventDefault(); e.stopPropagation(); deshacerPuntoPluma(); }
+}, true);
+const activarDibujoBase24 = activarDibujo;
+activarDibujo = function(tipo){ if (tipo) activarPluma(false); return activarDibujoBase24.apply(this, arguments); };
+
+// ---------- Mis fuentes: sube un archivo .ttf, .otf, .woff o .woff2 ----------
+const BD_FUENTES = 'apik-fuentes';
+const bdFuentes = () => new Promise((ok, mal) => {
+  const r = indexedDB.open(BD_FUENTES, 1);
+  r.onupgradeneeded = () => r.result.createObjectStore('fuentes', { keyPath:'nombre' });
+  r.onsuccess = () => ok(r.result); r.onerror = () => mal(r.error);
+});
+const pedirBD = r => new Promise((ok, mal) => { r.onsuccess = () => ok(r.result); r.onerror = () => mal(r.error); });
+async function fuentesGuardadas(){ try { const bd = await bdFuentes(); return await pedirBD(bd.transaction('fuentes').objectStore('fuentes').getAll()); } catch (e) { return []; } }
+const misFuentes = {};   // nombre -> dataURL (para incluirlas al exportar SVG)
+function registrarFuente(nombre, buffer, dataURL){
+  const ff = new FontFace(nombre, buffer);
+  return ff.load().then(f => {
+    document.fonts.add(f); misFuentes[nombre] = dataURL;
+    if (![...$('pFuente').options].some(o => o.value === nombre)){
+      let grupo = $('pFuente').querySelector('optgroup[label="Mis fuentes"]');
+      if (!grupo){ grupo = document.createElement('optgroup'); grupo.label = 'Mis fuentes'; $('pFuente').prepend(grupo); }
+      const op = document.createElement('option'); op.value = nombre; op.textContent = nombre; op.style.fontFamily = `"${nombre}"`; grupo.appendChild(op);
+    }
+    if (!FUENTES.includes(nombre)) FUENTES.push(nombre);
+    fabric.util.clearFabricFontCache(nombre);
+    pintarMisFuentes();
+  });
+}
+function pintarMisFuentes(){
+  const c = $('listaMisFuentes'); if (!c) return;
+  const ns = Object.keys(misFuentes);
+  c.innerHTML = ns.length ? '' : '<p class="hint" style="font-size:12px">Aún no subes ninguna.</p>';
+  ns.forEach(n => {
+    const fila = document.createElement('div'); fila.className = 'filaFuente';
+    const b = document.createElement('button'); b.className = 'bigbtn'; b.style.fontFamily = `"${n}"`; b.style.fontSize = '20px'; b.textContent = n;
+    b.title = 'Agregar un texto con esta fuente (o cambiar el texto seleccionado)';
+    b.onclick = () => {
+      const ts = textos();
+      if (ts.length){ ts.forEach(t => { t.set('fontFamily', n); t.initDimensions(); }); canvas.requestRenderAll(); actualizarPanel(); guardarEstado(); }
+      else agregarTexto('titulo', { text:'Tu texto', fontFamily:n });
+    };
+    const x = document.createElement('button'); x.className = 'pb'; x.textContent = '✕'; x.title = 'Quitar esta fuente de este navegador';
+    x.onclick = async () => {
+      if (!confirm('¿Quitar la fuente “' + n + '”? Los textos que la usan se verán con otra letra.')) return;
+      try { const bd = await bdFuentes(); await pedirBD(bd.transaction('fuentes', 'readwrite').objectStore('fuentes').delete(n)); } catch (e) {}
+      delete misFuentes[n]; pintarMisFuentes();
+    };
+    fila.append(b, x); c.appendChild(fila);
+  });
+}
+async function subirFuente(archivo){
+  if (!archivo) return;
+  if (!/\.(ttf|otf|woff2?)$/i.test(archivo.name)) return toast('Ese archivo no es una fuente. Usa .ttf, .otf, .woff o .woff2');
+  if (archivo.size > 8 * 1048576) return toast('La fuente pesa más de 8 MB; busca otra versión más ligera');
+  const nombre = archivo.name.replace(/\.(ttf|otf|woff2?)$/i, '').replace(/[-_]+/g, ' ').replace(/[^\p{L}\p{N} ]/gu, '').trim().slice(0, 40) || 'Mi fuente';
+  const buffer = await archivo.arrayBuffer();
+  const dataURL = await new Promise(ok => { const r = new FileReader(); r.onload = () => ok(r.result); r.readAsDataURL(archivo); });
+  try { await registrarFuente(nombre, buffer, dataURL); }
+  catch (e) { return toast('No se pudo leer esa fuente. Prueba con otro archivo.'); }
+  try { const bd = await bdFuentes(); await pedirBD(bd.transaction('fuentes', 'readwrite').objectStore('fuentes').put({ nombre, datos:dataURL, fecha:new Date().toISOString() })); } catch (e) {}
+  const ts = textos();
+  if (ts.length){ ts.forEach(t => { t.set('fontFamily', nombre); t.initDimensions(); }); canvas.requestRenderAll(); guardarEstado(); actualizarPanel(); }
+  toast('Fuente “' + nombre + '” lista. La encuentras al inicio de la lista de fuentes.');
+}
+(async function(){
+  for (const f of await fuentesGuardadas()){
+    try { const buf = await (await fetch(f.datos)).arrayBuffer(); await registrarFuente(f.nombre, buf, f.datos); } catch (e) {}
+  }
+  pintarMisFuentes();
+  // los diseños que usan estas fuentes se vuelven a dibujar cuando ya cargaron
+  canvas.getObjects().filter(esTexto).forEach(t => { if (misFuentes[t.fontFamily]){ t.initDimensions(); t.dirty = true; } });
+  canvas.requestRenderAll();
+})();
+// En el SVG se incluyen también tus fuentes subidas
+const cssDeFuenteBase24 = cssDeFuente;
+cssDeFuente = async function(familia, pesos){
+  if (misFuentes[familia]) return `@font-face{font-family:'${familia}';src:url(${misFuentes[familia]});}`;
+  return cssDeFuenteBase24(familia, pesos);
+};
+$('archivoFuente').addEventListener('change', e => { subirFuente(e.target.files[0]); e.target.value = ''; });
 
 </script>

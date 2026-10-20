@@ -28,10 +28,15 @@ function ladosAuto(ra, rb){
 // Recalcula por dónde pasa el conector cada vez que algo se mueve
 function actualizarConector(c){
   if (c.group) return;
-  const a = porId(c.conA), b = porId(c.conB); if (!a || !b) return;
-  const ra = cajaAbs(a), rb = cajaAbs(b);
+  // un extremo puede estar unido a una forma o suelto en un punto (libreA / libreB)
+  const a = porId(c.conA), b = porId(c.conB);
+  if ((!a && !c.libreA) || (!b && !c.libreB)) return;
+  const punto = q => ({ left:q.x, top:q.y, width:0, height:0 });
+  const ra = a ? cajaAbs(a) : punto(c.libreA), rb = b ? cajaAbs(b) : punto(c.libreB);
+  const suelto = !a && !b;
+  c.lockMovementX = c.lockMovementY = !suelto;
   const [la, lb] = (c.fijo && c.ladoA && c.ladoB) ? [c.ladoA, c.ladoB] : ladosAuto(ra, rb);
-  const redonda = o => ['circle','ellipse'].includes(o.type) || ['nube','blob'].includes(o.forma);
+  const redonda = o => !!o && (['circle','ellipse'].includes(o.type) || ['nube','blob'].includes(o.forma));
   const ca = { x: ra.left + ra.width/2, y: ra.top + ra.height/2 }, cb = { x: rb.left + rb.width/2, y: rb.top + rb.height/2 };
   const recta = (c.estilo || 'recta') === 'recta' && !c.fijo;
   const p1 = recta && redonda(a) ? puntoBorde(ra, cb, a) : ladoPunto(ra, la);

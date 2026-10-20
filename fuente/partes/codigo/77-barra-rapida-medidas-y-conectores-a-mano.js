@@ -1,0 +1,282 @@
+/* =========================================================
+   BARRA RÁPIDA (como la de Canva), MEDIDAS AL CAMBIAR EL TAMAÑO
+   Y CONECTORES QUE SE AJUSTAN A MANO
+   ========================================================= */
+EXTRA.push('desvio', 'libreA', 'libreB');
+
+/* ---------- medidas mientras cambias el tamaño o giras ---------- */
+(function(){
+  const t = document.createElement('div'); t.id = 'medidaTip'; t.hidden = true; t.setAttribute('aria-hidden', 'true'); document.body.appendChild(t);
+  const poner = (e, txt) => {
+    const ev = e && e.e; if (!ev) return;
+    const p = ev.touches && ev.touches[0] ? ev.touches[0] : ev;
+    t.textContent = txt; t.hidden = false;
+    const w = t.offsetWidth, h = t.offsetHeight;
+    t.style.left = Math.min(innerWidth - w - 6, p.clientX + 16) + 'px';
+    t.style.top = Math.min(innerHeight - h - 6, p.clientY + 18) + 'px';
+  };
+  const medida = o => 'ancho: ' + Math.round(o.getScaledWidth()) + '  alto: ' + Math.round(o.getScaledHeight());
+  canvas.on('object:scaling', e => e.target && poner(e, medida(e.target)));
+  canvas.on('object:resizing', e => e.target && poner(e, medida(e.target)));
+  canvas.on('object:rotating', e => { if (e.target) poner(e, Math.round(((e.target.angle % 360) + 360) % 360) + '°'); });
+  canvas.on('mouse:up', () => { t.hidden = true; });
+  window.addEventListener('pointerup', () => { t.hidden = true; });
+})();
+
+/* ---------- conectores: punto de en medio para doblarlos y mover los que están sueltos ---------- */
+(function(){
+  const pm = document.createElement('div'); pm.className = 'puntoFin puntoMedio'; pm.title = 'Arrastra para doblar la línea · doble clic para enderezarla';
+  pm.setAttribute('aria-label', 'Doblar la línea');
+  ($('envoltura') || document.body).appendChild(pm);
+  const base = c => { const p = c.calcLinePoints(); return fabric.util.transformPoint(new fabric.Point((p.x1 + p.x2) / 2, (p.y1 + p.y2) / 2), c.calcTransformMatrix()); };
+  const puntoMedio = c => {
+    const est = c.estilo || 'recta'; if (c.modo && est !== 'recta') return null;
+    const d = c.desvio || { x:0, y:0 }, b = base(c);
+    if (est === 'recta') return { x:b.x + d.x, y:b.y + d.y };
+    return c.horiz ? { x:b.x + d.x, y:b.y } : { x:b.x, y:b.y + d.y };
+  };
+  let arr = null;
+  function pintar(){
+    const o = activo();
+    const ver = o && o.type === 'conector' && !arrastreCon && !transformando && !o.bloqueado;
+    const q = ver ? puntoMedio(o) : null;
+    if (!q){ if (!arr) pm.style.display = 'none'; return; }
+    pm.style.left = q.x * zoom + 'px'; pm.style.top = q.y * zoom + 'px'; pm.style.display = 'block';
+  }
+  canvas.on('after:render', pintar);
+  pm.addEventListener('pointerdown', e => {
+    const c = conSel(); if (!c) return;
+    e.preventDefault(); e.stopPropagation(); pm.setPointerCapture(e.pointerId);
+    arr = { c, antes:JSON.stringify(c.desvio || null) };
+  });
+  pm.addEventListener('pointermove', e => {
+    if (!arr) return;
+    const c = arr.c, q = puntoLienzo(e), b = base(c), est = c.estilo || 'recta';
+    let d = est === 'recta' ? { x:q.x - b.x, y:q.y - b.y } : c.horiz ? { x:q.x - b.x, y:0 } : { x:0, y:q.y - b.y };
+    if (Math.hypot(d.x, d.y) < 10 / zoom) d = null;            // cerca del centro: se endereza
+    c.desvio = d; c.dirty = true; canvas.requestRenderAll();
+    pm.style.left = (b.x + (d ? d.x : 0)) * zoom + 'px'; pm.style.top = (b.y + (d ? d.y : 0)) * zoom + 'px';
+  });
+  const soltar = () => { if (!arr) return; const cambio = JSON.stringify(arr.c.desvio || null) !== arr.antes; arr = null; canvas.requestRenderAll(); if (cambio) guardarEstado(); };
+  pm.addEventListener('pointerup', soltar); pm.addEventListener('pointercancel', soltar);
+  pm.addEventListener('dblclick', e => { e.preventDefault(); const c = conSel(); if (!c || !c.desvio) return; c.desvio = null; c.dirty = true; canvas.requestRenderAll(); guardarEstado(); toast('Línea enderezada'); });
+  // una línea con los dos extremos sueltos se puede arrastrar completa
+  canvas.on('object:modified', e => {
+    const c = e.target; if (!c || c.type !== 'conector' || c.conA || c.conB) return;
+    const ex = extremosConector(c);
+    c.libreA = { x:ex.a.x, y:ex.a.y }; c.libreB = { x:ex.b.x, y:ex.b.y };
+    actualizarConector(c); canvas.requestRenderAll();
+  });
+})();
+
+/* ---------- barra rápida arriba del lienzo ---------- */
+const ICO_BR = {
+  menos:'<path d="M5 12h14"/>', mas:'<path d="M12 5v14M5 12h14"/>',
+  izq:'<path d="M4 6h16M4 12h10M4 18h16"/>', centro:'<path d="M4 6h16M7 12h10M4 18h16"/>', der:'<path d="M4 6h16M10 12h10M4 18h16"/>', justify:'<path d="M4 6h16M4 12h16M4 18h16"/>',
+  lista:'<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" fill="currentColor"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="4.5" cy="18" r="1" fill="currentColor"/>',
+  espacio:'<path d="M12 4v16M8 7l4-3 4 3M8 17l4 3 4-3M3 12h4M17 12h4"/>',
+  transp:'<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 12h16M12 4v16" stroke-dasharray="2 2"/><rect x="4" y="4" width="8" height="8" fill="currentColor" fill-opacity=".35" stroke="none"/><rect x="12" y="12" width="8" height="8" fill="currentColor" fill-opacity=".35" stroke="none"/>',
+  borde:'<path d="M4 6h16" stroke-width="1.5"/><path d="M4 12h16" stroke-width="3"/><path d="M4 18h16" stroke-width="5"/>',
+  esquina:'<path d="M5 19V11a6 6 0 0 1 6-6h8"/>', brocha:'<rect x="5" y="3" width="13" height="7" rx="1.5"/><path d="M18 6h2v6h-8v3"/><rect x="10" y="15" width="4" height="6" rx="1"/>',
+  ajustes:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/>',
+  linea:'<path d="M4 18C9 18 9 6 14 6h6"/><path d="M17 3l3 3-3 3"/>', filtros:'<circle cx="9" cy="9" r="5"/><circle cx="15" cy="15" r="5"/>'
+};
+const icoBR = k => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${ICO_BR[k] || ICO_CTX[k] || ICO_UI[k] || ''}</svg>`;
+// ¿se ve esta parte del panel para lo seleccionado?
+function seVe(el){ for (let n = el; n && n !== document.body; n = n.parentElement){ if (n.hidden || n.style.display === 'none') return false; if (n.id === 'props') break; } return !!el; }
+function secEfectos(){ return [...document.querySelectorAll('.secGen')].find(g => { const h = g.querySelector(':scope > h4'); return h && /^Efectos/.test(h.textContent.trim()); }); }
+// mueve partes reales del panel a una ventanita y las regresa al cerrar (así todo sigue funcionando igual)
+let popRapido = null;
+function cerrarPopRapido(){
+  if (!popRapido) return;
+  popRapido.prestados.forEach(([el, marca]) => { marca.parentNode && marca.parentNode.insertBefore(el, marca); marca.remove(); });
+  popRapido.caja.remove(); document.querySelectorAll('#barraRapida button.abierto').forEach(b => b.classList.remove('abierto'));
+  popRapido = null;
+}
+function abrirPopRapido(boton, titulo, contenido){
+  const yaAbierto = popRapido && popRapido.boton === boton;
+  cerrarPopRapido(); if (yaAbierto) return;
+  const caja = document.createElement('div'); caja.id = 'popRapido'; caja.setAttribute('role', 'dialog'); caja.setAttribute('aria-label', titulo);
+  caja.innerHTML = `<div class="cabPop"><b>${esc(titulo)}</b><button class="cerrarPop" aria-label="Cerrar">${icoUI('cerrar')}</button></div><div class="cuerpoPop"></div>`;
+  document.body.appendChild(caja);
+  const cuerpo = caja.querySelector('.cuerpoPop'), prestados = [];
+  (Array.isArray(contenido) ? contenido : [contenido]).filter(Boolean).forEach(el => {
+    if (typeof el === 'string'){ cuerpo.insertAdjacentHTML('beforeend', el); return; }
+    if (el.closest && el.closest('#props')){
+      const marca = document.createComment('pop'); el.before(marca); prestados.push([el, marca]);
+    }
+    cuerpo.appendChild(el);
+  });
+  caja.querySelector('.cerrarPop').onclick = cerrarPopRapido;
+  popRapido = { caja, prestados, boton };
+  boton.classList.add('abierto');
+  const r = boton.getBoundingClientRect(), w = caja.offsetWidth;
+  caja.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + 'px';
+  caja.style.top = (r.bottom + 8) + 'px';
+  caja.style.maxHeight = (innerHeight - r.bottom - 24) + 'px';
+  return cuerpo;
+}
+document.addEventListener('pointerdown', e => {
+  if (!popRapido) return;
+  if (popRapido.caja.contains(e.target) || e.target.closest('#barraRapida') || e.target.closest('.modal')) return;
+  if (e.target.closest('.canvas-container')) return;     // seguir ajustando en el lienzo sin cerrar
+  cerrarPopRapido();
+}, true);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && popRapido){ e.stopImmediatePropagation(); cerrarPopRapido(); } }, true);
+canvas.on('selection:cleared', cerrarPopRapido);
+canvas.on('selection:updated', () => { if (popRapido) cerrarPopRapido(); });
+
+// un control «espejo» que maneja el control real del panel
+const disparar = (el, v) => { if (!el) return; if (v !== undefined) el.value = v; el.dispatchEvent(new Event('input', { bubbles:true })); el.dispatchEvent(new Event('change', { bubbles:true })); };
+let brochaActiva = false;
+function tipoSeleccion(o){
+  if (!o) return null;
+  if (o.type === 'activeSelection') return 'varios';
+  if (o.type === 'conector') return 'linea';
+  if (o.type === 'image') return 'imagen';
+  if (/text/i.test(o.type || '')) return 'texto';
+  return 'forma';
+}
+(function(){
+  const b = document.createElement('div'); b.id = 'barraRapida'; b.setAttribute('role', 'toolbar'); b.setAttribute('aria-label', 'Opciones rápidas'); b.hidden = true;
+  $('centro').appendChild(b);
+})();
+function botonBR(clave, html, titulo, f, extra = ''){
+  return { clave, html, titulo, f, extra };
+}
+function construirBarraRapida(){
+  const bar = $('barraRapida'), o = activo(), tipo = tipoSeleccion(o);
+  cerrarPopRapido();
+  if (!o){ bar.hidden = true; bar.innerHTML = ''; return; }
+  const items = [];
+  const sep = () => items.push('|');
+  if (tipo === 'texto'){
+    const t = o;
+    items.push({ clave:'fuente', tipo:'select' });
+    items.push({ clave:'tam', tipo:'tam' });
+    items.push(botonBR('color', `<span class="aColor" style="--c:${esc(aHex(t.fill || '#000000'))}">A</span>`, 'Color del texto', btn => abrirPopRapido(btn, 'Color del texto', [$('secRelleno')])));
+    ['bNegrita', 'bCursiva', 'bSubrayado', 'bTachado', 'bMayus'].forEach(id => {
+      const real = $(id); if (!real) return;
+      const et = { bNegrita:['<b>B</b>', 'Negrita (Ctrl+B)'], bCursiva:['<i>I</i>', 'Cursiva (Ctrl+I)'], bSubrayado:['<u>U</u>', 'Subrayado (Ctrl+U)'], bTachado:['<s>S</s>', 'Tachado'], bMayus:['aA', 'Mayúsculas y minúsculas'] }[id];
+      items.push(botonBR(id, `<span class="letraBR">${et[0]}</span>`, et[1], () => { real.click(); setTimeout(refrescarBarraRapida, 30); }, real.classList.contains('on') ? 'on' : ''));
+    });
+    const al = t.textAlign || 'left';
+    items.push(botonBR('alinear', icoBR({ left:'izq', center:'centro', right:'der', justify:'justify' }[al] || 'izq'), 'Alineación (clic para cambiar)', () => {
+      const orden = ['left', 'center', 'right', 'justify'], sig = orden[(orden.indexOf(t.textAlign || 'left') + 1) % 4];
+      const real = document.querySelector(`#alineaciones .pb[data-al="${sig}"]`); real && real.click(); setTimeout(construirBarraRapida, 30);
+    }));
+    items.push(botonBR('lista', icoBR('lista'), 'Lista', btn => {
+      const c = abrirPopRapido(btn, 'Lista', ['<div class="filaPop"><button class="pb" data-l="v">• Viñetas</button><button class="pb" data-l="n">1. Numerada</button></div>']);
+      c.querySelectorAll('[data-l]').forEach(x => x.onclick = () => { hacerLista(x.dataset.l); });
+    }));
+    items.push(botonBR('espacio', icoBR('espacio'), 'Espaciado', btn => abrirPopRapido(btn, 'Espaciado', [$('pInter') && $('pInter').closest('.fila'), $('pEsp') && $('pEsp').closest('.fila')])));
+  } else if (tipo === 'forma'){
+    const v = o.trazoLibre || o.type === 'line' || o.type === 'path' && !o.fill ? o.stroke : o.fill, col = typeof v === 'string' ? v : '#cccccc';
+    if (seVe($('secRelleno'))) items.push(botonBR('color', `<span class="muestraBR" style="background:${esc(col)}"></span>`, 'Color', btn => abrirPopRapido(btn, 'Color', [$('secRelleno')])));
+    items.push(botonBR('borde', icoBR('borde'), 'Borde: color y grosor', btn => abrirPopRapido(btn, 'Borde', [$('secBorde')])));
+    if (seVe($('secEsquinas'))) items.push(botonBR('esquinas', icoBR('esquina'), 'Esquinas redondeadas', btn => abrirPopRapido(btn, 'Esquinas', [$('secEsquinas')])));
+  } else if (tipo === 'imagen'){
+    items.push(botonBR('recortar', `${icoBR('recortar')}<span>Recortar</span>`, 'Recortar la imagen', () => iniciarRecorteRect()));
+    if (typeof quitarFondoIA === 'function') items.push(botonBR('fondoIA', `${icoBR('varita')}<span>Quitar fondo</span>`, 'Quitar el fondo con IA', () => quitarFondoIA()));
+    if (seVe($('secImagen'))) items.push(botonBR('filtros', `${icoBR('filtros')}<span>Ajustes</span>`, 'Brillo, contraste, filtros y recortes en forma', btn => abrirPopRapido(btn, 'Ajustes de la imagen', [$('secImagen')])));
+    items.push(botonBR('voltear', icoBR('voltearH'), 'Voltear horizontal', () => voltear('flipX')));
+  } else if (tipo === 'linea'){
+    items.push(botonBR('color', `<span class="muestraBR" style="background:${esc(o.stroke || '#1f2330')}"></span>`, 'Color y grosor de la línea', btn => abrirPopRapido(btn, 'Color y grosor', [$('secBorde')])));
+    items.push(botonBR('linea', `${icoBR('linea')}<span>Tipo de línea</span>`, 'Recta, curva o codo · puntas · trazo · texto', btn => abrirPopRapido(btn, 'Tipo de línea', [$('secConector')])));
+    if (o.desvio) items.push(botonBR('enderezar', '<span>Enderezar</span>', 'Quitar el doblez', () => { o.desvio = null; o.dirty = true; canvas.requestRenderAll(); guardarEstado(); construirBarraRapida(); }));
+  } else if (tipo === 'varios'){
+    items.push(botonBR('agrupar', `${icoBR('grupo')}<span>Agrupar</span>`, 'Agrupar (Ctrl+G)', () => { agruparToggle(); setTimeout(construirBarraRapida, 30); }));
+    items.push(botonBR('alinear', `${icoBR('centrar')}<span>Alinear</span>`, 'Alinear y distribuir', btn => {
+      const c = abrirPopRapido(btn, 'Alinear', ['<div class="gridPop">' + [['izq','Izquierda'],['centroH','Centro'],['der','Derecha'],['arriba','Arriba'],['centroV','En medio'],['abajo','Abajo']].map(([k, n]) => `<button class="pb" data-al="${k}">${n}</button>`).join('') + '</div><div class="filaPop"><button class="pb" data-d="h">Distribuir ↔</button><button class="pb" data-d="v">Distribuir ↕</button></div>']);
+      c.querySelectorAll('[data-al]').forEach(x => x.onclick = () => alinear(x.dataset.al)); c.querySelectorAll('[data-d]').forEach(x => x.onclick = () => distribuir(x.dataset.d));
+    }));
+  }
+  if (tipo !== 'linea'){
+    const fOp = $('pOpac') && $('pOpac').closest('.fila');
+    if (fOp) items.push(botonBR('transp', icoBR('transp'), 'Transparencia', btn => abrirPopRapido(btn, 'Transparencia', [fOp])));
+  }
+  sep();
+  if (tipo === 'texto' && $('efectosTexto')) items.push(botonBR('efectos', '<span>Efectos</span>', 'Sombra, contorno, neón, curva…', btn => abrirPopRapido(btn, 'Efectos', [$('efectosTexto'), $('filaCurva') && seVe($('filaCurva')) ? $('filaCurva') : null])));
+  else if (tipo !== 'linea' && secEfectos()) items.push(botonBR('efectos', '<span>Efectos</span>', 'Sombra y transparencia', btn => abrirPopRapido(btn, 'Efectos', [secEfectos()])));
+  if ($('secAnim')) items.push(botonBR('animar', '<span>Animar</span>', 'Animación al presentar', btn => abrirPopRapido(btn, 'Animar', [$('secAnim')])));
+  items.push(botonBR('posicion', '<span>Posición</span>', 'Orden, alinear en la página y medidas exactas', btn => abrirPosicion(btn)));
+  sep();
+  if (tipo !== 'varios') items.push(botonBR('brocha', icoBR('brocha'), 'Copiar estilo: toca aquí y luego el elemento al que se lo quieres poner', () => {
+    copiarEstilo(); brochaActiva = o; bar.querySelector('[data-k="brocha"]').classList.add('on'); toast('Ahora toca el elemento al que le quieres poner este estilo');
+  }, brochaActiva ? 'on' : ''));
+  items.push(botonBR('todo', icoBR('ajustes'), 'Todas las opciones (panel completo)', () => { $('app').classList.add('propsFijo'); revisarProps(); ajustarZoom(); }));
+  // pintar
+  bar.innerHTML = items.map(it => {
+    if (it === '|') return '<span class="sepBR"></span>';
+    if (it.tipo === 'select') return `<select class="fuenteBR" aria-label="Tipo de letra" title="Tipo de letra">${$('pFuente').innerHTML}</select>`;
+    if (it.tipo === 'tam') return `<div class="tamBR"><button data-t="-1" aria-label="Más chico" title="Más chico">${icoBR('menos')}</button><input type="number" min="4" max="999" aria-label="Tamaño de letra" title="Tamaño de letra"><button data-t="1" aria-label="Más grande" title="Más grande">${icoBR('mas')}</button></div>`;
+    return `<button data-k="${it.clave}" class="${it.extra}" title="${esc(it.titulo)}" aria-label="${esc(it.titulo)}">${it.html}</button>`;
+  }).join('');
+  const lista = items.filter(x => x !== '|' && x.f);
+  bar.querySelectorAll('button[data-k]').forEach(btn => { const it = lista.find(x => x.clave === btn.dataset.k); if (it) btn.onclick = () => it.f(btn); });
+  const sel = bar.querySelector('.fuenteBR');
+  if (sel){ sel.value = $('pFuente').value; sel.onchange = () => { disparar($('pFuente'), sel.value); setTimeout(refrescarBarraRapida, 50); }; }
+  const tam = bar.querySelector('.tamBR');
+  if (tam){
+    const inp = tam.querySelector('input'); inp.value = $('pTam').value;
+    inp.onchange = () => disparar($('pTam'), Math.max(4, +inp.value || 4));
+    tam.querySelectorAll('button').forEach(x => x.onclick = () => { const v = Math.max(4, (+$('pTam').value || 0) + (+x.dataset.t)); inp.value = v; disparar($('pTam'), v); });
+  }
+  bar.hidden = !(interfazLimpia() && esEscritorio());
+  ubicarBarraRapida();
+}
+function refrescarBarraRapida(){
+  const bar = $('barraRapida'); if (bar.hidden) return;
+  ['bNegrita', 'bCursiva', 'bSubrayado', 'bTachado', 'bMayus'].forEach(id => { const b = bar.querySelector(`[data-k="${id}"]`); if (b && $(id)) b.classList.toggle('on', $(id).classList.contains('on')); });
+  const sel = bar.querySelector('.fuenteBR'); if (sel && document.activeElement !== sel) sel.value = $('pFuente').value;
+  const inp = bar.querySelector('.tamBR input'); if (inp && document.activeElement !== inp) inp.value = $('pTam').value;
+  const o = activo(), c = bar.querySelector('[data-k="color"] .muestraBR, [data-k="color"] .aColor');
+  if (o && c){ const v = o.type === 'conector' ? o.stroke : o.fill; if (typeof v === 'string'){ if (c.classList.contains('aColor')) c.style.setProperty('--c', v); else c.style.background = v; } }
+}
+function ubicarBarraRapida(){
+  const bar = $('barraRapida'); if (bar.hidden) return;
+  const c = $('centro').getBoundingClientRect();
+  bar.style.left = Math.max(8, (c.width - bar.offsetWidth) / 2) + 'px';
+}
+window.addEventListener('resize', ubicarBarraRapida);
+['selection:created', 'selection:updated', 'selection:cleared'].forEach(ev => canvas.on(ev, () => setTimeout(construirBarraRapida, 0)));
+canvas.on('object:modified', () => setTimeout(refrescarBarraRapida, 0));
+alActualizarPanel(() => setTimeout(refrescarBarraRapida, 0));
+// brocha: el siguiente elemento que tocas recibe el estilo
+canvas.on('mouse:up', e => {
+  if (!brochaActiva) return;
+  const t = e.target; if (!t) return;
+  setTimeout(() => {
+    if (!brochaActiva) return;
+    if (activo() && activo() === t && t !== brochaActiva){ brochaActiva = false; pegarEstilo(); toast('Estilo aplicado'); construirBarraRapida(); }
+  }, 30);
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && brochaActiva){ brochaActiva = false; construirBarraRapida(); } });
+// Posición: orden, alinear en la página y medidas exactas
+function abrirPosicion(btn){
+  const o = activo(); if (!o) return;
+  const c = abrirPopRapido(btn, 'Posición', [
+    '<p class="subPop">Orden</p><div class="gridPop">' + [['frente','Al frente'],['adelante','Adelante'],['atras','Atrás'],['fondo','Al fondo']].map(([k, n]) => `<button class="pb" data-o="${k}">${n}</button>`).join('') + '</div>',
+    '<p class="subPop">Alinear en la página</p><div class="gridPop">' + [['izq','Izquierda'],['centroH','Centro'],['der','Derecha'],['arriba','Arriba'],['centroV','En medio'],['abajo','Abajo']].map(([k, n]) => `<button class="pb" data-al="${k}">${n}</button>`).join('') + '</div>',
+    '<p class="subPop">Medidas (px)</p><div class="medidasPop"><label>Ancho<input type="number" data-m="w" min="1"></label><label>Alto<input type="number" data-m="h" min="1"></label><label>X<input type="number" data-m="x"></label><label>Y<input type="number" data-m="y"></label><label>Giro °<input type="number" data-m="g" min="-360" max="360"></label><label class="propPop"><input type="checkbox" data-m="p" checked> Proporcional</label></div>'
+  ]);
+  const llenar = () => { const r = activo(); if (!r) return; const b = r.getBoundingRect(true, true);
+    c.querySelector('[data-m="w"]').value = Math.round(r.getScaledWidth()); c.querySelector('[data-m="h"]').value = Math.round(r.getScaledHeight());
+    c.querySelector('[data-m="x"]').value = Math.round(b.left); c.querySelector('[data-m="y"]').value = Math.round(b.top); c.querySelector('[data-m="g"]').value = Math.round(r.angle || 0); };
+  llenar();
+  c.querySelectorAll('[data-o]').forEach(x => x.onclick = () => orden(x.dataset.o));
+  c.querySelectorAll('[data-al]').forEach(x => x.onclick = () => { alinear(x.dataset.al); llenar(); });
+  c.querySelectorAll('input[type=number]').forEach(inp => inp.onchange = () => {
+    const r = activo(); if (!r || r.bloqueado) return;
+    const v = +inp.value, m = inp.dataset.m, prop = c.querySelector('[data-m="p"]').checked;
+    if (m === 'w' && v > 0){ const k = v / r.getScaledWidth(); r.scaleX *= k; if (prop) r.scaleY *= k; }
+    else if (m === 'h' && v > 0){ const k = v / r.getScaledHeight(); r.scaleY *= k; if (prop) r.scaleX *= k; }
+    else if (m === 'x' || m === 'y'){ const b = r.getBoundingRect(true, true); if (m === 'x') r.left += v - b.left; else r.top += v - b.top; }
+    else if (m === 'g'){ r.rotate(v); }
+    r.setCoords(); if (typeof actualizarConexiones === 'function') actualizarConexiones(r);
+    canvas.requestRenderAll(); guardarEstado(); llenar();
+  });
+  canvas.on('object:modified', llenar);
+  const quitar = () => canvas.off('object:modified', llenar);
+  const obs = new MutationObserver(() => { if (!c.isConnected){ quitar(); obs.disconnect(); } }); obs.observe(document.body, { childList:true });
+}

@@ -2,651 +2,536 @@
 /*@parte Codigo14*/ (window.__partes = window.__partes || {})['Codigo14'] = true;
 
 /* =========================================================
-   MODO CLARO / OSCURO, ATAJOS VISIBLES Y PRIMEROS PASOS (PRÁCTICA GUIADA)
+   ÍCONOS DIBUJADOS (se ven iguales en cualquier celular o computadora)
    ========================================================= */
-
-/* ---------- Modo claro / oscuro ---------- */
-const ICO_SOL = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
-const ICO_LUNA = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
-function temaClaro(){ return document.documentElement.classList.contains('claro'); }
-function ponerTema(claro, guardar = true){
-  document.documentElement.classList.toggle('claro', !!claro);
-  if (guardar) try { localStorage.setItem('disenador_tema', claro ? 'claro' : 'oscuro'); } catch (e) {}
-  const b = $('bTema'); if (!b) return;
-  b.innerHTML = (claro ? ICO_LUNA : ICO_SOL) + `<span class="etqMenu"> ${claro ? 'Modo oscuro' : 'Modo claro'}</span>`;
-  b.title = claro ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro (se ve mejor en el proyector)';
-  b.setAttribute('aria-label', b.title);
-  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = claro ? '#ffffff' : '#05070d';
-}
-(function(){
-  const ayuda = document.querySelector('#barra [onclick="abrirModal(\'mAyuda\')"]');
-  const b = document.createElement('button'); b.className = 'tb'; b.id = 'bTema';
-  b.onclick = () => { ponerTema(!temaClaro()); toast(temaClaro() ? 'Modo claro' : 'Modo oscuro'); };
-  if (ayuda) ayuda.before(b); else $('barra').appendChild(b);
-  let t = null; try { t = localStorage.getItem('disenador_tema'); } catch (e) {}
-  ponerTema(t === 'claro', false);
-})();
-
-/* ---------- Atajos de teclado nuevos ---------- */
-function hayModalAbierto(){ return !!document.querySelector('.modal.abierto') || (typeof pasoRec !== 'undefined' && pasoRec >= 0); }
-function alternarEstiloTexto(prop){
-  const o = activo(); if (!o || !/text/i.test(o.type || '')) return false;
-  const v = { fontWeight:['bold', 'normal'], fontStyle:['italic', 'normal'], underline:[true, false] }[prop];
-  const on = prop === 'fontWeight' ? (o.fontWeight === 'bold' || +o.fontWeight >= 600) : o[prop] === v[0];
-  o.set(prop, on ? v[1] : v[0]); if (o.initDimensions) o.initDimensions();
-  canvas.requestRenderAll(); guardarEstado(); try { actualizarPanel(); } catch (e) {}
-  return true;
-}
-document.addEventListener('keydown', e => {
-  const tag = (document.activeElement || {}).tagName;
-  if (['INPUT','SELECT','TEXTAREA'].includes(tag) || (document.activeElement && document.activeElement.isContentEditable)) return;
-  const o = activo(); if (o && o.isEditing) return;
-  if (hayModalAbierto()) return;
-  const ctrl = e.ctrlKey || e.metaKey, k = (e.key || '').toLowerCase();
-  let hecho = true;
-  if (ctrl && !e.altKey && (k === 'arrowup' || k === 'arrowdown') && o){ orden(k === 'arrowup' ? (e.shiftKey ? 'frente' : 'adelante') : (e.shiftKey ? 'fondo' : 'atras')); }
-  else if (ctrl && !e.altKey && (e.code === 'BracketRight' || e.code === 'BracketLeft') && o){ orden(e.code === 'BracketRight' ? (e.shiftKey ? 'frente' : 'adelante') : (e.shiftKey ? 'fondo' : 'atras')); }
-  else if (ctrl && !e.altKey && k === 'e'){ abrirModal('mExportar'); }
-  else if (ctrl && e.shiftKey && k === 'l' && o){ bloquearSel(); }
-  else if (ctrl && !e.shiftKey && !e.altKey && k === 'b' && o){ hecho = alternarEstiloTexto('fontWeight'); }
-  else if (ctrl && !e.shiftKey && !e.altKey && k === 'i' && o){ hecho = alternarEstiloTexto('fontStyle'); }
-  else if (ctrl && !e.shiftKey && !e.altKey && k === 'u' && o){ hecho = alternarEstiloTexto('underline'); }
-  else if (!ctrl && !e.altKey && !e.shiftKey && !canvas.isDrawingMode){
-    if (k === 't') agregarTexto('cuerpo');
-    else if (k === 'r') agregarForma('rect');
-    else if (k === 'o') agregarForma('circulo');
-    else if (k === 'l') agregarForma('linea');
-    else if (k === 'i'){ const a = $('archivoImg'); if (a) a.click(); }
-    else hecho = false;
-  }
-  else hecho = false;
-  if (hecho){ e.preventDefault(); e.stopImmediatePropagation(); }
-}, true);
-
-/* ---------- Atajos visibles: en los botones, en el menú «Más» y en la ayuda ---------- */
-const ATAJOS_BOTONES = [
-  ['guardarDrive()', 'Ctrl+S'], ["abrirModal('mExportar')", 'Ctrl+E'], ['duplicar()', 'Ctrl+D'], ['eliminar()', 'Supr'],
-  ['agruparToggle()', 'Ctrl+G'], ['copiarEstilo()', 'Ctrl+Alt+C'], ['pegarEstilo()', 'Ctrl+Alt+V'], ['bloquearSel()', 'Ctrl+Shift+L'],
-  ["orden('frente')", 'Ctrl+Shift+↑'], ["orden('adelante')", 'Ctrl+↑'], ["orden('atras')", 'Ctrl+↓'], ["orden('fondo')", 'Ctrl+Shift+↓'],
-  ["agregarTexto('cuerpo')", 'T'], ["agregarForma('rect')", 'R'], ["agregarForma('circulo')", 'O'], ["agregarForma('linea')", 'L'],
-  ['deshacer()', 'Ctrl+Z'], ['rehacer()', 'Ctrl+Y'], ['abrirBuscar()', 'Ctrl+F'], ["abrirModal('mAyuda')", '?']
-];
-function marcarAtajos(raiz = document){
-  ATAJOS_BOTONES.forEach(([f, a]) => raiz.querySelectorAll(`button[onclick="${f.replace(/"/g, '\\"')}"]`).forEach(b => {
-    b.dataset.atajo = a;
-    const base = (b.getAttribute('title') || b.textContent || '').replace(/\s*\([^()]*\)\s*$/, '').trim();
-    if (base) b.title = base + ' (' + a + ')';
-  }));
-  const archivo = document.querySelector('[onclick*="archivoImg"]'); if (archivo){ archivo.dataset.atajo = 'I'; }
-}
-marcarAtajos();
-alActualizarPanel(() => marcarAtajos($('props')));
-
-const GRUPOS_ATAJOS = [
-  ['Lo básico', [['Ctrl + Z', 'Deshacer'], ['Ctrl + Y', 'Rehacer'], ['Ctrl + S', 'Guardar'], ['Ctrl + E', 'Exportar / descargar'], ['Ctrl + F', 'Buscar y reemplazar texto'], ['?', 'Abrir esta ayuda'], ['Esc', 'Salir del modo actual / quitar selección'], ['Clic derecho', 'Menú: copiar, duplicar, eliminar, orden… (en celular, deja el dedo presionado)'], ['Shift + F10', 'Abrir ese menú con el teclado']]],
-  ['Agregar', [['T', 'Un texto'], ['R', 'Un rectángulo'], ['O', 'Un círculo'], ['L', 'Una línea'], ['I', 'Una imagen de tu equipo'], ['C', 'Modo conector (unir formas)'], ['Tab', 'Una idea conectada (en mapas)']]],
-  ['Editar lo seleccionado', [['Ctrl + C / Ctrl + V', 'Copiar y pegar'], ['Ctrl + D', 'Duplicar'], ['Supr', 'Eliminar'], ['Ctrl + A', 'Seleccionar todo'], ['Ctrl + G', 'Agrupar / desagrupar'], ['Ctrl + Shift + L', 'Bloquear / desbloquear'], ['Ctrl + Alt + C / V', 'Copiar y pegar solo el estilo'], ['Flechas', 'Mover 1 px (con Shift, 10 px)']]],
-  ['Orden', [['Ctrl + ↑', 'Traer adelante'], ['Ctrl + ↓', 'Enviar atrás'], ['Ctrl + Shift + ↑', 'Traer al frente'], ['Ctrl + Shift + ↓', 'Enviar al fondo']]],
-  ['Texto', [['Doble clic', 'Escribir en un texto'], ['Ctrl + B', 'Negrita'], ['Ctrl + I', 'Cursiva'], ['Ctrl + U', 'Subrayado']]],
-  ['Vista y presentación', [['Ctrl + rueda del mouse', 'Acercar / alejar'], ['→ ← Esc N', 'En la presentación: avanzar, regresar, salir y ver tus notas']]]
-];
-(function(){
-  const kbd = t => t.split(/\s*\+\s*/).map(p => p.split(' / ').map(x => `<kbd>${esc(x)}</kbd>`).join(' / ')).join('<i>+</i>');
-  $('listaAtajos').className = 'gruposAtajos';
-  $('listaAtajos').innerHTML = GRUPOS_ATAJOS.map(([g, l]) => `<div class="grupoAtajo"><b>${esc(g)}</b>${l.map(([t, d]) => `<div class="atajo"><span class="teclas">${kbd(t)}</span><span>${esc(d)}</span></div>`).join('')}</div>`).join('');
-})();
-
-// Si usas el mouse para algo que tiene atajo, te lo sugiere una vez (solo con teclado físico)
-(function(){
-  const conTeclado = window.matchMedia && matchMedia('(pointer:fine)').matches;
-  let vistos = {}; try { vistos = JSON.parse(localStorage.getItem('disenador_tips') || '{}'); } catch (e) {}
-  const cuenta = {};
-  document.addEventListener('click', e => {
-    if (!conTeclado) return;
-    const b = e.target.closest && e.target.closest('[data-atajo]'); if (!b) return;
-    const a = b.dataset.atajo; if (vistos[a] || a === '?') return;
-    cuenta[a] = (cuenta[a] || 0) + 1;
-    if (cuenta[a] === 3){
-      vistos[a] = 1; try { localStorage.setItem('disenador_tips', JSON.stringify(vistos)); } catch (er) {}
-      setTimeout(() => toast('💡 Tip: también puedes usar ' + a.replace(/\+/g, ' + ') + ' en tu teclado'), 400);
-    }
-  }, true);
-})();
-
-/* ---------- Primeros pasos: práctica guiada que avanza cuando tú lo haces ---------- */
-const PASOS_PP = [
-  { id:'plantilla', t:'Elige una plantilla', d:'Abre Plantillas y haz clic en la que más te guste.', tab:'tPlantillas', foco:'#lateral .tarjetaPl' },
-  { id:'texto', t:'Cambia un texto', d:'Haz doble clic en un texto del lienzo y escribe lo que quieras.', foco:'texto' },
-  { id:'color', t:'Cambia un color', d:'Con algo seleccionado, elige otro color en el panel de la derecha.', foco:'#props' },
-  { id:'mover', t:'Mueve o agranda algo', d:'Arrastra un elemento o jala una de sus esquinas.', foco:'objeto' },
-  { id:'agregar', t:'Agrega algo nuevo', d:'En Elementos, Formas, Texto o Imágenes, toca algo para ponerlo en tu diseño.', tab:'tElementos', foco:'#pestanas [data-tab="tElementos"]' },
-  { id:'exportar', t:'Descarga tu diseño', d:'Toca ⬇ Exportar y elige PNG, PDF o PowerPoint.', foco:'#barra [onclick*="mExportar"], #menuMas [onclick*="mExportar"]' }
-];
-let PP = { hechos:[], activo:false, mini:false };
-try { PP = { ...PP, ...JSON.parse(localStorage.getItem('disenador_pp') || '{}') }; } catch (e) {}
-const guardarPP = () => { try { localStorage.setItem('disenador_pp', JSON.stringify(PP)); } catch (e) {} };
-(function(){
-  const d = document.createElement('div'); d.id = 'pp'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', 'Primeros pasos'); d.hidden = true;
-  document.body.appendChild(d);
-  const f = document.createElement('div'); f.id = 'ppFoco'; f.hidden = true; document.body.appendChild(f);
-})();
-function iniciarPrimerosPasos(desdeCero){
-  cerrarModal('mAyuda'); $('bienvenida').style.display = 'none';
-  try { localStorage.setItem('disenador_recorrido', '1'); } catch (e) {}
-  if (desdeCero || PP.hechos.length >= PASOS_PP.length) PP.hechos = [];
-  PP.activo = true; PP.mini = false; guardarPP(); pintarPP();
-}
-function cerrarPrimerosPasos(){ PP.activo = false; guardarPP(); $('pp').hidden = true; quitarFocoPP(); }
-function pasoActualPP(){ return PASOS_PP.find(p => !PP.hechos.includes(p.id)); }
-function hechoPP(id){
-  if (!PP.activo || PP.hechos.includes(id)) return;
-  PP.hechos.push(id); guardarPP(); quitarFocoPP();
-  const sig = pasoActualPP();
-  toast(sig ? '✓ ¡Bien! Ahora: ' + sig.t.toLowerCase() : '🎉 ¡Listo! Ya sabes lo básico');
-  pintarPP();
-}
-function ubicarPP(){
-  const d = $('pp'), a = $('area');
-  if (!d || window.innerWidth <= 820 || !a){ if (d){ d.style.left = ''; d.style.bottom = ''; } return; }
-  const r = a.getBoundingClientRect();
-  if (r.width < 380){ d.style.left = ''; d.style.bottom = ''; return; }
-  d.style.left = (r.left + 16) + 'px'; d.style.bottom = Math.max(16, window.innerHeight - r.bottom + 16) + 'px';
-}
-window.addEventListener('resize', ubicarPP);
-function pintarPP(){
-  const d = $('pp'); if (!PP.activo){ d.hidden = true; return; }
-  d.hidden = false; ubicarPP();
-  const n = PP.hechos.length, total = PASOS_PP.length, act = pasoActualPP();
-  d.classList.toggle('mini', !!PP.mini);
-  if (PP.mini){
-    d.innerHTML = `<button class="ppPildora" id="ppAbrir" aria-label="Abrir primeros pasos">🚀 Primeros pasos · ${n}/${total}</button>`;
-    $('ppAbrir').onclick = () => { PP.mini = false; guardarPP(); pintarPP(); };
-    return;
-  }
-  if (!act){
-    d.innerHTML = `<div class="ppCab"><b>🎉 ¡Terminaste!</b><button class="ppX" id="ppCerrar" aria-label="Cerrar">✕</button></div>
-      <p class="ppTxt">Ya sabes elegir, editar, agregar y descargar. Lo demás funciona igual: selecciona algo y mira sus opciones a la derecha.</p>
-      <div class="ppAcc">${typeof abrirEscuela === 'function' ? '<button class="btnS" id="ppEscuela">🎓 Ver el modo escuela</button>' : ''}<button class="btnS" onclick="abrirModal('mAyuda')">Ver atajos</button><button class="btnP" id="ppFin">Cerrar</button></div>`;
-    $('ppCerrar').onclick = $('ppFin').onclick = cerrarPrimerosPasos;
-    if ($('ppEscuela')) $('ppEscuela').onclick = () => { cerrarPrimerosPasos(); abrirEscuela(); };
-    return;
-  }
-  d.innerHTML = `<div class="ppCab"><b>🚀 Primeros pasos</b><span>${n} de ${total}</span><button class="ppX" id="ppMin" aria-label="Minimizar" title="Minimizar">–</button><button class="ppX" id="ppCerrar" aria-label="Cerrar" title="Cerrar">✕</button></div>
-    <div class="ppBarra"><i style="width:${Math.round(n / total * 100)}%"></i></div>
-    <ol class="ppLista">${PASOS_PP.map(p => `<li class="${PP.hechos.includes(p.id) ? 'ok' : p === act ? 'act' : ''}"><span class="ppCheck">${PP.hechos.includes(p.id) ? '✓' : ''}</span><span><b>${esc(p.t)}</b>${p === act ? `<small>${esc(p.d)}</small>` : ''}</span></li>`).join('')}</ol>
-    <div class="ppAcc"><button class="btnS" id="ppSaltar">Saltar este</button><button class="btnP" id="ppMuestra">👀 Muéstrame</button></div>`;
-  $('ppMin').onclick = () => { PP.mini = true; guardarPP(); pintarPP(); quitarFocoPP(); };
-  $('ppCerrar').onclick = cerrarPrimerosPasos;
-  $('ppSaltar').onclick = () => hechoPP(act.id);
-  $('ppMuestra').onclick = () => mostrarPasoPP(act);
-}
-let tFocoPP = null, focoPP = null;
-function quitarFocoPP(){ clearTimeout(tFocoPP); focoPP = null; const f = $('ppFoco'); if (f) f.hidden = true; }
-function rectObjetoPP(o){
-  const el = canvas.upperCanvasEl, r = el.getBoundingClientRect(), k = r.width / canvas.getWidth(), b = o.getBoundingRect();
-  return { left:r.left + b.left * k, top:r.top + b.top * k, width:b.width * k, height:b.height * k };
-}
-function objetoParaPP(soloTexto){
-  const objs = canvas.getObjects().filter(o => o.visible !== false && o.selectable !== false && !o.esFondo && !o.esTemporal);
-  return (soloTexto ? objs.filter(o => /text/i.test(o.type || '')) : objs).sort((a, b) => b.getScaledWidth() * b.getScaledHeight() - a.getScaledWidth() * a.getScaledHeight())[0]
-    || (soloTexto ? null : objs[0]);
-}
-function mostrarPasoPP(p){
-  if (p.tab){ const b = document.querySelector(`#pestanas button[data-tab="${p.tab}"]`); if (b && !b.classList.contains('activa')) b.click(); if (window.innerWidth <= 820 && typeof abrirLateral === 'function') abrirLateral(true); }
-  let objetivo = null;
-  if (p.foco === 'texto' || p.foco === 'objeto' || p.foco === '#props'){
-    let o = activo();
-    if (!o || (p.foco === 'texto' && !/text/i.test(o.type || ''))){ o = objetoParaPP(p.foco === 'texto'); if (o){ canvas.setActiveObject(o); canvas.requestRenderAll(); } }
-    if (!o){ toast(p.foco === 'texto' ? 'Primero agrega un texto (pestaña Texto) o elige una plantilla' : 'Primero agrega algo a tu diseño'); return; }
-    if (p.foco === '#props'){ if (window.innerWidth <= 820 && typeof alternarProps === 'function') try { alternarProps(true); } catch (e) {} objetivo = () => { const el = $('props'); const r = el.getBoundingClientRect(); return r.width > 0 ? r : rectObjetoPP(o); }; }
-    else objetivo = () => rectObjetoPP(o);
-  } else {
-    objetivo = () => { const el = [...document.querySelectorAll(p.foco)].find(x => x.getBoundingClientRect().width > 0); return el ? el.getBoundingClientRect() : null; };
-  }
-  setTimeout(() => {
-    focoPP = objetivo; ponerFocoPP();
-    const r = focoPP && focoPP(); if (!r) toast(p.d);
-    clearTimeout(tFocoPP); tFocoPP = setTimeout(quitarFocoPP, 6000);
-  }, p.tab ? 250 : 30);
-}
-function ponerFocoPP(){
-  const f = $('ppFoco'), r = focoPP && focoPP(); if (!r){ f.hidden = true; return; }
-  f.hidden = false;
-  Object.assign(f.style, { left:(r.left - 6) + 'px', top:(r.top - 6) + 'px', width:(r.width + 12) + 'px', height:(r.height + 12) + 'px' });
-}
-window.addEventListener('resize', () => { if (focoPP) ponerFocoPP(); });
-// Lo que hace avanzar cada paso
-document.addEventListener('click', e => {
-  if (!PP.activo || !e.target.closest) return;
-  const t = e.target;
-  if (t.closest('.tarjetaPl')) setTimeout(() => hechoPP('plantilla'), 600);
-  if (t.closest('#mExportar button') && !/cerrar|cancelar/i.test(t.textContent || '')) setTimeout(() => hechoPP('exportar'), 300);
-  if (t.closest('#tElementos, #tFormas, #tTexto, #tImagenes, #tDiagramas') && t.closest('button, img, .forma, .icoBanco, svg')){
-    const antes = canvas.getObjects().length;
-    setTimeout(() => { if (canvas.getObjects().length > antes) hechoPP('agregar'); }, 900);
-  }
-  if (t.closest('#props') && t.closest('.sw, .swatch, [data-color]')) setTimeout(() => hechoPP('color'), 200);
-}, true);
-document.addEventListener('input', e => {
-  if (!PP.activo) return;
-  if (e.target.type === 'color' && e.target.closest('#props, #accMovil')) hechoPP('color');
-  if (e.target.id === 'pContenido') hechoPP('texto');
-}, true);
-canvas.on('text:changed', () => hechoPP('texto'));
-canvas.on('object:modified', e => { if (e && e.e && e.target && !e.target.isEditing) hechoPP('mover'); });
-canvas.on('object:moving', () => { if (focoPP) quitarFocoPP(); });
-if (PP.activo) setTimeout(pintarPP, 1200);
-/* =========================================================
-   MENÚ DE CLIC DERECHO (y dejando el dedo presionado en celular/tablet)
-   ========================================================= */
-const ICO_CTX = {
-  copiar:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/>',
-  pegar:'<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h4"/>',
-  duplicar:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V6a2 2 0 0 1 2-2h10M14 11v6M11 14h6"/>',
-  eliminar:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/>',
-  estilo:'<path d="M4 20l6-6M14 4l6 6-8 8-6-6z"/>',
-  frente:'<rect x="8" y="8" width="12" height="12" rx="1" fill="currentColor" fill-opacity=".25"/><path d="M4 16V4h12"/>',
-  fondo:'<rect x="4" y="4" width="12" height="12" rx="1"/><path d="M20 8v12H8" />',
-  arriba:'<path d="M12 19V5M6 11l6-6 6 6"/>',
-  abajo:'<path d="M12 5v14M6 13l6 6 6-6"/>',
-  grupo:'<rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><path d="M11 7h4v4M13 17H9v-4"/>',
-  candado:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
-  abierto:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/>',
-  voltearH:'<path d="M12 3v18M8 7L3 12l5 5zM16 7l5 5-5 5z"/>',
-  voltearV:'<path d="M3 12h18M7 8l5-5 5 5zM7 16l5 5 5-5z"/>',
-  centrar:'<circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>',
-  texto:'<path d="M5 6V4h14v2M12 4v16M9 20h6"/>',
-  imagen:'<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 8"/>',
-  recortar:'<path d="M6 2v14a2 2 0 0 0 2 2h14M2 6h14a2 2 0 0 1 2 2v14"/>',
-  varita:'<path d="M15 4V2M15 10V8M11 6h2M17 6h2M4 20l11-11"/>',
-  deshacer:'<path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>',
-  rehacer:'<path d="M15 14l5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/>',
-  todo:'<path d="M4 4h4M4 4v4M20 4h-4M20 4v4M4 20h4M4 20v-4M20 20h-4M20 20v-4"/>',
-  forma:'<rect x="4" y="4" width="16" height="16" rx="3"/>',
-  fondoPag:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15l6-6 12 12"/>'
+const ICONOS_UI = {
+  carpeta:'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+  guardar:'M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM8 3v5h7V3M7 21v-7h10v7',
+  deshacer:'M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3', rehacer:'M15 14l5-5-5-5M20 9H10a6 6 0 0 0 0 12h3',
+  buscar:'M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14zM21 21l-5-5',
+  corazon:'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z',
+  enlace:'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',
+  play:'M7 5v14l11-7z', descargar:'M12 4v11M7 10l5 5 5-5M5 20h14', subir:'M12 20V9M7 14l5-5 5 5M5 4h14',
+  ajustar:'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',
+  basura:'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6', duplicar:'M8 8h11v11H8zM5 16V5h11',
+  lapiz:'M4 20h4L19 9l-4-4L4 16zM14 6l4 4', izq:'M15 5l-7 7 7 7', der:'M9 5l7 7-7 7',
+  notas:'M6 3h9l4 4v14H6zM9 12h7M9 16h5', mas:'M12 5v14M5 12h14', menos:'M5 12h14',
+  plantillas:'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z', texto:'M5 7V4h14v3M12 4v16M9 20h6',
+  formas:'M4 13h7v7H4zM16.5 4a3.5 3.5 0 1 0 0 7a3.5 3.5 0 1 0 0-7zM7.5 3l3.5 6H4z',
+  elementos:'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 15l.8 2.2 2.2.8-2.2.8L19 21l-.8-2.2-2.2-.8 2.2-.8z',
+  dibujar:'M4 20c0-3 1-4.5 3-5l9-9 3 3-9 9c-.5 2-2 3-6 2zM14 8l2 2',
+  imagen:'M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M15.5 8.5h.01', diagramas:'M4 4h6v5H4zM14 15h6v5h-6zM7 9v3h10v3',
+  fondo:'M4 4h16v16H4zM4 15l5-5 11 11M14 4l6 6', marca:'M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z',
+  monitor:'M3 4h18v12H3zM8 20h8M12 16v4', listo:'M5 12l5 5 9-10', cerrar:'M6 6l12 12M18 6 6 18'
 };
-const icoCtx = k => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${ICO_CTX[k] || ''}</svg>`;
-let menuCtxPunto = null;          // dónde se abrió el menú (en coordenadas del diseño)
+const GLIFO_ICONO = { '📂':'carpeta', '💾':'guardar', '↶':'deshacer', '↷':'rehacer', '🔍':'buscar', '❤':'corazon', '❤️':'corazon', '🔗':'enlace', '▶':'play',
+  '⬇':'descargar', '⬆':'subir', '⤢':'ajustar', '🗑':'basura', '🗑️':'basura', '⧉':'duplicar', '✎':'lapiz', '◀':'izq', '📝':'notas', '＋':'mas', '+':'mas', '−':'menos', '▦':'plantillas' };
+const GLIFO_PESTANA = { tPlantillas:'plantillas', tTexto:'texto', tFormas:'formas', tElementos:'elementos', tDibujar:'dibujar', tImagenes:'imagen',
+  tDiagramas:'diagramas', tFondo:'fondo', tMarca:'marca', tWeb:'monitor' };
+function svgIcono(n){ return `<svg class="ico${n === 'play' ? ' relleno' : ''}" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="${ICONOS_UI[n]}"/></svg>`; }
 (function(){
-  const m = document.createElement('div'); m.id = 'menuCtx'; m.setAttribute('role', 'menu'); m.hidden = true; document.body.appendChild(m);
+  const ZONAS = '#barra, #pestanas, #accMovil, #paginas, #barraNotas, #props .grupoBtns, #props .fila, #fila3D, #lateral .bigbtn';
+  const glifos = Object.keys(GLIFO_ICONO).sort((a, b) => b.length - a.length);
+  function convertir(b){
+    if (b.querySelector('svg.ico')) return;
+    const tab = b.closest('#pestanas') && b.dataset.tab;
+    if (tab && GLIFO_PESTANA[tab]){ const s = b.querySelector('span'); if (s){ s.innerHTML = svgIcono(GLIFO_PESTANA[tab]); } return; }
+    const n = [...b.childNodes].find(x => x.nodeType === 3 && x.textContent.trim());
+    if (!n || n !== [...b.childNodes].find(x => x.nodeType !== 3 || x.textContent.trim())) return;
+    const t = n.textContent.replace(/^\s+/, '');
+    const g = glifos.find(x => t.startsWith(x) && (t.length === x.length || /\s|️/.test(t[x.length])));
+    if (!g) return;
+    if ((g === '+' || g === '−') && t.trim().length > 1 && !/^[+−]\s/.test(t)) return;
+    const resto = t.slice(g.length).replace(/^️/, '');
+    const sp = document.createElement('span'); sp.className = 'icoCaja'; sp.innerHTML = svgIcono(GLIFO_ICONO[g]);
+    b.insertBefore(sp, n); n.textContent = resto.trim() ? ' ' + resto.trim() : '';
+    if (!resto.trim() && !b.getAttribute('aria-label') && b.title) b.setAttribute('aria-label', b.title);
+  }
+  const todos = raiz => raiz.querySelectorAll('button').forEach(b => { if (b.matches(ZONAS.split(',').map(z => z.trim() + ' button, ' + z.trim()).join(','))) convertir(b); });
+  todos(document);
+  let pend = false;
+  new MutationObserver(() => { if (pend) return; pend = true; requestAnimationFrame(() => { pend = false; todos(document); }); })
+    .observe(document.body, { childList:true, subtree:true, characterData:true });
 })();
-function cerrarMenuCtx(){ const m = $('menuCtx'); if (!m.hidden){ m.hidden = true; m.innerHTML = ''; } }
-function opcionesMenuCtx(){
-  const o = activo(), varios = o && o.type === 'activeSelection', esTexto = o && /text/i.test(o.type || '') && !varios;
-  const L = [];
-  if (o){
-    L.push({ t:'Copiar', a:'Ctrl+C', i:'copiar', f:() => clonar(o, c => { portapapeles = c; toast('Copiado'); }) });
-    L.push({ t:'Pegar', a:'Ctrl+V', i:'pegar', des:!portapapeles, f:() => clonar(portapapeles, pegarClon) });
-    L.push({ t:'Duplicar', a:'Ctrl+D', i:'duplicar', f:duplicar });
-    L.push({ t:'Eliminar', a:'Supr', i:'eliminar', peligro:true, des:!!o.bloqueado, f:eliminar });
-    L.push('-');
-    if (esTexto) L.push({ t:'Editar el texto', a:'Doble clic', i:'texto', des:!!o.bloqueado, f:() => { canvas.setActiveObject(o); o.enterEditing(); o.selectAll(); canvas.requestRenderAll(); } });
-    if (o.type === 'image'){
-      if (typeof iniciarRecorteRect === 'function') L.push({ t:'Recortar', i:'recortar', f:iniciarRecorteRect });
-      if (typeof quitarFondoIA === 'function') L.push({ t:'Quitar el fondo (IA)', i:'varita', f:quitarFondoIA });
-    }
-    L.push({ t:'Copiar estilo', a:'Ctrl+Alt+C', i:'estilo', des:varios, f:copiarEstilo });
-    L.push({ t:'Pegar estilo', a:'Ctrl+Alt+V', i:'estilo', f:pegarEstilo });
-    L.push('-');
-    L.push({ t:'Traer al frente', a:'Ctrl+Shift+↑', i:'frente', des:varios, f:() => orden('frente') });
-    L.push({ t:'Traer adelante', a:'Ctrl+↑', i:'arriba', des:varios, f:() => orden('adelante') });
-    L.push({ t:'Enviar atrás', a:'Ctrl+↓', i:'abajo', des:varios, f:() => orden('atras') });
-    L.push({ t:'Enviar al fondo', a:'Ctrl+Shift+↓', i:'fondo', des:varios, f:() => orden('fondo') });
-    L.push('-');
-    if (varios) L.push({ t:'Agrupar', a:'Ctrl+G', i:'grupo', f:agruparToggle });
-    else if (o.type === 'group') L.push({ t:'Desagrupar', a:'Ctrl+G', i:'grupo', f:agruparToggle });
-    L.push({ t:'Centrar en la página', i:'centrar', f:() => { alinear('centroH'); alinear('centroV'); } });
-    L.push({ t:'Voltear horizontal', i:'voltearH', des:varios, f:() => voltear('flipX') });
-    L.push({ t:'Voltear vertical', i:'voltearV', des:varios, f:() => voltear('flipY') });
-    L.push({ t:o.bloqueado ? 'Desbloquear' : 'Bloquear', a:'Ctrl+Shift+L', i:o.bloqueado ? 'abierto' : 'candado', f:bloquearSel });
-    L.push('-');
-    L.push({ t:'Copiar como imagen', i:'imagen', f:() => copiarComoImagen(o) });
-  } else {
-    L.push({ t:'Pegar aquí', a:'Ctrl+V', i:'pegar', des:!portapapeles, f:() => clonar(portapapeles, c => { pegarClon(c); moverAlPunto(c); }) });
-    L.push({ t:'Seleccionar todo', a:'Ctrl+A', i:'todo', f:() => { const objs = canvas.getObjects().filter(x => x.selectable && x.visible); if (objs.length){ canvas.setActiveObject(new fabric.ActiveSelection(objs, { canvas })); canvas.requestRenderAll(); } } });
-    L.push('-');
-    L.push({ t:'Agregar un texto aquí', a:'T', i:'texto', f:() => { agregarTexto('cuerpo'); moverAlPunto(activo()); } });
-    L.push({ t:'Agregar un rectángulo aquí', a:'R', i:'forma', f:() => { agregarForma('rect'); moverAlPunto(activo()); } });
-    L.push({ t:'Cambiar el fondo', i:'fondoPag', f:() => { const b = document.querySelector('#pestanas button[data-tab="tFondo"]'); if (b) b.click(); if (window.innerWidth <= 820 && typeof abrirLateral === 'function') abrirLateral(true); } });
-    L.push('-');
-    L.push({ t:'Deshacer', a:'Ctrl+Z', i:'deshacer', des:hi <= 0, f:deshacer });
-    L.push({ t:'Rehacer', a:'Ctrl+Y', i:'rehacer', des:hi >= historial.length - 1, f:rehacer });
-  }
-  // sin separadores repetidos ni al final
-  return L.filter((x, i, a) => x !== '-' || (i > 0 && a[i - 1] !== '-' && i < a.length - 1));
-}
-function moverAlPunto(o){
-  if (!o || !menuCtxPunto) return;
-  // que quede completo dentro de la página
-  const w = Math.min(o.getScaledWidth(), W), h = Math.min(o.getScaledHeight(), H);
-  const x = Math.max(w / 2, Math.min(W - w / 2, menuCtxPunto.x)), y = Math.max(h / 2, Math.min(H - h / 2, menuCtxPunto.y));
-  o.setPositionByOrigin(new fabric.Point(x, y), 'center', 'center');
-  o.setCoords(); canvas.requestRenderAll(); guardarEstado();
-}
-async function copiarComoImagen(o){
-  try {
-    const url = o.toDataURL({ format:'png', multiplier:Math.min(4, Math.max(1, 1200 / Math.max(o.getScaledWidth(), o.getScaledHeight()))) });
-    const blob = await (await fetch(url)).blob();
-    if (!navigator.clipboard || !window.ClipboardItem) throw new Error('sin portapapeles');
-    await navigator.clipboard.write([new ClipboardItem({ 'image/png':blob })]);
-    toast('Imagen copiada: pégala en Word, WhatsApp, Docs…');
-  } catch (e) { toast('Tu navegador no deja copiar imágenes. Usa ⬇ Exportar.'); }
-}
-function abrirMenuCtx(x, y){
-  const m = $('menuCtx'), ops = opcionesMenuCtx();
-  m.innerHTML = ops.map((op, i) => op === '-' ? '<div class="sepCtx" role="separator"></div>'
-    : `<button role="menuitem" data-i="${i}" class="${op.peligro ? 'peligro' : ''}"${op.des ? ' disabled aria-disabled="true"' : ''}>${icoCtx(op.i)}<span>${esc(op.t)}</span>${op.a ? `<kbd>${esc(op.a)}</kbd>` : ''}</button>`).join('');
-  m.querySelectorAll('button').forEach(b => b.onclick = () => { const op = ops[+b.dataset.i]; cerrarMenuCtx(); try { op.f(); } catch (e) { console.error(e); } });
-  m.hidden = false;
-  const r = m.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight;
-  m.style.left = Math.max(6, Math.min(x, vw - r.width - 6)) + 'px';
-  m.style.top = Math.max(6, (y + r.height > vh - 6 ? Math.max(6, y - r.height) : y)) + 'px';
-  const pri = m.querySelector('button:not([disabled])'); if (pri) pri.focus({ preventScroll:true });
-}
-function puntoDiseno(e){ const p = canvas.getPointer(e); return { x:p.x, y:p.y }; }
-// Clic derecho sobre el lienzo: selecciona lo que está debajo (si no estaba ya seleccionado) y abre el menú
-function menuCtxEnLienzo(e, x, y){
-  if (canvas.isDrawingMode || (typeof modoConector !== 'undefined' && modoConector)) return false;
-  const o = activo(); if (o && o.isEditing) return false;
-  const t = canvas.findTarget(e, false);
-  if (t && !canvas.getActiveObjects().includes(t) && t !== o){ canvas.setActiveObject(t); canvas.requestRenderAll(); }
-  else if (!t && o && !(o.containsPoint && o.containsPoint(canvas.getPointer(e, true)))){ canvas.discardActiveObject(); canvas.requestRenderAll(); }
-  menuCtxPunto = puntoDiseno(e);
-  abrirMenuCtx(x, y);
-  return true;
-}
-(function(){
-  const sup = canvas.upperCanvasEl, cont = sup.parentNode;
-  cont.addEventListener('contextmenu', e => { if (menuCtxEnLienzo(e, e.clientX, e.clientY)) e.preventDefault(); });
-  // celular y tablet: dejar el dedo presionado
-  let tToque = null, inicio = null;
-  sup.addEventListener('touchstart', e => {
-    if (e.touches.length !== 1) { clearTimeout(tToque); return; }
-    const t = e.touches[0]; inicio = { x:t.clientX, y:t.clientY };
-    clearTimeout(tToque);
-    tToque = setTimeout(() => {
-      const ev = { clientX:inicio.x, clientY:inicio.y, target:sup, touches:[], changedTouches:[{ clientX:inicio.x, clientY:inicio.y }], type:'touchend', preventDefault(){} };
-      const o = activo();
-      if (o && (o.isMoving || o.isEditing)) return;
-      if (menuCtxEnLienzo(ev, inicio.x, inicio.y)){ if (navigator.vibrate) try { navigator.vibrate(12); } catch (er) {} }
-    }, 560);
-  }, { passive:true });
-  sup.addEventListener('touchmove', e => { const t = e.touches[0]; if (inicio && t && Math.hypot(t.clientX - inicio.x, t.clientY - inicio.y) > 10) clearTimeout(tToque); }, { passive:true });
-  ['touchend', 'touchcancel'].forEach(n => sup.addEventListener(n, () => clearTimeout(tToque), { passive:true }));
-  canvas.on('object:moving', () => clearTimeout(tToque));
-})();
-// cerrar: clic afuera, Esc, rueda, cambiar tamaño de ventana
-document.addEventListener('pointerdown', e => { const m = $('menuCtx'); if (!m.hidden && !m.contains(e.target)) cerrarMenuCtx(); }, true);
-window.addEventListener('resize', cerrarMenuCtx);
-window.addEventListener('blur', cerrarMenuCtx);
-document.addEventListener('wheel', e => { const m = $('menuCtx'); if (!m.hidden && !m.contains(e.target)) cerrarMenuCtx(); }, { passive:true, capture:true });
-document.addEventListener('keydown', e => {
-  const m = $('menuCtx');
-  if (!m.hidden){
-    const bs = [...m.querySelectorAll('button:not([disabled])')], k = bs.indexOf(document.activeElement);
-    if (e.key === 'Escape'){ e.preventDefault(); e.stopImmediatePropagation(); cerrarMenuCtx(); }
-    else if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){ e.preventDefault(); e.stopImmediatePropagation(); const n = bs.length; if (n) bs[(k + (e.key === 'ArrowDown' ? 1 : -1) + n) % n].focus(); }
-    else if (e.key === 'Tab'){ cerrarMenuCtx(); }
-    else if (e.key !== 'Enter' && e.key !== ' ') { e.stopImmediatePropagation(); }
-    return;
-  }
-  // tecla «menú» o Shift+F10: abre el menú de lo seleccionado (útil sin mouse)
-  if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')){
-    const tag = (document.activeElement || {}).tagName;
-    if (['INPUT','SELECT','TEXTAREA'].includes(tag) || document.querySelector('.modal.abierto')) return;
-    const o = activo(); if (o && o.isEditing) return;
-    e.preventDefault();
-    const r = canvas.upperCanvasEl.getBoundingClientRect(), k = r.width / canvas.getWidth();
-    let x = r.left + r.width / 2, y = r.top + r.height / 2;
-    if (o){ const b = o.getBoundingRect(); x = r.left + (b.left + b.width / 2) * k; y = r.top + (b.top + b.height / 2) * k; }
-    menuCtxPunto = o ? { x:o.getCenterPoint().x, y:o.getCenterPoint().y } : { x:W / 2, y:H / 2 };
-    abrirMenuCtx(x, y);
-  }
-}, true);
-/* =========================================================
-   INTERFAZ LIMPIA (más espacio para el diseño, como Canva o Figma)
-   - Arriba solo lo esencial; lo demás va en el menú «Archivo».
-   - El panel izquierdo se oculta y se muestra (clic en la pestaña activa o en la flecha).
-   - El panel derecho flota y solo aparece cuando seleccionas algo (o abres Capas).
-   - Barra flotante junto a lo seleccionado: duplicar, bloquear, eliminar y más.
-   - Abajo: notas, páginas (se pueden ocultar) y zoom, como en Canva.
-   - Modo enfoque (Ctrl + \): solo el lienzo.
-   Todo se puede regresar a la «interfaz clásica» desde el menú Archivo.
-   ========================================================= */
-const ICO_UI = {
-  chevron:'<path d="M6 9l6 6 6-6"/>', izq:'<path d="M15 18l-6-6 6-6"/>', der:'<path d="M9 18l6-6-6-6"/>',
-  capas:'<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>', enfoque:'<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
-  paginas:'<rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/>',
-  cerrar:'<path d="M6 6l12 12M18 6L6 18"/>', interfaz:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M3 9h6"/>',
-  mas:'<path d="M5 12h.01M12 12h.01M19 12h.01" style="stroke-width:3.2"/>'
-};
-const icoUI = k => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${ICO_UI[k] || ICO_CTX[k] || ''}</svg>`;
-const esEscritorio = () => window.innerWidth > 820;
-function interfazLimpia(){ return document.documentElement.classList.contains('limpia'); }
 
-/* ---------- menú «Archivo» ---------- */
+/* =========================================================
+   BARRA DE ARRIBA ADAPTABLE: lo que no cabe pasa al menú «Más»
+   ========================================================= */
 (function(){
-  const barra = $('barra'), logo = barra.querySelector('.logo');
-  const b = document.createElement('button'); b.className = 'tb'; b.id = 'bArchivo';
-  b.setAttribute('aria-haspopup', 'true'); b.setAttribute('aria-expanded', 'false'); b.title = 'Archivo: nuevo, abrir, buscar, ayuda y más';
-  b.innerHTML = `<svg class="ico icoMenuArch" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>Archivo ${icoUI('chevron')}`;
-  logo.after(b);
-  const m = document.createElement('div'); m.id = 'menuArchivo'; m.setAttribute('role', 'menu'); m.hidden = true;
-  m.innerHTML = '<div id="maPrincipal"></div><div class="sepMenu"></div><div id="maVista"></div><div class="sepMenu"></div><div id="maExtra"></div>';
-  document.body.appendChild(m);
+  const barra = $('barra'); if (!barra) return;
+  // agrupar el zoom y deshacer/rehacer para que se muevan juntos
+  const agrupar = (id, els) => { els = els.filter(Boolean); if (!els.length) return null; const g = document.createElement('div'); g.id = id; g.className = 'grupoBarra';
+    els[0].before(g); els.forEach(e => g.appendChild(e)); return g; };
+  const hijos = [...barra.children];
+  const porClick = t => hijos.find(e => e.tagName === 'BUTTON' && (e.getAttribute('onclick') || '').includes(t));
+  agrupar('grupoHist', [$('bDeshacer'), $('bRehacer')]);
+  agrupar('grupoZoom', [porClick('cambiarZoom(-0.1)'), $('zoomTxt'), porClick('cambiarZoom(0.1)')]);
+  hijos.forEach(b => { if (b.tagName === 'BUTTON' && !b.title){ const t = b.textContent.trim(); if (t) { b.title = t; b.setAttribute('aria-label', t); } } });
+  // fabric 5.3.1 usa un valor que el navegador no reconoce y llena la consola de avisos: se corrige
+  try { const f = fabric.Text.prototype._setTextStyles, src = f.toString();
+    if (/(["'])alphabetical\1/.test(src)) fabric.Text.prototype._setTextStyles = (0, eval)('(' + src.replace(/^_setTextStyles\s*\(/, 'function(').replace(/(["'])alphabetical\1/, '"alphabetic"') + ')');
+  } catch (e) {}
+  // botón «Más» y su menú
+  const mas = document.createElement('button'); mas.className = 'tb'; mas.id = 'bMas'; mas.hidden = true;
+  mas.title = 'Más opciones'; mas.setAttribute('aria-label', 'Más opciones'); mas.setAttribute('aria-haspopup', 'true'); mas.setAttribute('aria-expanded', 'false');
+  mas.innerHTML = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01" style="stroke-width:3.2"/></svg><span class="txtMas"> Más</span>';
+  const menu = document.createElement('div'); menu.id = 'menuMas'; menu.setAttribute('role', 'menu'); menu.hidden = true;
+  document.body.appendChild(menu);
+  // prioridad: el número más bajo se va primero al menú
+  const PRIOR = [
+    [e => e.id === 'bTema', 0.5],
+    [e => e.tagName === 'BUTTON' && e.getAttribute('onclick') === "abrirModal('mAyuda')", 1],
+    [e => e.id === 'bAuto', 2], [e => (e.getAttribute('onclick') || '').includes('ajustarLienzoAContenido'), 3],
+    [e => (e.getAttribute('onclick') || '').includes('abrirBuscar'), 4], [e => e.id === 'bInstalar', 5],
+    [e => e.classList.contains('donar'), 6], [e => e.id === 'tamTxt', 7], [e => (e.getAttribute('onclick') || '') === 'nuevoDiseno()', 8],
+    [e => (e.getAttribute('onclick') || '') === 'ajustarZoom()', 9], [e => e.id === 'grupoZoom', 10], [e => e.id === 'bNube', 11], [e => e.id === 'bEscuela', 11.5], [e => e.id === 'bEquipo', 11.7],
+    [e => (e.getAttribute('onclick') || '').includes('mCompartir'), 12], [e => (e.getAttribute('onclick') || '').includes('mProyectos'), 13],
+    [e => e.id === 'grupoHist', 14], [e => (e.getAttribute('onclick') || '').includes('mPresentar'), 15]
+  ];
+  const prioridad = e => { for (const [f, p] of PRIOR) if (f(e)) return p; return 0; };
+  const todos = [];        // orden original de la barra
+  const registrar = () => {
+    [...barra.children].forEach(e => {
+      if (todos.includes(e)) return;
+      const prev = e.previousElementSibling, k = todos.indexOf(prev);
+      todos.splice(k >= 0 ? k + 1 : todos.length, 0, e);
+    });
+    // «Más» y «Exportar» siempre al final, a la derecha
+    const exp = todos.find(e => (e.getAttribute('onclick') || '').includes('mExportar'));
+    [mas, exp].forEach(e => { if (!e) return; const k = todos.indexOf(e); if (k >= 0) todos.splice(k, 1); todos.push(e); });
+  };
+  const etiquetar = e => {        // en el menú, los botones de solo ícono muestran su nombre
+    const bs = e.tagName === 'BUTTON' ? [e] : [...e.querySelectorAll('button')];
+    bs.forEach(b => { if (b.id !== 'tamTxt' && !b.querySelector('.etqMenu') && b.title && !(b.textContent || '').replace(/\s/g, '').match(/[\p{L}]{3,}/u)){
+      const s = document.createElement('span'); s.className = 'etqMenu'; s.textContent = ' ' + b.title.replace(/\s*\(.*\)$/, ''); b.appendChild(s); } });
+  };
+  let acomodando = false;
+  function acomodar(){
+    if (acomodando) return; acomodando = true;
+    registrar();
+    todos.forEach(e => { if (!e.dataset.fuera) barra.appendChild(e); });   // todo regresa a la barra en su orden (menos lo que vive en otro lado)
+    mas.hidden = true; barra.classList.remove('apretada');
+    const cabe = () => barra.scrollWidth <= barra.clientWidth + 1;
+    const lista = todos.filter(e => prioridad(e) && !e.dataset.fuera).sort((a, b) => prioridad(a) - prioridad(b));
+    if (!cabe()) barra.classList.add('apretada');          // primero se esconde el texto «Guardado…»
+    let i = 0;
+    while (!cabe() && i < lista.length){ mas.hidden = false; menu.appendChild(lista[i]); etiquetar(lista[i]); i++; }
+    [...menu.children].sort((a, b) => todos.indexOf(a) - todos.indexOf(b)).forEach(e => menu.appendChild(e));
+    barra.classList.remove('soloIconos');
+    if (!cabe()) barra.classList.add('soloIconos');        // pantallas muy angostas: Guardar y Exportar solo con ícono
+    acomodando = false;
+  }
   const abrir = v => {
-    m.hidden = !v; b.setAttribute('aria-expanded', v ? 'true' : 'false');
-    if (v){
-      const r = b.getBoundingClientRect(); m.style.top = (r.bottom + 6) + 'px'; m.style.left = Math.max(8, Math.min(r.left, innerWidth - m.offsetWidth - 8)) + 'px';
-      const f = m.querySelector('button:not([hidden])'); f && f.focus({ preventScroll:true });
-    }
+    menu.hidden = !v; mas.setAttribute('aria-expanded', v ? 'true' : 'false');
+    if (v){ const r = mas.getBoundingClientRect(); menu.style.top = (r.bottom + 6) + 'px';
+      if (innerWidth < 560){ menu.style.left = '8px'; menu.style.right = '8px'; menu.style.maxWidth = 'none'; }
+      else { menu.style.left = 'auto'; menu.style.right = Math.max(8, innerWidth - r.right) + 'px'; menu.style.maxWidth = Math.max(240, r.right - 8) + 'px'; }
+      const f = menu.querySelector('button'); f && f.focus({ preventScroll:true }); }
   };
-  b.onclick = e => { e.stopPropagation(); abrir(m.hidden); };
-  m.addEventListener('click', e => { const t = e.target.closest('button'); if (t && t.id !== 'bAuto') abrir(false); });
-  document.addEventListener('click', e => { if (!m.hidden && !m.contains(e.target) && !b.contains(e.target)) abrir(false); });
-  document.addEventListener('keydown', e => {
-    if (m.hidden) return;
-    if (e.key === 'Escape'){ abrir(false); b.focus(); }
-    else if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){
-      const bs = [...m.querySelectorAll('button')].filter(x => x.offsetParent), k = bs.indexOf(document.activeElement);
-      e.preventDefault(); if (bs.length) bs[(k + (e.key === 'ArrowDown' ? 1 : -1) + bs.length) % bs.length].focus();
-    }
-  });
-  window.cerrarMenuArchivo = () => abrir(false);
-  // botón para volver a la interfaz clásica (o a la limpia)
-  const bi = document.createElement('button'); bi.className = 'tb'; bi.id = 'bInterfaz';
-  bi.onclick = () => ponerInterfaz(!interfazLimpia());
-  $('maVista').appendChild(bi);
+  mas.onclick = e => { e.stopPropagation(); abrir(menu.hidden); };
+  menu.addEventListener('click', e => { if (e.target.closest('button') && !e.target.closest('#grupoZoom')) abrir(false); });
+  document.addEventListener('click', e => { if (!menu.hidden && !menu.contains(e.target) && e.target !== mas) abrir(false); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !menu.hidden){ abrir(false); mas.focus(); } });
+  let t = null; const pedir = () => { clearTimeout(t); t = setTimeout(() => { abrir(false); acomodar(); }, 60); };
+  addEventListener('resize', pedir);
+  new MutationObserver(ms => { if (!acomodando && ms.some(m => [...m.addedNodes].some(n => n.nodeType === 1 && n.parentNode === barra && !todos.includes(n)))){ pedir(); document.dispatchEvent(new Event('barra-cambio')); } })
+    .observe(barra, { childList:true });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(pedir);
+  acomodar(); setTimeout(acomodar, 800); setTimeout(acomodar, 2500);
+  window.acomodarBarra = acomodar;
 })();
-// qué se mueve al menú Archivo y qué se va abajo, junto al zoom
-function elementosArchivo(){
-  const enBarra = sel => [...document.querySelectorAll(sel)].find(e => e.closest('#barra, #menuMas, #menuArchivo'));
-  return {
-    principal:[enBarra('button[onclick="nuevoDiseno()"]'), enBarra('button[onclick^="abrirModal(\'mProyectos\')"]'), enBarra('button[onclick="abrirBuscar()"]'),
-      enBarra('button[onclick^="ajustarLienzoAContenido"]'), $('bAuto')],
-    vista:[$('bTema')],
-    extra:[enBarra('button[onclick="abrirModal(\'mAyuda\')"]'), $('bInstalar'), enBarra('.tb.donar')]
-  };
-}
-function etiquetarMenu(b){
-  if (b.id === 'tamTxt' || b.querySelector('.etqMenu')) return;
-  if ((b.textContent || '').replace(/\s/g, '').match(/[\p{L}]{3,}/u)) return;
-  const s = document.createElement('span'); s.className = 'etqMenu'; s.textContent = ' ' + (b.title || '').replace(/\s*\(.*\)$/, ''); b.appendChild(s);
-}
-function moverAlArchivo(){
-  const g = elementosArchivo();
-  const au = $('bAuto'); if (au && !au.querySelector('.etqMenu')){ au.dataset.txt = au.textContent; au.innerHTML = '<span class="etqMenu">Agrandar el lienzo solo (Auto)</span>'; }
-  [['principal', 'maPrincipal'], ['vista', 'maVista'], ['extra', 'maExtra']].forEach(([k, id]) => g[k].filter(Boolean).forEach(e => {
-    e.dataset.fuera = '1'; etiquetarMenu(e);
-    if (id === 'maVista') $(id).insertBefore(e, $('bInterfaz')); else $(id).appendChild(e);
-  }));
-  // zoom y «Ajustar» bajan al pie, a la derecha (como Canva)
-  const zoom = $('grupoZoom'), aj = [...document.querySelectorAll('button[onclick="ajustarZoom()"]')].find(e => e.closest('#barra, #menuMas, #pieDer'));
-  [zoom, aj].filter(Boolean).forEach(e => { e.dataset.fuera = '1'; $('pieZoom').appendChild(e); });
-  if (window.acomodarBarra) acomodarBarra();
-}
-function regresarABarra(){
-  const au = $('bAuto'); if (au && au.dataset.txt){ au.textContent = au.dataset.txt; delete au.dataset.txt; }
-  document.querySelectorAll('[data-fuera]').forEach(e => { delete e.dataset.fuera; $('barra').appendChild(e); });
-  if (window.acomodarBarra) acomodarBarra();
-}
 
-/* ---------- pie: notas · páginas · zoom · enfoque ---------- */
+/* =========================================================
+   BANCO DE FOTOS E ÍCONOS GRATIS
+   ========================================================= */
+EXTRA.push('credito');
+const API_FOTOS = 'https://api.openverse.org/v1/images/';
+const API_ICONOS = 'https://api.iconify.design/';
+const TRAD_ICONOS = { casa:'home', hogar:'home', libro:'book', escuela:'school', balanza:'scale', justicia:'scale', ley:'gavel', mazo:'gavel', persona:'user', usuario:'user',
+  gente:'users', grupo:'users', corazon:'heart', 'corazón':'heart', estrella:'star', telefono:'phone', 'teléfono':'phone', correo:'mail', carta:'mail', calendario:'calendar',
+  reloj:'clock', dinero:'money', pago:'credit-card', tarjeta:'credit-card', carrito:'cart', compra:'shopping', tienda:'store', comida:'food', cafe:'coffee', 'café':'coffee',
+  ubicacion:'map-pin', 'ubicación':'map-pin', mapa:'map', buscar:'search', lupa:'search', flecha:'arrow', foto:'camera', camara:'camera', 'cámara':'camera', musica:'music',
+  'música':'music', video:'video', chat:'chat', mensaje:'message', whatsapp:'whatsapp', facebook:'facebook', instagram:'instagram', tiktok:'tiktok', candado:'lock',
+  seguridad:'shield', escudo:'shield', computadora:'computer', celular:'smartphone', idea:'lightbulb', foco:'lightbulb', grafica:'chart', 'gráfica':'chart', documento:'file',
+  archivo:'file', carpeta:'folder', lapiz:'pencil', 'lápiz':'pencil', basura:'trash', ajustes:'settings', estudiante:'student', maestro:'teacher', policia:'police', 'policía':'police',
+  carro:'car', auto:'car', avion:'plane', 'avión':'plane', sol:'sun', luna:'moon', arbol:'tree', 'árbol':'tree', flor:'flower', perro:'dog', gato:'cat', regalo:'gift', fiesta:'party' };
+let fotosEstado = { q:'', pag:1 };
+async function buscarFotos(mas){
+  const q = $('buscaFoto').value.trim(); if (!q) return toast('Escribe qué foto buscas');
+  if (!mas) fotosEstado = { q, pag:1 }; else fotosEstado.pag++;
+  const cont = $('resFotos'); if (!mas) cont.innerHTML = '<p class="hint">Buscando…</p>';
+  try {
+    const u = API_FOTOS + '?q=' + encodeURIComponent(q) + '&page_size=20&page=' + fotosEstado.pag + ($('fotoComercial').checked ? '&license_type=commercial' : '') + '&mature=false';
+    const r = await fetch(u); if (!r.ok) throw new Error(r.status === 429 ? 'Demasiadas búsquedas seguidas, espera un minuto' : 'El banco de fotos no respondió (' + r.status + ')');
+    const d = await r.json();
+    if (!mas) cont.innerHTML = '';
+    if (!d.results || !d.results.length){ if (!mas) cont.innerHTML = '<p class="hint">No encontré fotos. Prueba con otra palabra (a veces funciona mejor en inglés).</p>'; $('masFotos').hidden = true; return; }
+    d.results.forEach(f => {
+      const im = document.createElement('img'); im.loading = 'lazy'; im.alt = f.title || q; im.src = f.thumbnail || f.url;
+      im.title = (f.title || '') + (f.creator ? ' · ' + f.creator : '') + ' · ' + licenciaTexto(f);
+      im.onclick = () => usarFoto(f);
+      cont.appendChild(im);
+    });
+    $('masFotos').hidden = !(d.page_count > fotosEstado.pag);
+  } catch (e) { if (!mas) cont.innerHTML = ''; toast(e.message.includes('fetch') ? 'Sin conexión con el banco de fotos. Revisa tu internet.' : e.message); }
+}
+const licenciaTexto = f => (f.license === 'cc0' ? 'CC0 (dominio público)' : f.license === 'pdm' ? 'Dominio público' : 'CC ' + String(f.license || '').toUpperCase() + ' ' + (f.license_version || ''));
+async function usarFoto(f){
+  cargando(true);
+  try {
+    let blob = null;
+    for (const u of [f.thumbnail ? f.thumbnail.replace(/\/?$/, '/') + '?full_size=true' : null, f.url, f.thumbnail].filter(Boolean)){
+      try { const r = await fetch(u); if (r.ok){ const b = await r.blob(); if (b.type.startsWith('image/')){ blob = b; break; } } } catch (e) {}
+    }
+    if (!blob) throw new Error('No se pudo descargar esa foto. Prueba con otra.');
+    const datos = await blobADataURL(blob);
+    const url = await new Promise(ok => reducirImagen(datos, 2000, ok));
+    const credito = 'Foto: ' + (f.title ? '«' + f.title + '» ' : '') + (f.creator ? 'de ' + f.creator + ' ' : '') + '(' + licenciaTexto(f).trim() + ')' + (f.foreign_landing_url ? ' — ' + f.foreign_landing_url : '');
+    const sel = activo();
+    if (sel && (sel.marco || sel.marcoVacio)){ llenarMarco(sel, url); }
+    else fabric.Image.fromURL(url, img => {
+      const k = Math.min((W * 0.6) / img.width, (H * 0.6) / img.height, 1);
+      img.set({ left:W / 2, top:H / 2, originX:'center', originY:'center', scaleX:k, scaleY:k, fx:{ b:0, c:0, s:0, bl:0, gris:false, sepia:false, inv:false } });
+      img.credito = f.license === 'cc0' || f.license === 'pdm' ? '' : credito;
+      agregar(img, 'Foto'); renderCapas(); guardarEstado();
+    });
+    miniatura(url);
+    toast(f.license === 'cc0' || f.license === 'pdm' ? 'Foto agregada (libre, no necesitas dar crédito).' : 'Foto agregada. Esta licencia pide dar crédito: selecciónala y pulsa «© Crédito».');
+  } catch (e) { toast(e.message); }
+  finally { cargando(false); }
+}
+function agregarCredito(){
+  const o = activo(); if (!o || !o.credito) return;
+  const r = o.getBoundingRect(true, true);
+  const t = new fabric.Textbox(o.credito.replace(/ — https?:\/\/\S+$/, ''), { left:r.left, top:r.top + r.height + 6, width:Math.max(160, r.width), fontSize:Math.max(10, Math.round(Math.min(W, H) / 90)),
+    fontFamily:'Inter', fill:'#6b7280', name:'Crédito de la foto' });
+  agregar(t, 'Crédito de la foto'); renderCapas(); guardarEstado();
+}
+// ---------- íconos ----------
+async function buscarIconos(){
+  let q = $('buscaIcono').value.trim().toLowerCase(); if (!q) return toast('Escribe qué ícono buscas');
+  q = q.split(/\s+/).map(w => TRAD_ICONOS[w] || w).join(' ');
+  const cont = $('resIconos'); cont.innerHTML = '<p class="hint">Buscando…</p>';
+  try {
+    const pre = $('estiloIcono').value;
+    const r = await fetch(API_ICONOS + 'search?query=' + encodeURIComponent(q) + '&limit=96' + (pre ? '&prefixes=' + pre : ''));
+    if (!r.ok) throw new Error('El banco de íconos no respondió (' + r.status + ')');
+    const d = await r.json(); cont.innerHTML = '';
+    if (!d.icons || !d.icons.length){ cont.innerHTML = '<p class="hint">No encontré íconos. Prueba en inglés (por ejemplo «book», «heart», «school»).</p>'; return; }
+    d.icons.forEach(n => {
+      const [p, nom] = n.split(':'), info = (d.collections || {})[p] || {};
+      const b = document.createElement('button'); b.className = 'icoBanco'; b.title = nom.replace(/-/g, ' ') + ' · ' + (info.name || p) + (info.license ? ' (' + info.license.title + ')' : '');
+      b.setAttribute('aria-label', nom.replace(/-/g, ' '));
+      b.innerHTML = `<img loading="lazy" alt="" src="${API_ICONOS}${p}/${nom}.svg?height=40">`;
+      b.onclick = () => usarIcono(p, nom);
+      cont.appendChild(b);
+    });
+  } catch (e) { cont.innerHTML = ''; toast(e.message.includes('fetch') ? 'Sin conexión con el banco de íconos. Revisa tu internet.' : e.message); }
+}
+async function usarIcono(p, nom){
+  try {
+    const color = $('colorIcono').value;
+    const r = await fetch(`${API_ICONOS}${p}/${nom}.svg?height=240`); if (!r.ok) throw new Error('No se pudo descargar el ícono');
+    const svg = (await r.text()).replace(/currentColor/g, color);
+    fabric.loadSVGFromString(svg, (objs, opt) => {
+      const o = fabric.util.groupSVGElements(objs, opt);
+      const s = Math.min(W, H) * 0.18 / Math.max(o.width, o.height);
+      o.set({ left:W / 2, top:H / 2, originX:'center', originY:'center', scaleX:s, scaleY:s, name:'Ícono ' + nom.replace(/-/g, ' ') });
+      agregar(o, 'Ícono'); renderCapas(); guardarEstado();
+    });
+  } catch (e) { toast(e.message); }
+}
+// ---------- botones y panel ----------
+$('bBuscaFoto').onclick = () => buscarFotos(false);
+$('buscaFoto').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') buscarFotos(false); });
+$('masFotos').onclick = () => buscarFotos(true);
+$('bBuscaIcono').onclick = buscarIconos;
+$('buscaIcono').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') buscarIconos(); });
 (function(){
-  const pie = $('barraNotas');
-  const der = document.createElement('div'); der.id = 'pieDer';
-  der.innerHTML = `<button class="pb" id="bPaginasPie" title="Mostrar u ocultar las páginas" aria-expanded="true">${icoUI('paginas')}<span id="txtPaginasPie">Páginas</span></button>
-    <div id="pieZoom"></div>
-    <button class="pb" id="bEnfoque" title="Modo enfoque: solo el lienzo (Ctrl + \\)" aria-label="Modo enfoque">${icoUI('enfoque')}</button>`;
-  pie.appendChild(der);
-  $('bPaginasPie').onclick = () => ponerPaginasOcultas(!document.documentElement.classList.contains('sinPaginas'));
-  $('bEnfoque').onclick = () => ponerEnfoque(true);
-  const salir = document.createElement('button'); salir.id = 'salirEnfoque'; salir.className = 'btnS';
-  salir.innerHTML = `${icoUI('cerrar')} Salir del modo enfoque <kbd>Esc</kbd>`; salir.onclick = () => ponerEnfoque(false);
-  document.body.appendChild(salir);
-  const pinta = () => { const t = $('txtPaginasPie'); if (t) t.textContent = 'Página ' + (actual + 1) + ' de ' + paginas.length; };
-  new MutationObserver(pinta).observe($('paginas'), { childList:true, subtree:true, attributes:true, attributeFilter:['class'] });
-  pinta();
+  const b = document.createElement('button'); b.className = 'pb'; b.id = 'bCredito'; b.hidden = true; b.title = 'Pone debajo de la foto el nombre del autor y la licencia'; b.textContent = '© Crédito';
+  b.onclick = agregarCredito;
+  const ref = $('bEnlace'); if (ref) ref.after(b);
 })();
-function ponerPaginasOcultas(v, guardar = true){
-  document.documentElement.classList.toggle('sinPaginas', !!v);
-  $('bPaginasPie').setAttribute('aria-expanded', v ? 'false' : 'true');
-  if (guardar) try { localStorage.setItem('disenador_sinPaginas', v ? '1' : ''); } catch (e) {}
-  medirPie(); setTimeout(ajustarZoom, 30);
-}
-function ponerEnfoque(v){
-  document.documentElement.classList.toggle('enfoque', !!v);
-  cerrarMenuCtx(); medirPie();
-  setTimeout(ajustarZoom, 30);
-  if (v) toast('Modo enfoque · Esc o Ctrl + \\ para salir');
-}
-document.addEventListener('keydown', e => {
-  if ((e.ctrlKey || e.metaKey) && (e.key === '\\' || e.code === 'Backslash' || e.code === 'IntlBackslash')){ e.preventDefault(); ponerEnfoque(!document.documentElement.classList.contains('enfoque')); }
-  else if (e.key === 'Escape' && document.documentElement.classList.contains('enfoque') && !document.querySelector('.modal.abierto') && !(activo() && activo().isEditing) && !canvas.getActiveObject()) ponerEnfoque(false);
+alActualizarPanel(function(){
+  if (generandoVista) return;
+  const o = activo(); $('bCredito').hidden = !(o && o.credito);
 });
-
-/* ---------- panel izquierdo que se oculta ---------- */
+/* =========================================================
+   QUITAR FONDO CON IA (funciona en tu navegador; la foto no se sube a ningún lado)
+   ========================================================= */
+const URL_TRANSFORMERS = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1';
+const MODELO_FONDO = 'd30social/ormbg-ortweb';   // ORMBG, licencia Apache-2.0, ~84 MB la primera vez
+let segmentadorFondo = null;
+function avisoProgresoIA(txt, pct){
+  let a = $('progresoIA');
+  if (txt === null){ if (a) a.remove(); return; }
+  if (!a){ a = document.createElement('div'); a.id = 'progresoIA'; a.setAttribute('role', 'status'); a.innerHTML = '<div class="txt"></div><div class="barraIA"><i></i></div>'; document.body.appendChild(a); }
+  a.querySelector('.txt').textContent = txt; a.querySelector('i').style.width = Math.max(2, Math.min(100, pct || 0)) + '%';
+}
+async function cargarSegmentador(){
+  if (segmentadorFondo) return segmentadorFondo;
+  avisoProgresoIA('Preparando la IA… (solo la primera vez descarga unos 85 MB; después queda guardada)', 2);
+  const tf = await import(/* webpackIgnore: true */ URL_TRANSFORMERS);
+  tf.env.allowLocalModels = false;
+  const archivos = {};
+  const progreso = p => {
+    if (p.status === 'progress' && p.total){ archivos[p.file] = [p.loaded, p.total];
+      const t = Object.values(archivos).reduce((s, [l, tt]) => [s[0] + l, s[1] + tt], [0, 0]);
+      avisoProgresoIA('Descargando la IA para quitar fondos… ' + (t[0] / 1048576).toFixed(0) + ' de ' + (t[1] / 1048576).toFixed(0) + ' MB', 5 + 85 * t[0] / t[1]); }
+  };
+  const intentos = navigator.gpu ? [{ device:'webgpu', dtype:'fp16' }, { device:'wasm', dtype:'fp16' }] : [{ device:'wasm', dtype:'fp16' }];
+  let ultimo;
+  for (const op of intentos){
+    try { segmentadorFondo = await tf.pipeline('image-segmentation', MODELO_FONDO, { ...op, progress_callback:progreso }); segmentadorFondo.tf = tf; return segmentadorFondo; }
+    catch (e) { ultimo = e; console.warn('IA de fondo con', op.device, 'falló:', e); }
+  }
+  throw ultimo || new Error('No se pudo preparar la IA');
+}
+async function quitarFondoIA(){
+  const img = imagenActiva(); if (!img) return;
+  terminarRecorte(false);
+  try {
+    const seg = await cargarSegmentador();
+    avisoProgresoIA('Buscando lo principal de la foto…', 92);
+    const src = img._originalElement || img._element;
+    const nw = src.naturalWidth || src.width, nh = src.naturalHeight || src.height;
+    const k = Math.min(1, 2400 / Math.max(nw, nh)), cw = Math.round(nw * k), ch = Math.round(nh * k);
+    const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+    const g = cv.getContext('2d', { willReadFrequently:true }); g.drawImage(src, 0, 0, cw, ch);
+    try { g.getImageData(0, 0, 1, 1); } catch (e) { throw new Error('Esta imagen viene de otro sitio y no se puede editar. Descárgala y súbela desde tu computadora.'); }
+    const blob = await new Promise(ok => cv.toBlob(ok, 'image/png'));
+    const url = URL.createObjectURL(blob);
+    let salida; try { salida = await seg(url); } finally { URL.revokeObjectURL(url); }
+    const m = (Array.isArray(salida) ? salida[0] : salida).mask;
+    // la máscara (gris) se vuelve la transparencia de la foto
+    const mc = document.createElement('canvas'); mc.width = m.width; mc.height = m.height;
+    const mg = mc.getContext('2d'), md = mg.createImageData(m.width, m.height), ch1 = m.channels || 1;
+    for (let i = 0, j = 0; i < m.width * m.height; i++, j += ch1){ const a = m.data[j]; md.data[i * 4 + 3] = a; }
+    mg.putImageData(md, 0, 0);
+    g.globalCompositeOperation = 'destination-in'; g.imageSmoothingQuality = 'high'; g.drawImage(mc, 0, 0, cw, ch); g.globalCompositeOperation = 'source-over';
+    // ¿quedó algo?
+    const d = g.getImageData(0, 0, cw, ch).data; let opacos = 0; for (let i = 3; i < d.length; i += 16) if (d[i] > 30) opacos++;
+    if (opacos < (cw * ch / 4) * 0.01) throw new Error('No encontré una persona u objeto claro en la foto. Prueba con «🪄 Quitar fondo».');
+    const antes = { c:img.getCenterPoint(), cropX:img.cropX || 0, cropY:img.cropY || 0, width:img.width, height:img.height, sx:img.scaleX, sy:img.scaleY };
+    await new Promise(ok => img.setSrc(cv.toDataURL('image/png'), ok));
+    img.set({ cropX:antes.cropX * k, cropY:antes.cropY * k, width:antes.width * k, height:antes.height * k, scaleX:antes.sx / k, scaleY:antes.sy / k });
+    if (img.filters && img.filters.length) img.applyFilters();
+    img.setPositionByOrigin(antes.c, 'center', 'center'); img.setCoords(); img.dirty = true;
+    canvas.requestRenderAll(); guardarEstado(); actualizarPanel();
+    avisoProgresoIA(null); toast('¡Listo! Fondo quitado. Si algo quedó mal, deshaz con Ctrl+Z.');
+  } catch (e) {
+    console.error(e); avisoProgresoIA(null);
+    toast((e && e.message && /fetch|network|Failed to/.test(e.message)) ? 'No se pudo descargar la IA. Revisa tu internet e intenta de nuevo.' : 'No se pudo quitar el fondo: ' + (e.message || e));
+  }
+}
+/* =========================================================
+   ASISTENTE DE ESCRITURA CON IA
+   1) Usa la IA que ya trae Chrome (gratis, funciona en tu computadora, el texto no sale de ella).
+   2) Si tu navegador no la tiene, puedes poner tu propia clave gratuita de Google Gemini (se guarda solo en este navegador).
+   ========================================================= */
+const ACCIONES_IA = [
+  { id:'mejorar', ico:'✨', nombre:'Mejorar redacción', pide:'Corrige la ortografía, la puntuación y la redacción del siguiente texto para que suene claro y natural. Conserva el idioma, el sentido y una extensión parecida.' },
+  { id:'formal', ico:'🎩', nombre:'Más formal', pide:'Reescribe el siguiente texto con un tono formal y profesional, adecuado para la escuela o el trabajo. Conserva el sentido.' },
+  { id:'sencillo', ico:'😊', nombre:'Más sencillo', pide:'Reescribe el siguiente texto con palabras sencillas y frases cortas, fácil de entender para cualquier persona. Conserva el sentido.' },
+  { id:'corto', ico:'✂', nombre:'Más corto', pide:'Resume el siguiente texto en la mitad de palabras o menos, sin perder la idea principal.' },
+  { id:'largo', ico:'➕', nombre:'Desarrollar más', pide:'Desarrolla el siguiente texto con un poco más de detalle y ejemplos, en un máximo del doble de extensión.' },
+  { id:'puntos', ico:'•', nombre:'En viñetas', pide:'Convierte el siguiente texto en una lista de 3 a 6 viñetas cortas (una por renglón, empezando con «• »).' },
+  { id:'juridico', ico:'⚖', nombre:'Lenguaje jurídico', pide:'Reescribe el siguiente texto con lenguaje jurídico mexicano formal y preciso, sin inventar artículos ni leyes que no se mencionen.' },
+  { id:'titulos', ico:'💡', nombre:'Ideas de título', pide:'Propón 5 títulos atractivos y cortos (máximo 8 palabras cada uno) para una presentación o diseño sobre el siguiente texto. Escribe uno por renglón, sin números ni comillas.', opciones:true },
+  { id:'ingles', ico:'🌐', nombre:'Traducir al inglés', pide:'Traduce el siguiente texto al inglés de forma natural.' }
+];
+const IA_CLAVE = 'disenador_gemini_clave', IA_MODELO = 'disenador_gemini_modelo';
+const leerLS = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
+const guardarLS = (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (e) {} };
+async function iaDisponible(){
+  try { if ('LanguageModel' in self){ const a = await LanguageModel.availability({ expectedInputs:[{ type:'text', languages:['es'] }], expectedOutputs:[{ type:'text', languages:['es'] }] }); if (a && a !== 'unavailable') return { tipo:'chrome', estado:a }; } } catch (e) {}
+  if (leerLS(IA_CLAVE)) return { tipo:'gemini' };
+  return null;
+}
+let sesionIA = null;
+async function pedirIA(texto, instruccion, alProgreso){
+  const fuente = await iaDisponible();
+  if (!fuente) throw new Error('SIN_IA');
+  const prompt = instruccion + '\nResponde solo con el resultado, sin explicaciones ni comillas.\n\nTexto:\n' + texto;
+  if (fuente.tipo === 'chrome'){
+    if (!sesionIA) sesionIA = await LanguageModel.create({
+      initialPrompts:[{ role:'system', content:'Eres un asistente de redacción en español de México para estudiantes y pequeños negocios. Respondes solo con el texto pedido.' }],
+      expectedInputs:[{ type:'text', languages:['es'] }], expectedOutputs:[{ type:'text', languages:['es'] }],
+      monitor(m){ m.addEventListener('downloadprogress', e => alProgreso && alProgreso(e.loaded)); }
+    });
+    const s = await sesionIA.clone();
+    try { return (await s.prompt(prompt)).trim(); } finally { s.destroy && s.destroy(); }
+  }
+  const modelo = leerLS(IA_MODELO) || 'gemini-flash-latest';
+  const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(modelo) + ':generateContent', {
+    method:'POST', headers:{ 'Content-Type':'application/json', 'x-goog-api-key':leerLS(IA_CLAVE) },
+    body:JSON.stringify({ contents:[{ role:'user', parts:[{ text:prompt }] }], generationConfig:{ temperature:0.7, maxOutputTokens:1024 } })
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(r.status === 400 || r.status === 403 ? 'La clave de Gemini no es válida o no tiene permiso.' : r.status === 429 ? 'Se acabó el límite gratuito por ahora. Intenta en unos minutos.' : (d.error && d.error.message) || ('Error ' + r.status));
+  const t = d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts && d.candidates[0].content.parts.map(p => p.text || '').join('');
+  if (!t) throw new Error('La IA no devolvió texto. Prueba de nuevo.');
+  return t.trim().replace(/^["«“]|["»”]$/g, '');
+}
+function textoParaIA(){ const t = typeof textoUnico === 'function' ? textoUnico() : null; return t && esTexto(t) ? t : null; }
 (function(){
-  const asa = document.createElement('button'); asa.id = 'asaLateral'; asa.title = 'Ocultar el panel'; asa.setAttribute('aria-label', 'Ocultar el panel');
-  asa.innerHTML = icoUI('izq'); asa.onclick = () => ponerLateral($('app').classList.contains('sinLateral'));
-  $('app').appendChild(asa);
-  // clic en la pestaña activa: oculta o muestra el panel (en computadora)
-  $('pestanas').addEventListener('click', e => {
-    const b = e.target.closest('button[data-tab]'); if (!b || !interfazLimpia() || !esEscritorio()) return;
-    const oculto = $('app').classList.contains('sinLateral');
-    if (b.classList.contains('activa') && !oculto){ e.stopImmediatePropagation(); ponerLateral(false); }
-    else if (oculto) ponerLateral(true);
-  }, true);
-})();
-function ponerLateral(v, guardar = true){
-  $('app').classList.toggle('sinLateral', !v);
-  const a = $('asaLateral'); a.innerHTML = icoUI(v ? 'izq' : 'der'); a.title = v ? 'Ocultar el panel' : 'Mostrar el panel'; a.setAttribute('aria-label', a.title);
-  if (guardar) try { localStorage.setItem('disenador_sinLateral', v ? '0' : '1'); } catch (e) {}
-  ubicarAsa(); setTimeout(ajustarZoom, 30);
-}
-function ubicarAsa(){
-  const a = $('asaLateral'), app = $('app').getBoundingClientRect(), lat = $('lateral'), pes = $('pestanas');
-  const r = (lat.offsetParent && lat.getBoundingClientRect().width > 0 ? lat : pes).getBoundingClientRect();
-  a.style.left = (r.right - app.left) + 'px';
-}
-window.addEventListener('resize', ubicarAsa);
-
-/* ---------- panel derecho flotante ---------- */
-(function(){
-  const bc = document.createElement('button'); bc.id = 'bCapasFlot'; bc.className = 'btnS'; bc.title = 'Ver las capas del diseño';
-  bc.innerHTML = `${icoUI('capas')} Capas`;
-  bc.onclick = () => { $('app').classList.add('propsFijo'); revisarProps(); const t = document.querySelector('.tabsProps [data-pt="capas"]'); t && t.click(); };
-  $('centro').appendChild(bc);
-  const x = document.createElement('button'); x.id = 'bCerrarProps'; x.title = 'Cerrar el panel'; x.setAttribute('aria-label', 'Cerrar el panel'); x.innerHTML = icoUI('cerrar');
-  x.onclick = () => { $('app').classList.remove('propsFijo'); canvas.discardActiveObject(); canvas.requestRenderAll(); revisarProps(); };
-  const tabs = document.querySelector('#props .tabsProps'); if (tabs) tabs.appendChild(x);
-})();
-function revisarProps(){
-  const hay = !!canvas.getActiveObject();
-  $('app').classList.toggle('conProps', hay || $('app').classList.contains('propsFijo'));
-}
-['selection:created', 'selection:updated', 'selection:cleared'].forEach(ev => canvas.on(ev, () => setTimeout(revisarProps, 0)));
-// el panel no tapa el pie (notas, páginas y zoom)
-function medirPie(){
-  const n = $('barraNotas'), p = $('paginas'), np = $('notasPagina');
-  const alto = (n && n.offsetParent ? n.offsetHeight : 0) + (p && p.offsetParent ? p.offsetHeight : 0) + (np && !np.hidden && np.offsetParent ? np.offsetHeight : 0);
-  document.documentElement.style.setProperty('--altoPie', alto + 'px');
-}
-if (window.ResizeObserver){ const ro = new ResizeObserver(medirPie); ['barraNotas', 'paginas', 'notasPagina'].forEach(id => $(id) && ro.observe($(id))); }
-
-/* ---------- barra flotante junto a lo seleccionado ---------- */
-(function(){
-  const d = document.createElement('div'); d.id = 'barraSel'; d.setAttribute('role', 'toolbar'); d.setAttribute('aria-label', 'Acciones rápidas'); d.hidden = true;
-  d.innerHTML = `<button data-acc="duplicar" title="Duplicar (Ctrl+D)" aria-label="Duplicar">${icoCtx('duplicar')}</button>
-    <button data-acc="bloquear" title="Bloquear (Ctrl+Shift+L)" aria-label="Bloquear">${icoCtx('candado')}</button>
-    <button data-acc="eliminar" title="Eliminar (Supr)" aria-label="Eliminar">${icoCtx('eliminar')}</button>
-    <button data-acc="mas" title="Más opciones (clic derecho)" aria-label="Más opciones">${icoUI('mas')}</button>`;
-  $('centro').appendChild(d);
-  d.addEventListener('mousedown', e => e.preventDefault());
-  d.onclick = e => {
-    const b = e.target.closest('button'); if (!b) return; const o = activo(); if (!o) return;
-    const acc = b.dataset.acc;
-    if (acc === 'duplicar') duplicar();
-    else if (acc === 'bloquear') bloquearSel();
-    else if (acc === 'eliminar') eliminar();
-    else if (acc === 'mas'){ const r = b.getBoundingClientRect(); const c = o.getCenterPoint(); menuCtxPunto = { x:c.x, y:c.y }; abrirMenuCtx(r.left, r.bottom + 6); }
-    setTimeout(ponerBarraSel, 30);
+  const m = document.createElement('div'); m.className = 'modal'; m.id = 'mAsistente';
+  m.innerHTML = `<div class="caja" style="width:min(620px,96vw)"><h3>✨ Asistente de escritura</h3>
+    <div id="iaEstado" class="hint" style="padding-top:0"></div>
+    <label class="hint" for="iaTexto" style="display:block;padding:4px 0">Tu texto</label><textarea id="iaTexto" rows="4" style="width:100%;box-sizing:border-box"></textarea>
+    <div id="iaAcciones" class="gridComp" style="grid-template-columns:repeat(3,1fr);margin:10px 0"></div>
+    <details style="margin:4px 0 10px"><summary class="hint" style="cursor:pointer">✍ Escribir algo nuevo a partir de una idea</summary>
+      <div class="filaBusca" style="margin-top:6px"><input id="iaIdea" class="buscador" placeholder="Ej. invitación para la feria de ciencias del viernes"><button class="pb" id="iaEscribir">Escribir</button></div></details>
+    <div id="iaResultado" hidden><label class="hint" style="display:block;padding:4px 0">Propuesta (puedes corregirla antes de usarla)</label>
+      <textarea id="iaSalida" rows="5" style="width:100%;box-sizing:border-box"></textarea><div id="iaOpciones" class="escLista" style="display:flex;flex-direction:column;gap:6px"></div>
+      <div class="grupoBtns" style="margin-top:8px"><button class="btnP" id="iaUsar">✓ Reemplazar el texto</button><button class="pb" id="iaNuevo">＋ Agregar como texto nuevo</button><button class="pb" id="iaCopiar">Copiar</button></div></div>
+    <details id="iaConfig" style="margin-top:12px"><summary class="hint" style="cursor:pointer">⚙ Usar mi propia clave de Google Gemini (si tu navegador no trae IA)</summary>
+      <p class="hint" style="font-size:12px">Créala gratis en <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> y pégala aquí. Se guarda <b>solo en este navegador</b>; no la compartas ni la uses en computadoras públicas. El texto que mandes se procesa en los servidores de Google.</p>
+      <div class="filaBusca"><input id="iaClave" class="buscador" type="password" autocomplete="off" placeholder="Pega tu clave (empieza con AIza…)"><button class="pb" id="iaGuardarClave">Guardar</button></div>
+      <div class="filaBusca"><input id="iaModelo" class="buscador" placeholder="Modelo (opcional): gemini-flash-latest"><button class="pb" id="iaBorrarClave">Quitar clave</button></div></details>
+    <div class="acciones"><button class="btnS" onclick="cerrarModal('mAsistente')">Cerrar</button></div></div>`;
+  document.body.appendChild(m);
+  ACCIONES_IA.forEach(a => { const b = document.createElement('button'); b.className = 'pb'; b.textContent = a.ico + ' ' + a.nombre; b.onclick = () => ejecutarIA(a); $('iaAcciones').appendChild(b); });
+  ['iaTexto', 'iaSalida', 'iaIdea', 'iaClave', 'iaModelo'].forEach(id => $(id).addEventListener('keydown', e => e.stopPropagation()));
+  $('iaGuardarClave').onclick = () => { const k = $('iaClave').value.trim(); if (!/^AIza[\w-]{20,}$/.test(k)) return toast('Esa no parece una clave de Gemini (empieza con AIza…)'); guardarLS(IA_CLAVE, k); guardarLS(IA_MODELO, $('iaModelo').value.trim()); $('iaClave').value = ''; toast('Clave guardada en este navegador'); estadoIA(); };
+  $('iaBorrarClave').onclick = () => { guardarLS(IA_CLAVE, ''); guardarLS(IA_MODELO, ''); toast('Clave quitada'); estadoIA(); };
+  $('iaEscribir').onclick = () => { const idea = $('iaIdea').value.trim(); if (!idea) return toast('Escribe tu idea'); ejecutarIA({ id:'nuevo', nombre:'Escribir', pide:'Escribe un texto breve (máximo 60 palabras), claro y atractivo, para un diseño sobre esta idea. Si es un anuncio, incluye un llamado a la acción.' }, idea); };
+  $('iaCopiar').onclick = () => { navigator.clipboard && navigator.clipboard.writeText($('iaSalida').value).then(() => toast('Copiado')); };
+  $('iaUsar').onclick = () => {
+    const t = textoParaIA(), v = $('iaSalida').value; if (!v.trim()) return;
+    if (!t) return $('iaNuevo').onclick();
+    t.set('text', v); t.initDimensions && t.initDimensions();
+    if (t.textoDe && typeof ajustarFormaATexto === 'function') ajustarFormaATexto(t);
+    t.setCoords(); t.dirty = true; canvas.requestRenderAll(); actualizarPanel(); guardarEstado(); cerrarModal('mAsistente'); toast('Texto reemplazado. Si no te gusta, deshaz con Ctrl+Z.');
+  };
+  $('iaNuevo').onclick = () => {
+    const v = $('iaSalida').value; if (!v.trim()) return;
+    const t = new fabric.Textbox(v, { left:W / 2, top:H / 2, originX:'center', originY:'center', width:Math.min(W * 0.7, 900), fontSize:Math.round(Math.min(W, H) / 28), fontFamily:'Inter', fill:'#111827', name:'Texto' });
+    agregar(t, 'Texto'); renderCapas(); guardarEstado(); cerrarModal('mAsistente'); toast('Texto agregado');
   };
 })();
-let selMoviendo = false, rafSel = 0;
-function ponerBarraSel(){
-  const d = $('barraSel'), o = activo();
-  if (!d) return;
-  if (!o || !interfazLimpia() || !esEscritorio() || selMoviendo || o.isEditing || canvas.isDrawingMode || document.documentElement.classList.contains('enfoque') || (typeof recorte !== 'undefined' && recorte)){ d.hidden = true; return; }
-  const bl = d.querySelector('[data-acc="bloquear"]');
-  bl.innerHTML = icoCtx(o.bloqueado ? 'abierto' : 'candado'); bl.title = (o.bloqueado ? 'Desbloquear' : 'Bloquear') + ' (Ctrl+Shift+L)'; bl.setAttribute('aria-label', o.bloqueado ? 'Desbloquear' : 'Bloquear');
-  d.querySelector('[data-acc="eliminar"]').disabled = !!o.bloqueado;
-  d.hidden = false;
-  const r = rectObjetoPP(o), c = $('centro').getBoundingClientRect(), a = $('area').getBoundingClientRect();
-  const w = d.offsetWidth, h = d.offsetHeight;
-  let x = r.left + r.width / 2 - w / 2, y = r.top - h - 44;          // arriba (deja espacio a la manija de girar)
-  if (y < a.top + 6) y = r.top + r.height + 30;                      // si no cabe, abajo
-  if (y + h > a.bottom - 6) y = Math.max(a.top + 6, Math.min(a.bottom - h - 6, r.top + 8));
-  x = Math.max(a.left + 6, Math.min(a.right - w - 6, x));
-  d.style.left = (x - c.left) + 'px'; d.style.top = (y - c.top) + 'px';
+async function estadoIA(){
+  const f = await iaDisponible();
+  $('iaEstado').innerHTML = f ? (f.tipo === 'chrome' ? '🟢 Usando la IA de tu navegador (gratis; tu texto no sale de tu computadora).' + (f.estado !== 'available' ? ' La primera vez se descarga; puede tardar unos minutos.' : '') : '🟢 Usando tu clave de Google Gemini.')
+    : '⚪ Tu navegador no trae IA integrada. Usa Chrome de computadora actualizado, o pon tu clave gratuita de Gemini abajo (⚙).';
+  if (!f) $('iaConfig').open = true;
 }
-const pedirBarraSel = () => { cancelAnimationFrame(rafSel); rafSel = requestAnimationFrame(ponerBarraSel); };
-['selection:created', 'selection:updated', 'selection:cleared', 'object:modified', 'text:editing:entered', 'text:editing:exited'].forEach(ev => canvas.on(ev, () => { selMoviendo = false; pedirBarraSel(); }));
-['object:moving', 'object:scaling', 'object:rotating', 'object:resizing'].forEach(ev => canvas.on(ev, () => { if (!selMoviendo){ selMoviendo = true; $('barraSel').hidden = true; } }));
-canvas.on('mouse:up', () => { if (selMoviendo){ selMoviendo = false; pedirBarraSel(); } });
-canvas.on('after:render', () => { if (!$('barraSel').hidden || activo()) pedirBarraSel(); });
-$('area').addEventListener('scroll', pedirBarraSel, { passive:true });
-window.addEventListener('resize', pedirBarraSel);
-
-/* ---------- encender / apagar la interfaz limpia ---------- */
-function ponerInterfaz(limpia, guardar = true){
-  document.documentElement.classList.toggle('limpia', !!limpia);
-  if (guardar) try { localStorage.setItem('disenador_interfaz', limpia ? 'limpia' : 'clasica'); } catch (e) {}
-  if (limpia) moverAlArchivo(); else { regresarABarra(); document.documentElement.classList.remove('sinPaginas', 'enfoque'); $('app').classList.remove('sinLateral'); }
-  if (limpia){
-    let sl = '', sp = ''; try { sl = localStorage.getItem('disenador_sinLateral'); sp = localStorage.getItem('disenador_sinPaginas'); } catch (e) {}
-    ponerLateral(sl === '0', false); ponerPaginasOcultas(sp === '1', false);   // como Canva: el panel empieza cerrado y se abre al elegir una herramienta
-  }
-  const bi = $('bInterfaz');
-  bi.innerHTML = `${icoUI('interfaz')}<span class="etqMenu"> ${limpia ? 'Interfaz clásica (todo a la vista)' : 'Interfaz limpia (más espacio)'}</span>`;
-  bi.title = limpia ? 'Volver a ver todos los botones y paneles como antes' : 'Más espacio para el diseño: menos botones a la vista';
-  $('bArchivo').hidden = !limpia;
-  revisarProps(); medirPie(); pedirBarraSel();
-  setTimeout(() => { if (window.acomodarBarra) acomodarBarra(); ajustarZoom(); }, 40);
+function abrirAsistente(){
+  const t = textoParaIA();
+  $('iaTexto').value = t ? t.text : '';
+  $('iaResultado').hidden = true; $('iaUsar').hidden = !t;
+  abrirModal('mAsistente'); estadoIA();
+  if (!t) setTimeout(() => $('iaIdea').closest('details').open = true, 0);
 }
+async function ejecutarIA(a, entrada){
+  const texto = entrada || $('iaTexto').value.trim();
+  if (!texto) return toast('Escribe o selecciona un texto primero');
+  cargando(true);
+  try {
+    const r = await pedirIA(texto, a.pide, p => { const c = $('cargando'); if (c) c.textContent = 'Preparando la IA… ' + Math.round(p * 100) + '%'; });
+    $('iaResultado').hidden = false; $('iaOpciones').innerHTML = '';
+    if (a.opciones){
+      const ops = r.split('\n').map(x => x.replace(/^[\s\-•*\d.)]+/, '').replace(/^["«“]|["»”]$/g, '').trim()).filter(Boolean).slice(0, 6);
+      $('iaSalida').value = ops[0] || r;
+      ops.forEach(o => { const b = document.createElement('button'); b.className = 'pb'; b.style.textAlign = 'left'; b.textContent = o; b.onclick = () => { $('iaSalida').value = o; }; $('iaOpciones').appendChild(b); });
+    } else $('iaSalida').value = r;
+    $('iaUsar').hidden = !textoParaIA() || a.id === 'nuevo';
+    $('iaSalida').focus();
+  } catch (e) {
+    if (e.message === 'SIN_IA'){ estadoIA(); toast('Para usar el asistente, abre el Diseñador en Chrome actualizado o pon tu clave de Gemini (⚙).'); }
+    else toast('El asistente no pudo responder: ' + e.message);
+  } finally { cargando(false); const c = $('cargando'); if (c) c.textContent = 'Procesando…'; }
+}
+/* =========================================================
+   ACTIVIDADES ESCOLARES LISTAS (para que el maestro no empiece de cero)
+   Cada una trae encabezado de Nombre / Grupo / Fecha, instrucciones y espacios por llenar.
+   ========================================================= */
+const CAT_ACT = 'Actividades escolares';
+const ACT_C = { tinta:'#1f2937', suave:'#6b7280', linea:'#cbd5e1', acento:'#2563eb', fondo:'#ffffff', caja:'#f8fafc' };
+// encabezado común: título, datos del alumno e instrucciones
+function encabezadoActividad(titulo, instrucciones, o = {}){
+  const w = W - 2 * (o.m || 70), x = o.m || 70;
+  PON([uiR(0, 0, W, 12, o.acento || ACT_C.acento, { nombre:'Franja' }),
+    uiT(titulo, x, 44, { w, s:o.s || 50, b:'800', f:'Poppins', c:ACT_C.tinta })]);
+  const y = 44 + (o.s || 50) * 1.35 + 14;
+  PON([uiT('Nombre: ________________________________', x, y, { w:w * 0.55, s:22, c:ACT_C.suave }),
+    uiT('Grupo: _________', x + w * 0.56, y, { w:w * 0.2, s:22, c:ACT_C.suave }),
+    uiT('Fecha: ___________', x + w * 0.77, y, { w:w * 0.23, s:22, c:ACT_C.suave, al:'right' })]);
+  const yi = y + 48;
+  PON([uiR(x, yi, w, 74, '#eff6ff', { r:12, borde:'#bfdbfe', nombre:'Instrucciones' }),
+    uiT('Instrucciones: ' + instrucciones, x + 18, yi + 14, { w:w - 36, s:20, c:'#1e3a8a', lh:1.35 })]);
+  return yi + 96;
+}
+function cajaRespuesta(x, y, w, h, titulo, ayuda, o = {}){
+  PON([uiR(x, y, w, h, o.fill || ACT_C.caja, { r:14, borde:o.borde || ACT_C.linea, gb:2, nombre:'Espacio para responder' }),
+    uiT(titulo, x + 20, y + 14, { w:w - 40, s:o.s || 25, b:'700', c:o.c || ACT_C.tinta }),
+    uiT(ayuda, x + 20, y + 14 + (o.s || 25) * 1.4, { w:w - 40, s:19, c:'#9ca3af', lh:1.4 })]);
+}
+const PLANTILLAS_ACT = [
+  { nombre:'Actividad: mapa conceptual por llenar', tam:[1920, 1080], crear(){
+    FONDO(ACT_C.fondo);
+    const y0 = encabezadoActividad('Mapa conceptual', 'completa cada recuadro con el concepto que corresponde y escribe una palabra de enlace en cada línea. Puedes agregar más recuadros.');
+    const est = { stroke:'#1e3a8a', grosor:3, color:'#1e3a8a', tam:30, peso:'600', fill:'#eef2ff' };
+    const raiz = nodo('redondo', 'Tema principal', 960, y0 + 70, { ...est, w:440, h:100, fill:'#1e3a8a', color:'#ffffff', tam:36, peso:'700' });
+    const n2 = [380, 960, 1540].map((x, i) => nodo('redondo', 'Concepto ' + (i + 1), x, y0 + 330, { ...est, w:340, h:96 }));
+    n2.forEach(n => unir(raiz, n, { etiqueta:'__________', color:'#334155', ancho:3 }));
+    n2.forEach((n, i) => [-1, 1].forEach(lado => {
+      const h = nodo('redondo', 'Ejemplo', (i === 0 ? 380 : i === 1 ? 960 : 1540) + lado * 180, y0 + 600, { ...est, w:300, h:90, fill:'#ffffff', tam:26 });
+      unir(n, h, { etiqueta:'como', color:'#334155', ancho:3 });
+    }));
+  }},
+  { nombre:'Actividad: línea del tiempo', tam:[1920, 1080], crear(){
+    FONDO(ACT_C.fondo);
+    const y0 = encabezadoActividad('Línea del tiempo', 'escribe en orden cinco acontecimientos importantes del tema: la fecha arriba y lo que pasó abajo.');
+    const yl = y0 + 260, xs = [230, 595, 960, 1325, 1690];
+    PON([uiR(140, yl - 4, 1640, 8, ACT_C.acento, { r:4, nombre:'Línea del tiempo' })]);
+    xs.forEach((x, i) => {
+      PON([uiC(x, yl, 22, i % 2 ? '#f59e0b' : ACT_C.acento, { nombre:'Punto' }),
+        uiR(x - 120, yl - 130, 240, 80, '#eff6ff', { r:14, borde:'#bfdbfe', gb:2, nombre:'Fecha' }), uiT('Año / fecha', x - 120, yl - 106, { w:240, s:26, b:'700', c:'#1e3a8a', al:'center' }),
+        uiR(x - 160, yl + 50, 320, 260, ACT_C.caja, { r:14, borde:ACT_C.linea, gb:2, nombre:'Acontecimiento' }),
+        uiT('¿Qué pasó?', x - 140, yl + 66, { w:280, s:24, b:'700', c:ACT_C.tinta }), uiT('Descríbelo en dos o tres líneas…', x - 140, yl + 104, { w:280, s:19, c:'#9ca3af', lh:1.4 })]);
+    });
+  }},
+  { nombre:'Actividad: análisis de caso jurídico', tam:[1275, 1650], crear(){
+    FONDO(ACT_C.fondo);
+    const y0 = encabezadoActividad('Análisis de caso', 'lee el caso y llena cada apartado con tus propias palabras. Cita los artículos que uses.', { s:46, acento:'#0f2747' });
+    const sec = [['1. Hechos relevantes', '¿Qué pasó? ¿Quiénes participan? ¿Cuándo y dónde?', 230], ['2. Problema jurídico', '¿Qué se tiene que resolver? Escríbelo como pregunta.', 170],
+      ['3. Fundamento legal', 'Artículos, leyes, tesis o jurisprudencia que aplican.', 210], ['4. Argumentación', 'Relaciona los hechos con las normas: ¿por qué aplican o no?', 300],
+      ['5. Conclusión', '¿Cómo debería resolverse y por qué?', 200]];
+    let y = y0;
+    sec.forEach(([t, a, h]) => { cajaRespuesta(70, y, W - 140, h, t, a, { c:'#0f2747' }); y += h + 18; });
+  }},
+  { nombre:'Actividad: cuadro comparativo', tam:[1920, 1080], crear(){
+    FONDO(ACT_C.fondo);
+    const y0 = encabezadoActividad('Cuadro comparativo', 'compara los tres temas en cada aspecto. Escribe frases cortas y claras.');
+    crearTabla(960, y0 + (H - y0) / 2 - 10, 5, 4, { ...ESTILOS_TABLA['Clásica'], anchos:[330, 470, 470, 470], alto:118, tam:24, tamEnc:28 },
+      [['Aspecto', 'Tema 1', 'Tema 2', 'Tema 3'], ['Definición'], ['Características'], ['Ejemplo'], ['Diferencia principal']]);
+  }},
+  { nombre:'Actividad: reporte de lectura', tam:[1275, 1650], crear(){
+    FONDO(ACT_C.fondo);
+    const y0 = encabezadoActividad('Reporte de lectura', 'después de leer el texto, completa cada apartado. Usa tus propias palabras.', { s:46, acento:'#16a34a' });
+    PON([uiT('Título de la lectura: _____________________________________', 70, y0, { w:W - 140, s:22, c:ACT_C.tinta }),
+      uiT('Autor(a): ___________________________   Páginas: ________', 70, y0 + 40, { w:W - 140, s:22, c:ACT_C.tinta })]);
+    let y = y0 + 96;
+    [['Resumen', 'Cuenta de qué trata en 5 a 8 líneas.', 300], ['Ideas principales', '1.\n2.\n3.', 250], ['Lo que más me llamó la atención', 'Una frase, un dato o una idea, y por qué.', 210],
+     ['Mi opinión', '¿Estás de acuerdo con el autor? ¿Por qué?', 200], ['Palabras nuevas', 'Palabra: significado', 150]].forEach(([t, a, h]) => { cajaRespuesta(70, y, W - 140, h, t, a, { c:'#166534' }); y += h + 16; });
+  }},
+  { nombre:'Actividad: autoevaluación con rúbrica', tam:[1275, 1650], crear(){
+    FONDO(ACT_C.fondo);
+    const y0 = encabezadoActividad('Autoevaluación', 'marca con una ✓ el nivel que alcanzaste en cada criterio y explica por qué al final.', { s:46, acento:'#7c3aed' });
+    crearTabla(W / 2, y0 + 330, 6, 5, { ...ESTILOS_TABLA['Tarjetas'], anchos:[350, 190, 190, 190, 190], alto:100, tam:21, tamEnc:22 },
+      [['Criterio', 'Excelente (4)', 'Bien (3)', 'Regular (2)', 'Por mejorar (1)'], ['Contenido completo y correcto'], ['Organización y claridad'], ['Diseño y presentación'], ['Ortografía y redacción'], ['Entrega a tiempo']]);
+    cajaRespuesta(70, y0 + 690, W - 140, 260, '¿Qué hice bien y qué puedo mejorar?', 'Escribe dos cosas que hiciste bien y una que mejorarías la próxima vez.', { c:'#5b21b6' });
+    PON([uiT('Mi calificación: ______ / 20', 70, y0 + 980, { w:W - 140, s:28, b:'700', c:'#5b21b6', al:'right' })]);
+  }}
+];
+PLANTILLAS_ACT.forEach(p => CATALOGO.push({ nombre:p.nombre, cat:CAT_ACT, tam:p.tam, crear:p.crear, usar:() => usarPlantillaLogo(p) }));
+CATEGORIAS.splice(Math.max(0, CATEGORIAS.indexOf(CAT_DER)), 0, CAT_ACT);
 (function(){
-  let v = null; try { v = localStorage.getItem('disenador_interfaz'); } catch (e) {}
-  ponerInterfaz(v !== 'clasica', false);
-  // botones que llegan después (cuenta, instalar app…) también se acomodan
-  document.addEventListener('barra-cambio', () => { if (interfazLimpia()) setTimeout(moverAlArchivo, 0); });
-  setTimeout(() => { if (interfazLimpia()) moverAlArchivo(); medirPie(); }, 1500);
+  const c = document.createElement('button'); c.className = 'chip'; c.textContent = '📚 Actividades';
+  c.onclick = () => { catActiva = CAT_ACT; document.querySelectorAll('#chipsCat .chip').forEach(x => x.classList.toggle('on', x === c)); renderCatalogo(); };
+  const ref = [...document.querySelectorAll('#chipsCat .chip')].find(x => x.textContent.includes('Derecho'));
+  if (ref) ref.before(c); else $('chipsCat').appendChild(c);
+  renderCatalogo();
 })();
-// el zoom automático deja libre el lugar del panel flotante, para que nunca tape la página
-const ajustarZoomBase = ajustarZoom;
-ajustarZoom = function(){
-  if (!(interfazLimpia() && esEscritorio())) return ajustarZoomBase();
-  const a = $('area'), extra = Math.max(0, parseFloat(getComputedStyle(a).paddingRight) - 30);
-  establecerZoom(Math.min((a.clientWidth - 80 - extra) / W, (a.clientHeight - 80) / H));
-  a.scrollLeft = a.scrollTop = 0;
-};
 </script>

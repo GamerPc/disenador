@@ -150,15 +150,16 @@ window.addEventListener('resize', ubicarAsa);
 (function(){
   const bc = document.createElement('button'); bc.id = 'bCapasFlot'; bc.className = 'btnS'; bc.title = 'Ver las capas del diseño';
   bc.innerHTML = `${icoUI('capas')} Capas`;
-  bc.onclick = () => { $('app').classList.add('propsFijo'); revisarProps(); const t = document.querySelector('.tabsProps [data-pt="capas"]'); t && t.click(); };
+  bc.onclick = () => { $('app').classList.add('propsFijo'); revisarProps(); ajustarZoom(); const t = document.querySelector('.tabsProps [data-pt="capas"]'); t && t.click(); };
   $('centro').appendChild(bc);
   const x = document.createElement('button'); x.id = 'bCerrarProps'; x.title = 'Cerrar el panel'; x.setAttribute('aria-label', 'Cerrar el panel'); x.innerHTML = icoUI('cerrar');
-  x.onclick = () => { $('app').classList.remove('propsFijo'); canvas.discardActiveObject(); canvas.requestRenderAll(); revisarProps(); };
+  x.onclick = () => { $('app').classList.remove('propsFijo'); revisarProps(); ajustarZoom(); };
   const tabs = document.querySelector('#props .tabsProps'); if (tabs) tabs.appendChild(x);
 })();
 function revisarProps(){
-  const hay = !!canvas.getActiveObject();
-  $('app').classList.toggle('conProps', hay || $('app').classList.contains('propsFijo'));
+  // con la interfaz limpia el panel completo solo se abre a propósito (la barra rápida tiene lo más usado)
+  const fijo = $('app').classList.contains('propsFijo');
+  $('app').classList.toggle('conProps', fijo || (!!canvas.getActiveObject() && !interfazLimpia()));
 }
 ['selection:created', 'selection:updated', 'selection:cleared'].forEach(ev => canvas.on(ev, () => setTimeout(revisarProps, 0)));
 // el panel no tapa el pie (notas, páginas y zoom)
@@ -200,7 +201,9 @@ function ponerBarraSel(){
   const r = rectObjetoPP(o), c = $('centro').getBoundingClientRect(), a = $('area').getBoundingClientRect();
   const w = d.offsetWidth, h = d.offsetHeight;
   let x = r.left + r.width / 2 - w / 2, y = r.top - h - 44;          // arriba (deja espacio a la manija de girar)
-  if (y < a.top + 6) y = r.top + r.height + 30;                      // si no cabe, abajo
+  if (o.type === 'conector') y = r.top + r.height + 24;              // en las líneas va abajo, para no tapar el punto de doblar
+  const br = $('barraRapida'), tope = Math.max(a.top + 6, br && !br.hidden ? br.getBoundingClientRect().bottom + 8 : 0);
+  if (y < tope) y = r.top + r.height + 30;                           // si no cabe, abajo
   if (y + h > a.bottom - 6) y = Math.max(a.top + 6, Math.min(a.bottom - h - 6, r.top + 8));
   x = Math.max(a.left + 6, Math.min(a.right - w - 6, x));
   d.style.left = (x - c.left) + 'px'; d.style.top = (y - c.top) + 'px';
@@ -240,7 +243,7 @@ function ponerInterfaz(limpia, guardar = true){
 const ajustarZoomBase = ajustarZoom;
 ajustarZoom = function(){
   if (!(interfazLimpia() && esEscritorio())) return ajustarZoomBase();
-  const a = $('area'), extra = Math.max(0, parseFloat(getComputedStyle(a).paddingRight) - 30);
-  establecerZoom(Math.min((a.clientWidth - 80 - extra) / W, (a.clientHeight - 80) / H));
+  const a = $('area'), cs = getComputedStyle(a), extra = Math.max(0, parseFloat(cs.paddingRight) - 30), extraY = Math.max(0, parseFloat(cs.paddingTop) - 30);
+  establecerZoom(Math.min((a.clientWidth - 80 - extra) / W, (a.clientHeight - 80 - extraY) / H));
   a.scrollLeft = a.scrollTop = 0;
 };

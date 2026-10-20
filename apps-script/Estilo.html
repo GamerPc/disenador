@@ -438,8 +438,6 @@
   #barra.soloIconos #bArchivo .icoMenuArch{display:inline-block;width:20px;height:20px}
   #barra.soloIconos #bArchivo > .ico:last-child{display:none}
   #menuArchivo #bAuto.on::after{content:"✓";margin-left:auto;font-weight:700}
-  @media (min-width:821px){ html.limpia #area{padding-right:310px} }
-  @media (min-width:1500px){ html.limpia #area{padding-right:150px} }
   /* con el panel cerrado, ninguna pestaña se ve «activa» (como Canva) */
   @media (min-width:821px){
     html.limpia #app.sinLateral #pestanas button.activa{color:#8a93a6;background:transparent}
@@ -449,5 +447,54 @@
     html.claro.limpia #app.sinLateral #pestanas button.activa{color:#566072}
     html.claro.limpia #app.sinLateral #pestanas button:hover{color:#0d1424;background:#eef3f9}
   }
+  /* ---------- barra rápida, medidas y conectores a mano ---------- */
+  #barraRapida,#popRapido,#medidaTip{display:none}
+  #medidaTip{position:fixed;z-index:500;pointer-events:none;background:#1b2230;color:#fff;font:600 12.5px Inter,sans-serif;padding:5px 10px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.35);white-space:pre}
+  #medidaTip:not([hidden]){display:block}
+  .puntoMedio{background:#fff !important;border-color:var(--neon,#19c8ff) !important;width:16px !important;height:16px !important;margin:-8px 0 0 -8px !important;cursor:move;box-shadow:0 0 0 3px rgba(25,200,255,.25)}
+  @media (min-width:821px){
+    html.limpia #area{padding-top:66px}
+    html.limpia #barraRapida:not([hidden]){display:flex;align-items:center;gap:2px;position:absolute;top:10px;z-index:25;max-width:calc(100% - 20px);overflow-x:auto;scrollbar-width:none;background:var(--panel);border:1px solid var(--borde);border-radius:12px;padding:4px 6px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+    html.enfoque #barraRapida{display:none !important}
+    #barraRapida > button{flex:none;display:inline-flex;align-items:center;gap:6px;height:34px;min-width:34px;padding:0 9px;border:0;border-radius:8px;background:transparent;color:var(--texto);font:500 13px Inter,sans-serif;cursor:pointer;justify-content:center}
+    #barraRapida > button:hover{background:var(--hover)}
+    #barraRapida > button.on,#barraRapida > button.abierto{background:rgba(25,200,255,.14);color:var(--neon)}
+    #barraRapida .ico{width:18px;height:18px}
+    #barraRapida .sepBR{width:1px;height:22px;background:var(--borde);margin:0 4px;flex:none}
+    #barraRapida .letraBR{font:700 15px Georgia,serif;min-width:12px;text-align:center}
+    #barraRapida .aColor{font:700 16px Inter,sans-serif;border-bottom:4px solid var(--c,#000);line-height:1;padding:0 2px 1px}
+    #barraRapida .muestraBR{width:22px;height:22px;border-radius:50%;border:2px solid var(--borde);display:inline-block}
+    #barraRapida .fuenteBR{flex:none;width:150px;height:32px;border-radius:8px;background:var(--panel2);color:var(--texto);border:1px solid var(--borde);padding:0 8px;font:13px Inter,sans-serif}
+    #barraRapida .tamBR{flex:none;display:flex;align-items:center;border:1px solid var(--borde);border-radius:8px;height:32px;margin:0 2px}
+    #barraRapida .tamBR button{width:28px;height:30px;border:0;background:transparent;color:var(--texto);display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:7px}
+    #barraRapida .tamBR button:hover{background:var(--hover)}
+    #barraRapida .tamBR .ico{width:14px;height:14px}
+    #barraRapida .tamBR input{width:42px;height:30px;border:0;background:transparent;color:var(--texto);text-align:center;font:600 13px Inter,sans-serif;-moz-appearance:textfield}
+    #barraRapida .tamBR input::-webkit-inner-spin-button{display:none}
+    #popRapido{display:block;position:fixed;z-index:210;width:min(330px,calc(100vw - 16px));overflow:auto;background:var(--panel);color:var(--texto);border:1px solid var(--borde);border-radius:14px;box-shadow:0 18px 48px rgba(0,0,0,.5);padding:10px 12px 12px}
+    #popRapido .cabPop{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+    #popRapido .cabPop b{font-size:13.5px}
+    #popRapido .cerrarPop{width:28px;height:28px;border:0;border-radius:7px;background:transparent;color:var(--suave);display:flex;align-items:center;justify-content:center}
+    #popRapido .cerrarPop:hover{background:var(--hover);color:var(--texto)}
+    #popRapido .cerrarPop .ico{width:15px;height:15px}
+    #popRapido h4{margin:6px 0;font-size:11.5px;color:var(--suave);text-transform:uppercase;letter-spacing:.05em;cursor:default}
+    #popRapido h4.plegable::after{display:none}
+    #popRapido .fila{display:flex;align-items:center;gap:8px;margin:6px 0}
+    #popRapido .fila label{min-width:78px;font-size:12.5px;color:var(--suave)}
+    #popRapido .fila input[type=range]{flex:1}
+    #popRapido .gridPop{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px}
+    #popRapido .gridPop .pb,#popRapido .filaPop .pb{font-size:12.5px;padding:7px 6px}
+    #popRapido .filaPop{display:flex;gap:6px;flex-wrap:wrap}
+    #popRapido .subPop{margin:8px 0 5px;font-size:11.5px;color:var(--suave);text-transform:uppercase;letter-spacing:.05em}
+    #popRapido .medidasPop{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}
+    #popRapido .medidasPop label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--suave)}
+    #popRapido .medidasPop input[type=number]{background:var(--panel2);border:1px solid var(--borde);color:var(--texto);border-radius:8px;padding:6px 8px;font:13px Inter,sans-serif}
+    #popRapido .medidasPop .propPop{flex-direction:row;align-items:center;gap:6px;grid-column:1 / -1}
+    #popRapido select,#popRapido input[type=text]{background:var(--panel2);border:1px solid var(--borde);color:var(--texto);border-radius:8px;padding:5px 8px}
+    html.limpia #app.propsFijo #area{padding-right:310px}
+  }
+  html.claro #barraRapida,html.claro #popRapido{box-shadow:0 12px 32px rgba(20,30,50,.16)}
+  html.claro #barraRapida > button.on,html.claro #barraRapida > button.abierto{background:rgba(6,121,176,.1)}
+  #popRapido [hidden]{display:none !important}
 
 </style>

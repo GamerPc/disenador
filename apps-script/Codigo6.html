@@ -2,6 +2,394 @@
 /*@parte Codigo6*/ (window.__partes = window.__partes || {})['Codigo6'] = true;
 
 /* =========================================================
+   PLANTILLAS DE INFOGRAFÍAS Y FOTOS
+   ========================================================= */
+const CAT_INFO = 'Infografías y fotos';
+function GRAFICA(tipo, x, y, w, hh, datos, o = {}){
+  const g = grupoGrafica({ tipo, titulo:o.titulo || '', paleta:o.paleta || 'Vibrante', valores:o.valores !== false, w, h:hh, datos });
+  g.setPositionByOrigin(new fabric.Point(x, y), 'center', 'center'); g.setCoords(); canvas.add(g); return g;
+}
+function MARCO(tipo, x, y, w, hh, ang = 0){
+  const g = crearMarcoVacio(tipo, w, hh); g.set({ angle:ang });
+  g.setPositionByOrigin(new fabric.Point(x, y), 'center', 'center'); g.setCoords(); canvas.add(g); return g;
+}
+const izquierda = n => { const t = porId(n.formaTexto); if (t) t.set('textAlign', 'left'); return n; };
+ORGANIZADORES.push(
+  { nombre:'Infografía con datos', cat:CAT_INFO, tam:[1080,1920], crear(){
+    FONDO('#f8fafc');
+    canvas.add(new fabric.Rect({ left:0, top:0, width:1080, height:400, fill:'#4f46e5', name:'Banda', id:nuevoId() }));
+    DECO('destello', 960, 80, 60, { c:'#a5b4fc' }); DECO('destello', 110, 340, 44, { c:'#c7d2fe' });
+    T('INFOGRAFÍA', 540, 105, { f:'Montserrat', s:30, b:'800', c:'#c7d2fe', cs:400, w:900 });
+    T('Título del tema', 540, 200, { f:'Fredoka', s:84, b:'700', c:'#ffffff', w:950 });
+    T('Una frase que resuma de qué trata esta infografía.', 540, 300, { f:'Poppins', s:30, c:'#e0e7ff', w:850 });
+    [['75%',220,'#4f46e5'],['3/5',540,'#0891b2'],['+20',860,'#db2777']].forEach(([v, x, c]) => {
+      nodo('circulo', v, x, 545, { w:190, h:190, fill:c, color:'#ffffff', tam:48, fuente:'Fredoka', peso:'700' });
+      T('Dato importante que explica la cifra', x, 700, { s:24, w:260, c:'#475569' });
+    });
+    GRAFICA('barras', 540, 1040, 920, 520, [{e:'2021',v:35},{e:'2022',v:48},{e:'2023',v:62},{e:'2024',v:71}], { titulo:'Comparación de resultados', paleta:'Escolar' });
+    MARCO('redondo', 280, 1535, 400, 330);
+    T('Explica aquí la imagen o agrega un dato curioso relacionado con el tema.', 760, 1535, { s:30, w:500, al:'left', c:'#334155' });
+    nodo('redondo', 'Conclusión: escribe aquí la idea más importante que debe recordar quien lea.', 540, 1805, { anchoMax:860, w:960, h:130, fill:'#e0e7ff', color:'#1e1b4b', tam:28, fuente:'Poppins' });
+  }},
+  { nombre:'Reporte de resultados', cat:CAT_INFO, tam:[1920,1080], crear(){
+    FONDO('#ffffff');
+    T('Reporte de resultados', 960, 90, { f:'Fredoka', s:68, b:'700', w:1400 });
+    T('Encuesta aplicada a 30 estudiantes · Grupo 6A', 960, 160, { f:'Poppins', s:28, c:'#64748b', w:1200 });
+    GRAFICA('dona', 500, 520, 820, 540, [{e:'Sí',v:18},{e:'No',v:7},{e:'No sé',v:5}], { titulo:'¿Te gusta leer?', paleta:'Pastel' });
+    GRAFICA('barras', 1420, 520, 820, 540, [{e:'Novela',v:12},{e:'Cómic',v:9},{e:'Poesía',v:4},{e:'Ciencia',v:5}], { titulo:'Género favorito', paleta:'Vibrante' });
+    [[340,'#ede9fe','#3b0764'],[960,'#fce7f3','#831843'],[1580,'#e0f2fe','#0c4a6e']].forEach(([x, f, c], i) =>
+      nodo('redondo', `Hallazgo ${i + 1}: escribe aquí una conclusión de los datos.`, x, 935, { anchoMax:480, w:560, h:120, fill:f, color:c, tam:26, fuente:'Poppins' }));
+  }},
+  { nombre:'Sobre mí', cat:CAT_INFO, tam:[1080,1350], crear(){
+    FONDO('#fff7ed'); fondoPapel('puntos', '#fff7ed');
+    MARCO('circulo', 540, 320, 400, 400);
+    DECO('destello', 810, 150, 60, { c:'#fb923c' }); DECO('flor', 270, 500, 70, { c:'#f472b6' }); DECO('estrella', 840, 470, 40, { c:'#facc15' });
+    T('¡Hola! Soy', 540, 585, { f:'Caveat', s:56, c:'#9a3412' });
+    T('Tu nombre', 540, 665, { f:'Fredoka', s:84, b:'700', w:900 });
+    DECO('subrayado', 540, 725, 360, { c:'#fb923c', sw:6 });
+    [['🎂\nEdad\n__ años',220,'#fed7aa'],['📍\nVivo en\nCiudad',540,'#fbcfe8'],['🎓\nEstudio\nCarrera',860,'#bbf7d0']].forEach(([t, x, f]) =>
+      nodo('redondo', t, x, 925, { w:280, h:230, fill:f, color:'#1f2330', tam:30, fuente:'Poppins', peso:'600' }));
+    izquierda(nodo('redondo', 'Me gusta: escribe tus pasatiempos, música o comida favorita.\nMi meta: algo que quieras lograr este año.', 540, 1190,
+      { anchoMax:860, w:960, h:200, fill:'#ffffff', stroke:'#fdba74', grosor:3, color:'#431407', tam:32, fuente:'Patrick Hand' }));
+  }},
+  { nombre:'Biografía', cat:CAT_INFO, tam:[1920,1080], crear(){
+    FONDO('#fdf6e3');
+    MARCO('arco', 400, 560, 520, 720);
+    T('BIOGRAFÍA', 1240, 110, { f:'Montserrat', s:30, b:'800', c:'#b45309', cs:500, w:900 });
+    T('Nombre del personaje', 1240, 190, { f:'Playfair Display', s:72, b:'700', w:1100 });
+    T('Lugar y fecha de nacimiento — fecha de fallecimiento', 1240, 265, { f:'Poppins', s:28, c:'#78716c', w:1100 });
+    LINEA(880, 420, 1640, 420, '#d97706', 4);
+    [[880,'1900'],[1133,'1920'],[1386,'1950'],[1640,'1980']].forEach(([x, a]) => {
+      nodo('circulo', a, x, 420, { w:120, h:120, fill:'#f59e0b', color:'#ffffff', tam:28, fuente:'Fredoka', peso:'700' });
+      T('Acontecimiento importante', x, 530, { s:24, w:220, c:'#57534e' });
+    });
+    nodo('pildora', 'Aportaciones', 900, 655, { w:270, h:64, fill:'#f59e0b', color:'#ffffff', tam:30, fuente:'Fredoka', peso:'700' });
+    izquierda(nodo('redondo', '• Primera aportación importante\n• Segunda aportación\n• Por qué se le recuerda hoy', 1240, 850,
+      { anchoMax:900, w:1000, h:260, fill:'#ffffff', stroke:'#f59e0b', grosor:3, color:'#292524', tam:34, fuente:'Patrick Hand' }));
+    DECO('destello', 1820, 90, 60, { c:'#f59e0b' });
+  }},
+  { nombre:'Álbum de fotos', cat:CAT_INFO, tam:[1920,1080], crear(){
+    FONDO('#fef3c7'); fondoPapel('cuadros', '#fef3c7');
+    T('Nuestro álbum', 960, 100, { f:'Caveat', s:96, b:'700', c:'#92400e', w:900 });
+    [[330,-6,'#f9a8d4'],[760,4,'#a5f3fc'],[1170,-3,'#bbf7d0'],[1600,6,'#fde68a']].forEach(([x, a, cinta]) => {
+      canvas.add(new fabric.Rect({ left:x, top:575, width:380, height:470, originX:'center', originY:'center', fill:'#ffffff', angle:a,
+        shadow:new fabric.Shadow({ color:'rgba(0,0,0,.18)', blur:18, offsetX:4, offsetY:8 }), name:'Polaroid', id:nuevoId() }));
+      MARCO('rect', x, 535, 330, 330, a);
+      T('Pie de foto', x, 760, { f:'Caveat', s:44, w:300, ang:a });
+      DECO('cinta', x, 345, 170, { c:cinta, op:0.65, ang:a - 4 });
+    });
+    DECO('destello', 1820, 110, 60, { c:'#f59e0b' }); DECO('corazon', 110, 980, 60, { c:'#f472b6' });
+  }},
+  { nombre:'Ficha de lectura', cat:CAT_INFO, tam:[1240,1754], crear(){
+    FONDO('#f0f9ff');
+    T('FICHA DE LECTURA', 620, 110, { f:'Fredoka', s:70, b:'700', c:'#0c4a6e', w:1100 });
+    DECO('subrayado', 620, 170, 420, { c:'#38bdf8', sw:6 });
+    MARCO('rect', 300, 480, 380, 520);
+    const campo = { anchoMax:520, w:600, h:90, fill:'#ffffff', stroke:'#7dd3fc', grosor:2, color:'#0c4a6e', tam:32, fuente:'Patrick Hand' };
+    ['Título: ______________','Autor: ______________','Género: ______________','Calificación: ★★★★☆'].forEach((t, i) => izquierda(nodo('redondo', t, 870, 300 + i * 120, campo)));
+    nodo('pildora', 'Resumen', 620, 820, { w:240, h:64, fill:'#0ea5e9', color:'#ffffff', tam:30, fuente:'Fredoka', peso:'700' });
+    izquierda(nodo('redondo', 'Escribe aquí de qué trata el libro: inicio, problema principal y final.', 620, 1035,
+      { anchoMax:1000, w:1100, h:330, fill:'#ffffff', stroke:'#7dd3fc', grosor:2, color:'#334155', tam:32, fuente:'Patrick Hand' }));
+    [[340,'Personajes','• Protagonista:\n• Otros personajes:'],[900,'Mi opinión','¿Te gustó? ¿Lo recomendarías? ¿Por qué?']].forEach(([x, tit, txt]) => {
+      nodo('pildora', tit, x, 1290, { w:250, h:60, fill:'#38bdf8', color:'#ffffff', tam:28, fuente:'Fredoka', peso:'700' });
+      izquierda(nodo('redondo', txt, x, 1480, { anchoMax:440, w:520, h:310, fill:'#ffffff', stroke:'#7dd3fc', grosor:2, color:'#334155', tam:30, fuente:'Patrick Hand' }));
+    });
+  }}
+);
+
+/* =========================================================
+   PRESENTACIONES (temas completos con varias diapositivas)
+   ========================================================= */
+const CAT_PRES = 'Presentaciones';
+const TEMAS_PRES = {
+  escolar: { nombre:'Escolar colorido', fondo:'#fffdf7', texto:'#1f2330', suave:'#64748b', pri:'#7c3aed', sec:'#f97316', acento:'#06b6d4',
+    tarjeta:'#f5f3ff', textoTarjeta:'#2e1065', borde:null, tit:'Fredoka', titPeso:'700', cuerpo:'Poppins', paleta:'Vibrante', trans:'deslizar', anim:'dinamica' },
+  formal: { nombre:'Formal (Derecho)', fondo:'#f8f6f1', texto:'#0f2747', suave:'#5b6b80', pri:'#0f2747', sec:'#b8862b', acento:'#b8862b',
+    tarjeta:'#ffffff', textoTarjeta:'#0f2747', borde:'#d6c7a1', tit:'Playfair Display', titPeso:'700', cuerpo:'Inter', paleta:'Escolar', trans:'desvanecer', anim:'suave',
+    zona:{ x:1240, w:1080 } },
+  minimal: { nombre:'Minimalista', fondo:'#ffffff', texto:'#111827', suave:'#6b7280', pri:'#111827', sec:'#2563eb', acento:'#2563eb',
+    tarjeta:'#f3f4f6', textoTarjeta:'#111827', borde:null, tit:'Montserrat', titPeso:'800', cuerpo:'Inter', paleta:'Escolar', trans:'desvanecer', anim:'suave' },
+  oscuro: { nombre:'Moderno oscuro', fondo:'#0f172a', texto:'#f8fafc', suave:'#94a3b8', pri:'#22d3ee', sec:'#a78bfa', acento:'#f472b6',
+    tarjeta:'#1e293b', textoTarjeta:'#e2e8f0', borde:'#334155', tit:'Montserrat', titPeso:'800', cuerpo:'Inter', paleta:'Vibrante', trans:'zoom', anim:'dinamica' },
+  pizarron: { nombre:'Pizarrón', fondo:'#1f3b2d', texto:'#f8fafc', suave:'#d1dccb', pri:'#fde047', sec:'#f9a8d4', acento:'#7dd3fc',
+    tarjeta:'#2a4d3b', textoTarjeta:'#f8fafc', borde:'#e2e8f0', tit:'Gochi Hand', titPeso:'400', cuerpo:'Patrick Hand', paleta:'Pastel', trans:'desvanecer', anim:'suave' },
+  cuaderno: { nombre:'Cuaderno', fondo:'#fffef6', texto:'#1e293b', suave:'#475569', pri:'#2563eb', sec:'#ef4444', acento:'#16a34a',
+    tarjeta:'#ffffff', textoTarjeta:'#1e293b', borde:'#93c5fd', tit:'Caveat', titPeso:'700', cuerpo:'Patrick Hand', paleta:'Escolar', trans:'deslizar', anim:'divertida' },
+  pastel: { nombre:'Pastel', fondo:'#fdf4ff', texto:'#3b0764', suave:'#7e6a8a', pri:'#c084fc', sec:'#f472b6', acento:'#38bdf8',
+    tarjeta:'#ffffff', textoTarjeta:'#3b0764', borde:'#f0abfc', tit:'Fredoka', titPeso:'600', cuerpo:'Poppins', paleta:'Pastel', trans:'deslizar', anim:'divertida' }
+};
+Object.entries(TEMAS_PRES).forEach(([id, t]) => { t.id = id; });
+const sobre = c => esOscuro(c) ? '#ffffff' : '#1f2330';          // color de texto que se lee bien encima de c
+function RECT(x, y, w, hh, fill, o = {}){
+  const r = new fabric.Rect({ left:x, top:y, width:w, height:hh, fill, opacity:o.op ?? 1, rx:o.r || 0, ry:o.r || 0, angle:o.ang || 0,
+    stroke:o.stroke || null, strokeWidth:o.sw || 0, esDeco:true, name:o.nombre || 'Decoración', id:nuevoId() });
+  canvas.add(r); return r;
+}
+function CIRC(x, y, r, fill, o = {}){
+  const c = new fabric.Circle({ left:x, top:y, radius:r, originX:'center', originY:'center', fill, opacity:o.op ?? 1,
+    stroke:o.stroke || null, strokeWidth:o.sw || 0, esDeco:true, name:o.nombre || 'Círculo decorativo', id:nuevoId() });
+  canvas.add(c); return c;
+}
+// Dibuja el fondo y los adornos del tema. Devuelve los colores que se leen bien en esa diapositiva.
+function fondoPres(t, k){
+  const c = { texto:t.texto, suave:t.suave, acento:t.pri };
+  const portada = k === 'portada' || k === 'final', barra = k === 'normal';
+  switch (t.id){
+    case 'escolar':
+      if (k === 'seccion'){ FONDO(t.pri); DECO('mancha', 1700, 160, 520, { c:'#8b5cf6' }); DECO('destello', 240, 860, 90, { c:'#fde047' });
+        return { texto:'#ffffff', suave:'#ede9fe', acento:'#fde047' }; }
+      FONDO(t.fondo);
+      if (portada){
+        DECO('mancha', 1720, 230, 640, { c:'#ede9fe' }); DECO('mancha', 170, 960, 520, { c:'#ffedd5' });
+        DECO('destello', 1660, 860, 90, { c:t.sec }); DECO('destello', 250, 170, 70, { c:t.acento }); DECO('confeti', 1560, 180, 260, { c:t.pri });
+      } else {
+        RECT(0, 0, 1920, 16, t.pri); if (barra) RECT(120, 192, 120, 10, t.sec, { r:5 }); DECO('destello', 1830, 85, 56, { c:t.sec });
+      }
+      return c;
+    case 'formal':
+      if (k === 'seccion'){ FONDO(t.pri); RECT(0, 0, 1920, 1080, null, { stroke:t.sec, sw:6, nombre:'Marco' });
+        return { texto:'#ffffff', suave:'#cbd5e1', acento:t.sec }; }
+      FONDO(t.fondo);
+      if (portada){
+        RECT(0, 0, 640, 1080, t.pri, { nombre:'Banda' }); RECT(640, 0, 14, 1080, t.sec);
+        ICONO(k === 'final' ? 'Libro' : 'Balanza', 320, 520, 250, t.sec);
+        RECT(200, 720, 240, 3, t.sec);
+      } else {
+        if (barra){ RECT(120, 196, 180, 4, t.sec); RECT(120, 206, 90, 4, t.sec); } RECT(0, 1048, 1920, 32, t.pri, { nombre:'Banda' });
+      }
+      return { ...c, acento:t.sec };
+    case 'minimal':
+      if (k === 'seccion'){ FONDO('#111827'); RECT(120, 120, 16, 840, t.sec);
+        return { texto:'#ffffff', suave:'#9ca3af', acento:'#60a5fa' }; }
+      FONDO(t.fondo);
+      if (portada){ RECT(160, 150, 1600, 2, '#e5e7eb'); RECT(160, 930, 1600, 2, '#e5e7eb'); CIRC(1760, 151, 10, t.sec); }
+      else { if (barra) RECT(120, 192, 90, 8, t.sec); RECT(1700, 1000, 100, 2, '#d1d5db'); }
+      return { ...c, acento:t.sec };
+    case 'oscuro':
+      if (k === 'seccion'){ DEGRADADO('#0e7490', '#312e81'); CIRC(1650, 260, 300, '#ffffff', { op:0.07 });
+        return { texto:'#ffffff', suave:'#cffafe', acento:'#f0abfc' }; }
+      DEGRADADO('#0f172a', '#1e1b4b');
+      if (portada){ CIRC(1640, 300, 420, t.pri, { op:0.12 }); CIRC(260, 900, 260, t.sec, { op:0.15 }); CIRC(1500, 860, 70, t.acento, { op:0.5 }); }
+      else { if (barra) RECT(120, 192, 110, 8, t.pri, { r:4 }); CIRC(1820, 90, 26, t.sec, { op:0.6 }); CIRC(1870, 140, 12, t.acento, { op:0.7 }); }
+      return c;
+    case 'pizarron':
+      fijarFondo(new fabric.Rect({ left:0, top:0, width:1920, height:1080, fill:t.fondo, stroke:'#8b5a2b', strokeWidth:44 }));
+      if (portada){ DECO('destello', 1650, 220, 80, { c:t.pri }); DECO('estrella', 280, 230, 60, { c:t.sec }); DECO('espiral', 1600, 850, 150, { c:t.acento, sw:5 }); DECO('flecha', 330, 860, 200, { c:t.pri, sw:6 }); }
+      else if (k === 'seccion'){ DECO('marcador', 960, 400, 520, { c:t.pri, sw:6 }); }
+      else { if (barra) DECO('subrayado', 330, 205, 420, { c:t.pri, sw:6 }); DECO('enfasis', 1800, 110, 70, { c:t.sec, sw:5 }); }
+      return c;
+    case 'cuaderno':
+      fondoPapel('rayas', t.fondo);
+      RECT(92, 0, 4, 1080, '#fca5a5', { nombre:'Margen' });
+      [200, 540, 880].forEach(y => CIRC(44, y, 20, '#e5e7eb', { nombre:'Perforación' }));
+      if (portada){ DECO('cinta', 470, 120, 260, { c:'#fde68a', op:0.8, ang:-8 }); DECO('cinta', 1650, 120, 260, { c:'#bae6fd', op:0.8, ang:7 }); DECO('rizo', 1620, 880, 200, { c:t.sec, sw:6 }); DECO('estrella', 420, 880, 70, { c:'#facc15' }); }
+      else if (k === 'seccion'){ DECO('marcador', 960, 400, 520, { c:t.sec, sw:6 }); }
+      else if (barra) DECO('subrayado', 350, 205, 420, { c:t.sec, sw:6 });
+      return { ...c, acento:t.sec };
+    case 'marca': return fondoMarca(t, k);
+    case 'pastel':
+      FONDO(k === 'seccion' ? '#f5d0fe' : t.fondo);
+      DECO('mancha', 1760, 130, 460, { c:'#fbcfe8', op:0.8 }); DECO('mancha', 140, 990, 420, { c:'#bae6fd', op:0.8 });
+      if (portada){ DECO('flor', 1600, 850, 120, { c:t.sec }); DECO('corazon', 330, 220, 70, { c:t.sec }); DECO('destello', 1500, 200, 60, { c:t.pri }); }
+      else if (barra) RECT(120, 192, 110, 10, t.pri, { r:5 });
+      return c;
+  }
+  FONDO(t.fondo); return c;
+}
+// Acomoda objetos uno debajo de otro (centrados verticalmente en "centro"); sirve para que nada se encime
+function apilar(lst, centro, gap){
+  const alto = lst.reduce((a, [o, g]) => a + o.getScaledHeight() + (g ?? gap), 0) - (lst.length ? (lst[lst.length - 1][1] ?? gap) : 0);
+  let y = centro - alto / 2;
+  lst.forEach(([o, g]) => { const hh = o.getScaledHeight(); o.set('top', y + hh / 2); o.setCoords(); y += hh + (g ?? gap); });
+  return y;
+}
+const presTitulo = (t, c, txt, o = {}) => T(txt, o.x || 960, o.y || 125, { w:o.w || 1680, al:o.al || 'left', f:t.tit, s:o.s || 76, b:t.titPeso, c:c.texto, lh:1.1 });
+const presTexto = (t, c, txt, x, y, w, o = {}) => T(txt, x, y, { w, al:o.al || 'left', f:t.cuerpo, s:o.s || 38, c:o.c || c.suave, lh:1.4, b:o.b });
+function presCaja(t, txt, x, y, o = {}){
+  const n = nodo(o.tipo || 'redondo', txt, x, y, { w:o.w || 500, h:o.h || 200, anchoMax:o.anchoMax || (o.w || 500) - 70, fill:o.fill || t.tarjeta,
+    stroke:o.stroke !== undefined ? o.stroke : t.borde, grosor:3, color:o.color || t.textoTarjeta, tam:o.tam || 32, fuente:o.fuente || t.cuerpo, peso:o.peso });
+  if (o.izq) izquierda(n);
+  return n;
+}
+const DIAPOS = [
+  { id:'portada', notas:'Saluda y di tu nombre.\nPresenta el tema en una sola frase y explica por qué es importante.', nombre:'Portada', crear(t){
+    const c = fondoPres(t, 'portada'), z = t.zona || { x:960, w:1500 };
+    const a = T('PRESENTACIÓN', z.x, 0, { f:t.cuerpo, s:30, b:'700', c:c.acento, cs:500, w:z.w });
+    const b = T('Título de la presentación', z.x, 0, { f:t.tit, s:z.w < 1300 ? 100 : 120, b:t.titPeso, c:c.texto, w:z.w, lh:1.05 });
+    const d = T('Una frase corta que explique el tema', z.x, 0, { f:t.cuerpo, s:38, c:c.suave, w:z.w });
+    const y = apilar([[a, 34], [b, 34], [d, 60]], 500, 30);
+    nodo('pildora', 'Materia · Tu nombre · Fecha', z.x, y + 38, { w:640, h:76, fill:c.acento, color:sobre(c.acento), tam:28, fuente:t.cuerpo, peso:'600' });
+  }},
+  { id:'indice', notas:'Cuenta en qué orden vas a exponer.\nNo leas la lista: menciona cada parte en pocas palabras.', nombre:'Contenido', crear(t){
+    const c = fondoPres(t, 'normal');
+    presTitulo(t, c, 'Contenido');
+    ['Introducción al tema', 'Ideas principales', 'Ejemplos y datos', 'Conclusiones'].forEach((txt, i) => {
+      const x = i % 2 ? 1060 : 200, y = i < 2 ? 470 : 760, col = [t.pri, t.sec, t.acento, t.pri][i];
+      nodo('circulo', '0' + (i + 1), x + 70, y, { w:140, h:140, fill:col, color:sobre(col), tam:46, fuente:t.tit, peso:'700' });
+      presTexto(t, c, txt + '\nUna línea que describa esta parte.', x + 180 + 290, y, 580, { s:38, c:c.texto });
+    });
+  }},
+  { id:'seccion', notas:'Haz una pausa y anuncia esta nueva parte.\nConecta con lo que acabas de explicar.', nombre:'Separador de sección', crear(t){
+    const c = fondoPres(t, 'seccion');
+    const a = T('01', 960, 0, { f:t.tit, s:240, b:t.titPeso, c:c.acento, w:1200, lh:1 });
+    const b = T('Nombre de la sección', 960, 0, { f:t.tit, s:100, b:t.titPeso, c:c.texto, w:1500, lh:1.05 });
+    const d = T('Breve descripción de lo que veremos', 960, 0, { f:t.cuerpo, s:38, c:c.suave, w:1300 });
+    apilar([[a, 30], [b, 30], [d]], 540, 30);
+  }},
+  { id:'contenido', notas:'Explica cada punto con tus palabras y da un ejemplo.\nIdea clave que deben recordar: …', nombre:'Título y viñetas', crear(t){
+    const c = fondoPres(t, 'normal');
+    presTitulo(t, c, 'Título de la diapositiva');
+    presCaja(t, '• Primera idea importante del tema\n• Segunda idea con un ejemplo\n• Un dato curioso o una definición\n• Lo que debemos recordar',
+      700, 620, { w:1160, h:560, anchoMax:1060, tam:50, izq:true });
+    CIRC(1530, 620, 230, t.tarjeta, { stroke:t.borde, sw:t.borde ? 3 : 0 });
+    ICONO('Foco', 1530, 620, 230, t.id === 'pizarron' || t.id === 'oscuro' ? t.pri : (t.id === 'formal' ? t.sec : t.pri));
+  }},
+  { id:'imagen', notas:'Describe lo que se ve en la imagen y relaciónalo con el tema.', nombre:'Imagen y texto', crear(t){
+    const c = fondoPres(t, 'libre');
+    MARCO('redondo', 560, 600, 800, 720);
+    const a = T('Título de esta parte', 1430, 0, { w:760, al:'left', f:t.tit, s:76, b:t.titPeso, c:c.texto, lh:1.1 });
+    const b = presTexto(t, c, 'Explica aquí lo que muestra la imagen. Usa frases cortas y claras para que tu público entienda la idea principal.', 1430, 0, 760, { s:38 });
+    const y = apilar([[a, 40], [b]], 520, 40);
+    presCaja(t, '💡 Dato clave: escribe aquí algo importante.', 1430, y + 120, { w:760, h:150, anchoMax:690, tam:36, peso:'600', izq:true });
+  }},
+  { id:'tres', notas:'Presenta las tres ideas en orden; dedica más tiempo a la más importante.', nombre:'Tres ideas', crear(t){
+    const c = fondoPres(t, 'normal');
+    presTitulo(t, c, 'Tres ideas principales');
+    [['Foco', 'Primera idea'], ['Libro', 'Segunda idea'], ['Palomita', 'Tercera idea']].forEach(([ic, tit], i) => {
+      const x = 400 + i * 560, col = [t.pri, t.sec, t.acento][i];
+      presCaja(t, tit + '\nExplica aquí la idea con pocas palabras.', x, 690, { w:480, h:420, anchoMax:410, tam:38 });
+      CIRC(x, 480, 80, col);
+      ICONO(ic, x, 480, 90, sobre(col));
+    });
+  }},
+  { id:'comparar', notas:'Explica primero en qué se parecen y después en qué se diferencian.\nCierra con tu conclusión.', nombre:'Comparación', crear(t){
+    const c = fondoPres(t, 'normal');
+    presTitulo(t, c, 'Comparación');
+    [[520, 'Opción A', t.pri], [1400, 'Opción B', t.sec]].forEach(([x, tit, col]) => {
+      presCaja(t, '• Característica importante\n• Ventaja o diferencia\n• Un ejemplo concreto', x, 650, { w:780, h:520, anchoMax:680, tam:46, izq:true });
+      nodo('pildora', tit, x, 390, { w:320, h:84, fill:col, color:sobre(col), tam:36, fuente:t.tit, peso:'700' });
+    });
+  }},
+  { id:'datos', notas:'Di de dónde salen los datos (fuente y fecha).\nSeñala el dato más importante y qué significa.', nombre:'Datos y gráfica', crear(t){
+    const c = fondoPres(t, 'normal');
+    presTitulo(t, c, 'Lo que dicen los datos');
+    GRAFICA('barras', 700, 640, 1080, 640, [{e:'Grupo A',v:42},{e:'Grupo B',v:65},{e:'Grupo C',v:30},{e:'Grupo D',v:78}], { titulo:'Título de la gráfica', paleta:t.paleta });
+    presCaja(t, '78%\nde los participantes dijo que sí', 1520, 470, { w:520, h:260, anchoMax:450, tam:44, peso:'600' });
+    presCaja(t, '3 de cada 5\nprefieren la opción B', 1520, 810, { w:520, h:260, anchoMax:450, tam:44, peso:'600' });
+  }},
+  { id:'proceso', notas:'Recorre los pasos en orden. Menciona qué pasa si se omite alguno.', nombre:'Proceso en pasos', crear(t){
+    const c = fondoPres(t, 'normal');
+    presTitulo(t, c, '¿Cómo funciona?');
+    const cols = [t.pri, t.sec, t.acento, t.pri], pasos = [];
+    [330, 750, 1170, 1590].forEach((x, i) => {
+      pasos.push(nodo('circulo', String(i + 1), x, 500, { w:190, h:190, fill:cols[i], color:sobre(cols[i]), tam:72, fuente:t.tit, peso:'700' }));
+      presTexto(t, c, 'Paso ' + (i + 1) + '\nQué pasa en este paso.', x, 770, 380, { al:'center', s:38, c:c.texto });
+    });
+    for (let i = 0; i < 3; i++) unir(pasos[i], pasos[i + 1], { color:c.suave, ancho:6, estilo:'recta', lados:['der', 'izq'] });
+  }},
+  { id:'cita', notas:'Lee la cita despacio, di quién la dijo y por qué la elegiste.', nombre:'Frase o cita', crear(t){
+    const c = fondoPres(t, 'libre');
+    const a = T('“', 960, 0, { f:'Playfair Display', s:300, b:'700', c:c.acento, w:400, lh:0.8 });
+    const b = T('Escribe aquí una frase importante, una definición o una cita que resuma tu tema.', 960, 0, { f:t.tit, s:68, b:t.titPeso, c:c.texto, w:1400, lh:1.2, it:t.id === 'formal' });
+    const d = presTexto(t, c, '— Nombre del autor', 960, 0, 1000, { al:'center', s:38 });
+    apilar([[a, 10], [b, 50], [d]], 560, 30);
+  }},
+  { id:'final', notas:'Resume en una frase lo más importante.\nAgradece y abre espacio para preguntas.', nombre:'Gracias / preguntas', crear(t){
+    const c = fondoPres(t, 'final'), z = t.zona || { x:960, w:1500 };
+    const a = T('¡Gracias!', z.x, 0, { f:t.tit, s:170, b:t.titPeso, c:c.texto, w:z.w, lh:1 });
+    const b = T('¿Tienen alguna pregunta?', z.x, 0, { f:t.cuerpo, s:46, c:c.suave, w:z.w });
+    const y = apilar([[a, 40], [b, 60]], 480, 30);
+    nodo('pildora', 'tu.correo@escuela.edu.mx', z.x, y + 38, { w:620, h:76, fill:c.acento, color:sobre(c.acento), tam:28, fuente:t.cuerpo, peso:'600' });
+  }}
+];
+// Crea una diapositiva en un lienzo invisible y devuelve su contenido (para insertarla como página)
+function diapositivaJSON(tema, diapo, conAnim){
+  const tam = [1920, 1080];
+  const el = document.createElement('canvas');
+  const tmp = new fabric.Canvas(el, { width:tam[0], height:tam[1], enableRetinaScaling:false, renderOnAddRemove:false, preserveObjectStacking:true });
+  const prev = { canvas, W, H, zoom, restaurando };
+  generandoVista = true; canvas = tmp; W = tam[0]; H = tam[1]; zoom = 1; restaurando = true;
+  let json = null;
+  try {
+    tmp.backgroundColor = '#ffffff';
+    diapo.crear(tema); ordenarVinculos(); tmp.discardActiveObject();
+    if (conAnim) animarObjetos(tmp.getObjects(), PRESETS_ANIM[tema.anim] || PRESETS_ANIM.dinamica);
+    json = tmp.toJSON(EXTRA);
+    if (diapo.notas) json.notas = diapo.notas;
+  } finally {
+    canvas = prev.canvas; W = prev.W; H = prev.H; zoom = prev.zoom; restaurando = prev.restaurando; generandoVista = false;
+    try { tmp.dispose(); } catch(_){}
+  }
+  return json;
+}
+function usarPresentacion(tema){
+  const hayAlgo = paginas.length > 1 || canvas.getObjects().length;
+  if (hayAlgo && !confirm('Se creará una presentación de ' + DIAPOS.length + ' diapositivas con el tema “' + tema.nombre + '”.\nEsto reemplazará TODO tu diseño actual (todas las páginas). ¿Continuar?')) return;
+  cargando(true);
+  setTimeout(() => {
+    try {
+      const nuevas = DIAPOS.map(d => diapositivaJSON(tema, d, true));
+      fijarTamano(1920, 1080);
+      paginas = nuevas; miniaturas = []; actual = 0;
+      presConfig = { ...presConfig, tema:tema.id, transicion:tema.trans };
+      if ($('nombreDiseno').value === 'Mi diseño') $('nombreDiseno').value = 'Mi presentación';
+      cargarPaginaActual(true);
+      setTimeout(ajustarZoom, 60);
+      toast('Presentación lista: ' + nuevas.length + ' diapositivas con animaciones. Pulsa ▶ Presentar para verla.');
+    } catch (e) { console.error(e); toast('No se pudo crear la presentación: ' + e.message); }
+    finally { cargando(false); }
+  }, 30);
+}
+// ---------- Ventana "Agregar diapositiva con diseño" ----------
+let temaDiapo = null;
+const vistasDiapo = {};
+function abrirDiapositivas(){
+  temaDiapo = TEMAS_PRES[presConfig.tema] || temaDiapo || TEMAS_PRES.escolar;
+  $('temasDiapo').innerHTML = '';
+  Object.values(TEMAS_PRES).forEach(t => {
+    const ch = document.createElement('button'); ch.className = 'chip' + (t === temaDiapo ? ' on' : ''); ch.textContent = t.nombre;
+    ch.onclick = () => { temaDiapo = t; [...$('temasDiapo').children].forEach(x => x.classList.toggle('on', x === ch)); renderDiapositivas(); };
+    $('temasDiapo').appendChild(ch);
+  });
+  $('avisoDiapo').hidden = (W === 1920 && H === 1080);
+  abrirModal('mDiapositiva'); renderDiapositivas();
+}
+function renderDiapositivas(){
+  const g = $('gridDiapo'); g.innerHTML = '';
+  const t = temaDiapo, pend = [];
+  DIAPOS.forEach(d => {
+    const b = document.createElement('button'); b.className = 'tarjetaPl'; b.title = d.nombre;
+    const clave = t.id + '/' + d.id;
+    b.innerHTML = `<div class="mini" style="aspect-ratio:16/9">${vistasDiapo[clave] ? `<img src="${vistasDiapo[clave]}" alt="">` : 'Preparando…'}</div><span>${esc(d.nombre)}</span>`;
+    b.onclick = () => insertarDiapositiva(t, d);
+    if (!vistasDiapo[clave]) pend.push([clave, d, b]);
+    g.appendChild(b);
+  });
+  (async () => {
+    for (const [clave, d, b] of pend){
+      await new Promise(r => setTimeout(r, 20));
+      if (temaDiapo !== t) return;
+      vistasDiapo[clave] = vistaDe([1920, 1080], () => d.crear(t));
+      if (vistasDiapo[clave]) b.querySelector('.mini').innerHTML = `<img src="${vistasDiapo[clave]}" alt="">`;
+    }
+  })();
+}
+function insertarDiapositiva(t, d){
+  const vacio = paginas.length === 1 && !canvas.getObjects().length;
+  if (!(W === 1920 && H === 1080)){
+    if (!vacio && !confirm('Las diapositivas con diseño son de 16:9 (1920 × 1080) y tu diseño mide ' + W + ' × ' + H + '.\n¿Cambiar el tamaño de todo el diseño a 1920 × 1080?')) return;
+    guardarPaginaActual(); cambiarTamano(1920, 1080);
+  }
+  guardarPaginaActual();
+  const json = diapositivaJSON(t, d, true);
+  if (vacio){ paginas[0] = json; miniaturas = []; }
+  else { paginas.splice(actual + 1, 0, json); miniaturas.splice(actual + 1, 0, undefined); actual++; }
+  if (!presConfig.tema) presConfig = { ...presConfig, tema:t.id };
+  cerrarModal('mDiapositiva'); cargarPaginaActual(true);
+  toast('Diapositiva “' + d.nombre + '” agregada');
+}
+
+/* =========================================================
    PLANTILLAS DE DERECHO
    ========================================================= */
 const CAT_DER = 'Derecho';
@@ -340,431 +728,5 @@ function animarPaginas(todas){
 function quitarAnimaciones(){
   cambiarPaginas(true, objs => objs.forEach(o => { o.anim = null; })).then(() => toast('Se quitaron las animaciones'));
 }
-
-/* =========================================================
-   PRESENTACIÓN EN PANTALLA COMPLETA
-   ========================================================= */
-let pres = null;
-function iniciarPresentacion(conVista){
-  const vistaOk = conVista ? abrirVentanaPresentador() : false;   // se abre aquí, justo con el clic, para que el navegador lo permita
-  presConfig = { ...presConfig, transicion:$('pTrans').value, avance:$('pAvance').value, segundos:Math.max(1, +$('pSeg').value || 6) };
-  guardarEstado();
-  cerrarModal('mPresentar');
-  presentar($('pDesde').value === 'actual' ? actual : 0, false, conVista && !vistaOk);
-}
-['pAvance'].forEach(id => $(id).addEventListener('change', () => $('filaSeg').style.display = $('pAvance').value === 'auto' ? 'flex' : 'none'));
-document.querySelector('[onclick="abrirModal(\'mPresentar\')"]').addEventListener('click', () => {
-  $('pTrans').value = presConfig.transicion; $('pAvance').value = presConfig.avance; $('pSeg').value = presConfig.segundos;
-  $('filaSeg').style.display = presConfig.avance === 'auto' ? 'flex' : 'none';
-});
-async function presentar(desde, soloEsta, verNotas){
-  if (activo() && activo().isEditing) activo().exitEditing();
-  if (canvas.isDrawingMode) activarDibujo(null);
-  canvas.discardActiveObject(); canvas.requestRenderAll();
-  paginas[actual] = jsonPagina();
-  pres = { i:-1, cur:null, timers:[], fin:false, lista: soloEsta ? [desde] : paginas.map((_, k) => k) };
-  reiniciarTiempo(); pres.reloj = setInterval(pintarTiempo, 500); prepararImagenesPres();
-  pres.verNotas = !!verNotas; $('presNotas').style.display = pres.verNotas ? 'block' : 'none';
-  $('presentacion').style.display = 'block'; $('presFin').style.display = 'none';
-  const yo = pres;
-  try { if (!document.fullscreenElement){ await $('presentacion').requestFullscreen(); yo.fs = true; } } catch(e){}
-  await new Promise(r => setTimeout(r, 120));
-  irA(soloEsta ? 0 : desde, false, 1);
-  bucleRender();
-  mostrarControles();
-}
-function salirPresentacion(){
-  if (!pres) return;
-  pres.timers.forEach(clearTimeout); clearTimeout(pres.auto); clearInterval(pres.reloj);
-  const v = ventanaAbierta(); if (v) try { v.close(); } catch(e){}
-  ventanaPres = null;
-  if (pres.cur) pres.cur.sc.dispose();
-  $('presEscenario').innerHTML = ''; $('presentacion').style.display = 'none';
-  pres = null;
-  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-}
-// si la persona sale de pantalla completa (por ejemplo con Esc del navegador) se cierra la presentación
-document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && pres && pres.fs) salirPresentacion(); });
-function bucleRender(){
-  if (!pres) return;
-  if (pres.cur && pres.cur.animando > 0) pres.cur.sc.renderAll();
-  requestAnimationFrame(bucleRender);
-}
-// Crea la diapositiva i ajustada a la pantalla
-function construirDiapositiva(i, cb){
-  const sw = window.innerWidth, sh = window.innerHeight, z = Math.min(sw / W, sh / H);
-  const wrap = document.createElement('div'); wrap.className = 'diapo';
-  const el = document.createElement('canvas'); wrap.appendChild(el);
-  $('presEscenario').appendChild(wrap);
-  const sc = new fabric.StaticCanvas(el, { width:Math.round(W * z), height:Math.round(H * z), renderOnAddRemove:false });
-  sc.loadFromJSON(paginas[i] || PAGINA_VACIA(), () => {
-    sc.setZoom(z);
-    const d = { i, wrap, sc, pasos:prepararPasos(sc), paso:0, animando:0 };
-    sc.renderAll();
-    cb(d);
-  });
-}
-// Arma la secuencia de animaciones de la página: pasos que empiezan con clic y su línea de tiempo
-function prepararPasos(sc){
-  const objs = sc.getObjects(), porIdP = {};
-  objs.forEach(o => { if (o.id) porIdP[o.id] = o; });
-  const animados = objs.filter(o => o.anim && o.anim.tipo && o.anim.tipo !== 'ninguna' && !o.esFondo)
-    .sort((a, b) => ((a.anim.orden || 0) - (b.anim.orden || 0)) || (objs.indexOf(a) - objs.indexOf(b)));
-  const pasos = []; let paso = null, prevIni = 0, prevFin = 0, ordenPrevio = null;
-  animados.forEach(o => {
-    const a = o.anim, dur = a.duracion || 700, ret = a.retraso || 0;
-    let ini;
-    const mismoGrupo = ordenPrevio !== null && a.orden === ordenPrevio;   // mismo número de orden = al mismo tiempo
-    if (!paso || (a.inicio === 'clic' && !mismoGrupo)){ paso = { items:[], clic: a.inicio === 'clic' }; pasos.push(paso); ini = ret; }
-    else if (a.inicio === 'con' || mismoGrupo) ini = prevIni + ret;
-    else ini = prevFin + ret;
-    paso.items.push({ o, a, ini, dur });
-    if (!mismoGrupo) prevIni = ini;
-    prevFin = Math.max(mismoGrupo ? prevFin : 0, ini + dur);
-    ordenPrevio = a.orden;
-  });
-  const lider = new Map();
-  pasos.forEach(p => p.items.forEach(it => lider.set(it.o, { p, it })));
-  objs.forEach(t => {                                    // el texto de una forma aparece con su forma
-    const f = t.textoDe && porIdP[t.textoDe];
-    if (f && lider.has(f) && !lider.has(t)){ const L = lider.get(f); const it = { o:t, a:L.it.a, ini:L.it.ini, dur:L.it.dur }; L.p.items.push(it); lider.set(t, { p:L.p, it }); }
-  });
-  objs.forEach(c => {                                    // las líneas aparecen después de las formas que unen
-    if (c.type !== 'conector' || lider.has(c)) return;
-    const cand = [lider.get(porIdP[c.conA]), lider.get(porIdP[c.conB])].filter(Boolean);
-    if (!cand.length) return;
-    const ult = cand.reduce((m, x) => {
-      const pm = pasos.indexOf(m.p), px = pasos.indexOf(x.p);
-      return px > pm || (px === pm && x.it.ini + x.it.dur > m.it.ini + m.it.dur) ? x : m;
-    });
-    const it = { o:c, a:{ tipo:'aparecer' }, ini:ult.it.ini + ult.it.dur * 0.7, dur:450 };
-    ult.p.items.push(it); lider.set(c, { p:ult.p, it });
-  });
-  pasos.forEach(p => p.items.forEach(it => {
-    const o = it.o;
-    if (o.originX !== 'center' || o.originY !== 'center'){ const c = o.getCenterPoint(); o.set({ originX:'center', originY:'center' }); o.setPositionByOrigin(c, 'center', 'center'); }
-    it.fin = { left:o.left, top:o.top, opacity:o.opacity ?? 1, scaleX:o.scaleX, scaleY:o.scaleY, angle:o.angle || 0, text:o.text };
-  }));
-  return pasos;
-}
-function estadoInicial(it){
-  const { o, a, fin:f } = it, dx = W * 0.18, dy = H * 0.18;
-  const base = { opacity:0 };
-  switch (a.tipo){
-    case 'arriba':    Object.assign(base, { top:f.top + dy }); break;
-    case 'abajo':     Object.assign(base, { top:f.top - dy }); break;
-    case 'izquierda': Object.assign(base, { left:f.left - dx }); break;
-    case 'derecha':   Object.assign(base, { left:f.left + dx }); break;
-    case 'zoom':      Object.assign(base, { scaleX:f.scaleX * 0.3, scaleY:f.scaleY * 0.3 }); break;
-    case 'rebote':    Object.assign(base, { scaleX:f.scaleX * 0.05, scaleY:f.scaleY * 0.05 }); break;
-    case 'girar':     Object.assign(base, { angle:f.angle - 200, scaleX:f.scaleX * 0.2, scaleY:f.scaleY * 0.2 }); break;
-    case 'escribir':  if (typeof f.text === 'string' && f.text.length){ o.set({ text:'', opacity:f.opacity }); return; } break;
-  }
-  o.set(base);
-}
-function mostrarFinal(it){ const f = it.fin; it.o.set({ left:f.left, top:f.top, opacity:f.opacity, scaleX:f.scaleX, scaleY:f.scaleY, angle:f.angle }); if (typeof f.text === 'string' && it.o.text !== undefined) it.o.set('text', f.text); }
-function animarItem(d, it){
-  const { o, a, fin:f, dur } = it;
-  d.animando++;
-  const terminar = () => { mostrarFinal(it); d.animando = Math.max(0, d.animando - 1); if (d.sc.contextContainer) d.sc.renderAll(); };
-  if (a.tipo === 'escribir' && typeof f.text === 'string' && f.text.length){
-    fabric.util.animate({ startValue:0, endValue:f.text.length, duration:Math.max(dur, f.text.length * 35),
-      onChange: v => o.set('text', f.text.slice(0, Math.round(v))), onComplete:terminar });
-    return;
-  }
-  const ini = { left:o.left, top:o.top, opacity:o.opacity, scaleX:o.scaleX, scaleY:o.scaleY, angle:o.angle };
-  const ease = a.tipo === 'rebote' ? fabric.util.ease.easeOutBack : fabric.util.ease.easeOutCubic;
-  fabric.util.animate({ startValue:0, endValue:1, duration:dur, easing:ease,
-    onChange: t => {
-      ['left','top','scaleX','scaleY','angle'].forEach(k => o.set(k, ini[k] + (f[k] - ini[k]) * t));
-      o.set('opacity', Math.max(0, Math.min(1, ini.opacity + (f.opacity - ini.opacity) * Math.min(1, t * 1.4))));
-    },
-    onComplete: terminar });
-}
-function ejecutarPaso(d, k){
-  const p = d.pasos[k]; if (!p) return 0;
-  p.items.forEach(it => pres.timers.push(setTimeout(() => { if (pres && pres.cur === d) animarItem(d, it); }, it.ini)));
-  d.paso = k + 1;
-  return Math.max(0, ...p.items.map(it => it.ini + Math.max(it.dur, it.a.tipo === 'escribir' && typeof it.fin.text === 'string' ? it.fin.text.length * 35 : 0)));
-}
-function irA(i, final, dir){
-  const n = pres.lista.length, idx = i;
-  if (idx >= n){ pres.fin = true; $('presFin').style.display = 'flex'; actualizarPresentador(); return; }
-  if (idx < 0) return;
-  pres.fin = false; $('presFin').style.display = 'none';
-  pres.timers.forEach(clearTimeout); pres.timers = []; clearTimeout(pres.auto);
-  const pagina = pres.lista[idx];
-  construirDiapositiva(pagina, d => {
-    if (!pres){ d.sc.dispose(); return; }
-    const viejo = pres.cur, tr = presConfig.transicion, w = d.wrap;
-    if (final) d.pasos.forEach(p => p.items.forEach(mostrarFinal)), d.paso = d.pasos.length;
-    else d.pasos.forEach(p => p.items.forEach(estadoInicial));
-    d.sc.renderAll();
-    if (viejo && tr !== 'ninguna'){
-      w.style.transition = 'none'; w.style.opacity = 0;
-      if (tr === 'deslizar') w.style.transform = `translateX(${dir * 100}%)`;
-      if (tr === 'zoom') w.style.transform = 'scale(.82)';
-      void w.offsetWidth; w.style.transition = '';
-      requestAnimationFrame(() => {
-        w.style.opacity = 1; w.style.transform = 'none';
-        viejo.wrap.style.opacity = 0;
-        if (tr === 'deslizar') viejo.wrap.style.transform = `translateX(${-dir * 100}%)`;
-        if (tr === 'zoom') viejo.wrap.style.transform = 'scale(1.12)';
-      });
-      setTimeout(() => { viejo.wrap.remove(); viejo.sc.dispose(); }, 700);
-    } else if (viejo){ viejo.wrap.remove(); viejo.sc.dispose(); }
-    pres.cur = d; pres.i = idx; pres.pagina = pagina;
-    $('presNum').textContent = (idx + 1) + ' / ' + n;
-    actualizarPresentador();
-    if (final) return;
-    const espera = viejo && tr !== 'ninguna' ? 450 : 150;
-    pres.timers.push(setTimeout(() => {
-      if (!pres || pres.cur !== d) return;
-      if (presConfig.avance === 'auto'){
-        let t = 0;
-        d.pasos.forEach((p, k) => { pres.timers.push(setTimeout(() => { if (pres && pres.cur === d) t = ejecutarPaso(d, k); }, t)); t += Math.max(0, ...p.items.map(it => it.ini + it.dur)) + 350; });
-        pres.auto = setTimeout(() => { if (pres && pres.cur === d) irA(pres.i + 1, false, 1); }, t + presConfig.segundos * 1000);
-      } else if (d.pasos.length && !d.pasos[0].clic) ejecutarPaso(d, 0);
-    }, espera));
-  });
-}
-function presSiguiente(){
-  if (!pres) return;
-  if (pres.fin){ salirPresentacion(); return; }
-  const d = pres.cur; if (!d) return;
-  if (d.paso < d.pasos.length){
-    if (d.animando > 0) d.pasos.slice(0, d.paso).forEach(p => p.items.forEach(mostrarFinal));   // termina lo anterior al instante
-    ejecutarPaso(d, d.paso);
-  } else irA(pres.i + 1, false, 1);
-}
-function presAnterior(){
-  if (!pres) return;
-  if (pres.fin){ pres.fin = false; $('presFin').style.display = 'none'; actualizarPresentador(); return; }
-  if (pres.i > 0) irA(pres.i - 1, true, -1);
-}
-$('presentacion').addEventListener('click', e => { if (!e.target.closest('#presControles,#presNotas')) presSiguiente(); });
-function alternarPantallaCompleta(){
-  if (!pres) return;
-  if (document.fullscreenElement){ pres.fs = false; document.exitFullscreen().catch(() => {}); }
-  else $('presentacion').requestFullscreen().then(() => { if (pres) pres.fs = true; }).catch(() => toast('Este navegador no permite pantalla completa aquí'));
-}
-window.addEventListener('keydown', e => {
-  if (!pres) return;
-  const k = e.key;
-  if (['ArrowRight','PageDown',' ','Enter','ArrowDown'].includes(k)){ e.preventDefault(); presSiguiente(); }
-  else if (['ArrowLeft','PageUp','ArrowUp','Backspace'].includes(k)){ e.preventDefault(); presAnterior(); }
-  else if (k === 'Escape'){ e.preventDefault(); salirPresentacion(); }
-  else if (k === 'n' || k === 'N'){ e.preventDefault(); alternarNotasPres(); }
-  else if (k === 'Home'){ e.preventDefault(); irA(0, false, -1); }
-  else if (k === 'End'){ e.preventDefault(); irA(pres.lista.length - 1, true, 1); }
-  e.stopPropagation();
-}, true);
-let ocultarCtl;
-function mostrarControles(){
-  $('presControles').classList.remove('oculto');
-  clearTimeout(ocultarCtl); ocultarCtl = setTimeout(() => $('presControles').classList.add('oculto'), 2500);
-}
-$('presentacion').addEventListener('mousemove', mostrarControles);
-window.addEventListener('resize', () => { if (pres && pres.cur) irA(pres.i, true, 1); });
-
-/* =========================================================
-   TEXTO CURVO
-   ========================================================= */
-// Fabric no vuelve a crear la curva al abrir un diseño guardado; aquí se la devolvemos
-['IText','Textbox'].forEach(clase => {
-  const original = fabric[clase].fromObject;
-  fabric[clase].fromObject = function(object, callback){
-    if (!object.path || object.path instanceof fabric.Path) return original.call(this, object, callback);
-    const copia = Object.assign({}, object), datosCurva = copia.path; delete copia.path;
-    return original.call(this, copia, t => fabric.Path.fromObject(datosCurva, pth => { t.set('path', pth); t.initDimensions(); t.setCoords(); callback && callback(t); }));
-  };
-});
-// Curva un texto: valores positivos lo arquean hacia arriba (∩), negativos hacia abajo (∪)
-function aplicarCurva(o, c, silencioso){
-  let t = o;
-  if (!esTexto(t) || t.textoDe || t.tabla) return;
-  const centro = t.getCenterPoint();
-  if (t.type === 'textbox' && c){           // un texto curvo es de un solo renglón
-    const datos = t.toObject(EXTRA);
-    ['type','width','height','path','styles','fill','shadow'].forEach(k => delete datos[k]);
-    const nuevo = new fabric.IText(t.text.replace(/\n+/g, ' '), datos);
-    nuevo.set({ fill:t.fill, shadow:t.shadow });
-    nuevo.id = t.id || nuevoId(); nuevo.name = t.name;
-    const idx = canvas.getObjects().indexOf(t);
-    restaurando = true; canvas.remove(t); canvas.insertAt(nuevo, idx); restaurando = false;
-    t = nuevo; canvas.setActiveObject(t);
-  }
-  t.curva = c || 0;
-  t.set('path', null); t.initDimensions();
-  if (c){
-    const w = Math.max(10, t.width), th = Math.max(0.05, Math.abs(c) / 100 * Math.PI * 1.9), r = w / th;
-    const pt = f => c > 0 ? [r * Math.sin(f), r - r * Math.cos(f)] : [r * Math.sin(f), -r + r * Math.cos(f)];
-    const [x0, y0] = pt(-th / 2), [x1, y1] = pt(th / 2);
-    const d = `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r.toFixed(2)} ${r.toFixed(2)} 0 ${th > Math.PI ? 1 : 0} ${c > 0 ? 1 : 0} ${x1.toFixed(2)} ${y1.toFixed(2)}`;
-    t.set({ path: new fabric.Path(d, { fill:'', stroke:'', strokeWidth:0, objectCaching:false }), textAlign:'center', objectCaching:false, padding: t.fontSize * 0.6 });
-  } else t.set({ objectCaching:true, padding:4 });
-  t.setPositionByOrigin(centro, 'center', 'center'); t.setCoords();
-  canvas.requestRenderAll();
-  if (!silencioso){ actualizarPanel(); renderCapas(); }
-}
-$('pCurva').addEventListener('input', e => { const o = activo(); if (o && esTexto(o)) aplicarCurva(o, +e.target.value, true); });
-$('pCurva').addEventListener('change', () => { actualizarPanel(); guardarEstado(); });
-$('bSinCurva').onclick = () => { const o = activo(); if (o && esTexto(o)){ aplicarCurva(o, 0); $('pCurva').value = 0; guardarEstado(); } };
-
-/* =========================================================
-   EFECTOS DE TEXTO
-   ========================================================= */
-const EFECTOS_TEXTO = {
-  ninguno:  { n:'Ninguno',  css:'' },
-  sombra:   { n:'Sombra',   css:'text-shadow:2px 3px 5px rgba(0,0,0,.35)' },
-  retro:    { n:'Retro',    css:'text-shadow:3px 3px 0 #f472b6' },
-  contorno: { n:'Contorno', css:'-webkit-text-stroke:1.2px #1f2330' },
-  hueco:    { n:'Hueco',    css:'color:transparent;-webkit-text-stroke:1.2px #7c3aed' },
-  sticker:  { n:'Sticker',  css:'text-shadow:0 0 0 #fff,2px 0 #fff,-2px 0 #fff,0 2px #fff,0 -2px #fff,2px 2px #fff,-2px -2px #fff,2px -2px #fff,-2px 2px #fff,1px 3px 4px rgba(0,0,0,.4)' },
-  neon:     { n:'Neón',     css:'text-shadow:0 0 6px #a855f7,0 0 12px #a855f7' },
-  fondo:    { n:'Fondo',    css:'background:#fde047;padding:0 4px' }
-};
-function aplicarEfectoTexto(t, efecto){
-  const fs = t.fontSize;
-  if (t.efectoTexto === 'hueco' && t.rellenoOriginal) t.set('fill', t.rellenoOriginal);
-  t.set({ shadow:null, stroke:null, strokeWidth:0, paintFirst:'fill', textBackgroundColor:'' });
-  t.rellenoOriginal = null;
-  const color = typeof t.fill === 'string' ? t.fill : '#7c3aed';
-  switch (efecto){
-    case 'sombra':   t.set('shadow', new fabric.Shadow({ color:'rgba(0,0,0,.35)', blur:fs * 0.22, offsetX:fs * 0.05, offsetY:fs * 0.07 })); break;
-    case 'retro':    t.set('shadow', new fabric.Shadow({ color: esOscuro(color) ? '#f472b6' : '#1f2330', blur:0, offsetX:fs * 0.06, offsetY:fs * 0.06 })); break;
-    case 'contorno': t.set({ stroke:'#1f2330', strokeWidth:Math.max(1, fs * 0.07), paintFirst:'stroke' }); break;
-    case 'hueco':    t.rellenoOriginal = color; t.set({ fill:'rgba(0,0,0,0)', stroke:color, strokeWidth:Math.max(1, fs * 0.04) }); break;
-    case 'sticker':  t.set({ stroke:'#ffffff', strokeWidth:Math.max(2, fs * 0.2), paintFirst:'stroke', strokeLineJoin:'round',
-                       shadow:new fabric.Shadow({ color:'rgba(0,0,0,.28)', blur:fs * 0.14, offsetX:fs * 0.03, offsetY:fs * 0.05 }) }); break;
-    case 'neon':     t.set('shadow', new fabric.Shadow({ color, blur:fs * 0.55, offsetX:0, offsetY:0 })); break;
-    case 'fondo':    t.set('textBackgroundColor', '#fde047'); break;
-  }
-  t.efectoTexto = efecto === 'ninguno' ? null : efecto;
-  t.initDimensions && t.initDimensions();
-  t.dirty = true;
-}
-Object.entries(EFECTOS_TEXTO).forEach(([k, e]) => {
-  const b = document.createElement('button'); b.className = 'efectoBtn'; b.dataset.e = k; b.title = e.n;
-  b.innerHTML = `<b style="${e.css}">Aa</b>${e.n}`;
-  b.onclick = () => { textos().forEach(t => aplicarEfectoTexto(t, k)); canvas.requestRenderAll(); actualizarPanel(); guardarEstado(); };
-  $('efectosTexto').appendChild(b);
-});
-
-/* =========================================================
-   ESTILOS DE TÍTULO DE UN CLIC
-   ========================================================= */
-const ESTILOS_TITULO = [
-  { n:'Impacto',     f:'Anton',            s:120, c:'#1f2330', mayus:true, efecto:'sticker',  css:"font-family:Anton;font-size:26px;color:#1f2330;text-shadow:0 0 0 #fff,1px 2px 3px rgba(0,0,0,.3)" },
-  { n:'Burbuja',     f:'Fredoka', b:'700', s:110, c:'#ec4899', efecto:'sticker', css:"font-family:Fredoka;font-weight:700;font-size:26px;color:#ec4899;text-shadow:1px 2px 3px rgba(0,0,0,.3)" },
-  { n:'Retro',       f:'Bebas Neue',       s:130, c:'#f59e0b', efecto:'retro',    css:"font-family:'Bebas Neue';font-size:30px;color:#f59e0b;text-shadow:3px 3px 0 #1f2330" },
-  { n:'Neón',        f:'Fredoka', b:'600', s:100, c:'#a855f7', efecto:'neon',     css:"font-family:Fredoka;font-weight:600;font-size:24px;color:#a855f7;text-shadow:0 0 6px #a855f7,0 0 12px #a855f7" },
-  { n:'Manuscrito',  f:'Caveat',  b:'700', s:120, c:'#7c3aed',                   css:"font-family:Caveat;font-weight:700;font-size:28px;color:#7c3aed" },
-  { n:'Marcador',    f:'Permanent Marker', s:100, c:'#1f2330', efecto:'fondo',    css:"font-family:'Permanent Marker';font-size:22px;color:#1f2330;background:#fde047;padding:0 6px" },
-  { n:'Elegante',    f:'Playfair Display', b:'700', it:true, s:100, c:'#78350f', efecto:'sombra', css:"font-family:'Playfair Display';font-weight:700;font-style:italic;font-size:24px;color:#78350f;text-shadow:1px 2px 4px rgba(0,0,0,.25)" },
-  { n:'Hueco',       f:'Anton',            s:120, c:'#7c3aed', mayus:true, efecto:'hueco', css:"font-family:Anton;font-size:26px;color:transparent;-webkit-text-stroke:1.4px #7c3aed" },
-  { n:'Degradado',   f:'Fredoka', b:'700', s:110, grad:['#7c3aed','#ec4899'],      css:"font-family:Fredoka;font-weight:700;font-size:26px;background:linear-gradient(90deg,#7c3aed,#ec4899);-webkit-background-clip:text;background-clip:text;color:transparent" },
-  { n:'En arco',     f:'Fredoka', b:'700', s:90,  c:'#0d9488', mayus:true, curva:45, css:"font-family:Fredoka;font-weight:700;font-size:22px;color:#0d9488" },
-  { n:'Escolar',     f:'Gochi Hand',       s:110, c:'#1e3a8a', efecto:'contorno', css:"font-family:'Gochi Hand';font-size:26px;color:#1e3a8a" },
-  { n:'Pizarra',     f:'Amatic SC', b:'700', s:130, c:'#ffffff', fondoPizarra:true, css:"font-family:'Amatic SC';font-weight:700;font-size:28px;color:#fff;background:#14532d;padding:0 8px;border-radius:4px" }
-];
-function agregarTitulo(e){
-  const k = s();
-  const texto = e.mayus ? 'TU TÍTULO AQUÍ' : 'Tu título aquí';
-  if (e.fondoPizarra){                      // pizarrón con el texto adentro: se mueven y crecen juntos
-    const caja = new fabric.Rect({ left:W/2, top:H/2, originX:'center', originY:'center', width:760 * k, height:210 * k, rx:18 * k, ry:18 * k,
-      fill:'#14532d', stroke:'#a16207', strokeWidth:14 * k, strokeUniform:true });
-    restaurando = true;
-    agregar(caja, 'Pizarra');
-    const tp = crearTextoVinculado(caja, texto, { fontFamily:e.f, fontSize:e.s * k, fontWeight:e.b || '400', fill:e.c });
-    canvas.add(tp); ordenarVinculos();
-    restaurando = false;
-    const listo = () => { fabric.util.clearFabricFontCache(e.f); tp.initDimensions(); ajustarFormaATexto(tp); canvas.setActiveObject(caja); canvas.requestRenderAll(); renderCapas(); guardarEstado(); };
-    document.fonts.load(`${e.b || 400} 40px "${e.f}"`).then(listo, listo);
-    return;
-  }
-  const t = agregarTexto('titulo', { text:texto, fontFamily:e.f, fontSize:e.s * k, fontWeight:e.b || '400', fontStyle:e.it ? 'italic' : 'normal',
-    fill: e.grad ? new fabric.Gradient({ type:'linear', gradientUnits:'percentage', coords:{ x1:0, y1:0, x2:1, y2:0 },
-      colorStops:[{ offset:0, color:e.grad[0] }, { offset:1, color:e.grad[1] }] }) : e.c });
-  const termina = () => {
-    fabric.util.clearFabricFontCache(e.f); t.initDimensions();
-    if (e.efecto) aplicarEfectoTexto(t, e.efecto);
-    if (e.curva) aplicarCurva(t, e.curva, true);
-    canvas.requestRenderAll(); actualizarPanel(); guardarEstado();
-  };
-  document.fonts.load(`${e.b || 400} 40px "${e.f}"`).then(termina, termina);
-}
-ESTILOS_TITULO.forEach(e => {
-  const b = document.createElement('button'); b.className = 'tituloBtn'; b.title = e.n;
-  b.innerHTML = `<span style="${e.css}">${e.n}</span>`;
-  b.onclick = () => agregarTitulo(e);
-  $('estilosTitulo').appendChild(b);
-});
-
-/* =========================================================
-   EXPORTAR A POWERPOINT
-   ========================================================= */
-const URL_PPTX = 'https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js';
-function cargarScript(url){
-  return new Promise((ok, mal) => {
-    if (window.PptxGenJS) return ok();
-    const sc = document.createElement('script'); sc.src = url; sc.onload = ok; sc.onerror = () => mal(new Error('No se pudo cargar la librería de PowerPoint'));
-    document.head.appendChild(sc);
-  });
-}
-// ¿Se puede pasar este texto como texto editable sin que cambie su aspecto?
-const textoParaPPTX = o => esTexto(o) && o.visible !== false && !o.path && !o.group && !o.esDeco && typeof o.fill === 'string'
-  && !(o.stroke && o.strokeWidth > 0) && !o.shadow && !o.textBackgroundColor && (o.text || '').trim();
-// Fondo de la diapositiva (todo menos los textos editables) y la lista de textos con su posición
-function prepararDiapositivaPPTX(json, escala, editable){
-  return new Promise(ok => {
-    const sc = new fabric.StaticCanvas(document.createElement('canvas'), { width:W, height:H, enableRetinaScaling:false, renderOnAddRemove:false });
-    sc.loadFromJSON(json || PAGINA_VACIA(), () => {
-      const textosP = [];
-      if (editable) sc.getObjects().forEach(o => {
-        if (!textoParaPPTX(o)) return;
-        const c = o.getCenterPoint(), w = o.width * o.scaleX, hh = o.height * o.scaleY;
-        textosP.push({ texto:o.text, x:c.x - w/2, y:c.y - hh/2, w, h:hh, px:o.fontSize * o.scaleY, fuente:o.fontFamily,
-          color:aHex(o.fill).slice(1).toUpperCase(), bold: String(o.fontWeight) === 'bold' || +o.fontWeight >= 600, italic:o.fontStyle === 'italic',
-          underline:!!o.underline, align: ['left','center','right','justify'].includes(o.textAlign) ? o.textAlign : 'left',
-          valign: o.textoDe ? 'middle' : 'top', angle:o.angle || 0, lh:o.lineHeight || 1.16 });
-        o.visible = false;
-      });
-      sc.renderAll();
-      const fondo = sc.toDataURL({ format:'png', multiplier:escala });
-      sc.dispose();
-      ok({ fondo, textos:textosP });
-    });
-  });
-}
-async function crearPPTX(lista, escala, editable){
-  await cargarScript(URL_PPTX);
-  const pptx = new window.PptxGenJS();
-  const mayor = Math.max(W, H), wIn = 13.333 * W / mayor, hIn = 13.333 * H / mayor, f = wIn / W;
-  pptx.defineLayout({ name:'DISENO', width:wIn, height:hIn }); pptx.layout = 'DISENO';
-  pptx.title = nombreArchivo();
-  for (const it of lista){
-    const { fondo, textos:ts } = await prepararDiapositivaPPTX(it.p, Math.max(1, escala), editable);
-    const slide = pptx.addSlide();
-    slide.addImage({ data:fondo, x:0, y:0, w:wIn, h:hIn });
-    if (it.p && it.p.notas) slide.addNotes(it.p.notas);
-    ts.forEach(t => slide.addText(t.texto, {
-      x:t.x * f, y:t.y * f, w:Math.max(0.2, t.w * f), h:Math.max(0.2, t.h * f), margin:0,
-      fontFace:t.fuente, fontSize:Math.max(6, Math.round(t.px * f * 72 * 10) / 10), color:t.color,
-      bold:t.bold, italic:t.italic, underline: t.underline ? { style:'sng' } : undefined,
-      align:t.align, valign:t.valign, rotate:t.angle, lineSpacingMultiple:t.lh, fit:'none', wrap:true }));
-  }
-  return pptx;
-}
-$('eFormato').addEventListener('change', () => {
-  const f = $('eFormato').value;
-  $('filaPptx').style.display = f === 'pptx' ? 'flex' : 'none';
-  $('filaVideo').style.display = f === 'video' ? 'block' : 'none';
-  $('filaImprimir').style.display = f === 'pdf' ? 'block' : 'none'; infoImpresion();
-  $('eEscala').closest('.fila').style.display = f === 'video' ? 'none' : 'flex';
-  $('eTransp').closest('.fila').style.display = f === 'video' ? 'none' : 'flex';
-  $('eTransp').disabled = f !== 'png';
-  if (f === 'video' && paginas.length > 1) $('ePaginas').value = 'todas';
-});
 
 </script>

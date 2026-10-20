@@ -2,823 +2,883 @@
 /*@parte Codigo9*/ (window.__partes = window.__partes || {})['Codigo9'] = true;
 
 /* =========================================================
-   LOGOS Y TARJETAS: rellenos, resplandor, formas, repetir
+   GUARDADO AUTOMÁTICO EN DRIVE
    ========================================================= */
-EXTRA.push('relleno');
-// ---------- Rellenos: sólido, degradado, rayas, puntos, cuadrícula o sin relleno ----------
-const TIPOS_PATRON = ['rayas', 'puntos', 'cuadros'];
-function crearPatron(r, factor){
-  const Q = 4;                                   // se dibuja 4 veces más grande para que se vea nítido al exportar
-  const g = Math.max(0.5, r.gros * factor), sp = Math.max(0.5, r.sep * factor);
-  const n = Math.max(2, Math.round((g + sp) * Q)), gq = Math.max(1, Math.round(g * Q));
-  const c = document.createElement('canvas'); c.width = n; c.height = n;
-  const ctx = c.getContext('2d');
-  if (!r.transp){ ctx.fillStyle = r.c2; ctx.fillRect(0, 0, n, n); }
-  ctx.fillStyle = r.c1;
-  if (r.tipo === 'rayas') ctx.fillRect(0, 0, gq, n);
-  else if (r.tipo === 'puntos'){ ctx.beginPath(); ctx.arc(n / 2, n / 2, gq / 2, 0, Math.PI * 2); ctx.fill(); }
-  else { ctx.fillRect(0, 0, gq, n); ctx.fillRect(0, 0, n, gq); }
-  const a = (r.ang || 0) * Math.PI / 180, cs = Math.cos(a) / Q, sn = Math.sin(a) / Q;
-  return new fabric.Pattern({ source:c, repeat:'repeat', patternTransform:[cs, sn, -sn, cs, 0, 0] });
-}
-function crearRelleno(o, r, k){
-  if (r.tipo === 'ninguno') return 'rgba(0,0,0,0)';
-  if (r.tipo === 'degradado' || r.tipo === 'radial'){
-    const stops = [{ offset:0, color:r.c1 }, { offset:1, color:r.c2 }];
-    if (r.tipo === 'radial') return new fabric.Gradient({ type:'radial', gradientUnits:'percentage',
-      coords:{ x1:0.5, y1:0.5, r1:0, x2:0.5, y2:0.5, r2:0.5 }, colorStops:stops });
-    const a = (r.ang || 0) * Math.PI / 180, cx = Math.cos(a) / 2, cy = Math.sin(a) / 2;
-    return new fabric.Gradient({ type:'linear', gradientUnits:'percentage',
-      coords:{ x1:0.5 - cx, y1:0.5 - cy, x2:0.5 + cx, y2:0.5 + cy }, colorStops:stops });
-  }
-  if (TIPOS_PATRON.includes(r.tipo)) return crearPatron(r, k / Math.max(0.01, Math.abs(o.scaleX || 1)));
-  return r.c1;
-}
-const admiteRelleno = x => x && x.type !== 'image' && !esLinea(x) && !x.trazoLibre && x.type !== 'conector' && x.type !== 'group' && x.type !== 'activeSelection';
-// Pone el relleno en un objeto. k = tamaño de las rayas (por defecto, según el tamaño del diseño)
-function aplicarRelleno(o, r, k){
-  if (!admiteRelleno(o)) return;
-  const datos = { tipo:r.tipo, c1:r.c1, c2:r.c2, ang:r.ang ?? 45, gros:r.gros ?? 14, sep:r.sep ?? 14, transp:r.transp !== false };
-  if (o.efectoTexto === 'hueco' || o.efectoTexto === 'neonHueco') o.rellenoOriginal = null;
-  o.set('fill', crearRelleno(o, datos, k ?? s()));
-  o.relleno = datos.tipo === 'solido' ? null : datos;
-  if (esTexto(o) && o.initDimensions) o.initDimensions();
-  o.dirty = true;
-}
-function rellenoDelPanel(){
-  return { tipo:$('pTipoRelleno').value, c1:$('pRelleno').value, c2:$('pRelleno2').value, ang:+$('pRellAng').value,
-    gros:+$('pRellGros').value, sep:+$('pRellSep').value, transp:$('pRellTransp').checked };
-}
-function objetivosRelleno(){
-  const ts = objetivos();
-  return ts.flatMap(hojas).filter(x => admiteRelleno(x) && !(x.textoDe && ts.includes(porId(x.textoDe))));
-}
-function aplicarRellenoPanel(guardar){
-  const r = rellenoDelPanel();
-  objetivosRelleno().forEach(x => aplicarRelleno(x, r));
-  objetivos().forEach(o => { o.dirty = true; if (o.type === 'group' && o.addWithUpdate) o.addWithUpdate(); });
-  objetivos().flatMap(hojas).filter(x => x.textoDe).forEach(ajustarFormaATexto);
-  mostrarOpcionesRelleno();
-  canvas.requestRenderAll();
-  if (guardar) guardarEstado();
-}
-function mostrarOpcionesRelleno(){
-  const t = $('pTipoRelleno').value, patron = TIPOS_PATRON.includes(t), grad = t === 'degradado' || t === 'radial';
-  $('filaRelleno2').hidden = !(grad || (patron && !$('pRellTransp').checked));
-  $('filaRelleno2').querySelector('label').textContent = patron ? 'Fondo' : 'Color 2';
-  $('filaRellAng').hidden = !(t === 'degradado' || t === 'rayas' || t === 'cuadros');
-  $('filaRellGros').hidden = $('filaRellSep').hidden = $('filaRellTransp').hidden = !patron;
-  $('filaRellGros').querySelector('label').textContent = t === 'puntos' ? 'Tamaño' : 'Grosor';
-}
-function tipoRellenoDe(x){
-  if (!x) return 'solido';
-  if (x.relleno && x.relleno.tipo) return x.relleno.tipo;
-  if (x.fill instanceof fabric.Gradient) return x.fill.type === 'radial' ? 'radial' : 'degradado';
-  if (x.fill instanceof fabric.Pattern) return 'rayas';
-  return 'solido';
-}
-$('pTipoRelleno').addEventListener('change', () => {
-  if ($('pTipoRelleno').value === 'degradado' || $('pTipoRelleno').value === 'radial') $('pRellAng').value = $('pRellAng').value || 45;
-  aplicarRellenoPanel(true);
-});
-['pRelleno2', 'pRellAng', 'pRellGros', 'pRellSep'].forEach(id => {
-  $(id).addEventListener('input', () => aplicarRellenoPanel(false));
-  $(id).addEventListener('change', guardarEstado);
-});
-$('pRellTransp').addEventListener('change', () => aplicarRellenoPanel(true));
-// Al cambiar el color principal: si el relleno no es sólido, se rehace con el color nuevo
-$('pRelleno').addEventListener('input', () => {
-  if ($('pTipoRelleno').value === 'solido'){ objetivosRelleno().forEach(x => { x.relleno = null; }); return; }
-  aplicarRellenoPanel(false);
-});
-// Colores rápidos para degradados y rayas
-const COMBOS_RELLENO = [['#19c8ff','#0a3d91'],['#ff4b2b','#ffb199'],['#ff4b2b','#2b2d42'],['#7c3aed','#06b6d4'],['#f97316','#ec4899'],['#10b981','#3b82f6'],['#facc15','#f97316'],['#111827','#4b5563']];
-COMBOS_RELLENO.forEach(([a, b]) => {
-  const d = document.createElement('div'); d.className = 'sw'; d.title = 'Usar estos dos colores';
-  d.style.background = `linear-gradient(135deg,${a},${b})`;
-  d.onclick = () => {
-    $('pRelleno').value = a; $('pRelleno2').value = b;
-    if ($('pTipoRelleno').value === 'solido') $('pTipoRelleno').value = 'degradado';
-    aplicarRellenoPanel(true);
-  };
-  $('combosRelleno').appendChild(d);
-});
-
-// ---------- Resplandor neón (sombra sin desplazamiento, del color que elijas) ----------
-function aplicarResplandor(){
-  if ($('pSombraTipo').value !== 'brillo' || !$('pSombra').checked) return;
-  const sh = new fabric.Shadow({ color:$('pSombraColor').value, blur:+$('pSombraBlur').value * s() * 1.4, offsetX:0, offsetY:0 });
-  objetivos().forEach(o => o.set('shadow', sh)); canvas.requestRenderAll();
-}
-$('pSombra').addEventListener('change', () => { if ($('pSombraTipo').value === 'brillo' && $('pSombra').checked){ aplicarResplandor(); guardarEstado(); } });
-$('pSombraColor').addEventListener('input', aplicarResplandor);
-$('pSombraBlur').addEventListener('input', aplicarResplandor);
-$('pSombraTipo').addEventListener('change', () => {
-  if (!$('pSombra').checked){ $('pSombra').checked = true; }
-  if ($('pSombraTipo').value === 'brillo'){
-    const ref = objetivos().flatMap(hojas)[0];
-    if (ref && $('pSombraColor').value === '#000000') $('pSombraColor').value = aHex(typeof ref.fill === 'string' && ref.fill !== 'rgba(0,0,0,0)' ? ref.fill : (ref.stroke || '#19c8ff'));
-    if (+$('pSombraBlur').value < 20) $('pSombraBlur').value = 30;
-    aplicarResplandor();
-  } else aplicarSombra();
-  guardarEstado();
-});
-const esResplandor = sh => !!sh && !sh.offsetX && !sh.offsetY;
-
-// Al seleccionar algo, el panel muestra su tipo de relleno y de sombra
-alActualizarPanel(function(){
-  if (generandoVista) return;
-  const o = activo(); if (!o) return;
-  const ref = objetivos().flatMap(hojas).find(admiteRelleno);
-  $('filaTipoRelleno').hidden = !ref;
-  if (ref){
-    const t = tipoRellenoDe(ref), r = ref.relleno;
-    $('pTipoRelleno').value = t;
-    if (r){
-      $('pRelleno').value = aHex(r.c1); $('pRelleno2').value = aHex(r.c2);
-      $('pRellAng').value = r.ang; $('pRellGros').value = r.gros; $('pRellSep').value = r.sep; $('pRellTransp').checked = r.transp !== false;
-    } else if (ref.fill instanceof fabric.Gradient){
-      const cs = ref.fill.colorStops || [];
-      if (cs[0]) $('pRelleno').value = aHex(cs[0].color);
-      if (cs[cs.length - 1]) $('pRelleno2').value = aHex(cs[cs.length - 1].color);
-    }
-    if (t === 'ninguno' && ref.stroke) $('pRelleno').value = aHex(ref.relleno ? ref.relleno.c1 : ref.stroke);
-  }
-  mostrarOpcionesRelleno();
-  const sh = (objetivos().flatMap(hojas)[0] || o).shadow;
-  $('pSombraTipo').value = esResplandor(sh) ? 'brillo' : 'sombra';
-  if (esResplandor(sh)) $('pSombraBlur').value = Math.round(sh.blur / (1.4 * s()));
-});
-
-// ---------- Efecto de texto: Neón hueco (solo contorno que brilla) ----------
-const aplicarEfectoTextoBase22 = aplicarEfectoTexto;
-aplicarEfectoTexto = function(t, efecto){
-  if (t.efectoTexto === 'neonHueco') t.efectoTexto = 'hueco';
-  if (efecto !== 'neonHueco') return aplicarEfectoTextoBase22(t, efecto);
-  aplicarEfectoTextoBase22(t, 'hueco');
-  const color = t.rellenoOriginal || '#19c8ff';
-  t.set({ strokeWidth:Math.max(1.5, t.fontSize * 0.035), shadow:new fabric.Shadow({ color, blur:t.fontSize * 0.35, offsetX:0, offsetY:0 }) });
-  t.efectoTexto = 'neonHueco'; t.dirty = true;
+let enDrive = false, guardandoDrive = false, cambiosPendientes = false;
+let autoDrive = true;
+try { autoDrive = localStorage.getItem('disenador_autodrive') !== '0'; } catch(e){}
+$('autoDrive').checked = autoDrive;
+$('autoDrive').onchange = e => {
+  autoDrive = e.target.checked;
+  try { localStorage.setItem('disenador_autodrive', autoDrive ? '1' : '0'); } catch(_){}
+  if (autoDrive && enDrive && cambiosPendientes) autoGuardado();
 };
-EFECTOS_TEXTO.neonHueco = { n:'Neón hueco', css:'color:transparent;-webkit-text-stroke:1.2px #19c8ff;text-shadow:0 0 6px #19c8ff' };
-(function(){
-  const b = document.createElement('button'); b.className = 'efectoBtn'; b.dataset.e = 'neonHueco'; b.title = 'Neón hueco';
-  b.innerHTML = `<b style="${EFECTOS_TEXTO.neonHueco.css}">Aa</b>Neón hueco`;
-  b.onclick = () => { textos().forEach(t => aplicarEfectoTexto(t, 'neonHueco')); canvas.requestRenderAll(); actualizarPanel(); guardarEstado(); };
-  $('efectosTexto').appendChild(b);
-})();
-
-// ---------- Formas nuevas para logos y tarjetas ----------
-const FORMAS_LOGO = {
-  semicirculo: 'M0 100 A100 100 0 0 1 200 100 Z',
-  onda:        'M0 70 C70 0 150 140 240 70 C330 0 410 140 480 70 L480 220 L0 220 Z',
-  esquina:     'M0 300 C60 200 120 170 180 120 C240 70 270 30 300 0 L300 300 Z',
-  mancha:      'M120 10 C175 0 225 45 230 100 C236 160 200 215 140 228 C80 240 18 205 8 140 C-2 80 50 22 120 10 Z',
-  gota:        'M50 0 C70 30 92 55 92 72 C92 96 73 114 50 114 C27 114 8 96 8 72 C8 55 30 30 50 0 Z',
-  escudo:      'M50 0 L95 15 C95 60 80 90 50 110 C20 90 5 60 5 15 Z',
-  insignia:    'M50 0 L61 12 L77 8 L80 24 L95 30 L88 45 L97 60 L83 69 L84 86 L67 86 L58 100 L50 92 L42 100 L33 86 L16 86 L17 69 L3 60 L12 45 L5 30 L20 24 L23 8 L39 12 Z'
-};
-const NOMBRES_FORMA_LOGO = { semicirculo:'Semicírculo', onda:'Onda', esquina:'Esquina en curva', mancha:'Mancha', gota:'Gota', escudo:'Escudo', insignia:'Insignia' };
-const agregarFormaBase22 = agregarForma;
-agregarForma = function(tipo){
-  const k = s(), color = $('colorForma').value;
-  const base = { left:W/2, top:H/2, originX:'center', originY:'center', fill:color, strokeWidth:0, stroke:null };
-  if (FORMAS_LOGO[tipo]){
-    const o = new fabric.Path(FORMAS_LOGO[tipo], base);
-    o.scaleToWidth((tipo === 'onda' ? 520 : 320) * k);
-    o.setPositionByOrigin(new fabric.Point(W/2, H/2), 'center', 'center');
-    return agregar(o, NOMBRES_FORMA_LOGO[tipo]);
-  }
-  if (tipo === 'anillo'){
-    const o = new fabric.Circle({ ...base, radius:160*k, fill:'rgba(0,0,0,0)', stroke:color, strokeWidth:26*k, strokeUniform:true });
-    o.relleno = { tipo:'ninguno', c1:color, c2:'#ffffff', ang:45, gros:14, sep:14, transp:true };
-    return agregar(o, 'Anillo');
-  }
-  if (tipo === 'rayas' || tipo === 'puntos'){
-    const o = new fabric.Rect({ ...base, width:420*k, height:260*k });
-    aplicarRelleno(o, { tipo, c1:color, c2:'#ffffff', ang: tipo === 'rayas' ? 60 : 0, gros: tipo === 'rayas' ? 14 : 12, sep: tipo === 'rayas' ? 16 : 18, transp:true });
-    return agregar(o, tipo === 'rayas' ? 'Rayas' : 'Puntos');
-  }
-  return agregarFormaBase22(tipo);
-};
-(function(){
-  const iconos = [
-    ['anillo', 'Anillo (círculo sin relleno)', '<circle cx="5" cy="5" r="3.6" fill="none" stroke="currentColor" stroke-width="1.4"/>'],
-    ['semicirculo', 'Semicírculo', '<path d="M1 7 A4 4 0 0 1 9 7 Z"/>'],
-    ['onda', 'Onda', '<path d="M0 4 C1.5 2 3 6 5 4 C7 2 8.5 6 10 4 L10 9 L0 9 Z"/>'],
-    ['esquina', 'Esquina en curva (para tarjetas)', '<path d="M1 9 C3 6 6 5 9 1 L9 9 Z"/>'],
-    ['mancha', 'Mancha orgánica', '<path d="M5 1 C7.5 0.8 9.3 3 9.2 5.2 C9 7.8 6.8 9.4 4.6 9.2 C2.2 9 0.8 7 0.9 5 C1 2.8 2.8 1.2 5 1 Z"/>'],
-    ['gota', 'Gota', '<path d="M5 0.5 C6.4 2.8 8 4.4 8 6.2 C8 8 6.7 9.4 5 9.4 C3.3 9.4 2 8 2 6.2 C2 4.4 3.6 2.8 5 0.5 Z"/>'],
-    ['escudo', 'Escudo', '<path d="M5 0.6 L9 2 C9 5.6 7.6 8 5 9.5 C2.4 8 1 5.6 1 2 Z"/>'],
-    ['insignia', 'Insignia / sello', '<polygon points="5,0.5 6,1.6 7.6,1.3 7.9,2.8 9.4,3.4 8.7,4.8 9.6,6.2 8.2,7 8.3,8.6 6.7,8.6 5.8,9.8 5,9 4.2,9.8 3.3,8.6 1.7,8.6 1.8,7 0.4,6.2 1.3,4.8 0.6,3.4 2.1,2.8 2.4,1.3 4,1.6"/>'],
-    ['rayas', 'Bloque de rayas', '<path d="M1 9 L3 1 M4 9 L6 1 M7 9 L9 1" stroke="currentColor" stroke-width="1.2" fill="none"/>'],
-    ['puntos', 'Bloque de puntos', '<circle cx="2" cy="2" r="0.9"/><circle cx="5" cy="2" r="0.9"/><circle cx="8" cy="2" r="0.9"/><circle cx="2" cy="5" r="0.9"/><circle cx="5" cy="5" r="0.9"/><circle cx="8" cy="5" r="0.9"/><circle cx="2" cy="8" r="0.9"/><circle cx="5" cy="8" r="0.9"/><circle cx="8" cy="8" r="0.9"/>']
-  ];
-  const grid = document.querySelector('#tFormas .grid');
-  iconos.forEach(([tipo, titulo, svg]) => {
-    const b = document.createElement('button'); b.className = 'forma'; b.title = titulo;
-    b.innerHTML = `<svg viewBox="0 0 10 10">${svg}</svg>`;
-    b.onclick = () => agregarForma(tipo);
-    grid.appendChild(b);
-  });
-})();
-
-// ---------- Repetir en serie (para rayas, puntos, filas de íconos…) ----------
-const clonarPromesa = o => new Promise(ok => o.clone(ok, EXTRA));
-async function repetirSerie(){
-  const sel = activo();
-  if (!sel) return toast('Primero selecciona lo que quieres repetir');
-  const n = Math.max(1, Math.min(60, Math.round(+$('repN').value || 1)));
-  const k = s(), dx = (+$('repX').value || 0) * k, dy = (+$('repY').value || 0) * k, giro = +$('repGiro').value || 0;
-  if (!dx && !dy && !giro) return toast('Escribe cuánto se mueve cada copia (X o Y) o cuánto gira');
-  const lista = sel.type === 'activeSelection' ? sel.getObjects().slice() : [sel];
-  canvas.discardActiveObject();
-  const nuevos = [];
-  restaurando = true;
-  try {
-    for (const o of lista){
-      for (let i = 1; i <= n; i++){
-        const c = await clonarPromesa(o);
-        limpiarVinculosClon(c);
-        c.id = nuevoId();
-        c.set({ left:o.left + dx * i, top:o.top + dy * i, angle:(o.angle || 0) + giro * i, evented:true });
-        canvas.add(c); c.setCoords(); nuevos.push(c);
-      }
-    }
-  } finally { restaurando = false; }
-  const todos = [...lista, ...nuevos];
-  canvas.setActiveObject(new fabric.ActiveSelection(todos, { canvas }));
-  canvas.requestRenderAll(); renderCapas(); guardarEstado();
-  toast(`Listo: ${nuevos.length} copias. Si quieres moverlas juntas, pulsa “Agrupar”.`);
+function indicadorGuardado(estado){
+  const el = $('estadoGuardado'); if (!el) return;
+  const hora = new Date().toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
+  if (estado === 'ok'){ cambiosPendientes = false; el.textContent = '✓ Guardado ' + hora; }
+  else if (estado === 'guardando') el.textContent = 'Guardando…';
+  else if (estado === 'cambios') el.textContent = enDrive ? (autoDrive ? 'Cambios sin guardar…' : '● Cambios sin guardar') : 'No guardado en Drive';
+  else if (estado === 'error') el.textContent = '⚠ No se pudo guardar';
+  else el.textContent = 'No guardado en Drive';
 }
-
-// ---------- Fuentes para logos ----------
-['Orbitron', 'UnifrakturMaguntia', 'Audiowide', 'Exo 2', 'Righteous'].forEach(f => {
-  try { document.fonts.load(`400 40px "${f}"`); document.fonts.load(`800 40px "${f}"`); } catch(e){}
+// Se llama con cada cambio: si el diseño ya está en Drive, se guarda solo unos segundos después
+function autoGuardado(){
+  cambiosPendientes = true;
+  indicadorGuardado('cambios');
+  if (!autoDrive || !enDrive) return;
+  clearTimeout(autoGuardado._t);
+  autoGuardado._t = setTimeout(guardarDriveSilencioso, 15000);
+}
+function guardarDriveSilencioso(){
+  if (!enDrive || !autoDrive || pres) return;
+  if (guardandoDrive){ autoGuardado._t = setTimeout(guardarDriveSilencioso, 5000); return; }
+  guardandoDrive = true; indicadorGuardado('guardando');
+  gs('guardarProyecto', nombreArchivo(), serializar())
+    .then(() => indicadorGuardado('ok'))
+    .catch(() => indicadorGuardado('error'))
+    .finally(() => { guardandoDrive = false; });
+}
+window.addEventListener('beforeunload', e => {
+  if (enDrive && cambiosPendientes){ e.preventDefault(); e.returnValue = ''; }
 });
-
-// ---------- Plantillas de logos y tarjetas ----------
-const CAT_LOGO = 'Logos y tarjetas';
-const NEON = '#19c8ff', ROJO = '#ff4b2b';
-function TL(texto, x, y, o = {}){            // texto alineado a la izquierda desde x
-  const w = o.w || 600;
-  const t = T(texto, x + w / 2, y, { ...o, al:'left', w });
-  return t;
-}
-function FORMA_PATH(d, fill, o = {}){
-  const p = new fabric.Path(d, { fill, stroke:o.stroke || null, strokeWidth:o.sw || 0, opacity:o.op ?? 1, name:o.nombre || 'Forma', id:nuevoId() });
-  canvas.add(p); return p;
-}
-function BRILLO(o, color, blur){ o.set('shadow', new fabric.Shadow({ color, blur, offsetX:0, offsetY:0 })); return o; }
-function ANILLO(x, y, r, color, grosor, o = {}){
-  const c = new fabric.Circle({ left:x, top:y, radius:r, originX:'center', originY:'center', fill:o.fill || 'rgba(0,0,0,0)', stroke:color, strokeWidth:grosor, name:'Anillo', id:nuevoId() });
-  canvas.add(c); return c;
-}
-function RAYAS(x, y, w, h, color, o = {}){
-  const r = new fabric.Rect({ left:x, top:y, width:w, height:h, angle:o.ang || 0, fill:color, name:o.nombre || 'Rayas', id:nuevoId() });
-  aplicarRelleno(r, { tipo:'rayas', c1:color, c2:'#ffffff', ang:o.inclin ?? 70, gros:o.gros || 12, sep:o.sep || 14, transp:true }, 1);
-  canvas.add(r); return r;
-}
-function LETRA_A(x, y, tam, o = {}){
-  const t = T(o.texto || 'A', x, y, { f:'UnifrakturMaguntia', s:tam, w:tam * 1.4, c:NEON, lh:1 });
-  t.set('fill', new fabric.Gradient({ type:'linear', gradientUnits:'percentage', coords:{ x1:0, y1:0, x2:1, y2:1 },
-    colorStops:[{ offset:0, color:o.c1 || '#5ee7ff' }, { offset:1, color:o.c2 || '#0a84ff' }] }));
-  t.relleno = { tipo:'degradado', c1:o.c1 || '#5ee7ff', c2:o.c2 || '#0a84ff', ang:45, gros:14, sep:14, transp:true };
-  BRILLO(t, 'rgba(25,200,255,.75)', tam * 0.12);
-  return t;
-}
-function TITULO_NEON(texto, x, y, tam, w){
-  const t = T(texto, x, y, { f:'Orbitron', s:tam, b:'800', c:NEON, w:w || 900, cs:80 });
-  t.set({ fill:'rgba(0,0,0,0)', stroke:NEON, strokeWidth:Math.max(1.5, tam * 0.035), rellenoOriginal:NEON, efectoTexto:'neonHueco' });
-  BRILLO(t, NEON, tam * 0.35);
-  return t;
-}
-const PLANTILLAS_LOGO = [
-  { nombre:'Tarjeta de presentación clara (rayas rojas)', tam:[1063, 591], crear(){
-    FONDO('#f4f2ef');
-    const ola1 = FORMA_PATH('M 610 591 C 690 470 780 470 860 380 C 930 300 990 250 1063 230 L 1063 591 Z', ROJO, { nombre:'Ola de rayas roja' });
-    aplicarRelleno(ola1, { tipo:'rayas', c1:'#e8452c', c2:'#ffffff', ang:60, gros:9, sep:9, transp:true }, 1);
-    const ola2 = FORMA_PATH('M 760 591 C 830 520 900 520 960 470 C 1000 440 1030 420 1063 410 L 1063 591 Z', '#2b2d42', { nombre:'Ola de rayas oscura' });
-    aplicarRelleno(ola2, { tipo:'rayas', c1:'#2b2d42', c2:'#ffffff', ang:60, gros:9, sep:9, transp:true }, 1);
-    TL('Ing. Tu Nombre', 56, 52, { f:'Poppins', s:24, b:'600', c:'#2b2b2b', w:500 });
-    TL('SOLUCIONES\nINFORMÁTICAS', 56, 140, { f:'Montserrat', s:56, b:'900', c:'#2b2b2b', w:620, lh:1.02 });
-    RECT(56, 222, 951, 3, '#e8452c', { nombre:'Línea' });
-    TL('Si lo puedes imaginar, lo puedes programar', 56, 270, { f:'Poppins', s:24, b:'600', c:'#2b2b2b', w:560 });
-    [['📞', '55 0000 0000 (celular)'], ['✉️', 'tucorreo@gmail.com'], ['📍', 'Tu colonia, tu ciudad'], ['🌐', 'facebook.com/tu-pagina']].forEach(([ic, tx], i) => {
-      TL(ic, 56, 345 + i * 52, { f:'Inter', s:26, c:'#e8452c', w:44 });
-      TL(tx, 108, 345 + i * 52, { f:'Inter', s:22, c:'#2b2b2b', w:470 });
-    });
-  }},
-  { nombre:'Tarjeta de presentación oscura (reverso)', tam:[1063, 591], crear(){
-    FONDO('#1b1c26');
-    RAYAS(600, -30, 360, 150, ROJO, { inclin:0, gros:12, sep:14, nombre:'Rayas superiores' });
-    CIRC(1010, 70, 190, ROJO, { nombre:'Círculo rojo' });
-    CIRC(930, 270, 70, '#ff6a4d', { nombre:'Círculo pequeño' });
-    RAYAS(-20, 420, 330, 190, ROJO, { inclin:25, gros:12, sep:14, nombre:'Rayas inferiores' });
-    CIRC(200, 650, 200, ROJO, { nombre:'Círculo inferior' });
-    TL('APIK\nDESING', 56, 150, { f:'Montserrat', s:112, b:'900', c:ROJO, w:560, lh:0.95 });
-    TL('DISEÑO WEB Y\nDESARROLLO DE\nSOFTWARE', 600, 470, { f:'Montserrat', s:26, b:'600', c:'#ffffff', w:420, cs:260, lh:1.35 });
-  }},
-  { nombre:'Tarjeta de presentación neón', tam:[1063, 591], crear(){
-    FONDO('#05070d');
-    CIRC(1080, -60, 190, '#0b1a2e', { nombre:'Brillo de fondo' }).set('opacity', 0.8);
-    BRILLO(ANILLO(230, 295, 150, NEON, 9, { fill:'#060a12' }), NEON, 28);
-    LETRA_A(232, 300, 230);
-    TITULO_NEON('APIK-DESING', 700, 220, 54, 620);
-    T('Diseño web y desarrollo de software', 700, 300, { f:'Poppins', s:24, c:'#cfe9ff', w:600 });
-    RECT(470, 345, 460, 2, NEON, { nombre:'Línea' }).set('opacity', 0.6);
-    T('55 0000 0000  ·  tucorreo@gmail.com', 700, 395, { f:'Inter', s:21, c:'#9fdcff', w:620 });
-    T('facebook.com/tu-pagina', 700, 435, { f:'Inter', s:21, c:'#9fdcff', w:620 });
-  }},
-  { nombre:'Logo neón con letra gótica', tam:[1000, 1000], crear(){
-    FONDO('#05070d');
-    CIRC(500, 500, 470, '#0a1422', { nombre:'Brillo de fondo' }).set('opacity', 0.8);
-    BRILLO(ANILLO(500, 500, 400, NEON, 22, { fill:'#060a12' }), NEON, 60);
-    LETRA_A(505, 515, 640);
-  }},
-  { nombre:'Logo de marca con nombre (banner)', tam:[1200, 630], crear(){
-    DEGRADADO('#05080d', '#140a0a');
-    CIRC(1190, -50, 210, ROJO, { nombre:'Círculo rojo' }).set('opacity', 0.9);
-    RAYAS(-40, 505, 380, 170, ROJO, { inclin:25, gros:12, sep:14, nombre:'Rayas' }).set('opacity', 0.75);
-    BRILLO(ANILLO(240, 315, 150, NEON, 9, { fill:'#060a12' }), NEON, 30);
-    LETRA_A(242, 320, 230);
-    TITULO_NEON('APIK-DESING', 760, 250, 70, 760);
-    T('Tu frase o lo que haces, en una línea', 760, 350, { f:'Poppins', s:28, c:'#e8f6ff', w:700 });
-  }},
-  { nombre:'Logo monograma (iniciales)', tam:[1000, 1000], crear(){
-    FONDO('#ffffff');
-    const c = CIRC(500, 430, 300, ROJO, { nombre:'Círculo' });
-    aplicarRelleno(c, { tipo:'degradado', c1:'#ff4b2b', c2:'#ff9a3c', ang:45 }, 1);
-    BRILLO(ANILLO(500, 430, 340, '#2b2d42', 10), 'rgba(0,0,0,0)', 0).set('shadow', null);
-    T('AD', 500, 440, { f:'Montserrat', s:260, b:'900', c:'#ffffff', w:600, lh:1 });
-    T('TU MARCA', 500, 845, { f:'Orbitron', s:72, b:'800', c:'#2b2d42', w:900, cs:200 });
-    T('Diseño · Software', 500, 925, { f:'Poppins', s:34, c:'#6b7280', w:800 });
-  }}
-];
-const FUENTES_LOGO = ['Orbitron', 'UnifrakturMaguntia', 'Montserrat', 'Poppins', 'Inter'];
-function cargarFuentesLogo(){
-  return Promise.all(FUENTES_LOGO.flatMap(f => [`400 40px "${f}"`, `800 40px "${f}"`, `900 40px "${f}"`]
-    .map(q => document.fonts.load(q).catch(() => null)))).catch(() => null);
-}
-function usarPlantillaLogo(p){
-  const fin = () => { FUENTES_LOGO.forEach(f => fabric.util.clearFabricFontCache(f)); usarOrganizador(p); };
-  Promise.race([cargarFuentesLogo(), new Promise(r => setTimeout(r, 2500))]).then(fin, fin);
-}
-PLANTILLAS_LOGO.forEach(p => CATALOGO.push({ nombre:p.nombre, cat:CAT_LOGO, tam:p.tam, crear:p.crear, usar:() => usarPlantillaLogo(p) }));
-CATEGORIAS.splice(CATEGORIAS.indexOf(CAT_DER) + 1, 0, CAT_LOGO);
-(function(){
-  const c = document.createElement('button'); c.className = 'chip'; c.textContent = '🪪 Logos y tarjetas';
-  c.onclick = () => { catActiva = CAT_LOGO; document.querySelectorAll('#chipsCat .chip').forEach(x => x.classList.toggle('on', x === c)); renderCatalogo(); };
-  const der = [...document.querySelectorAll('#chipsCat .chip')].find(x => x.textContent.includes('Derecho'));
-  if (der) der.after(c); else $('chipsCat').appendChild(c);
-  renderCatalogo();
-})();
 
 /* =========================================================
-   CÓDIGO QR, SVG, METER EN FORMA Y GOTERO
+   PANEL DERECHO CON PESTAÑAS Y SECCIONES PLEGABLES
    ========================================================= */
-EXTRA.push('qr', 'mascara');
-// ---------- Código QR (se dibuja con figuras: se ve nítido a cualquier tamaño) ----------
-const URL_QR = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js';
-function cargarQR(){
-  return new Promise((ok, mal) => {
-    if (window.qrcode) return ok();
-    const sc = document.createElement('script'); sc.src = URL_QR; sc.onload = ok;
-    sc.onerror = () => mal(new Error('No se pudo cargar el generador de QR. Revisa tu conexión a internet.'));
-    document.head.appendChild(sc);
+(function reorganizarPanel(){
+  const props = $('props'), cont = $('propsCont');
+  const barra = document.createElement('div'); barra.className = 'tabsProps';
+  barra.innerHTML = [['diseno','Diseño'],['organizar','Organizar'],['animar','Animar'],['capas','Capas']]
+    .map(([k, n]) => `<button data-pt="${k}">${n}</button>`).join('');
+  const nueva = id => { const d = document.createElement('div'); d.className = 'ptab'; d.id = id; return d; };
+  const tD = nueva('ptDiseno'), tO = nueva('ptOrganizar'), tA = nueva('ptAnimar'), tC = nueva('ptCapas');
+  // Organizar: todo lo que va desde el título "Organizar" hasta el final
+  const hOrg = [...cont.children].find(x => x.tagName === 'H4' && x.textContent.trim() === 'Organizar');
+  const reqO = document.createElement('div'); reqO.className = 'reqSel';
+  for (let n = hOrg; n; ){ const sig = n.nextElementSibling; reqO.appendChild(n); n = sig; }
+  tO.appendChild(reqO);
+  tO.insertAdjacentHTML('beforeend', '<p class="hint hintSel">Selecciona un elemento para alinearlo, ordenarlo, duplicarlo o eliminarlo.</p>');
+  // Animar
+  const reqA = document.createElement('div'); reqA.className = 'reqSel'; reqA.appendChild($('secAnim'));
+  tA.appendChild(reqA);
+  tA.insertAdjacentHTML('beforeend', '<p class="hint hintSel">Selecciona un elemento para animarlo, o usa <b>▶ Presentar → Animar esta página</b> para animar todo de una vez.</p>');
+  // Capas
+  const hC = [...props.children].find(x => x.tagName === 'H4' && x.textContent.trim() === 'Capas');
+  hC.innerHTML = 'Capas <span id="numCapas" style="font-weight:400"></span>';
+  tC.appendChild(hC); tC.appendChild($('capas'));
+  tC.insertAdjacentHTML('beforeend', '<p class="hint" style="font-size:11px">Arrastra para cambiar el orden · doble clic en un nombre para renombrarlo.</p>');
+  // Diseño
+  tD.appendChild($('sinSel')); tD.appendChild(cont);
+  const cierre = props.querySelector('.cerrarHoja');
+  props.innerHTML = ''; props.append(...(cierre ? [cierre] : []), barra, tD, tO, tA, tC);
+  // Agrupa títulos sueltos con sus controles para poder plegarlos
+  let grupo = null;
+  [...cont.children].forEach(el => {
+    if (el.tagName === 'H4'){ grupo = document.createElement('div'); grupo.className = 'secGen'; cont.insertBefore(grupo, el); grupo.appendChild(el); }
+    else if (el.tagName === 'DIV' && el.id) grupo = null;
+    else if (grupo) grupo.appendChild(el);
   });
-}
-function crearObjetoQR(texto, color, fondo, transp, tam){
-  const qr = window.qrcode(0, 'M');
-  qr.stringToBytes = window.qrcode.stringToBytesFuncs['UTF-8'];
-  window.qrcode.stringToBytes = window.qrcode.stringToBytesFuncs['UTF-8'];
-  qr.addData(texto); qr.make();
-  const n = qr.getModuleCount(), borde = 2, total = n + borde * 2, c = tam / total;
-  let d = '';
-  for (let r = 0; r < n; r++){
-    let col = 0;
-    while (col < n){
-      if (!qr.isDark(r, col)){ col++; continue; }
-      let fin = col; while (fin < n && qr.isDark(r, fin)) fin++;
-      const x = (col + borde) * c, y = (r + borde) * c;
-      d += `M${x.toFixed(2)} ${y.toFixed(2)}h${((fin - col) * c).toFixed(2)}v${c.toFixed(2)}h${(-(fin - col) * c).toFixed(2)}z`;
-      col = fin;
-    }
-  }
-  const caja = new fabric.Rect({ left:0, top:0, width:tam, height:tam, fill: transp ? 'rgba(0,0,0,0)' : fondo, rx:tam * 0.03, ry:tam * 0.03, name:'Fondo del QR' });
-  const puntos = new fabric.Path(d, { fill:color, name:'Puntos del QR' });   // sin left/top: queda en su lugar exacto
-  const g = new fabric.Group([caja, puntos], { name:'Código QR' });
-  g.qr = { texto, color, fondo, transp:!!transp };
-  return g;
-}
-async function crearQR(){
-  const texto = $('qrTexto').value.trim();
-  if (!texto) return toast('Escribe el enlace, teléfono o texto para el código QR');
-  if (texto.length > 900) return toast('El texto es muy largo para un código QR (máximo unas 900 letras)');
-  try { await cargarQR(); } catch (e) { return toast(e.message); }
-  const sel = activo(), k = s();
-  let g;
-  try { g = crearObjetoQR(texto, $('qrColor').value, $('qrFondo').value, $('qrTransp').checked, 520 * k); }
-  catch (e) { return toast('No se pudo crear el QR: ' + e.message); }
-  if (sel && sel.qr){                         // si hay un QR seleccionado, se reemplaza en el mismo lugar y tamaño
-    const c = sel.getCenterPoint(), lado = sel.getScaledWidth(), idx = canvas.getObjects().indexOf(sel);
-    g.scaleToWidth(lado); g.set({ angle:sel.angle || 0 });
-    g.setPositionByOrigin(c, 'center', 'center');
-    restaurando = true; canvas.remove(sel); restaurando = false;
-    g.id = nuevoId(); canvas.insertAt(g, idx); canvas.setActiveObject(g);
-    canvas.requestRenderAll(); renderCapas(); guardarEstado();
-    return toast('Código QR actualizado');
-  }
-  g.setPositionByOrigin(new fabric.Point(W / 2, H / 2), 'center', 'center');
-  agregar(g, 'Código QR'); renderCapas(); guardarEstado();
-  toast('Código QR listo. Pruébalo con la cámara de tu celular antes de imprimir.');
-}
-
-// ---------- Exportar en SVG (vectorial: para logos, imprenta, lonas y playeras) ----------
-function fuentesDe(objs){
-  const f = {};
-  const peso = w => w === 'bold' ? 700 : w === 'normal' || !w ? 400 : Math.round(+w / 100) * 100 || 400;
-  const ver = o => {
-    if (o.fontFamily && !['Arial','Georgia','Times New Roman','Courier New','Verdana'].includes(o.fontFamily)) (f[o.fontFamily] = f[o.fontFamily] || new Set()).add(peso(o.fontWeight));
-    if (o.getObjects) o.getObjects().forEach(ver);
+  let plegados = [];
+  try { plegados = JSON.parse(localStorage.getItem('disenador_plegados') || '[]'); } catch(e){}
+  cont.querySelectorAll('h4').forEach(h4 => {
+    const sec = h4.parentElement;
+    if (sec.firstElementChild !== h4 || sec === cont) return;
+    h4.classList.add('plegable');
+    const clave = h4.textContent.trim();
+    if (plegados.includes(clave)) sec.classList.add('plegado');
+    h4.onclick = () => {
+      sec.classList.toggle('plegado');
+      plegados = plegados.filter(x => x !== clave); if (sec.classList.contains('plegado')) plegados.push(clave);
+      try { localStorage.setItem('disenador_plegados', JSON.stringify(plegados)); } catch(e){}
+    };
+  });
+  // Pestañas
+  let tab = 'diseno';
+  try { tab = localStorage.getItem('disenador_tabProps') || 'diseno'; } catch(e){}
+  const mostrar = k => {
+    barra.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.pt === k));
+    [['diseno', tD], ['organizar', tO], ['animar', tA], ['capas', tC]].forEach(([n, el]) => el.classList.toggle('on', n === k));
+    try { localStorage.setItem('disenador_tabProps', k); } catch(e){}
+    if (k === 'capas') renderCapas();
   };
-  objs.forEach(ver);
-  return f;
-}
-// Mete las letras dentro del SVG (así se ve igual en otra computadora). Si no hay internet, solo deja el enlace.
-const cacheFuentesSVG = {};
-const aDataURL = blob => new Promise(ok => { const r = new FileReader(); r.onload = () => ok(r.result); r.readAsDataURL(blob); });
-async function cssDeFuente(familia, pesos){
-  const base = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(familia).replace(/%20/g, '+');
-  const clave = familia + '|' + pesos.join(';');
-  if (cacheFuentesSVG[clave]) return cacheFuentesSVG[clave];
-  let res = pesos.length && !(pesos.length === 1 && pesos[0] === 400) ? await fetch(base + ':wght@' + pesos.join(';') + '&display=swap') : null;
-  if (!res || !res.ok) res = await fetch(base + '&display=swap');        // la fuente no tiene esos grosores: se usa la normal
-  if (!res.ok) throw new Error('sin fuente');
-  let css = (await res.text()).split(/(?=\/\*)/).filter(b => /\/\* (latin|latin-ext) \*\//.test(b) || !/\/\*/.test(b)).join('');
-  for (const u of [...new Set([...css.matchAll(/url\((https:[^)]+)\)/g)].map(m => m[1]))])
-    css = css.split(u).join(await aDataURL(await (await fetch(u)).blob()));
-  return (cacheFuentesSVG[clave] = css);
-}
-async function incrustarFuentes(fuentes){
-  let css = '';
-  for (const [f, pesos] of Object.entries(fuentes)){
-    try { css += await cssDeFuente(f, [...pesos].sort((a, b) => a - b)); }
-    catch (e) { css += `@import url('https://fonts.googleapis.com/css2?family=${encodeURIComponent(f).replace(/%20/g, '+')}&amp;display=swap');`; }
-  }
-  return css;
-}
-function crearSVG(json, transp){
-  return new Promise(ok => {
-    const sc = new fabric.StaticCanvas(document.createElement('canvas'), { width:W, height:H, enableRetinaScaling:false, renderOnAddRemove:false });
-    const j = JSON.parse(JSON.stringify(json || PAGINA_VACIA()));
-    if (transp) j.background = null;
-    sc.loadFromJSON(j, () => {
-      let svg = sc.toSVG({ width:W, height:H, viewBox:{ x:0, y:0, width:W, height:H } });
-      const fs = fuentesDe(sc.getObjects());
-      sc.dispose();
-      if (!Object.keys(fs).length) return ok(svg);
-      incrustarFuentes(fs).then(css => {
-        const i = svg.indexOf('>', svg.indexOf('<svg'));
-        ok(svg.slice(0, i + 1) + `\n<style>${css}</style>` + svg.slice(i + 1));
-      });
-      return;
-    });
-  });
-}
-// fabric no pasa al SVG el giro ni la escala de las rayas: aquí se escribe el patrón completo
-fabric.Pattern.prototype.toSVG = function(object){
-  const src = typeof this.source === 'function' ? this.source() : this.source;
-  const url = src.src || (src.toDataURL ? src.toDataURL() : '');
-  const po = (object.type === 'path' && object.pathOffset) ? object.pathOffset : { x:0, y:0 };
-  const ox = -object.width / 2 + po.x + (this.offsetX || 0), oy = -object.height / 2 + po.y + (this.offsetY || 0);
-  const m = this.patternTransform ? ' matrix(' + this.patternTransform.join(' ') + ')' : '';
-  return '<pattern id="SVGID_' + this.id + '" patternUnits="userSpaceOnUse" x="0" y="0" width="' + src.width + '" height="' + src.height +
-    '" patternTransform="translate(' + ox + ' ' + oy + ')' + m + '">\n<image x="0" y="0" width="' + src.width + '" height="' + src.height +
-    '" xlink:href="' + url + '"></image>\n</pattern>\n';
-};
-const svgADataURL = t => 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(t)));
-FORMATO('svg').descargar = async function(){
-  canvas.discardActiveObject(); canvas.requestRenderAll();
-  const lista = paginasAExportar(), transp = $('eTransp').checked;
-  cargando(true);
-  try {
-    for (const it of lista){
-      const svg = await crearSVG(it.p, transp), suf = lista.length > 1 ? '-' + (it.i + 1) : '';
-      bajarBlob(new Blob([svg], { type:'image/svg+xml' }), nombreArchivo() + suf + '.svg');
-      await new Promise(r => setTimeout(r, 400));
-    }
-    toast('SVG descargado. Las letras se ven igual si la computadora o la imprenta tiene esa fuente; si no, pide que lo abran con internet o usa PDF.');
-  } catch (e) { toast('Error al exportar: ' + e.message); }
-  finally { cargando(false); }
-};
-FORMATO('svg').vista = async function(){
-  const lista = paginasAExportar(), transp = $('eTransp').checked;
-  cargando(true);
-  try {
-    const imgs = []; for (const it of lista) imgs.push(svgADataURL(await crearSVG(it.p, transp)));
-    $('vista').innerHTML = '<p class="hint">Vista del SVG (vectorial: puedes agrandarlo sin que pierda calidad).</p>' +
-      imgs.map(u => `<img src="${u}" style="margin-bottom:8px;background:repeating-conic-gradient(#ccc 0 25%,#fff 0 50%) 0 0/16px 16px">`).join('');
-  } finally { cargando(false); }
-};
-FORMATO('svg').drive = async function(){
-  const lista = paginasAExportar(), transp = $('eTransp').checked;
-  cargando(true);
-  try {
-    const hechos = [];
-    for (const it of lista){
-      const suf = lista.length > 1 ? ' (' + (it.i + 1) + ')' : '';
-      hechos.push(await gs('guardarImagen', nombreArchivo() + suf, svgADataURL(await crearSVG(it.p, transp))));
-    }
-    $('eInfo').innerHTML = 'Guardado: ' + hechos.map(r => `<a href="${r.url}" target="_blank">${esc(r.nombre)}</a>`).join(', ');
-    toast('SVG guardado');
-  } catch (e) { toast('Error: ' + e.message); }
-  finally { cargando(false); }
-};
-(function(){
-  const op = document.createElement('option'); op.value = 'svg'; op.textContent = 'SVG (vectorial, para logos e imprenta)';
-  const pdf = $('eFormato').querySelector('option[value="pdf"]'); pdf.after(op);
-  $('eFormato').addEventListener('change', () => { if ($('eFormato').value === 'svg') $('eTransp').disabled = false; });
+  barra.querySelectorAll('button').forEach(b => b.onclick = () => mostrar(b.dataset.pt));
+  mostrar(tab);
 })();
+// Muestra u oculta lo que necesita algo seleccionado en las pestañas Organizar y Animar
+function actualizarPestanas(){
+  const hay = !!activo();
+  document.querySelectorAll('.reqSel').forEach(x => x.hidden = !hay);
+  document.querySelectorAll('.hintSel').forEach(x => x.hidden = hay);
+}
+['selection:created','selection:updated','selection:cleared'].forEach(ev => canvas.on(ev, actualizarPestanas));
+actualizarPestanas();
 
-// ---------- Meter en una forma (lo de abajo solo se ve dentro de la forma de arriba) ----------
-async function meterEnForma(){
-  const sel = activo();
-  if (!sel || sel.type !== 'activeSelection' || sel.getObjects().length < 2)
-    return toast('Selecciona lo que quieres meter y la forma que va encima (Shift + clic en los dos)');
-  const orden = o => canvas.getObjects().indexOf(o);
-  const objs = sel.getObjects().slice().sort((a, b) => orden(a) - orden(b));
-  const forma = objs[objs.length - 1], contenido = objs.slice(0, -1);
-  if (forma.type === 'image' || forma.esFondo) return toast('Pon encima una forma (círculo, estrella, letra…): esa será el molde');
-  canvas.discardActiveObject();
-  const idx = orden(contenido[0]);
-  const datosForma = forma.toObject(EXTRA);
-  const molde = await clonarPromesa(forma);
-  restaurando = true;
-  [...contenido, forma].forEach(o => canvas.remove(o));
-  const g = new fabric.Group(contenido, { name:'Dentro de ' + (forma.name || 'una forma') });
-  const c = g.getCenterPoint(), fc = forma.getCenterPoint();
-  molde.set({ originX:'center', originY:'center', left:fc.x - c.x, top:fc.y - c.y, shadow:null, opacity:1 });
-  g.clipPath = molde; g.mascara = datosForma; g.id = nuevoId();
-  canvas.insertAt(g, idx);
-  restaurando = false;
-  canvas.setActiveObject(g); canvas.requestRenderAll(); renderCapas(); actualizarPanel(); guardarEstado();
-  toast('Listo. Para mover lo de adentro o cambiar la forma, pulsa “Sacar de la forma”.');
+/* =========================================================
+   CELULAR Y TABLET
+   ========================================================= */
+const esTel = () => matchMedia('(max-width: 820px)').matches;          // teléfono: paneles abajo
+const esCompacto = () => matchMedia('(max-width: 1180px)').matches;    // tablet o teléfono: propiedades como panel flotante
+const esTactil = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+if (esTactil){
+  // asas más grandes para el dedo
+  fabric.Object.prototype.set({ cornerSize:16, touchCornerSize:42, padding:8 });
+  document.body.classList.add('tactil');
 }
-function sacarDeForma(){
-  const g = activo();
-  if (!g || !g.mascara) return;
-  const datos = g.mascara, idx = canvas.getObjects().indexOf(g);
-  restaurando = true;
-  g.clipPath = null; g.mascara = null;
-  const sel = g.toActiveSelection();
-  restaurando = false;
-  fabric.util.enlivenObjects([datos], ([forma]) => {
-    restaurando = true;
-    canvas.insertAt(forma, idx + sel.getObjects().length);
-    restaurando = false;
-    canvas.discardActiveObject(); canvas.setActiveObject(forma);
-    canvas.requestRenderAll(); renderCapas(); actualizarPanel(); guardarEstado();
-  });
+function abrirLateral(abrir){ $('lateral').classList.toggle('abierto', abrir); if (abrir) $('props').classList.remove('abierto'); }
+function alternarProps(abrir){
+  const ab = abrir ?? !$('props').classList.contains('abierto');
+  $('props').classList.toggle('abierto', ab);
+  if (ab && esTel()) $('lateral').classList.remove('abierto');
+  $('fabEditar').classList.toggle('on', ab);
+  $('accMovil').classList.toggle('oculto', ab);
 }
-const agruparToggleBase23 = agruparToggle;
-agruparToggle = function(){ const o = activo(); if (o && o.mascara) return sacarDeForma(); return agruparToggleBase23.apply(this, arguments); };
-
-// ---------- Gotero: tomar un color del diseño o de la pantalla ----------
-function ponerColorTomado(hex){
-  hex = aHex(hex);
-  if (activo()){
-    $('pRelleno').value = hex;
-    $('pRelleno').dispatchEvent(new Event('input')); $('pRelleno').dispatchEvent(new Event('change'));
-    toast('Color aplicado: ' + hex.toUpperCase());
-  } else {
-    $('colorForma').value = hex;
-    toast('Color tomado: ' + hex.toUpperCase() + '. Se usará en las formas nuevas.');
-  }
+function actualizarBotonesMovil(){
+  const hay = !!canvas.getActiveObject();
+  $('accMovil').classList.toggle('ver', hay);
+  if (!hay) alternarProps(false);
 }
-async function gotero(){
-  if (window.EyeDropper){
-    try { const r = await new window.EyeDropper().open(); return ponerColorTomado(r.sRGBHex); }
-    catch (e) { if (e && e.name === 'AbortError') return; }
-  }
-  // Sin gotero del navegador (celular, Firefox, Safari): toca un punto de tu diseño
-  const el = canvas.lowerCanvasEl, r = el.getBoundingClientRect();
-  const capa = document.createElement('div');
-  capa.style.cssText = `position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;z-index:60;cursor:crosshair;touch-action:none`;
-  const salir = () => { capa.remove(); document.removeEventListener('keydown', esc_); };
-  const esc_ = e => { if (e.key === 'Escape') salir(); };
-  capa.addEventListener('pointerdown', e => {
+['selection:created','selection:updated','selection:cleared'].forEach(ev => canvas.on(ev, actualizarBotonesMovil));
+// En el teléfono, al agregar algo desde el panel se cierra para que veas el lienzo
+$('lateral').addEventListener('click', e => {
+  if (!esTel()) return;
+  if (e.target.closest('.tarjetaPl,.forma,.nodoBtn,.emojiBtn,.tituloBtn,#misImagenes img,.plantilla,.bigbtn:not([data-queda])')) setTimeout(() => abrirLateral(false), 120);
+});
+// Pellizcar con dos dedos = acercar/alejar; mover con dos dedos = desplazarse
+(function gestosTactiles(){
+  const area = $('area'); let g = null;
+  const dist = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+  const medio = (a, b) => ({ x:(a.clientX + b.clientX) / 2, y:(a.clientY + b.clientY) / 2 });
+  area.addEventListener('touchstart', e => {
+    if (e.touches.length !== 2) return;
     e.preventDefault(); e.stopPropagation();
-    try {
-      const x = Math.floor((e.clientX - r.left) * el.width / r.width), y = Math.floor((e.clientY - r.top) * el.height / r.height);
-      const d = el.getContext('2d').getImageData(x, y, 1, 1).data;
-      ponerColorTomado(d[3] < 10 ? '#ffffff' : '#' + [d[0], d[1], d[2]].map(v => v.toString(16).padStart(2, '0')).join(''));
-    } catch (err) { toast('No se pudo leer ese color (imagen de otra página). Prueba en otra parte del diseño.'); }
-    salir();
+    const tr = canvas._currentTransform;                 // se cancela lo que hacía el primer dedo
+    if (tr && tr.target && tr.original){ tr.target.set(tr.original); tr.target.setCoords(); }
+    canvas._currentTransform = null; canvas._groupSelector = null;
+    const [a, b] = e.touches, m = medio(a, b), r = $('envoltura').getBoundingClientRect();
+    g = { d:Math.max(10, dist(a, b)), z:zoom, px:(m.x - r.left) / zoom, py:(m.y - r.top) / zoom };
+    canvas.requestRenderAll();
+  }, { capture:true, passive:false });
+  window.addEventListener('touchmove', e => {
+    if (!g) return;
+    e.preventDefault(); e.stopPropagation();
+    if (e.touches.length < 2) return;
+    const [a, b] = e.touches, m = medio(a, b);
+    establecerZoom(g.z * dist(a, b) / g.d);
+    const r = $('envoltura').getBoundingClientRect();
+    area.scrollLeft += (r.left + g.px * zoom) - m.x;
+    area.scrollTop += (r.top + g.py * zoom) - m.y;
+  }, { capture:true, passive:false });
+  const fin = e => { if (g && e.touches.length === 0){ g = null; e.stopPropagation(); canvas.requestRenderAll(); } };
+  window.addEventListener('touchend', fin, { capture:true });
+  window.addEventListener('touchcancel', fin, { capture:true });
+})();
+// En la presentación: deslizar a la izquierda/derecha cambia de diapositiva
+(function deslizarPresentacion(){
+  let x0 = null, y0 = 0;
+  $('presentacion').addEventListener('touchstart', e => { if (e.touches.length === 1){ x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; } }, { passive:true });
+  $('presentacion').addEventListener('touchend', e => {
+    if (x0 == null) return;
+    const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; x0 = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.3){ e.preventDefault(); dx < 0 ? presSiguiente() : presAnterior(); }
   });
-  document.addEventListener('keydown', esc_);
-  document.body.appendChild(capa);
-  if (document.body.classList.contains('tactil')) alternarProps(false);
-  toast('Toca o haz clic en el lugar de tu diseño del que quieres el color (Esc para cancelar)');
+})();
+
+/* =========================================================
+   NOTAS DEL PRESENTADOR
+   ========================================================= */
+// Editor de notas debajo del lienzo (cada página tiene las suyas; se guardan dentro de la página)
+let notasAbiertas = false;
+try { notasAbiertas = localStorage.getItem('disenador_notas') === '1'; } catch(e){}
+function mostrarNotas(){
+  const ta = $('notasPagina');
+  if (ta.value !== notaPagina) ta.value = notaPagina;
+  ta.hidden = !notasAbiertas;
+  $('bNotas').classList.toggle('on', notasAbiertas);
+  const r = notaPagina.trim().replace(/\s+/g, ' ');
+  $('notasResumen').textContent = notasAbiertas ? 'Solo tú las ves al presentar (vista del presentador o botón 📝).' : (r ? '“' + (r.length > 90 ? r.slice(0, 90) + '…' : r) + '”' : 'Sin notas en esta página');
+}
+function alternarNotas(){
+  notasAbiertas = !notasAbiertas;
+  try { localStorage.setItem('disenador_notas', notasAbiertas ? '1' : '0'); } catch(e){}
+  mostrarNotas(); ajustarZoom();
+  if (notasAbiertas) $('notasPagina').focus();
+}
+$('notasPagina').addEventListener('input', e => {
+  notaPagina = e.target.value;
+  clearTimeout(alternarNotas._t);
+  alternarNotas._t = setTimeout(() => { guardarEstado(); renderPaginas(); }, 700);
+});
+$('notasPagina').addEventListener('keydown', e => e.stopPropagation());   // que Supr o Ctrl+Z no actúen sobre el lienzo
+mostrarNotas();
+
+// ---------- Tiempo de la presentación ----------
+const tiempoPres = { inicio:0, acumulado:0, pausado:false };
+function reiniciarTiempo(){ tiempoPres.inicio = Date.now(); tiempoPres.acumulado = 0; tiempoPres.pausado = false; pintarTiempo(); }
+function pausarTiempo(){
+  if (tiempoPres.pausado){ tiempoPres.inicio = Date.now(); tiempoPres.pausado = false; }
+  else { tiempoPres.acumulado += Date.now() - tiempoPres.inicio; tiempoPres.pausado = true; }
+  pintarTiempo();
+}
+function textoTiempo(){
+  const ms = tiempoPres.acumulado + (tiempoPres.pausado ? 0 : Date.now() - tiempoPres.inicio), s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60), h = Math.floor(m / 60), d2 = n => String(n).padStart(2, '0');
+  return (h ? h + ':' + d2(m % 60) : d2(m)) + ':' + d2(s % 60);
+}
+function pintarTiempo(){
+  const t = textoTiempo();
+  $('pnTiempo').textContent = t;
+  const v = ventanaAbierta();
+  if (v){
+    v.document.getElementById('tiempo').textContent = t;
+    v.document.getElementById('hora').textContent = new Date().toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
+    v.document.getElementById('bPausa').textContent = tiempoPres.pausado ? '▶ Continuar' : '⏸ Pausar';
+  }
+}
+const notaDe = p => (paginas[p] && paginas[p].notas) || '';
+
+// ---------- Notas dentro de la presentación (una sola pantalla) ----------
+function alternarNotasPres(forzar){
+  if (!pres) return;
+  pres.verNotas = forzar ?? !pres.verNotas;
+  $('presNotas').style.display = pres.verNotas ? 'block' : 'none';
+  actualizarPresentador();
 }
 
-// ---------- Panel: mostrar los botones que tocan según lo seleccionado ----------
-alActualizarPanel(function(){
-  if (generandoVista) return;
-  const o = activo(); if (!o) return;
-  $('bMeterForma').hidden = !(o.type === 'activeSelection' && o.getObjects().length >= 2);
-  $('bSacarForma').hidden = !o.mascara;
-  if (o.mascara) $('bAgrupar').hidden = true;
-  if (o.qr){ $('qrTexto').value = o.qr.texto; $('qrColor').value = aHex(o.qr.color); $('qrFondo').value = aHex(o.qr.fondo); $('qrTransp').checked = !!o.qr.transp; }
-  $('bEditarQR').hidden = !o.qr;
-});
-function editarQRSeleccionado(){
-  const b = document.querySelector('#pestanas button[data-tab="tElementos"]'); if (b) b.click();
-  setTimeout(() => { const t = $('qrTexto'); t.scrollIntoView({ block:'center' }); t.focus(); t.select(); }, 150);
+// ---------- Ventana del presentador (para una segunda pantalla) ----------
+let ventanaPres = null;
+const ventanaAbierta = () => { try { return ventanaPres && !ventanaPres.closed && ventanaPres.document.getElementById('notas') ? ventanaPres : null; } catch(e){ return null; } };
+const HTML_PRESENTADOR = `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Vista del presentador</title><style>
+*{box-sizing:border-box}
+body{margin:0;background:#111827;color:#f3f4f6;font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;height:100vh;display:grid;
+  grid-template-columns:1.45fr 1fr;grid-template-rows:auto minmax(0,1fr) minmax(130px,34vh);gap:12px;padding:14px}
+header{grid-column:1/3;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#tiempo{font:700 34px ui-monospace,Menlo,Consolas,monospace;min-width:120px}
+#hora{opacity:.65;font-size:14px}#num{font-weight:600}.esp{flex:1}
+button{background:#374151;color:#fff;border:0;border-radius:8px;padding:9px 14px;font-size:15px;cursor:pointer}
+button:hover{background:#4b5563}#bSig{background:#ff4b2b}#bSig:hover{background:#ff6a3d}
+.caja{display:flex;flex-direction:column;gap:6px;min-height:0}
+.caja img{width:100%;height:100%;min-height:0;object-fit:contain;border-radius:8px;background:#000}
+#sig img{opacity:.85}
+small{opacity:.6;text-transform:uppercase;letter-spacing:.06em;font-size:11px}
+#notas{grid-column:1/3;background:#1f2937;border-radius:10px;padding:14px 20px;font-size:24px;line-height:1.45;overflow:auto;white-space:pre-wrap}
+#notas.vacio{color:#9ca3af;font-size:18px}
+</style></head><body>
+<header><span id="tiempo">00:00</span><button id="bPausa">⏸ Pausar</button><button id="bReinicio">↺ Reiniciar</button><span id="hora"></span>
+<span class="esp"></span><span id="num"></span><button id="bAnt">◀ Anterior</button><button id="bSig">Siguiente ▶</button><button id="bSalir">✕ Terminar</button></header>
+<div class="caja"><small>Ahora</small><img id="imgAct" alt=""></div>
+<div class="caja" id="sig"><small id="sigTit">Siguiente</small><img id="imgSig" alt=""></div>
+<div id="notas"></div></body></html>`;
+function abrirVentanaPresentador(){
+  try {
+    ventanaPres = window.open('', 'vistaPresentador', 'width=1100,height=720');
+    if (!ventanaPres) throw new Error('bloqueada');
+    const d = ventanaPres.document; d.open(); d.write(HTML_PRESENTADOR); d.close();
+    const el = id => d.getElementById(id);
+    el('bSig').onclick = () => presSiguiente();
+    el('bAnt').onclick = () => presAnterior();
+    el('bSalir').onclick = () => salirPresentacion();
+    el('bPausa').onclick = pausarTiempo;
+    el('bReinicio').onclick = reiniciarTiempo;
+    ventanaPres.addEventListener('keydown', e => {
+      const k = e.key;
+      if (['ArrowRight','PageDown',' ','Enter','ArrowDown'].includes(k)){ e.preventDefault(); presSiguiente(); }
+      else if (['ArrowLeft','PageUp','ArrowUp','Backspace'].includes(k)){ e.preventDefault(); presAnterior(); }
+      else if (k === 'Escape'){ e.preventDefault(); salirPresentacion(); }
+    });
+    return true;
+  } catch (e) {
+    ventanaPres = null;
+    toast('El navegador bloqueó la ventana del presentador. Permite las ventanas emergentes, o usa el botón 📝 durante la presentación.');
+    return false;
+  }
+}
+function prepararImagenesPres(){
+  const yo = pres; yo.imgs = {};
+  (async () => {
+    for (const p of yo.lista){
+      if (pres !== yo) return;
+      try { yo.imgs[p] = await renderPagina(paginas[p], 'jpeg', 720 / Math.max(W, H), false); } catch(e){}
+      if (pres === yo) actualizarPresentador();
+    }
+  })();
+}
+function actualizarPresentador(){
+  if (!pres) return;
+  const n = pres.lista.length, i = Math.min(Math.max(pres.i, 0), n - 1), p = pres.lista[i], sig = pres.lista[i + 1];
+  const nota = pres.fin ? '' : notaDe(p);
+  const num = pres.fin ? 'Fin' : 'Página ' + (i + 1) + ' de ' + n;
+  $('pnNum').textContent = num;
+  $('pnTexto').textContent = nota || 'Esta página no tiene notas. Escríbelas en “📝 Notas del presentador”, debajo del lienzo.';
+  $('pnTexto').classList.toggle('vacio', !nota);
+  const v = ventanaAbierta(); if (!v) return;
+  const d = v.document;
+  d.getElementById('num').textContent = num;
+  d.getElementById('notas').textContent = pres.fin ? 'Terminaste. Pulsa Siguiente o Terminar para salir.' : (nota || 'Esta página no tiene notas.');
+  d.getElementById('notas').className = nota ? '' : 'vacio';
+  d.getElementById('imgAct').src = (!pres.fin && pres.imgs && pres.imgs[p]) || '';
+  d.getElementById('imgSig').src = (!pres.fin && sig != null && pres.imgs && pres.imgs[sig]) || '';
+  d.getElementById('sigTit').textContent = pres.fin ? '' : (sig != null ? 'Siguiente' : 'Siguiente: fin de la presentación');
+  d.title = 'Presentador · ' + num;
 }
 
 /* =========================================================
-   PLUMA (formas a tu medida) Y MIS FUENTES
+   COMPARTIR CON COMPAÑEROS
    ========================================================= */
-// ---------- Pluma: clic = punto recto · arrastrar = curva · clic en el primer punto = cerrar ----------
-let pluma = null;   // { pts:[{x,y,h}], arrastre, mouse }
-function avisoPluma(texto){
-  let d = $('plumaAviso');
-  if (!d){ d = document.createElement('div'); d.id = 'plumaAviso'; $('dibujoAviso').parentNode.appendChild(d); }
-  d.innerHTML = texto; d.style.display = texto ? 'flex' : 'none';
-}
-function activarPluma(on){
-  if (on && pluma) return;
-  if (!on){
-    if (!pluma) return;
-    pluma = null; canvas.skipTargetFind = false; canvas.selection = true; canvas.defaultCursor = 'default';
-    canvas.clearContext(canvas.contextTop); avisoPluma(''); $('bPluma') && $('bPluma').classList.remove('on');
-    canvas.requestRenderAll(); return;
-  }
-  if (canvas.isDrawingMode) activarDibujo(null);
-  if (typeof modoConector !== 'undefined' && modoConector) activarModoConector(false);
-  if (activo() && activo().isEditing) activo().exitEditing();
+async function crearEnlaceCompartir(){
   canvas.discardActiveObject(); canvas.requestRenderAll();
-  pluma = { pts:[], arrastre:null, mouse:null };
-  canvas.skipTargetFind = true; canvas.selection = false; canvas.defaultCursor = 'crosshair';
-  $('bPluma') && $('bPluma').classList.add('on');
-  if (document.body.classList.contains('tactil')){ abrirLateral && abrirLateral(false); alternarProps && alternarProps(false); }
-  avisoPluma('✒ <span>Toca para poner puntos · arrastra para hacer curvas · toca el primer punto para cerrar</span>' +
-    '<button onclick="deshacerPuntoPluma()">↶ Punto</button><button onclick="terminarPluma(false)">✓ Terminar</button><button onclick="activarPluma(false)">✕</button>');
-}
-const puntoCtrl = (p, signo) => p.h ? { x:p.x + p.h.x * signo, y:p.y + p.h.y * signo } : { x:p.x, y:p.y };
-function trazoPluma(pts, cerrar){
-  if (!pts.length) return '';
-  const f = n => +n.toFixed(2);
-  let d = `M ${f(pts[0].x)} ${f(pts[0].y)}`;
-  const seg = (a, b) => (a.h || b.h)
-    ? (() => { const c1 = puntoCtrl(a, 1), c2 = puntoCtrl(b, -1); return ` C ${f(c1.x)} ${f(c1.y)} ${f(c2.x)} ${f(c2.y)} ${f(b.x)} ${f(b.y)}`; })()
-    : ` L ${f(b.x)} ${f(b.y)}`;
-  for (let i = 1; i < pts.length; i++) d += seg(pts[i - 1], pts[i]);
-  if (cerrar && pts.length > 2) d += seg(pts[pts.length - 1], pts[0]) + ' Z';
-  return d;
-}
-function dibujarPluma(){
-  if (!pluma) return;
-  const ctx = canvas.contextTop; canvas.clearContext(ctx);
-  const pts = pluma.pts.slice();
-  if (!pts.length) return;
-  ctx.save(); ctx.scale(zoom, zoom);
-  const lw = 2 / zoom;
-  // vista previa del tramo que sigue (hasta el mouse)
-  const prev = pluma.mouse && !pluma.arrastre ? [...pts, { x:pluma.mouse.x, y:pluma.mouse.y, h:null }] : pts;
-  const p2 = new Path2D(trazoPluma(prev, false));
-  if (pts.length > 2){ ctx.fillStyle = 'rgba(25,200,255,.10)'; ctx.fill(new Path2D(trazoPluma(pts, true))); }
-  ctx.strokeStyle = '#19c8ff'; ctx.lineWidth = lw * 1.5; ctx.stroke(p2);
-  pts.forEach((p, i) => {
-    if (p.h){
-      const a = puntoCtrl(p, -1), b = puntoCtrl(p, 1);
-      ctx.strokeStyle = 'rgba(255,75,43,.9)'; ctx.lineWidth = lw; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
-      [a, b].forEach(q => { ctx.fillStyle = '#ff4b2b'; ctx.beginPath(); ctx.arc(q.x, q.y, 4 / zoom, 0, 7); ctx.fill(); });
+  cargando(true);
+  try {
+    const nombre = $('nombreDiseno').value || 'Mi diseño';
+    const r = await gs('compartirDiseno', nombre, serializar());
+    if (r && r.archivo){
+      cerrarModal('mCompartir'); descargarDisenoArchivo();
+      toast('Se descargó tu diseño como archivo: mándalo a tu compañero y que lo abra con 📂 Abrir → “Abrir un archivo”.');
+      return;
     }
-    ctx.fillStyle = i === 0 ? '#ff4b2b' : '#ffffff'; ctx.strokeStyle = '#19c8ff'; ctx.lineWidth = lw;
-    const r = (i === 0 && pts.length > 2 ? 9 : 6) / zoom;
-    ctx.beginPath(); ctx.rect(p.x - r, p.y - r, r * 2, r * 2); ctx.fill(); ctx.stroke();
+    $('cLink').value = r.url; $('cResultado').hidden = false;
+    $('cAviso').textContent = r.publico ? 'Cualquier persona con el enlace podrá abrir una copia (necesita entrar con su cuenta de Google).'
+      : 'Tu cuenta no permite compartir con cualquiera: solo personas de tu misma escuela u organización podrán abrirlo.';
+    $('cWhats').href = 'https://wa.me/?text=' + encodeURIComponent('Te comparto mi diseño “' + nombre + '”: ' + r.url);
+  } catch (e) { toast('No se pudo crear el enlace: ' + e.message); }
+  finally { cargando(false); }
+}
+function copiarEnlace(){
+  const i = $('cLink'); i.focus(); i.select();
+  let ok = false; try { ok = document.execCommand('copy'); } catch(e){}
+  if (!ok && navigator.clipboard) navigator.clipboard.writeText(i.value).then(() => toast('Enlace copiado'), () => toast('Selecciona el enlace y cópialo (Ctrl+C)'));
+  else toast(ok ? 'Enlace copiado' : 'Selecciona el enlace y cópialo (Ctrl+C)');
+}
+// Si la app se abrió con ?copia=ID, carga esa copia
+function abrirCompartidoSiHay(){
+  return new Promise(ok => {
+    try {
+      if (!(window.google && google.script && google.script.url)) return ok(false);
+      google.script.url.getLocation(loc => {
+        const id = loc && loc.parameter && loc.parameter.copia;
+        if (!id) return ok(false);
+        ok(true); cargando(true);
+        gs('cargarCompartido', id).then(r => {
+          $('nombreDiseno').value = 'Copia de ' + r.nombre;
+          historial = []; hi = -1; miniaturas = [];
+          cargarJSON(r.contenido, true, () => {
+            cargando(false); enDrive = false; indicadorGuardado('nuevo');
+            toast('Abriste una copia de “' + r.nombre + '”. Pulsa 💾 Guardar para tenerla en tu Drive.');
+          });
+        }).catch(e => { cargando(false); ajustarZoom(); guardarEstado(); toast('No se pudo abrir el diseño compartido: ' + e.message); });
+      });
+    } catch (e) { ok(false); }
   });
-  ctx.restore();
 }
-function deshacerPuntoPluma(){ if (pluma && pluma.pts.length){ pluma.pts.pop(); dibujarPluma(); } }
-function terminarPluma(cerrar){
-  if (!pluma) return;
-  const pts = pluma.pts;
-  if (pts.length < 2){ toast('Pon por lo menos dos puntos'); return; }
-  const k = s(), color = $('colorForma').value;
-  const cerrada = cerrar && pts.length > 2;
-  const o = new fabric.Path(trazoPluma(pts, cerrada), cerrada
-    ? { fill:color, stroke:null, strokeWidth:0 }
-    : { fill:'rgba(0,0,0,0)', stroke:color, strokeWidth:Math.max(2, 8 * k), strokeLineCap:'round', strokeLineJoin:'round', strokeUniform:true });
-  if (!cerrada) o.relleno = { tipo:'ninguno', c1:color, c2:'#ffffff', ang:45, gros:14, sep:14, transp:true };
-  activarPluma(false);
-  agregar(o, cerrada ? 'Forma con pluma' : 'Línea con pluma');
-  renderCapas(); actualizarPanel(); guardarEstado();
-  toast(cerrada ? 'Forma lista: cámbiale el color, el relleno o ponle resplandor en el panel derecho.' : 'Línea lista. Para que tenga relleno, ciérrala tocando el primer punto.');
-}
-canvas.on('mouse:down', e => {
-  if (!pluma) return;
-  const p = canvas.getPointer(e.e), pts = pluma.pts, tol = 12 / zoom;
-  if (pts.length > 2 && Math.hypot(p.x - pts[0].x, p.y - pts[0].y) < tol){ terminarPluma(true); return; }
-  const nuevo = { x:p.x, y:p.y, h:null };
-  pts.push(nuevo); pluma.arrastre = nuevo; dibujarPluma();
-});
-canvas.on('mouse:move', e => {
-  if (!pluma) return;
-  const p = canvas.getPointer(e.e);
-  pluma.mouse = p;
-  const a = pluma.arrastre;
-  if (a){ const dx = p.x - a.x, dy = p.y - a.y; a.h = Math.hypot(dx, dy) > 4 / zoom ? { x:dx, y:dy } : null; }
-  dibujarPluma();
-});
-canvas.on('mouse:up', () => { if (pluma){ pluma.arrastre = null; dibujarPluma(); } });
-canvas.on('mouse:dblclick', () => { if (pluma){ pluma.pts.pop(); terminarPluma(false); } });
-window.addEventListener('keydown', e => {
-  if (!pluma) return;
-  if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); activarPluma(false); }
-  else if (e.key === 'Enter'){ e.preventDefault(); e.stopPropagation(); terminarPluma(false); }
-  else if (e.key === 'Backspace' || e.key === 'Delete'){ e.preventDefault(); e.stopPropagation(); deshacerPuntoPluma(); }
-}, true);
-const activarDibujoBase24 = activarDibujo;
-activarDibujo = function(tipo){ if (tipo) activarPluma(false); return activarDibujoBase24.apply(this, arguments); };
 
-// ---------- Mis fuentes: sube un archivo .ttf, .otf, .woff o .woff2 ----------
-const BD_FUENTES = 'apik-fuentes';
-const bdFuentes = () => new Promise((ok, mal) => {
-  const r = indexedDB.open(BD_FUENTES, 1);
-  r.onupgradeneeded = () => r.result.createObjectStore('fuentes', { keyPath:'nombre' });
-  r.onsuccess = () => ok(r.result); r.onerror = () => mal(r.error);
-});
-const pedirBD = r => new Promise((ok, mal) => { r.onsuccess = () => ok(r.result); r.onerror = () => mal(r.error); });
-async function fuentesGuardadas(){ try { const bd = await bdFuentes(); return await pedirBD(bd.transaction('fuentes').objectStore('fuentes').getAll()); } catch (e) { return []; } }
-const misFuentes = {};   // nombre -> dataURL (para incluirlas al exportar SVG)
-function registrarFuente(nombre, buffer, dataURL){
-  const ff = new FontFace(nombre, buffer);
-  return ff.load().then(f => {
-    document.fonts.add(f); misFuentes[nombre] = dataURL;
-    if (![...$('pFuente').options].some(o => o.value === nombre)){
-      let grupo = $('pFuente').querySelector('optgroup[label="Mis fuentes"]');
-      if (!grupo){ grupo = document.createElement('optgroup'); grupo.label = 'Mis fuentes'; $('pFuente').prepend(grupo); }
-      const op = document.createElement('option'); op.value = nombre; op.textContent = nombre; op.style.fontFamily = `"${nombre}"`; grupo.appendChild(op);
+/* =========================================================
+   IMPRIMIR: HOJA, VARIAS POR HOJA Y MARCAS DE CORTE
+   ========================================================= */
+const PAPELES = { carta:[215.9, 279.4], a4:[210, 297], oficio:[216, 340] };
+function anchoRealCm(){ return Math.round(W / 300 * 2.54 * 10) / 10; }   // a 300 puntos por pulgada
+function acomodoHojas(){
+  const [a, b] = PAPELES[$('iPapel').value] || PAPELES.carta;
+  const m = Math.max(0, Math.min(40, +$('iMargen').value || 0)), marcas = $('iMarcas').checked, r = H / W;
+  const prueba = (pw, ph) => {
+    const aw = pw - 2 * m, ah = ph - 2 * m;
+    if ($('iAcomodo').value === 'una'){
+      const w = Math.min(aw, ah / r), h = w * r;
+      return { pw, ph, cols:1, filas:1, w, h, gap:0 };
     }
-    if (!FUENTES.includes(nombre)) FUENTES.push(nombre);
-    fabric.util.clearFabricFontCache(nombre);
-    pintarMisFuentes();
+    let w = Math.max(5, (+$('iAncho').value || anchoRealCm()) * 10), h = w * r;
+    const gap = marcas ? 10 : 4;
+    let cols = Math.floor((aw + gap) / (w + gap)), filas = Math.floor((ah + gap) / (h + gap));
+    if (cols < 1 || filas < 1){ w = Math.min(aw, ah / r); h = w * r; cols = filas = 1; }
+    return { pw, ph, cols, filas, w, h, gap };
+  };
+  const v = prueba(Math.min(a, b), Math.max(a, b)), hz = prueba(Math.max(a, b), Math.min(a, b));
+  let L = v.cols * v.filas > hz.cols * hz.filas ? v : hz.cols * hz.filas > v.cols * v.filas ? hz : (W > H ? hz : v);
+  const anchoGrid = L.cols * L.w + (L.cols - 1) * L.gap, altoGrid = L.filas * L.h + (L.filas - 1) * L.gap;
+  const x0 = (L.pw - anchoGrid) / 2, y0 = (L.ph - altoGrid) / 2, lugares = [];
+  for (let f = 0; f < L.filas; f++) for (let c = 0; c < L.cols; c++) lugares.push({ x:x0 + c * (L.w + L.gap), y:y0 + f * (L.h + L.gap), w:L.w, h:L.h });
+  return { ...L, lugares, marcas };
+}
+function infoImpresion(){
+  const pdfHoja = $('eFormato').value === 'pdf' && $('iPapel').value !== 'diseno';
+  $('filaHoja').style.display = pdfHoja ? 'block' : 'none';
+  if (!pdfHoja) return;
+  const varias = $('iAcomodo').value === 'varias';
+  $('filaAncho').style.display = varias ? 'flex' : 'none';
+  if (varias && !+$('iAncho').value) $('iAncho').value = anchoRealCm();
+  const L = acomodoHojas(), n = paginasAExportar().length * Math.max(1, +$('iCopias').value || 1);
+  $('iInfo').textContent = 'Cada una mide ' + (L.w / 10).toFixed(1) + ' × ' + (L.h / 10).toFixed(1) + ' cm · caben ' + L.lugares.length + ' por hoja · ' +
+    Math.ceil(n / L.lugares.length) + (Math.ceil(n / L.lugares.length) === 1 ? ' hoja' : ' hojas') + (L.pw > L.ph ? ' (horizontal)' : ' (vertical)');
+}
+function marcasDeCorte(pdf, r){
+  const l = 4, s = 1.2;
+  pdf.setDrawColor(40); pdf.setLineWidth(0.2);
+  [[r.x, r.y, -1, -1], [r.x + r.w, r.y, 1, -1], [r.x, r.y + r.h, -1, 1], [r.x + r.w, r.y + r.h, 1, 1]].forEach(([x, y, dx, dy]) => {
+    pdf.line(x + dx * s, y, x + dx * (s + l), y);
+    pdf.line(x, y + dy * s, x, y + dy * (s + l));
   });
 }
-function pintarMisFuentes(){
-  const c = $('listaMisFuentes'); if (!c) return;
-  const ns = Object.keys(misFuentes);
-  c.innerHTML = ns.length ? '' : '<p class="hint" style="font-size:12px">Aún no subes ninguna.</p>';
-  ns.forEach(n => {
-    const fila = document.createElement('div'); fila.className = 'filaFuente';
-    const b = document.createElement('button'); b.className = 'bigbtn'; b.style.fontFamily = `"${n}"`; b.style.fontSize = '20px'; b.textContent = n;
-    b.title = 'Agregar un texto con esta fuente (o cambiar el texto seleccionado)';
-    b.onclick = () => {
-      const ts = textos();
-      if (ts.length){ ts.forEach(t => { t.set('fontFamily', n); t.initDimensions(); }); canvas.requestRenderAll(); actualizarPanel(); guardarEstado(); }
-      else agregarTexto('titulo', { text:'Tu texto', fontFamily:n });
-    };
-    const x = document.createElement('button'); x.className = 'pb'; x.textContent = '✕'; x.title = 'Quitar esta fuente de este navegador';
-    x.onclick = async () => {
-      if (!confirm('¿Quitar la fuente “' + n + '”? Los textos que la usan se verán con otra letra.')) return;
-      try { const bd = await bdFuentes(); await pedirBD(bd.transaction('fuentes', 'readwrite').objectStore('fuentes').delete(n)); } catch (e) {}
-      delete misFuentes[n]; pintarMisFuentes();
-    };
-    fila.append(b, x); c.appendChild(fila);
-  });
-}
-async function subirFuente(archivo){
-  if (!archivo) return;
-  if (!/\.(ttf|otf|woff2?)$/i.test(archivo.name)) return toast('Ese archivo no es una fuente. Usa .ttf, .otf, .woff o .woff2');
-  if (archivo.size > 8 * 1048576) return toast('La fuente pesa más de 8 MB; busca otra versión más ligera');
-  const nombre = archivo.name.replace(/\.(ttf|otf|woff2?)$/i, '').replace(/[-_]+/g, ' ').replace(/[^\p{L}\p{N} ]/gu, '').trim().slice(0, 40) || 'Mi fuente';
-  const buffer = await archivo.arrayBuffer();
-  const dataURL = await new Promise(ok => { const r = new FileReader(); r.onload = () => ok(r.result); r.readAsDataURL(archivo); });
-  try { await registrarFuente(nombre, buffer, dataURL); }
-  catch (e) { return toast('No se pudo leer esa fuente. Prueba con otro archivo.'); }
-  try { const bd = await bdFuentes(); await pedirBD(bd.transaction('fuentes', 'readwrite').objectStore('fuentes').put({ nombre, datos:dataURL, fecha:new Date().toISOString() })); } catch (e) {}
-  const ts = textos();
-  if (ts.length){ ts.forEach(t => { t.set('fontFamily', nombre); t.initDimensions(); }); canvas.requestRenderAll(); guardarEstado(); actualizarPanel(); }
-  toast('Fuente “' + nombre + '” lista. La encuentras al inicio de la lista de fuentes.');
-}
-(async function(){
-  for (const f of await fuentesGuardadas()){
-    try { const buf = await (await fetch(f.datos)).arrayBuffer(); await registrarFuente(f.nombre, buf, f.datos); } catch (e) {}
+['iPapel', 'iAcomodo', 'iAncho', 'iCopias', 'iMargen', 'iMarcas', 'ePaginas'].forEach(id => { $(id).addEventListener('change', infoImpresion); $(id).addEventListener('input', infoImpresion); });
+$('iAcomodo').addEventListener('change', () => { if ($('iAcomodo').value === 'varias') $('iMarcas').checked = true; infoImpresion(); });
+async function crearPDFHojas(lista){
+  const { jsPDF } = window.jspdf, L = acomodoHojas(), copias = Math.max(1, Math.min(200, +$('iCopias').value || 1));
+  const items = []; lista.forEach(it => { for (let k = 0; k < copias; k++) items.push(it); });
+  const pdf = new jsPDF({ orientation:L.pw > L.ph ? 'landscape' : 'portrait', unit:'mm', format:[L.pw, L.ph], compress:true });
+  const escala = Math.max(0.5, Math.min(4, (L.w / 25.4 * 300) / W)), imgs = {};
+  for (let k = 0; k < items.length; k++){
+    const lugar = k % L.lugares.length;
+    if (k && !lugar) pdf.addPage([L.pw, L.ph], L.pw > L.ph ? 'landscape' : 'portrait');
+    const it = items[k], r = L.lugares[lugar];
+    if (!imgs[it.i]) imgs[it.i] = await renderPagina(it.p, 'jpeg', escala, false);
+    pdf.addImage(imgs[it.i], 'JPEG', r.x, r.y, r.w, r.h, 'pag' + it.i, 'FAST');
+    if (L.marcas) marcasDeCorte(pdf, r);
   }
-  pintarMisFuentes();
-  // los diseños que usan estas fuentes se vuelven a dibujar cuando ya cargaron
-  canvas.getObjects().filter(esTexto).forEach(t => { if (misFuentes[t.fontFamily]){ t.initDimensions(); t.dirty = true; } });
-  canvas.requestRenderAll();
+  return pdf;
+}
+// Vista previa de las hojas tal como saldrán impresas
+async function vistaHojas(lista){
+  const L = acomodoHojas(), copias = Math.max(1, +$('iCopias').value || 1), k = 2.2;   // pixeles por mm en la vista
+  const items = []; lista.forEach(it => { for (let c = 0; c < copias; c++) items.push(it); });
+  const hojas = Math.min(6, Math.ceil(items.length / L.lugares.length)), urls = [], cache = {};
+  for (let hj = 0; hj < hojas; hj++){
+    const cv = document.createElement('canvas'); cv.width = L.pw * k; cv.height = L.ph * k;
+    const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height);
+    for (let s = 0; s < L.lugares.length; s++){
+      const it = items[hj * L.lugares.length + s]; if (!it) break;
+      if (!cache[it.i]){ const im = new Image(); im.src = await renderPagina(it.p, 'jpeg', Math.min(1, L.w * k * 1.5 / W), false); await new Promise(r => im.onload = r); cache[it.i] = im; }
+      const r = L.lugares[s]; g.drawImage(cache[it.i], r.x * k, r.y * k, r.w * k, r.h * k);
+      if (L.marcas){ g.strokeStyle = '#333'; g.lineWidth = 1; g.beginPath();
+        [[r.x, r.y, -1, -1], [r.x + r.w, r.y, 1, -1], [r.x, r.y + r.h, -1, 1], [r.x + r.w, r.y + r.h, 1, 1]].forEach(([x, y, dx, dy]) => {
+          g.moveTo((x + dx * 1.2) * k, y * k); g.lineTo((x + dx * 5.2) * k, y * k); g.moveTo(x * k, (y + dy * 1.2) * k); g.lineTo(x * k, (y + dy * 5.2) * k); });
+        g.stroke(); }
+    }
+    urls.push(cv.toDataURL('image/jpeg', 0.85));
+  }
+  return urls;
+}
+
+/* =========================================================
+   KIT DE MARCA (tus colores, letras y logo)
+   ========================================================= */
+let kit = { colores:['#7c3aed', '#f97316', '#06b6d4', '#1f2330', '#f8fafc'], titulo:'Fredoka', texto:'Poppins', logo:'' };
+const NOMBRES_KIT = ['Principal', 'Secundario', 'Acento', 'Texto', 'Fondo'];
+const hexDe = c => { try { if (!c || typeof c !== 'string' || c === 'transparent') return null; const k = new fabric.Color(c); if (k.getAlpha() < 0.05) return null; return '#' + k.toHex().toLowerCase(); } catch(e){ return null; } };
+const luzDe = h => { const k = new fabric.Color(h).getSource(); return (0.299 * k[0] + 0.587 * k[1] + 0.114 * k[2]) / 255; };
+const satDe = h => { const [r, g, b] = new fabric.Color(h).getSource().map(v => v / 255); const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2; return mx === mn ? 0 : (mx - mn) / (1 - Math.abs(2 * l - 1)); };
+const mezclar = (a, b, t) => { const A = new fabric.Color(a).getSource(), B = new fabric.Color(b).getSource(); return '#' + [0, 1, 2].map(i => Math.round(A[i] + (B[i] - A[i]) * t).toString(16).padStart(2, '0')).join(''); };
+function pintarKit(){
+  const cont = $('kitColores'); cont.innerHTML = '';
+  kit.colores.forEach((c, i) => {
+    const d = document.createElement('label'); d.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--suave)';
+    d.innerHTML = `<input type="color" value="${c}" style="width:100%;height:38px">${NOMBRES_KIT[i]}`;
+    d.querySelector('input').addEventListener('input', e => { kit.colores[i] = e.target.value; kitCambiado(); });
+    cont.appendChild(d);
+  });
+  $('kitTitulo').value = kit.titulo; $('kitTexto').value = kit.texto;
+  $('kitTitulo').style.fontFamily = kit.titulo; $('kitTexto').style.fontFamily = kit.texto;
+  $('kitLogo').innerHTML = kit.logo ? `<img src="${kit.logo}" style="max-width:100%;max-height:110px;display:block;margin:auto">` : 'Sin logo';
+}
+['kitTitulo', 'kitTexto'].forEach(id => {
+  $(id).innerHTML = FUENTES.map(f => `<option value="${f}" style="font-family:'${f}'">${f}</option>`).join('');
+  $(id).addEventListener('change', e => { kit[id === 'kitTitulo' ? 'titulo' : 'texto'] = e.target.value; kitCambiado(); pintarKit(); });
+});
+function kitCambiado(){
+  $('kitEstado').textContent = 'Cambios sin guardar en tu kit';
+  const { logoEl, ...datos } = kit;
+  try { localStorage.setItem('disenador_kit', JSON.stringify(datos)); } catch(e){}
+  actualizarTemaMarca();
+}
+$('archivoLogo').addEventListener('change', e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  const lector = new FileReader();
+  lector.onload = () => {
+    const im = new Image();
+    im.onload = () => {
+      const k = Math.min(1, 600 / Math.max(im.width, im.height)), cv = document.createElement('canvas');
+      cv.width = Math.round(im.width * k); cv.height = Math.round(im.height * k);
+      cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+      kit.logo = cv.toDataURL('image/png'); prepararLogo(); pintarKit(); kitCambiado();
+    };
+    im.src = lector.result;
+  };
+  lector.readAsDataURL(f);
+});
+function quitarLogoKit(){ kit.logo = ''; kit.logoEl = null; pintarKit(); kitCambiado(); }
+function prepararLogo(){ if (!kit.logo){ kit.logoEl = null; return; } const im = new Image(); im.onload = () => { if (kit.logoEl === im) actualizarTemaMarca(); }; im.src = kit.logo; kit.logoEl = im; }
+function agregarLogo(){
+  if (!kit.logo){ toast('Primero sube tu logo'); return; }
+  fabric.Image.fromURL(kit.logo, img => {
+    img.scaleToWidth(Math.min(W, H) * 0.2);
+    img.set({ originX:'center', originY:'center', left:W - img.getScaledWidth() / 2 - W * 0.04, top:img.getScaledHeight() / 2 + H * 0.04 });
+    agregar(img, 'Logo');
+  });
+}
+function agregarTextoKit(tipo){
+  const t = agregarTexto(tipo === 'titulo' ? 'titulo' : 'cuerpo', { fontFamily:tipo === 'titulo' ? kit.titulo : kit.texto, fill:kit.colores[tipo === 'titulo' ? 0 : 3] });
+  canvas.setActiveObject(t); canvas.requestRenderAll();
+}
+async function guardarKitDrive(){
+  const { logoEl, ...datos } = kit;
+  try { localStorage.setItem('disenador_kit', JSON.stringify(datos)); } catch(e){}
+  misColores = [...new Set([...kit.colores, ...misColores])].slice(0, 16); guardarColores();
+  try { await gs('guardarKit', JSON.stringify(datos)); $('kitEstado').textContent = '✓ Kit guardado en tu Drive'; toast('Kit de marca guardado'); }
+  catch (e) { $('kitEstado').textContent = 'Guardado solo en este navegador'; toast('No se pudo guardar en Drive: ' + e.message); }
+}
+async function cargarKit(){
+  try { const l = localStorage.getItem('disenador_kit'); if (l) kit = { ...kit, ...JSON.parse(l) }; } catch(e){}
+  prepararLogo(); pintarKit(); actualizarTemaMarca();
+  try {
+    const txt = await gs('cargarKit');
+    if (txt){ kit = { ...kit, ...JSON.parse(txt) }; prepararLogo(); pintarKit(); actualizarTemaMarca(); $('kitEstado').textContent = '✓ Kit cargado de tu Drive'; }
+  } catch(e){}
+}
+// ---------- Aplicar el kit a un diseño ----------
+function mapaDeColores(objs){
+  const usos = new Map();
+  const sumar = (c, peso) => { const h = hexDe(c); if (h) usos.set(h, (usos.get(h) || 0) + peso); };
+  objs.forEach(o => {
+    if (o.type === 'image' || o.type === 'group' || esTexto(o)) return;
+    const area = Math.max(1, (o.width || 1) * (o.scaleX || 1) * (o.height || 1) * (o.scaleY || 1));
+    sumar(o.fill, area); if (o.strokeWidth) sumar(o.stroke, area * 0.05);
+  });
+  const vivos = [...usos.entries()].filter(([h]) => satDe(h) > 0.2 && luzDe(h) > 0.1 && luzDe(h) < 0.93).sort((a, b) => b[1] - a[1]).map(x => x[0]);
+  const mapa = {};
+  vivos.forEach((h, i) => { mapa[h] = kit.colores[i % 3]; });
+  return mapa;
+}
+function aplicarKitObjs(objs){
+  const mapa = mapaDeColores(objs), [, , , oscuro, claro] = kit.colores;
+  const porIdK = {}; objs.forEach(o => { if (o.id) porIdK[o.id] = o; });
+  const textos = objs.filter(esTexto), mayor = Math.max(1, ...textos.map(t => (t.fontSize || 0) * (t.scaleY || 1)));
+  const nuevo = (c, tipo) => {
+    const h = hexDe(c); if (!h) return c;
+    if (mapa[h]) return mapa[h];
+    if (tipo !== 'fondo' && satDe(h) < 0.2 && luzDe(h) < 0.35) return oscuro;
+    if (tipo === 'fondo' && luzDe(h) > 0.85 && h !== '#ffffff') return claro;
+    return c;
+  };
+  objs.forEach(o => {
+    if (o.type === 'image' || o.type === 'group' || esTexto(o)) return;
+    if (o.esFondo){ if (typeof o.fill === 'string') o.set('fill', nuevo(o.fill, 'fondo')); return; }
+    if (typeof o.fill === 'string') o.set('fill', nuevo(o.fill));
+    if (typeof o.stroke === 'string') o.set('stroke', nuevo(o.stroke));
+  });
+  textos.forEach(t => {
+    const titulo = (t.fontSize || 0) * (t.scaleY || 1) >= mayor * 0.6 && !t.textoDe;
+    t.set('fontFamily', titulo ? kit.titulo : kit.texto);
+    const forma = t.textoDe && porIdK[t.textoDe];
+    if (forma && typeof forma.fill === 'string' && hexDe(forma.fill)) t.set('fill', luzDe(hexDe(forma.fill)) < 0.55 ? '#ffffff' : oscuro);
+    else if (typeof t.fill === 'string' && hexDe(t.fill)){
+      const h = hexDe(t.fill);
+      t.set('fill', mapa[h] || (luzDe(h) < 0.5 ? (titulo ? kit.colores[0] : oscuro) : t.fill));
+    }
+    if (t.initDimensions) t.initDimensions();
+  });
+}
+function fondoConKit(c){
+  const h = hexDe(c); if (!h) return c;
+  if (luzDe(h) > 0.85) return h === '#ffffff' ? c : kit.colores[4];
+  if (satDe(h) > 0.2) return kit.colores[0];
+  return c;
+}
+async function aplicarKit(todas){
+  canvas.discardActiveObject();
+  if (todas) paginas.forEach((p, i) => { if (i !== actual && p && typeof p.background === 'string') p.background = fondoConKit(p.background); });
+  if (typeof canvas.backgroundColor === 'string') canvas.backgroundColor = fondoConKit(canvas.backgroundColor);
+  await cambiarPaginas(todas, objs => aplicarKitObjs(objs));
+  canvas.getObjects().filter(o => o.textoDe).forEach(t => { try { ajustarFormaATexto(t); } catch(e){} });
+  canvas.requestRenderAll(); guardarEstado(); renderPaginas();
+  toast(todas ? 'Se aplicó tu marca a todas las páginas' : 'Se aplicó tu marca a esta página');
+}
+// ---------- Tema de presentación con tu marca ----------
+function temaMarca(){
+  const [p, s, a, o, f] = kit.colores;
+  return { id:'marca', nombre:'Mi marca', fondo:f, texto:o, suave:mezclar(o, f, 0.4), pri:p, sec:s, acento:a,
+    tarjeta:luzDe(f) > 0.85 ? mezclar(p, '#ffffff', 0.9) : '#ffffff', textoTarjeta:o, borde:null,
+    tit:kit.titulo, titPeso:'700', cuerpo:kit.texto, paleta:'Vibrante', trans:'deslizar', anim:'dinamica' };
+}
+function logoEn(x, y, ancho){
+  if (!kit.logoEl || !kit.logoEl.complete || !kit.logoEl.naturalWidth) return;
+  const img = new fabric.Image(kit.logoEl, { originX:'center', originY:'center', left:x, top:y, name:'Logo', id:nuevoId() });
+  img.scaleToWidth(ancho); canvas.add(img);
+}
+function fondoMarca(t, k){
+  if (k === 'seccion'){ FONDO(t.pri); CIRC(1650, 240, 320, '#ffffff', { op:0.08 }); logoEn(1780, 980, 140); return { texto:'#ffffff', suave:mezclar('#ffffff', t.pri, 0.25), acento:luzDe(t.acento) > 0.6 ? t.acento : '#ffffff' }; }
+  FONDO(t.fondo);
+  if (k === 'portada' || k === 'final'){ CIRC(1650, 260, 420, t.pri, { op:0.12 }); CIRC(240, 920, 260, t.sec, { op:0.14 }); logoEn(960, 140, 220); }
+  else { RECT(0, 0, 1920, 14, t.pri); if (k === 'normal') RECT(120, 192, 110, 9, t.sec, { r:4 }); logoEn(1790, 95, 150); }
+  return { texto:t.texto, suave:t.suave, acento:t.pri };
+}
+function actualizarTemaMarca(){
+  TEMAS_PRES.marca = temaMarca();
+  Object.keys(vistasDiapo).forEach(k => { if (k.startsWith('marca/')) delete vistasDiapo[k]; });
+  let it = CATALOGO.find(x => x.esMarca);
+  if (!it){
+    it = { nombre:'Mi marca · ' + DIAPOS.length + ' diapositivas', cat:CAT_PRES, tam:[1920, 1080], esMarca:true,
+      crear:() => DIAPOS[0].crear(TEMAS_PRES.marca), usar:() => usarPresentacion(TEMAS_PRES.marca) };
+    const k = CATALOGO.findIndex(x => x.cat === CAT_PRES);
+    CATALOGO.splice(k < 0 ? CATALOGO.length : k, 0, it);
+  }
+  clearTimeout(actualizarTemaMarca._t);
+  actualizarTemaMarca._t = setTimeout(() => {
+    it.vista = vistaDe(it.tam, it.crear);
+    if (it.boton && it.vista) it.boton.querySelector('.mini').innerHTML = `<img src="${it.vista}" alt="">`;
+  }, 400);
+  renderCatalogo();
+}
+cargarKit();
+
+/* =========================================================
+   RECORRER TODAS LAS PÁGINAS (para cambios en todo el diseño)
+   ========================================================= */
+// Carga cada página en el lienzo, aplica fn(objetos, i) y la guarda. Al final vuelve a la página actual.
+async function recorrerPaginas(fn, alFinal){
+  canvas.discardActiveObject();
+  guardarPaginaActual();
+  const orig = actual;
+  restaurando = true;
+  try {
+    for (let i = 0; i < paginas.length; i++){
+      const nt = paginas[i] && paginas[i].notas;
+      await new Promise(ok => canvas.loadFromJSON(paginas[i] || PAGINA_VACIA(), ok));
+      try { normalizarVinculos(); } catch(e){}
+      await fn(canvas.getObjects(), i);
+      paginas[i] = canvas.toJSON(EXTRA); if (nt) paginas[i].notas = nt;
+    }
+    if (alFinal) alFinal();
+  } finally {
+    restaurando = false;
+    miniaturas = []; actual = orig;
+    cargarPaginaActual(true);
+  }
+}
+
+/* =========================================================
+   CAMBIAR EL TAMAÑO ACOMODANDO EL CONTENIDO
+   ========================================================= */
+function escalarContenido(objs, w1, h1, w2, h2){
+  const sx = w2 / w1, sy = h2 / h1, k = Math.min(sx, sy);
+  const nuevoCentro = c => new fabric.Point(c.x * sx, c.y * sy);
+  // las celdas de una tabla se mueven juntas para no encimarse ni separarse
+  const tablas = {};
+  objs.forEach(o => { if (o.tabla){ const r = o.getBoundingRect(true, true); const t = tablas[o.tabla] || (tablas[o.tabla] = { x0:Infinity, y0:Infinity, x1:-Infinity, y1:-Infinity });
+    t.x0 = Math.min(t.x0, r.left); t.y0 = Math.min(t.y0, r.top); t.x1 = Math.max(t.x1, r.left + r.width); t.y1 = Math.max(t.y1, r.top + r.height); } });
+  const porIdL = {}; objs.forEach(o => { if (o.id) porIdL[o.id] = o; });
+  const centros = new Map(); objs.forEach(o => centros.set(o, o.getCenterPoint()));
+  objs.forEach(o => {
+    if (o.esFondo || o.type === 'conector') return;
+    let c = centros.get(o), destino;
+    if (o.tabla){ const t = tablas[o.tabla], tc = new fabric.Point((t.x0 + t.x1) / 2, (t.y0 + t.y1) / 2), nc = nuevoCentro(tc);
+      destino = new fabric.Point(nc.x + (c.x - tc.x) * k, nc.y + (c.y - tc.y) * k); }
+    else if (o.textoDe && porIdL[o.textoDe]){ const f = porIdL[o.textoDe], fc = centros.get(f), nc = nuevoCentro(fc);
+      destino = new fabric.Point(nc.x + (c.x - fc.x) * k, nc.y + (c.y - fc.y) * k); }
+    else destino = nuevoCentro(c);
+    if (esTexto(o) && o.type !== 'text'){
+      o.set({ fontSize:o.fontSize * k, width:(o.width || 0) * k });
+      if (o.anchoBase) o.anchoBase *= k;
+    } else {
+      o.set({ scaleX:o.scaleX * k, scaleY:o.scaleY * k });
+      ['anchoBase', 'altoBase', 'anchoMax'].forEach(p => { if (o[p]) o[p] *= k; });
+    }
+    if (o.initDimensions) o.initDimensions();
+    o.setPositionByOrigin(destino, 'center', 'center'); o.setCoords();
+  });
+  objs.forEach(o => {
+    if (o.esFondo){ try { ajustarRectFondo(o); } catch(e){} }
+    if (o.type === 'conector'){ o.set('strokeWidth', o.strokeWidth * k); try { actualizarConector(o); } catch(e){} }
+  });
+}
+async function redimensionarTodo(w2, h2){
+  w2 = Math.round(w2); h2 = Math.round(h2);
+  if (w2 === W && h2 === H) return;
+  const w1 = W, h1 = H;
+  cargando(true);
+  try {
+    W = w2; H = h2;   // el fondo se ajusta al tamaño nuevo
+    await recorrerPaginas(objs => escalarContenido(objs, w1, h1, w2, h2), () => fijarTamano(w2, h2));
+    toast('Se cambió a ' + w2 + ' × ' + h2 + ' y se acomodó el contenido de ' + paginas.length + (paginas.length === 1 ? ' página' : ' páginas'));
+  } catch (e) { console.error(e); toast('No se pudo cambiar el tamaño: ' + e.message); }
+  finally { cargando(false); }
+}
+function aplicarTamano(w, h){
+  cerrarModal('mTamano');
+  if ($('tAcomodar').checked) redimensionarTodo(w, h); else cambiarTamano(w, h);
+}
+
+/* =========================================================
+   BUSCAR Y REEMPLAZAR
+   ========================================================= */
+let resultadosBusqueda = [], posBusqueda = -1;
+function expresionBusqueda(){
+  const q = $('bTexto').value; if (!q) return null;
+  const esc_ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp($('bPalabra').checked ? '(^|[^\\wÀ-ÿ])(' + esc_ + ')(?=$|[^\\wÀ-ÿ])' : '(' + esc_ + ')', $('bMayus').checked ? 'g' : 'gi');
+}
+function textosDeJSON(lista, cb, ruta = []){
+  (lista || []).forEach((o, i) => {
+    if (typeof o.text === 'string') cb(o, ruta.concat(i));
+  });
+}
+function buscarTextos(){
+  const re = expresionBusqueda(); resultadosBusqueda = []; posBusqueda = -1;
+  if (!re){ $('bInfo').textContent = 'Escribe la palabra que quieres buscar.'; return; }
+  guardarPaginaActual();
+  paginas.forEach((p, i) => {
+    textosDeJSON(p && p.objects, (o, ruta) => {
+      const n = (o.text.match(re) || []).length;
+      if (n) resultadosBusqueda.push({ pagina:i, ruta, n, texto:o.text });
+    });
+  });
+  const total = resultadosBusqueda.reduce((a, r) => a + r.n, 0), pags = new Set(resultadosBusqueda.map(r => r.pagina)).size;
+  $('bInfo').textContent = total ? `${total} ${total === 1 ? 'coincidencia' : 'coincidencias'} en ${pags} ${pags === 1 ? 'página' : 'páginas'}.` : 'No se encontró en ninguna página.';
+  $('bLista').innerHTML = resultadosBusqueda.slice(0, 40).map((r, k) =>
+    `<div class="resBusq" data-k="${k}"><b>Pág. ${r.pagina + 1}</b> ${esc(r.texto.replace(/\s+/g, ' ').slice(0, 70))}</div>`).join('');
+  $('bLista').querySelectorAll('.resBusq').forEach(d => d.onclick = () => irAResultado(+d.dataset.k));
+}
+function irAResultado(k){
+  const r = resultadosBusqueda[k]; if (!r) return;
+  posBusqueda = k;
+  const seleccionar = () => {
+    let o = canvas.getObjects()[r.ruta[0]];
+    if (o){ canvas.setActiveObject(o); canvas.requestRenderAll(); }
+  };
+  if (r.pagina !== actual){ irPagina(r.pagina); setTimeout(seleccionar, 350); } else seleccionar();
+}
+function siguienteResultado(){
+  if (!resultadosBusqueda.length) buscarTextos();
+  if (!resultadosBusqueda.length) return;
+  irAResultado((posBusqueda + 1) % resultadosBusqueda.length);
+}
+async function reemplazarTodo(){
+  const re = expresionBusqueda(); if (!re) return;
+  const nuevo = $('bNuevo').value, palabra = $('bPalabra').checked;
+  let cambios = 0;
+  cargando(true);
+  try {
+    await recorrerPaginas(objs => {
+      const revisar = o => {
+        if (typeof o.text !== 'string') return;
+        const n = (o.text.match(re) || []).length; if (!n) return;
+        const txt = palabra ? o.text.replace(re, (m, a, b) => a + nuevo) : o.text.replace(re, nuevo);
+        if (txt.length !== o.text.length) o.styles = {};
+        o.set('text', txt); if (o.initDimensions) o.initDimensions();
+        if (o.textoDe){ try { ajustarFormaATexto(o); } catch(e){} }
+        cambios += n;
+      };
+      objs.forEach(revisar);
+    });
+    toast(cambios ? 'Se reemplazaron ' + cambios + (cambios === 1 ? ' coincidencia' : ' coincidencias') : 'No había nada que reemplazar');
+    buscarTextos();
+  } catch (e) { console.error(e); toast('No se pudo reemplazar: ' + e.message); }
+  finally { cargando(false); }
+}
+$('bTexto').addEventListener('input', () => { clearTimeout(buscarTextos._t); buscarTextos._t = setTimeout(buscarTextos, 250); });
+['bMayus', 'bPalabra'].forEach(id => $(id).addEventListener('change', buscarTextos));
+$('bTexto').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); siguienteResultado(); } });
+function abrirBuscar(){ abrirModal('mBuscar'); setTimeout(() => { $('bTexto').focus(); $('bTexto').select(); buscarTextos(); }, 50); }
+
+/* =========================================================
+   AYUDA, ATAJOS Y RECORRIDO
+   ========================================================= */
+const ATAJOS = [
+  ['Ctrl + Z', 'Deshacer'], ['Ctrl + Y', 'Rehacer'], ['Ctrl + S', 'Guardar en Drive'], ['Ctrl + C / Ctrl + V', 'Copiar y pegar'],
+  ['Ctrl + D', 'Duplicar'], ['Supr', 'Eliminar lo seleccionado'], ['Ctrl + A', 'Seleccionar todo'], ['Ctrl + G', 'Agrupar / desagrupar'],
+  ['Ctrl + Alt + C / V', 'Copiar y pegar solo el estilo'], ['Flechas', 'Mover 1 px (con Shift, 10 px)'], ['Tab', 'Agregar una idea conectada (en mapas)'],
+  ['C', 'Modo conector (unir formas)'], ['Ctrl + F', 'Buscar y reemplazar texto'], ['Doble clic', 'Editar un texto'], ['Esc', 'Salir del modo actual / quitar selección'],
+  ['?', 'Abrir esta ayuda'], ['En la presentación: → ← Esc N', 'Avanzar, regresar, salir y ver tus notas'], ['Ctrl + rueda del mouse', 'Acercar / alejar']
+];
+$('listaAtajos').innerHTML = ATAJOS.map(([t, d]) => `<div class="atajo"><kbd>${esc(t)}</kbd><span>${esc(d)}</span></div>`).join('');
+const PASOS_RECORRIDO = [
+  ['#pestanas', 'Aquí está todo lo que puedes agregar: plantillas, textos, formas, elementos, dibujos, imágenes, diagramas, fondos y tu marca.'],
+  ['#lateral', 'En este panel eliges lo que quieres agregar. Empieza con una plantilla o una presentación completa.'],
+  ['#envoltura', 'Este es tu lienzo. Haz clic en algo para seleccionarlo, arrástralo para moverlo y usa las esquinas para cambiar su tamaño. Doble clic en un texto para escribir.'],
+  ['#props', 'Cuando seleccionas algo, aquí cambias su color, letra, borde, animación y orden.'],
+  ['#paginas', 'Tus páginas o diapositivas. Agrega, duplica o reordena. Arriba de ellas están tus notas del presentador.'],
+  ['#tamTxt', 'Cambia el tamaño del diseño. Con “Acomodar el contenido”, todo se ajusta solo al nuevo tamaño.'],
+  ['[onclick*="mPresentar"]', 'Presenta en pantalla completa con animaciones, o con la vista del presentador.'],
+  ['[onclick*="mExportar"]', 'Descarga PNG, JPG, PDF para imprimir, PowerPoint o video.'],
+  ['[onclick*="guardarDrive"]', 'Guarda en tu Google Drive. También se guarda solo mientras trabajas.'],
+  ['[onclick*="mCompartir"]', 'Comparte una copia con tus compañeros por enlace o WhatsApp. ¡Listo, ya conoces lo básico!']
+];
+let pasoRec = -1;
+function iniciarRecorrido(){ cerrarModal('mAyuda'); $('bienvenida').style.display = 'none'; try { localStorage.setItem('disenador_recorrido', '1'); } catch(e){} pasoRec = -1; siguientePaso(1); }
+function siguientePaso(d){
+  pasoRec += d;
+  while (pasoRec >= 0 && pasoRec < PASOS_RECORRIDO.length){
+    const el = document.querySelector(PASOS_RECORRIDO[pasoRec][0]);
+    if (el && el.getBoundingClientRect().width > 0) break;
+    pasoRec += d || 1;
+  }
+  if (pasoRec < 0) pasoRec = 0;
+  if (pasoRec >= PASOS_RECORRIDO.length){ terminarRecorrido(); return; }
+  const [sel, texto] = PASOS_RECORRIDO[pasoRec], el = document.querySelector(sel), r = el.getBoundingClientRect();
+  const foco = $('recFoco'), caja = $('recCaja');
+  $('recorrido').style.display = 'block';
+  Object.assign(foco.style, { left:(r.left - 6) + 'px', top:(r.top - 6) + 'px', width:(r.width + 12) + 'px', height:(r.height + 12) + 'px' });
+  $('recTexto').textContent = texto;
+  $('recNum').textContent = (pasoRec + 1) + ' / ' + PASOS_RECORRIDO.length;
+  $('recSig').textContent = pasoRec === PASOS_RECORRIDO.length - 1 ? 'Terminar' : 'Siguiente →';
+  $('recAnt').style.visibility = pasoRec ? 'visible' : 'hidden';
+  const cw = Math.min(340, window.innerWidth - 24), ch = caja.offsetHeight || 150;
+  let x = r.right + 16, y = r.top;
+  if (x + cw > window.innerWidth - 12) x = r.left - cw - 16;
+  if (x < 12){ x = Math.max(12, Math.min(window.innerWidth - cw - 12, r.left + r.width / 2 - cw / 2)); y = r.bottom + 16; if (y + ch > window.innerHeight - 12) y = r.top - ch - 16; }
+  y = Math.max(12, Math.min(window.innerHeight - ch - 12, y));
+  Object.assign(caja.style, { left:x + 'px', top:y + 'px', width:cw + 'px' });
+}
+function terminarRecorrido(){ $('recorrido').style.display = 'none'; pasoRec = -1; }
+window.addEventListener('resize', () => { if (pasoRec >= 0) siguientePaso(0); });
+document.addEventListener('keydown', e => {
+  const tag = (document.activeElement || {}).tagName, o = activo();
+  if (pasoRec >= 0){
+    if (e.key === 'Escape'){ e.preventDefault(); terminarRecorrido(); }
+    else if (e.key === 'ArrowRight' || e.key === 'Enter'){ e.preventDefault(); siguientePaso(1); }
+    else if (e.key === 'ArrowLeft'){ e.preventDefault(); siguientePaso(-1); }
+    return;
+  }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'f' || e.key === 'F' || e.key === 'h' || e.key === 'H')){ e.preventDefault(); abrirBuscar(); return; }
+  if (['INPUT','SELECT','TEXTAREA'].includes(tag) || (o && o.isEditing)) return;
+  if (e.key === '?'){ e.preventDefault(); abrirModal('mAyuda'); }
+});
+// Bienvenida para quien entra por primera vez (no estorba: se puede ignorar)
+(function(){
+  let visto = false; try { visto = localStorage.getItem('disenador_recorrido') === '1'; } catch(e){}
+  if (!visto) setTimeout(() => { $('bienvenida').style.display = 'flex'; }, 1800);
 })();
-// En el SVG se incluyen también tus fuentes subidas
-const cssDeFuenteBase24 = cssDeFuente;
-cssDeFuente = async function(familia, pesos){
-  if (misFuentes[familia]) return `@font-face{font-family:'${familia}';src:url(${misFuentes[familia]});}`;
-  return cssDeFuenteBase24(familia, pesos);
-};
-$('archivoFuente').addEventListener('change', e => { subirFuente(e.target.files[0]); e.target.value = ''; });
+function cerrarBienvenida(){ $('bienvenida').style.display = 'none'; try { localStorage.setItem('disenador_recorrido', '1'); } catch(e){} }
+
+/* =========================================================
+   ARCHIVOS DEL EQUIPO Y DONACIONES
+   ========================================================= */
+const CONFIG = Object.assign({ donaciones:[], mensajeDonacion:'' }, window.APIK_CONFIG || {});
+if (window.MODO_WEB) document.body.classList.add('modoWeb');
+// Descargar el diseño como archivo (copia de seguridad, para pasarlo a otra computadora o compartirlo)
+function descargarDisenoArchivo(){
+  canvas.discardActiveObject(); canvas.requestRenderAll();
+  bajarBlob(new Blob([serializar()], { type:'application/json' }), nombreArchivo() + '.apik.json');
+  toast('Se descargó tu diseño. Para abrirlo: 📂 Abrir → “Abrir un archivo”.');
+}
+$('archivoDiseno').addEventListener('change', e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  const lector = new FileReader();
+  lector.onload = () => {
+    const txt = lector.result;
+    try { const d = JSON.parse(txt); if (!d || !(d.p || d.c)) throw new Error('formato'); }
+    catch (err) { toast('Ese archivo no es un diseño de esta app'); return; }
+    $('nombreDiseno').value = f.name.replace(/\.apik\.json$|\.json$/i, '') || 'Mi diseño';
+    historial = []; hi = -1; miniaturas = [];
+    cargarJSON(txt, true, () => { cerrarModal('mProyectos'); enDrive = false; indicadorGuardado('nuevo'); toast('Diseño abierto desde tu archivo. Pulsa 💾 Guardar para conservarlo aquí.'); });
+  };
+  lector.readAsText(f);
+});
+// Ventana de donaciones (los enlaces se configuran en config.js)
+function abrirDonaciones(){
+  const lista = (CONFIG.donaciones || []).filter(d => d && /^https?:\/\//i.test(d.url || ''));
+  $('textoDonacion').textContent = CONFIG.mensajeDonacion ||
+    'Este diseñador es gratuito. Si te sirve para tus tareas, exposiciones o tu negocio, puedes apoyarnos con una donación para seguir agregando funciones y pagar el servidor.';
+  $('listaDonaciones').innerHTML = lista.length
+    ? lista.map(d => `<a class="donBtn" href="${esc(d.url)}" target="_blank" rel="noopener"><b>${esc(d.icono || '❤')} ${esc(d.nombre || 'Donar')}</b>${d.detalle ? `<span>${esc(d.detalle)}</span>` : ''}</a>`).join('')
+    : '<p class="hint">Muy pronto podrás apoyar el proyecto desde aquí.</p>';
+  abrirModal('mDonar');
+}
 
 </script>

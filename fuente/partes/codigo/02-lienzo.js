@@ -17,7 +17,9 @@ fabric.Conector = fabric.util.createClass(fabric.Line, {
   type: 'conector',
   _render(ctx){
     const p = this.calcLinePoints(), est = this.estilo || 'recta';
-    const mx = (p.x1 + p.x2) / 2, my = (p.y1 + p.y2) / 2;
+    const d = this.desvio || { x:0, y:0 };          // doblez que el usuario le dio con el punto de en medio
+    const mx0 = (p.x1 + p.x2) / 2, my0 = (p.y1 + p.y2) / 2;
+    const mx = mx0 + (est !== 'recta' && !this.horiz ? 0 : d.x), my = my0 + (est !== 'recta' && this.horiz ? 0 : d.y);
     let ax = p.x1, ay = p.y1, bx = p.x2, by = p.y2;   // a: antes del final · b: después del inicio
     ctx.beginPath(); ctx.moveTo(p.x1, p.y1);
     if (this.modo && est !== 'recta'){
@@ -31,6 +33,9 @@ fabric.Conector = fabric.util.createClass(fabric.Line, {
     } else if (est === 'curva'){
       if (this.horiz){ ctx.bezierCurveTo(mx, p.y1, mx, p.y2, p.x2, p.y2); bx = mx; by = p.y1; ax = mx; ay = p.y2; }
       else { ctx.bezierCurveTo(p.x1, my, p.x2, my, p.x2, p.y2); bx = p.x1; by = my; ax = p.x2; ay = my; }
+    } else if (d.x || d.y){   // recta doblada: curva que pasa por el punto de en medio
+      const qx = mx0 + 2 * d.x, qy = my0 + 2 * d.y;
+      ctx.quadraticCurveTo(qx, qy, p.x2, p.y2); ax = bx = qx; ay = by = qy;
     } else ctx.lineTo(p.x2, p.y2);
     if (ax === p.x2 && ay === p.y2){ ax = p.x1; ay = p.y1; }
     if (bx === p.x1 && by === p.y1){ bx = p.x2; by = p.y2; }
