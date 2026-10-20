@@ -80,7 +80,7 @@ marcarAtajos();
 alActualizarPanel(() => marcarAtajos($('props')));
 
 const GRUPOS_ATAJOS = [
-  ['Lo básico', [['Ctrl + Z', 'Deshacer'], ['Ctrl + Y', 'Rehacer'], ['Ctrl + S', 'Guardar'], ['Ctrl + E', 'Exportar / descargar'], ['Ctrl + F', 'Buscar y reemplazar texto'], ['?', 'Abrir esta ayuda'], ['Esc', 'Salir del modo actual / quitar selección']]],
+  ['Lo básico', [['Ctrl + Z', 'Deshacer'], ['Ctrl + Y', 'Rehacer'], ['Ctrl + S', 'Guardar'], ['Ctrl + E', 'Exportar / descargar'], ['Ctrl + F', 'Buscar y reemplazar texto'], ['?', 'Abrir esta ayuda'], ['Esc', 'Salir del modo actual / quitar selección'], ['Clic derecho', 'Menú: copiar, duplicar, eliminar, orden… (en celular, deja el dedo presionado)'], ['Shift + F10', 'Abrir ese menú con el teclado']]],
   ['Agregar', [['T', 'Un texto'], ['R', 'Un rectángulo'], ['O', 'Un círculo'], ['L', 'Una línea'], ['I', 'Una imagen de tu equipo'], ['C', 'Modo conector (unir formas)'], ['Tab', 'Una idea conectada (en mapas)']]],
   ['Editar lo seleccionado', [['Ctrl + C / Ctrl + V', 'Copiar y pegar'], ['Ctrl + D', 'Duplicar'], ['Supr', 'Eliminar'], ['Ctrl + A', 'Seleccionar todo'], ['Ctrl + G', 'Agrupar / desagrupar'], ['Ctrl + Shift + L', 'Bloquear / desbloquear'], ['Ctrl + Alt + C / V', 'Copiar y pegar solo el estilo'], ['Flechas', 'Mover 1 px (con Shift, 10 px)']]],
   ['Orden', [['Ctrl + ↑', 'Traer adelante'], ['Ctrl + ↓', 'Enviar atrás'], ['Ctrl + Shift + ↑', 'Traer al frente'], ['Ctrl + Shift + ↓', 'Enviar al fondo']]],

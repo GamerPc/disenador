@@ -628,6 +628,22 @@
   html.claro .tb.blanco{background:linear-gradient(135deg,#ff4b2b,#ff7a2b);color:#fff;border-color:transparent}
   html.claro .tb.blanco:hover{color:#fff}
   @media (max-width:820px){ .ppLista li:not(.act){display:none} .ppLista{margin:4px 0 8px} }
+  /* ---------- menú de clic derecho ---------- */
+  #menuCtx{position:fixed;z-index:400;min-width:232px;max-width:calc(100vw - 12px);max-height:calc(100vh - 12px);overflow:auto;background:#10131b;border:1px solid var(--borde,#2a3140);border-radius:12px;padding:5px;box-shadow:0 16px 44px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:1px;font-size:13.5px}
+  #menuCtx[hidden]{display:none}
+  #menuCtx button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;border:0;color:var(--texto,#e5e7eb);padding:7px 10px;border-radius:8px;min-height:34px;font:inherit;cursor:pointer}
+  #menuCtx button .ico{width:17px;height:17px;flex:none;color:var(--suave,#9ca3af)}
+  #menuCtx button span{flex:1;white-space:nowrap}
+  #menuCtx button kbd{font:500 11px Inter,sans-serif;color:var(--suave,#9ca3af);background:none;border:0;padding:0;margin-left:14px;white-space:nowrap}
+  #menuCtx button:hover:not([disabled]),#menuCtx button:focus-visible{background:#1d2333;outline:none}
+  #menuCtx button:hover:not([disabled]) .ico{color:var(--neon,#19c8ff)}
+  #menuCtx button.peligro,#menuCtx button.peligro .ico{color:#ff6b57}
+  #menuCtx button[disabled]{opacity:.4;cursor:default}
+  #menuCtx .sepCtx{height:1px;background:var(--borde,#2a3140);margin:4px 6px}
+  @media (pointer:coarse){ #menuCtx button{min-height:44px;font-size:15px} #menuCtx button kbd{display:none} }
+  html.claro #menuCtx{background:#fff;box-shadow:0 16px 44px rgba(20,30,50,.22)}
+  html.claro #menuCtx button:hover:not([disabled]),html.claro #menuCtx button:focus-visible{background:#eef3f9}
+  html.claro #menuCtx button.peligro,html.claro #menuCtx button.peligro .ico{color:#c82d14}
 
 </style>
 </head>
@@ -635,7 +651,7 @@
 
 <!-- ====== BARRA SUPERIOR ====== -->
 <div id="barra">
-  <div class="logo"><img class="logoImg" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAMAAAC5zwKfAAAAwFBMVEUHLGYDIRUAf/8TfsAFGR0EHyQAAP8k0tgACREAAAAAEhQD6/cG9v0Gtf0EqvoI2PQHx/sQaHAHJi4Ux9EFGCgLOFAMRk8AAAAOV3IUusgRh48Upq8AAQIQdq4KNTkMR24NVloPZpURiMgSk5kBAQIOWooAAQMAAgQSldMU09sReoUUs7oUmagJKUYShbEOm+QA//8QdnwTps8FFxYQbKMAAAAAOTcAJiYMPWQAVVUAf38CDSAAADIEEg4DFRQGIyT60TZkAAAAQHRSTlMFGwL/vNgB//4A/v7+/v7+/v7+/v7+/mz+/v7+Tv7+//3+/v4s/6/M/v7//v7+//0B//4p/5cLC/8EAv8FFNrEvWmOFQAAB8JJREFUeNqdmQd34jgQgLk+yEW23AtgSgyYkoT03b27//+vbsayjFxS9vTevsUYf56u0WQy/XjlURRBu/Ai/+SByQf3HvJtCSCCwr1PcVVuEQoG5TZ/+F/AzRPA3F17hmFel+Ed3YDB0+Zngc/RFuZpUrM0oLz20hC20ctPABHH4oOhANzzksMh8fZG+4LEZdvo+avADTDXkw/yQ+qGwmcMgDF/HrrrWmr8t68EbL4EnJRQSNz+WAjoLzZ3M17f5i6Uz58D863I6PfGwSUa6y+Cinv5xiTc5p8BI3A54bKQjdAYNNDGJsY9RB8CH0q2ph96hUZTunblZPRiwzyI8uF94C8gEnpvxUCDMTHHJViXioof6d37AB7eAz7AfI8/SeZXnCjSA4WLYey9rOqaAaCgnxtFhzjReQFHJY5XQxXkT315x5BptphLQ7o6caLLhzyjaoSQrjSNzpIh3fyApfiGjIixRrwCS4Fpi29rxIu9Pk0xk9pjZG7SZk3EsBwCI5YYHN/ViJeN0hpkNkfr4gtTAhORz6M+MIcj8kg+fD0EnnlVsq0MMrnpS8Ml8x2g1py0TljeBT5vY+RVUNsHQm5wSTO8LHVxpdm+wZnNDfw/BGnLA16tt7/80IGlcDg/ygAmZ3NOxMydq7AGEd7rVq2lapwtKHqKUpcQFeY8EVA/7iecePwYdEKZwijRkWkbriFe7UU+aYF3EHPHCWsegzNHafklGOQyMM/YS1MSsGrvQ2oS/64Foocdfm4UDh1aLkA3lenW0azEoXWXC9qb8CXS0wR82S4dxxLqKeItoCkttK+kGXom9ME1D/jd0RwAGRQoYrZtgN8i33acuJEjUDzpQnHkhtpJDC7oy0RGjg5kQHE7j36VEkLsOBe/EXDmWAhvSgveMbj0OFHrsKdI7kso/bKG6R0BN7CzLCWgf7Gcc2s0l8slCWsp9BiQRDS52JCEb0+BZdm+0tiyrFMjYK0+wSTRYx8ByYru0xsC/4alZc2UK2PtM+wQeEzPFylh2OS5AlbQDSnKRZIwJ40DxVjSZ6akdc71RiWqhOP2cQ26bmBfv57n08ndFrXcKY1hZt1ePzuVdA2AaxzbuHTHgeQWd3s3mZY3lvXYarmyzleNd9Akz9xxxGdA0jkrp5MchbIWLeQ3a9l+DtQ2zy7KgO8Dybamx/JJ5O8sW2gS3gx6BagMzQHvAt06tif5ybZW39unHwdAKo8XNgLMesA5fhejhIGtBQrc6BdNrFvOCdgQeOgBsSyaVTSBhaWZDa9WfeDZiYF9AYhJjsk0QZnshSaObYuuwrEzU6XiQ5Xr7MsQuOwA0eeLjnwni+rGGPDQB6KbEwTOLDvQAEFXZ4yBADptzfsS0sY/BGLgvGpXS6c1sJYSNdDr7xAVBeIQGGiJCK9a4vSBe7/nlftxIHppqblI1rJe0jbAcQkf+0A4t+V21lFfqfAeMJVO6XmZ5FL5F1uroFmhWkV4/x5wTRWxH4eKSDIGtm1balHxVpvBO0CMwyNMom6mtMRHjBi7WYrYQZpcwCBTUlkcBukL3x+tM3rrQ6ARwCCXXSpft9bKH5o+trWlK81b4LwLDHCnDVFCjGSMjcESV/Np8ul9Z19ClzZS7JjKx6FXZKWNr+sGL9xmVXxcQnJySZvUwtb2lJHoHlTwUWC9p6S0SeVoxF3fiMGIXdWjQike9hPIDHNqRYbJRxFzGpOtbsB9rzFit+5SrWG00b88LSy7Fziz4ValyZg09auAvsZPL3Wz5N/at50yjW/Y3fifAnUJIaYuvm6W/pxS/6FLdKpD73Z5GlGZkcojEuJRgFqbO9lwIuHW1yNGRrM9C4Yiwjwx3mlh4+iu6bG36JariMtrytmz1z4v5ubgGCAF9P6ZvqmmnURUVgw6OWevFr62BbLK4G4TNqoBbfYZ022b9umvVGUbR39fWXY3jWv/SPOJi5kIpmwoTz50uqG6cIBv3xTwGYPbbvIvRqF2iNGR9lLUfVjoGGldptrIBrb+C+/RATLMv+lHM4yU2i/+LaaIf1r8ZneR5J8l5zGB1UnV9Ao8W+EBLKbDXjn9cQU+/01+oZ5poZrZ02OLlNXmfDYudX3BzUg7quKReY7nfu/fBtUeb1FpqhGza3d8mkmkKmD8LPdNte3VxLQ+OaP2+eAAjt7F8F7pVeZ0tlpgfTSSMefvlc4mneAOrYd14A80Iz58c2t3ysICu1Gp8iUYNiMGDQvo/J2W05fBzGFD+x8J1CkU/lLyznqbIE8WNLKRvAw2byNjlk2TIzvWLY146iA7sC7RJPfKwVHGNuODICnjsHItd4OzM8ReRoHp9XndUdUGyI6rYLBNdzpONVUDdk+H0nV3jNgdpm3K11sUcukPGvfB5A9tUQ+B7svNx+M+Qbm8W3xQsJupWErieWH0+UDyhjyzWnzAo5EkTULM47/59OXTGWxJKUJFRowB6UOY1kM2ryi/MoO9Q9+8rij47HN8YoOOIqzkNNq7R+/efWVKjF9F28VZptxu5oaB8GkJERZV5snplef+gdZ7+/qkPdoGy0vd0eCyEloeV6MwnhX/RP9jdO8Hy52ltXDN8H5diJ8f3ZMpp5t8W4pweT5eEo9Wkh2rYv77Nt9MR4z3hb9WXP/8wdCAAj38hT9//AeaYVQBgkwsDAAAAABJRU5ErkJggg==" alt=""><span class="logoTxt">Diseñador<small class="logoMarca">APIK-DESING</small></span><small class="ver">v36</small></div>
+  <div class="logo"><img class="logoImg" src="data:image/png;base64,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" alt=""><span class="logoTxt">Diseñador<small class="logoMarca">APIK-DESING</small></span><small class="ver">v37</small></div>
   <input class="nombre" id="nombreDiseno" value="Mi diseño" title="Nombre del diseño">
   <span id="estadoGuardado" title="Estado del guardado en Drive">No guardado en Drive</span>
   <button class="tb" onclick="nuevoDiseno()">Nuevo</button>
@@ -9841,7 +9857,7 @@ marcarAtajos();
 alActualizarPanel(() => marcarAtajos($('props')));
 
 const GRUPOS_ATAJOS = [
-  ['Lo básico', [['Ctrl + Z', 'Deshacer'], ['Ctrl + Y', 'Rehacer'], ['Ctrl + S', 'Guardar'], ['Ctrl + E', 'Exportar / descargar'], ['Ctrl + F', 'Buscar y reemplazar texto'], ['?', 'Abrir esta ayuda'], ['Esc', 'Salir del modo actual / quitar selección']]],
+  ['Lo básico', [['Ctrl + Z', 'Deshacer'], ['Ctrl + Y', 'Rehacer'], ['Ctrl + S', 'Guardar'], ['Ctrl + E', 'Exportar / descargar'], ['Ctrl + F', 'Buscar y reemplazar texto'], ['?', 'Abrir esta ayuda'], ['Esc', 'Salir del modo actual / quitar selección'], ['Clic derecho', 'Menú: copiar, duplicar, eliminar, orden… (en celular, deja el dedo presionado)'], ['Shift + F10', 'Abrir ese menú con el teclado']]],
   ['Agregar', [['T', 'Un texto'], ['R', 'Un rectángulo'], ['O', 'Un círculo'], ['L', 'Una línea'], ['I', 'Una imagen de tu equipo'], ['C', 'Modo conector (unir formas)'], ['Tab', 'Una idea conectada (en mapas)']]],
   ['Editar lo seleccionado', [['Ctrl + C / Ctrl + V', 'Copiar y pegar'], ['Ctrl + D', 'Duplicar'], ['Supr', 'Eliminar'], ['Ctrl + A', 'Seleccionar todo'], ['Ctrl + G', 'Agrupar / desagrupar'], ['Ctrl + Shift + L', 'Bloquear / desbloquear'], ['Ctrl + Alt + C / V', 'Copiar y pegar solo el estilo'], ['Flechas', 'Mover 1 px (con Shift, 10 px)']]],
   ['Orden', [['Ctrl + ↑', 'Traer adelante'], ['Ctrl + ↓', 'Enviar atrás'], ['Ctrl + Shift + ↑', 'Traer al frente'], ['Ctrl + Shift + ↓', 'Enviar al fondo']]],
@@ -9994,6 +10010,173 @@ canvas.on('text:changed', () => hechoPP('texto'));
 canvas.on('object:modified', e => { if (e && e.e && e.target && !e.target.isEditing) hechoPP('mover'); });
 canvas.on('object:moving', () => { if (focoPP) quitarFocoPP(); });
 if (PP.activo) setTimeout(pintarPP, 1200);
+/* =========================================================
+   MENÚ DE CLIC DERECHO (y dejando el dedo presionado en celular/tablet)
+   ========================================================= */
+const ICO_CTX = {
+  copiar:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/>',
+  pegar:'<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h4"/>',
+  duplicar:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V6a2 2 0 0 1 2-2h10M14 11v6M11 14h6"/>',
+  eliminar:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/>',
+  estilo:'<path d="M4 20l6-6M14 4l6 6-8 8-6-6z"/>',
+  frente:'<rect x="8" y="8" width="12" height="12" rx="1" fill="currentColor" fill-opacity=".25"/><path d="M4 16V4h12"/>',
+  fondo:'<rect x="4" y="4" width="12" height="12" rx="1"/><path d="M20 8v12H8" />',
+  arriba:'<path d="M12 19V5M6 11l6-6 6 6"/>',
+  abajo:'<path d="M12 5v14M6 13l6 6 6-6"/>',
+  grupo:'<rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><path d="M11 7h4v4M13 17H9v-4"/>',
+  candado:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  abierto:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/>',
+  voltearH:'<path d="M12 3v18M8 7L3 12l5 5zM16 7l5 5-5 5z"/>',
+  voltearV:'<path d="M3 12h18M7 8l5-5 5 5zM7 16l5 5 5-5z"/>',
+  centrar:'<circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>',
+  texto:'<path d="M5 6V4h14v2M12 4v16M9 20h6"/>',
+  imagen:'<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 8"/>',
+  recortar:'<path d="M6 2v14a2 2 0 0 0 2 2h14M2 6h14a2 2 0 0 1 2 2v14"/>',
+  varita:'<path d="M15 4V2M15 10V8M11 6h2M17 6h2M4 20l11-11"/>',
+  deshacer:'<path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>',
+  rehacer:'<path d="M15 14l5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/>',
+  todo:'<path d="M4 4h4M4 4v4M20 4h-4M20 4v4M4 20h4M4 20v-4M20 20h-4M20 20v-4"/>',
+  forma:'<rect x="4" y="4" width="16" height="16" rx="3"/>',
+  fondoPag:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15l6-6 12 12"/>'
+};
+const icoCtx = k => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${ICO_CTX[k] || ''}</svg>`;
+let menuCtxPunto = null;          // dónde se abrió el menú (en coordenadas del diseño)
+(function(){
+  const m = document.createElement('div'); m.id = 'menuCtx'; m.setAttribute('role', 'menu'); m.hidden = true; document.body.appendChild(m);
+})();
+function cerrarMenuCtx(){ const m = $('menuCtx'); if (!m.hidden){ m.hidden = true; m.innerHTML = ''; } }
+function opcionesMenuCtx(){
+  const o = activo(), varios = o && o.type === 'activeSelection', esTexto = o && /text/i.test(o.type || '') && !varios;
+  const L = [];
+  if (o){
+    L.push({ t:'Copiar', a:'Ctrl+C', i:'copiar', f:() => clonar(o, c => { portapapeles = c; toast('Copiado'); }) });
+    L.push({ t:'Pegar', a:'Ctrl+V', i:'pegar', des:!portapapeles, f:() => clonar(portapapeles, pegarClon) });
+    L.push({ t:'Duplicar', a:'Ctrl+D', i:'duplicar', f:duplicar });
+    L.push({ t:'Eliminar', a:'Supr', i:'eliminar', peligro:true, des:!!o.bloqueado, f:eliminar });
+    L.push('-');
+    if (esTexto) L.push({ t:'Editar el texto', a:'Doble clic', i:'texto', des:!!o.bloqueado, f:() => { canvas.setActiveObject(o); o.enterEditing(); o.selectAll(); canvas.requestRenderAll(); } });
+    if (o.type === 'image'){
+      if (typeof iniciarRecorteRect === 'function') L.push({ t:'Recortar', i:'recortar', f:iniciarRecorteRect });
+      if (typeof quitarFondoIA === 'function') L.push({ t:'Quitar el fondo (IA)', i:'varita', f:quitarFondoIA });
+    }
+    L.push({ t:'Copiar estilo', a:'Ctrl+Alt+C', i:'estilo', des:varios, f:copiarEstilo });
+    L.push({ t:'Pegar estilo', a:'Ctrl+Alt+V', i:'estilo', f:pegarEstilo });
+    L.push('-');
+    L.push({ t:'Traer al frente', a:'Ctrl+Shift+↑', i:'frente', des:varios, f:() => orden('frente') });
+    L.push({ t:'Traer adelante', a:'Ctrl+↑', i:'arriba', des:varios, f:() => orden('adelante') });
+    L.push({ t:'Enviar atrás', a:'Ctrl+↓', i:'abajo', des:varios, f:() => orden('atras') });
+    L.push({ t:'Enviar al fondo', a:'Ctrl+Shift+↓', i:'fondo', des:varios, f:() => orden('fondo') });
+    L.push('-');
+    if (varios) L.push({ t:'Agrupar', a:'Ctrl+G', i:'grupo', f:agruparToggle });
+    else if (o.type === 'group') L.push({ t:'Desagrupar', a:'Ctrl+G', i:'grupo', f:agruparToggle });
+    L.push({ t:'Centrar en la página', i:'centrar', f:() => { alinear('centroH'); alinear('centroV'); } });
+    L.push({ t:'Voltear horizontal', i:'voltearH', des:varios, f:() => voltear('flipX') });
+    L.push({ t:'Voltear vertical', i:'voltearV', des:varios, f:() => voltear('flipY') });
+    L.push({ t:o.bloqueado ? 'Desbloquear' : 'Bloquear', a:'Ctrl+Shift+L', i:o.bloqueado ? 'abierto' : 'candado', f:bloquearSel });
+    L.push('-');
+    L.push({ t:'Copiar como imagen', i:'imagen', f:() => copiarComoImagen(o) });
+  } else {
+    L.push({ t:'Pegar aquí', a:'Ctrl+V', i:'pegar', des:!portapapeles, f:() => clonar(portapapeles, c => { pegarClon(c); moverAlPunto(c); }) });
+    L.push({ t:'Seleccionar todo', a:'Ctrl+A', i:'todo', f:() => { const objs = canvas.getObjects().filter(x => x.selectable && x.visible); if (objs.length){ canvas.setActiveObject(new fabric.ActiveSelection(objs, { canvas })); canvas.requestRenderAll(); } } });
+    L.push('-');
+    L.push({ t:'Agregar un texto aquí', a:'T', i:'texto', f:() => { agregarTexto('cuerpo'); moverAlPunto(activo()); } });
+    L.push({ t:'Agregar un rectángulo aquí', a:'R', i:'forma', f:() => { agregarForma('rect'); moverAlPunto(activo()); } });
+    L.push({ t:'Cambiar el fondo', i:'fondoPag', f:() => { const b = document.querySelector('#pestanas button[data-tab="tFondo"]'); if (b) b.click(); if (window.innerWidth <= 820 && typeof abrirLateral === 'function') abrirLateral(true); } });
+    L.push('-');
+    L.push({ t:'Deshacer', a:'Ctrl+Z', i:'deshacer', des:hi <= 0, f:deshacer });
+    L.push({ t:'Rehacer', a:'Ctrl+Y', i:'rehacer', des:hi >= historial.length - 1, f:rehacer });
+  }
+  // sin separadores repetidos ni al final
+  return L.filter((x, i, a) => x !== '-' || (i > 0 && a[i - 1] !== '-' && i < a.length - 1));
+}
+function moverAlPunto(o){
+  if (!o || !menuCtxPunto) return;
+  // que quede completo dentro de la página
+  const w = Math.min(o.getScaledWidth(), W), h = Math.min(o.getScaledHeight(), H);
+  const x = Math.max(w / 2, Math.min(W - w / 2, menuCtxPunto.x)), y = Math.max(h / 2, Math.min(H - h / 2, menuCtxPunto.y));
+  o.setPositionByOrigin(new fabric.Point(x, y), 'center', 'center');
+  o.setCoords(); canvas.requestRenderAll(); guardarEstado();
+}
+async function copiarComoImagen(o){
+  try {
+    const url = o.toDataURL({ format:'png', multiplier:Math.min(4, Math.max(1, 1200 / Math.max(o.getScaledWidth(), o.getScaledHeight()))) });
+    const blob = await (await fetch(url)).blob();
+    if (!navigator.clipboard || !window.ClipboardItem) throw new Error('sin portapapeles');
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png':blob })]);
+    toast('Imagen copiada: pégala en Word, WhatsApp, Docs…');
+  } catch (e) { toast('Tu navegador no deja copiar imágenes. Usa ⬇ Exportar.'); }
+}
+function abrirMenuCtx(x, y){
+  const m = $('menuCtx'), ops = opcionesMenuCtx();
+  m.innerHTML = ops.map((op, i) => op === '-' ? '<div class="sepCtx" role="separator"></div>'
+    : `<button role="menuitem" data-i="${i}" class="${op.peligro ? 'peligro' : ''}"${op.des ? ' disabled aria-disabled="true"' : ''}>${icoCtx(op.i)}<span>${esc(op.t)}</span>${op.a ? `<kbd>${esc(op.a)}</kbd>` : ''}</button>`).join('');
+  m.querySelectorAll('button').forEach(b => b.onclick = () => { const op = ops[+b.dataset.i]; cerrarMenuCtx(); try { op.f(); } catch (e) { console.error(e); } });
+  m.hidden = false;
+  const r = m.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight;
+  m.style.left = Math.max(6, Math.min(x, vw - r.width - 6)) + 'px';
+  m.style.top = Math.max(6, (y + r.height > vh - 6 ? Math.max(6, y - r.height) : y)) + 'px';
+  const pri = m.querySelector('button:not([disabled])'); if (pri) pri.focus({ preventScroll:true });
+}
+function puntoDiseno(e){ const p = canvas.getPointer(e); return { x:p.x, y:p.y }; }
+// Clic derecho sobre el lienzo: selecciona lo que está debajo (si no estaba ya seleccionado) y abre el menú
+function menuCtxEnLienzo(e, x, y){
+  if (canvas.isDrawingMode || (typeof modoConector !== 'undefined' && modoConector)) return false;
+  const o = activo(); if (o && o.isEditing) return false;
+  const t = canvas.findTarget(e, false);
+  if (t && !canvas.getActiveObjects().includes(t) && t !== o){ canvas.setActiveObject(t); canvas.requestRenderAll(); }
+  else if (!t && o && !(o.containsPoint && o.containsPoint(canvas.getPointer(e, true)))){ canvas.discardActiveObject(); canvas.requestRenderAll(); }
+  menuCtxPunto = puntoDiseno(e);
+  abrirMenuCtx(x, y);
+  return true;
+}
+(function(){
+  const sup = canvas.upperCanvasEl, cont = sup.parentNode;
+  cont.addEventListener('contextmenu', e => { if (menuCtxEnLienzo(e, e.clientX, e.clientY)) e.preventDefault(); });
+  // celular y tablet: dejar el dedo presionado
+  let tToque = null, inicio = null;
+  sup.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1) { clearTimeout(tToque); return; }
+    const t = e.touches[0]; inicio = { x:t.clientX, y:t.clientY };
+    clearTimeout(tToque);
+    tToque = setTimeout(() => {
+      const ev = { clientX:inicio.x, clientY:inicio.y, target:sup, touches:[], changedTouches:[{ clientX:inicio.x, clientY:inicio.y }], type:'touchend', preventDefault(){} };
+      const o = activo();
+      if (o && (o.isMoving || o.isEditing)) return;
+      if (menuCtxEnLienzo(ev, inicio.x, inicio.y)){ if (navigator.vibrate) try { navigator.vibrate(12); } catch (er) {} }
+    }, 560);
+  }, { passive:true });
+  sup.addEventListener('touchmove', e => { const t = e.touches[0]; if (inicio && t && Math.hypot(t.clientX - inicio.x, t.clientY - inicio.y) > 10) clearTimeout(tToque); }, { passive:true });
+  ['touchend', 'touchcancel'].forEach(n => sup.addEventListener(n, () => clearTimeout(tToque), { passive:true }));
+  canvas.on('object:moving', () => clearTimeout(tToque));
+})();
+// cerrar: clic afuera, Esc, rueda, cambiar tamaño de ventana
+document.addEventListener('pointerdown', e => { const m = $('menuCtx'); if (!m.hidden && !m.contains(e.target)) cerrarMenuCtx(); }, true);
+window.addEventListener('resize', cerrarMenuCtx);
+window.addEventListener('blur', cerrarMenuCtx);
+document.addEventListener('wheel', e => { const m = $('menuCtx'); if (!m.hidden && !m.contains(e.target)) cerrarMenuCtx(); }, { passive:true, capture:true });
+document.addEventListener('keydown', e => {
+  const m = $('menuCtx');
+  if (!m.hidden){
+    const bs = [...m.querySelectorAll('button:not([disabled])')], k = bs.indexOf(document.activeElement);
+    if (e.key === 'Escape'){ e.preventDefault(); e.stopImmediatePropagation(); cerrarMenuCtx(); }
+    else if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){ e.preventDefault(); e.stopImmediatePropagation(); const n = bs.length; if (n) bs[(k + (e.key === 'ArrowDown' ? 1 : -1) + n) % n].focus(); }
+    else if (e.key === 'Tab'){ cerrarMenuCtx(); }
+    else if (e.key !== 'Enter' && e.key !== ' ') { e.stopImmediatePropagation(); }
+    return;
+  }
+  // tecla «menú» o Shift+F10: abre el menú de lo seleccionado (útil sin mouse)
+  if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')){
+    const tag = (document.activeElement || {}).tagName;
+    if (['INPUT','SELECT','TEXTAREA'].includes(tag) || document.querySelector('.modal.abierto')) return;
+    const o = activo(); if (o && o.isEditing) return;
+    e.preventDefault();
+    const r = canvas.upperCanvasEl.getBoundingClientRect(), k = r.width / canvas.getWidth();
+    let x = r.left + r.width / 2, y = r.top + r.height / 2;
+    if (o){ const b = o.getBoundingRect(); x = r.left + (b.left + b.width / 2) * k; y = r.top + (b.top + b.height / 2) * k; }
+    menuCtxPunto = o ? { x:o.getCenterPoint().x, y:o.getCenterPoint().y } : { x:W / 2, y:H / 2 };
+    abrirMenuCtx(x, y);
+  }
+}, true);
 /* =========================================================
    PESTAÑAS E INICIO
    ========================================================= */
