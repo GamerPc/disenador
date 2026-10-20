@@ -8241,6 +8241,30 @@ const ACCIONES_IA = [
   { id:'ingles', ico:'🌐', nombre:'Traducir al inglés', pide:'Traduce el siguiente texto al inglés de forma natural.' }
 ];
 const IA_CLAVE = 'disenador_gemini_clave', IA_MODELO = 'disenador_gemini_modelo';
+// Google da claves con varios formatos (AIza…, AQ.…, etc.): se limpian espacios, comillas y caracteres invisibles al pegar
+function limpiarClaveIA(v){ return String(v || '').replace(/[\s\u200b-\u200d\ufeff"'«»“”]/g, '').replace(/^(key|clave|api_?key)[:=]/i, ''); }
+const claveIAValida = k => /^[A-Za-z0-9._\-]{20,200}$/.test(k);
+// prueba la clave con Google; si no hay internet, se guarda igual
+async function probarClaveIA(k){
+  try {
+    const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1', { headers:{ 'x-goog-api-key':k } });
+    if (r.ok) return 'ok';
+    if (r.status === 400 || r.status === 401 || r.status === 403) return 'mala';
+    return 'duda';
+  } catch (e) { return 'duda'; }
+}
+async function guardarClaveIA(valor, alTerminar){
+  const k = limpiarClaveIA(valor);
+  if (!claveIAValida(k)){ toast('Esa clave está incompleta o tiene caracteres de más. Cópiala otra vez desde aistudio.google.com/apikey'); return false; }
+  cargando(true);
+  const r = await probarClaveIA(k);
+  cargando(false);
+  if (r === 'mala'){ toast('Google dice que esa clave no funciona. Revisa que la copiaste completa o crea otra en aistudio.google.com/apikey'); return false; }
+  guardarLS(IA_CLAVE, k);
+  toast(r === 'ok' ? '✓ Clave de Gemini guardada y probada' : 'Clave guardada (no se pudo probar ahora; se usará al convertir)');
+  alTerminar && alTerminar();
+  return true;
+}
 const leerLS = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
 const guardarLS = (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (e) {} };
 async function iaDisponible(){
@@ -8287,13 +8311,13 @@ function textoParaIA(){ const t = typeof textoUnico === 'function' ? textoUnico(
       <div class="grupoBtns" style="margin-top:8px"><button class="btnP" id="iaUsar">✓ Reemplazar el texto</button><button class="pb" id="iaNuevo">＋ Agregar como texto nuevo</button><button class="pb" id="iaCopiar">Copiar</button></div></div>
     <details id="iaConfig" style="margin-top:12px"><summary class="hint" style="cursor:pointer">⚙ Usar mi propia clave de Google Gemini (si tu navegador no trae IA)</summary>
       <p class="hint" style="font-size:12px">Créala gratis en <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> y pégala aquí. Se guarda <b>solo en este navegador</b>; no la compartas ni la uses en computadoras públicas. El texto que mandes se procesa en los servidores de Google.</p>
-      <div class="filaBusca"><input id="iaClave" class="buscador" type="password" autocomplete="off" placeholder="Pega tu clave (empieza con AIza…)"><button class="pb" id="iaGuardarClave">Guardar</button></div>
+      <div class="filaBusca"><input id="iaClave" class="buscador" type="password" autocomplete="off" placeholder="Pega aquí tu clave de Gemini"><button class="pb" id="iaGuardarClave">Guardar</button></div>
       <div class="filaBusca"><input id="iaModelo" class="buscador" placeholder="Modelo (opcional): gemini-flash-latest"><button class="pb" id="iaBorrarClave">Quitar clave</button></div></details>
     <div class="acciones"><button class="btnS" onclick="cerrarModal('mAsistente')">Cerrar</button></div></div>`;
   document.body.appendChild(m);
   ACCIONES_IA.forEach(a => { const b = document.createElement('button'); b.className = 'pb'; b.textContent = a.ico + ' ' + a.nombre; b.onclick = () => ejecutarIA(a); $('iaAcciones').appendChild(b); });
   ['iaTexto', 'iaSalida', 'iaIdea', 'iaClave', 'iaModelo'].forEach(id => $(id).addEventListener('keydown', e => e.stopPropagation()));
-  $('iaGuardarClave').onclick = () => { const k = $('iaClave').value.trim(); if (!/^AIza[\w-]{20,}$/.test(k)) return toast('Esa no parece una clave de Gemini (empieza con AIza…)'); guardarLS(IA_CLAVE, k); guardarLS(IA_MODELO, $('iaModelo').value.trim()); $('iaClave').value = ''; toast('Clave guardada en este navegador'); estadoIA(); };
+  $('iaGuardarClave').onclick = async () => { const ok = await guardarClaveIA($('iaClave').value); if (!ok) return; guardarLS(IA_MODELO, $('iaModelo').value.trim()); $('iaClave').value = ''; estadoIA(); };
   $('iaBorrarClave').onclick = () => { guardarLS(IA_CLAVE, ''); guardarLS(IA_MODELO, ''); toast('Clave quitada'); estadoIA(); };
   $('iaEscribir').onclick = () => { const idea = $('iaIdea').value.trim(); if (!idea) return toast('Escribe tu idea'); ejecutarIA({ id:'nuevo', nombre:'Escribir', pide:'Escribe un texto breve (máximo 60 palabras), claro y atractivo, para un diseño sobre esta idea. Si es un anuncio, incluye un llamado a la acción.' }, idea); };
   $('iaCopiar').onclick = () => { navigator.clipboard && navigator.clipboard.writeText($('iaSalida').value).then(() => toast('Copiado')); };
@@ -9611,7 +9635,7 @@ function construirDiagramaIA(d, img, op = {}){
     <label class="filaCheck"><input type="checkbox" id="idGuia"> Poner la imagen original atrás, transparente, como guía (bórrala al terminar)</label>
     <div id="idSinIA" hidden class="avisoIA"><b>Para convertir imágenes se usa la IA de Google Gemini (gratis, 1 minuto para activarla):</b>
       <ol><li>Entra a <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> con tu cuenta de Google.</li><li>Toca «Create API key» y cópiala.</li><li>Pégala aquí. Se guarda <b>solo en este navegador</b>.</li></ol>
-      <div class="filaBusca"><input id="idClave" class="buscador" type="password" autocomplete="off" placeholder="Pega tu clave (empieza con AIza…)"><button class="pb" id="idGuardarClave">Guardar</button></div></div>
+      <div class="filaBusca"><input id="idClave" class="buscador" type="password" autocomplete="off" placeholder="Pega aquí tu clave de Gemini"><button class="pb" id="idGuardarClave">Guardar</button></div></div>
     <p id="idEstado" class="hint" role="status"></p>
     <div class="acciones"><button class="btnS" onclick="cerrarModal('mImgDiagrama')">Cancelar</button><button class="btnP" id="idConvertir" disabled>✨ Convertir en diagrama</button></div></div>`;
   document.body.appendChild(m);
@@ -9632,13 +9656,15 @@ function construirDiagramaIA(d, img, op = {}){
     const it = [...(e.clipboardData || {}).items || []].find(i => i.type.startsWith('image/')); if (!it) return;
     e.preventDefault(); e.stopImmediatePropagation(); deArchivo(it.getAsFile());
   }, true);
-  $('idClave').addEventListener('keydown', e => e.stopPropagation());
-  $('idGuardarClave').onclick = () => {
-    const k = $('idClave').value.trim(); if (!/^AIza[\w-]{20,}$/.test(k)) return toast('Esa no parece una clave de Gemini (empieza con AIza…)');
-    guardarLS(IA_CLAVE, k); $('idClave').value = ''; $('idSinIA').hidden = true; $('idEstado').textContent = '✓ Clave guardada. Toca «Convertir en diagrama».'; toast('Clave guardada. Ya puedes convertir.');
+  $('idClave').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') $('idGuardarClave').click(); });
+  $('idGuardarClave').onclick = async () => {
+    const ok = await guardarClaveIA($('idClave').value); if (!ok) return;
+    $('idClave').value = ''; $('idSinIA').hidden = true; $('idEstado').textContent = '✓ Clave guardada. Toca «Convertir en diagrama».';
   };
   $('idConvertir').onclick = async () => {
     if (!img){ toast('Primero elige o pega una imagen'); return; }
+    if ($('idClave').value.trim() && !(await guardarClaveIA($('idClave').value))) return;   // pegó la clave pero no tocó «Guardar»
+    else if ($('idClave').value.trim()){ $('idClave').value = ''; $('idSinIA').hidden = true; }
     const b = $('idConvertir'); b.disabled = true; $('idEstado').textContent = 'Preparando…';
     if (!(await iaImagenDisponible())){ b.disabled = false; $('idEstado').textContent = '👉 Falta un paso: pon tu clave gratuita de Gemini en el recuadro de arriba y vuelve a tocar «Convertir».'; $('idSinIA').hidden = false; $('idClave').focus(); return; }
     const t0 = Date.now(), reloj = setInterval(() => { $('idEstado').textContent = '🔎 La IA está leyendo tu imagen… ' + Math.round((Date.now() - t0) / 1000) + ' s (suele tardar de 15 a 60 s)'; }, 500);

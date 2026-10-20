@@ -525,7 +525,7 @@ function construirDiagramaIA(d, img, op = {}){
     <label class="filaCheck"><input type="checkbox" id="idGuia"> Poner la imagen original atrás, transparente, como guía (bórrala al terminar)</label>
     <div id="idSinIA" hidden class="avisoIA"><b>Para convertir imágenes se usa la IA de Google Gemini (gratis, 1 minuto para activarla):</b>
       <ol><li>Entra a <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> con tu cuenta de Google.</li><li>Toca «Create API key» y cópiala.</li><li>Pégala aquí. Se guarda <b>solo en este navegador</b>.</li></ol>
-      <div class="filaBusca"><input id="idClave" class="buscador" type="password" autocomplete="off" placeholder="Pega tu clave (empieza con AIza…)"><button class="pb" id="idGuardarClave">Guardar</button></div></div>
+      <div class="filaBusca"><input id="idClave" class="buscador" type="password" autocomplete="off" placeholder="Pega aquí tu clave de Gemini"><button class="pb" id="idGuardarClave">Guardar</button></div></div>
     <p id="idEstado" class="hint" role="status"></p>
     <div class="acciones"><button class="btnS" onclick="cerrarModal('mImgDiagrama')">Cancelar</button><button class="btnP" id="idConvertir" disabled>✨ Convertir en diagrama</button></div></div>`;
   document.body.appendChild(m);
@@ -546,13 +546,15 @@ function construirDiagramaIA(d, img, op = {}){
     const it = [...(e.clipboardData || {}).items || []].find(i => i.type.startsWith('image/')); if (!it) return;
     e.preventDefault(); e.stopImmediatePropagation(); deArchivo(it.getAsFile());
   }, true);
-  $('idClave').addEventListener('keydown', e => e.stopPropagation());
-  $('idGuardarClave').onclick = () => {
-    const k = $('idClave').value.trim(); if (!/^AIza[\w-]{20,}$/.test(k)) return toast('Esa no parece una clave de Gemini (empieza con AIza…)');
-    guardarLS(IA_CLAVE, k); $('idClave').value = ''; $('idSinIA').hidden = true; $('idEstado').textContent = '✓ Clave guardada. Toca «Convertir en diagrama».'; toast('Clave guardada. Ya puedes convertir.');
+  $('idClave').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') $('idGuardarClave').click(); });
+  $('idGuardarClave').onclick = async () => {
+    const ok = await guardarClaveIA($('idClave').value); if (!ok) return;
+    $('idClave').value = ''; $('idSinIA').hidden = true; $('idEstado').textContent = '✓ Clave guardada. Toca «Convertir en diagrama».';
   };
   $('idConvertir').onclick = async () => {
     if (!img){ toast('Primero elige o pega una imagen'); return; }
+    if ($('idClave').value.trim() && !(await guardarClaveIA($('idClave').value))) return;   // pegó la clave pero no tocó «Guardar»
+    else if ($('idClave').value.trim()){ $('idClave').value = ''; $('idSinIA').hidden = true; }
     const b = $('idConvertir'); b.disabled = true; $('idEstado').textContent = 'Preparando…';
     if (!(await iaImagenDisponible())){ b.disabled = false; $('idEstado').textContent = '👉 Falta un paso: pon tu clave gratuita de Gemini en el recuadro de arriba y vuelve a tocar «Convertir».'; $('idSinIA').hidden = false; $('idClave').focus(); return; }
     const t0 = Date.now(), reloj = setInterval(() => { $('idEstado').textContent = '🔎 La IA está leyendo tu imagen… ' + Math.round((Date.now() - t0) / 1000) + ' s (suele tardar de 15 a 60 s)'; }, 500);
