@@ -53,10 +53,10 @@
   function acomodar(){
     if (acomodando) return; acomodando = true;
     registrar();
-    todos.forEach(e => barra.appendChild(e));            // todo regresa a la barra en su orden
+    todos.forEach(e => { if (!e.dataset.fuera) barra.appendChild(e); });   // todo regresa a la barra en su orden (menos lo que vive en otro lado)
     mas.hidden = true; barra.classList.remove('apretada');
     const cabe = () => barra.scrollWidth <= barra.clientWidth + 1;
-    const lista = todos.filter(e => prioridad(e)).sort((a, b) => prioridad(a) - prioridad(b));
+    const lista = todos.filter(e => prioridad(e) && !e.dataset.fuera).sort((a, b) => prioridad(a) - prioridad(b));
     if (!cabe()) barra.classList.add('apretada');          // primero se esconde el texto «Guardado…»
     let i = 0;
     while (!cabe() && i < lista.length){ mas.hidden = false; menu.appendChild(lista[i]); etiquetar(lista[i]); i++; }
@@ -78,7 +78,7 @@
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !menu.hidden){ abrir(false); mas.focus(); } });
   let t = null; const pedir = () => { clearTimeout(t); t = setTimeout(() => { abrir(false); acomodar(); }, 60); };
   addEventListener('resize', pedir);
-  new MutationObserver(ms => { if (!acomodando && ms.some(m => [...m.addedNodes].some(n => n.nodeType === 1 && n.parentNode === barra && !todos.includes(n)))) pedir(); })
+  new MutationObserver(ms => { if (!acomodando && ms.some(m => [...m.addedNodes].some(n => n.nodeType === 1 && n.parentNode === barra && !todos.includes(n)))){ pedir(); document.dispatchEvent(new Event('barra-cambio')); } })
     .observe(barra, { childList:true });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(pedir);
   acomodar(); setTimeout(acomodar, 800); setTimeout(acomodar, 2500);

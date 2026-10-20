@@ -162,3 +162,8 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - `fuente/nube.js`: antes de subir, las fotos pesadas se re-comprimen (WebP/JPEG, máx. 1800 px) sin cambiar cómo se ven; límite de 12 MB por diseño; los errores de la nube (límite diario, sin conexión, permisos) se explican con palabras sencillas.
 - `fuente/equipo.js`: la presencia se actualiza cada 40 s y solo con la pestaña visible (menos escrituras).
 - `74-modo-claro-atajos-y-primeros-pasos.js`: botón ☀/☾ (se recuerda), atajos nuevos (T, R, O, L, I, Ctrl+E, Ctrl+↑/↓, Ctrl+B/I/U, Ctrl+Shift+L) visibles en botones, menú «Más» y ayuda; práctica guiada «Primeros pasos» que avanza cuando el usuario hace cada cosa.
+
+## v38: interfaz limpia
+- `76-interfaz-limpia.js`: menú «Archivo» (nuevo, abrir, buscar, ayuda, modo claro, apoyar…), panel izquierdo que se oculta (flecha o clic en la pestaña activa), panel derecho flotante que solo aparece con algo seleccionado (o con «Capas»), barra flotante junto a lo seleccionado, pie con notas · páginas (ocultables) · zoom, y modo enfoque (Ctrl + \). Se puede volver a la interfaz clásica desde Archivo.
+- `75-menu-de-clic-derecho.js`: menú contextual (clic derecho, dedo presionado o Shift + F10).
+- `69`: los elementos con `data-fuera` viven fuera de la barra (menú Archivo o pie) y la barra adaptable los respeta.
