@@ -440,5 +440,14 @@
   #menuArchivo #bAuto.on::after{content:"✓";margin-left:auto;font-weight:700}
   @media (min-width:821px){ html.limpia #area{padding-right:310px} }
   @media (min-width:1500px){ html.limpia #area{padding-right:150px} }
+  /* con el panel cerrado, ninguna pestaña se ve «activa» (como Canva) */
+  @media (min-width:821px){
+    html.limpia #app.sinLateral #pestanas button.activa{color:#8a93a6;background:transparent}
+    html.limpia #app.sinLateral #pestanas button.activa::before{display:none}
+    html.limpia #app.sinLateral #pestanas button.activa span{text-shadow:none}
+    html.limpia #app.sinLateral #pestanas button:hover{color:#fff;background:#121620}
+    html.claro.limpia #app.sinLateral #pestanas button.activa{color:#566072}
+    html.claro.limpia #app.sinLateral #pestanas button:hover{color:#0d1424;background:#eef3f9}
+  }
 
 </style>

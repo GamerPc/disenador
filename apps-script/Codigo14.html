@@ -541,7 +541,7 @@ document.addEventListener('keydown', e => {
 function ponerLateral(v, guardar = true){
   $('app').classList.toggle('sinLateral', !v);
   const a = $('asaLateral'); a.innerHTML = icoUI(v ? 'izq' : 'der'); a.title = v ? 'Ocultar el panel' : 'Mostrar el panel'; a.setAttribute('aria-label', a.title);
-  if (guardar) try { localStorage.setItem('disenador_sinLateral', v ? '' : '1'); } catch (e) {}
+  if (guardar) try { localStorage.setItem('disenador_sinLateral', v ? '0' : '1'); } catch (e) {}
   ubicarAsa(); setTimeout(ajustarZoom, 30);
 }
 function ubicarAsa(){
@@ -625,7 +625,7 @@ function ponerInterfaz(limpia, guardar = true){
   if (limpia) moverAlArchivo(); else { regresarABarra(); document.documentElement.classList.remove('sinPaginas', 'enfoque'); $('app').classList.remove('sinLateral'); }
   if (limpia){
     let sl = '', sp = ''; try { sl = localStorage.getItem('disenador_sinLateral'); sp = localStorage.getItem('disenador_sinPaginas'); } catch (e) {}
-    ponerLateral(sl !== '1', false); ponerPaginasOcultas(sp === '1', false);
+    ponerLateral(sl === '0', false); ponerPaginasOcultas(sp === '1', false);   // como Canva: el panel empieza cerrado y se abre al elegir una herramienta
   }
   const bi = $('bInterfaz');
   bi.innerHTML = `${icoUI('interfaz')}<span class="etqMenu"> ${limpia ? 'Interfaz clásica (todo a la vista)' : 'Interfaz limpia (más espacio)'}</span>`;
