@@ -781,3 +781,56 @@
   .avisoIA ol{margin:6px 0 8px;padding-left:20px}
   .avisoIA[hidden]{display:none}
   #mImgDiagrama a{color:var(--neon,#19c8ff)}
+  /* ---------- opciones en el panel izquierdo ---------- */
+  #tOpciones .cabOpc{display:flex;align-items:center;gap:8px;margin:-4px 0 10px;position:sticky;top:-14px;background:var(--panel);z-index:4;padding:6px 0}
+  #tOpciones .cabOpc h3{flex:1;margin:0;font-size:15px}
+  #tOpciones .cabOpc .pb{width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center}
+  #tOpciones .cabOpc .ico{width:16px;height:16px}
+  #tOpciones h4{margin:12px 0 6px}
+  #tOpciones h4.plegable::after{display:none}
+  #tOpciones .plegado > :not(h4){display:revert}
+  #tOpciones .fila{display:flex;align-items:center;gap:8px;margin:6px 0}
+  #tOpciones .fila label{min-width:80px;font-size:12.5px;color:var(--suave)}
+  #tOpciones .fila input[type=range]{flex:1}
+  #tOpciones [hidden]{display:none !important}
+  #tOpciones .gridPop{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px}
+  #tOpciones .gridPop .pb,#tOpciones .filaPop .pb{font-size:12.5px;padding:8px 6px}
+  #tOpciones .filaPop{display:flex;gap:6px;flex-wrap:wrap}
+  #tOpciones .subPop{margin:12px 0 6px;font-size:11.5px;color:var(--suave);text-transform:uppercase;letter-spacing:.05em}
+  #tOpciones .medidasPop{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}
+  #tOpciones .medidasPop label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--suave)}
+  #tOpciones .medidasPop input[type=number]{background:var(--panel2);border:1px solid var(--borde);color:var(--texto);border-radius:8px;padding:7px 8px;font:13px Inter,sans-serif;width:100%;box-sizing:border-box}
+  #tOpciones .medidasPop .propPop{flex-direction:row;align-items:center;gap:6px;grid-column:1 / -1}
+  #tOpciones .tabsProps{top:44px}
+  #tOpciones .ptab{display:none}
+  #tOpciones .ptab.on{display:block}
+  #bCapasFlot.abierto{border-color:var(--neon);color:var(--neon)}
+  /* ---------- paleta de colores sólidos ---------- */
+  .paletaSolida{margin:4px 0 10px}
+  .paletaSolida .subPal,.selFuentes .subPal{font-size:11px;color:var(--suave);margin:8px 0 5px;text-transform:uppercase;letter-spacing:.05em;cursor:pointer}
+  .paletaSolida .filaPal{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-bottom:4px}
+  .paletaSolida .filaPal button{aspect-ratio:1;width:100%;border-radius:6px;border:1px solid rgba(255,255,255,.14);padding:0;cursor:pointer;min-width:0;min-height:0}
+  .paletaSolida .filaPal button:hover{transform:scale(1.15);box-shadow:0 0 0 2px var(--neon);position:relative;z-index:1}
+  .paletaSolida details summary{list-style:none}
+  .paletaSolida details summary::before{content:'▸ '}
+  .paletaSolida details[open] summary::before{content:'▾ '}
+  .paletaSolida .hexPal{display:flex;align-items:center;gap:8px;margin-top:8px}
+  .paletaSolida .hexPal label{font-size:12px;color:var(--suave)}
+  .paletaSolida .hexPal input{flex:1;background:var(--panel2);border:1px solid var(--borde);color:var(--texto);border-radius:8px;padding:6px 8px;font:13px Inter,monospace;min-width:0}
+  .paletaSolida.compacta .hexPal{display:none}
+  html.claro .paletaSolida .filaPal button{border-color:rgba(0,0,0,.12)}
+  @media (pointer:coarse){ .paletaSolida .filaPal{grid-template-columns:repeat(8,1fr);gap:6px} }
+  /* ---------- selector de fuentes ---------- */
+  #barraRapida .fuenteBR{flex:none;width:auto;max-width:180px;height:32px;display:inline-flex;align-items:center;justify-content:space-between;gap:6px;border-radius:8px;background:var(--panel2);color:var(--texto);border:1px solid var(--borde);padding:0 8px;font:14px Inter,sans-serif;cursor:pointer}
+  #barraRapida .fuenteBR span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px}
+  #barraRapida .fuenteBR .ico{width:14px;height:14px;flex:none}
+  #barraRapida .fuenteBR.abierto{border-color:var(--neon)}
+  .selFuentes .buscador{width:100%;box-sizing:border-box;margin-bottom:8px}
+  .chipsFuente{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+  .chipsFuente .chip{font-size:12px;padding:4px 9px}
+  #listaFuentes{display:flex;flex-direction:column;gap:2px}
+  .itemFuente{display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;background:transparent;border:0;border-radius:8px;color:var(--texto);padding:9px 10px;font-size:19px;line-height:1.2;cursor:pointer;min-height:42px}
+  .itemFuente:hover{background:var(--hover)}
+  .itemFuente.on{background:rgba(25,200,255,.12);color:var(--neon)}
+  .itemFuente .ok{font:700 14px Inter,sans-serif}
+  #tOpciones #bCerrarProps{display:none}

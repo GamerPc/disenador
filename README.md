@@ -176,3 +176,8 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 
 ## v41: de imagen a diagrama editable
 - `78-imagen-a-diagrama.js`: sube o pega una imagen de un diagrama; Gemini (clave del usuario, en su navegador) devuelve JSON con cajas, textos, colores, líneas y conexiones (coordenadas 0-1000) y se arma con `nodo()`, `fabric.Textbox`, conectores libres y `unir()`. Opción de dejar la imagen original atrás como guía. Accesos: pestañas Diagramas e Imágenes, clic derecho y barra rápida sobre una imagen.
+
+## v42: opciones a la izquierda, más colores y más fuentes
+- Las opciones de la barra rápida (color, borde, efectos, animar, posición, fuentes, ⚙ todas las opciones y Capas) se abren en el panel izquierdo (`#tOpciones`), como Canva; los controles reales del panel se prestan y se regresan.
+- `79-mas-colores-y-fuentes.js`: paleta de colores sólidos (de tu diseño, frecuentes, 150 tonos y código #hex) en Relleno y Borde; más de 170 fuentes de Google por categorías, con buscador y vista de cada nombre en su letra; se descargan solo al usarlas (y al abrir diseños que las usan).
+- Arreglo: tocar dos veces «Posición», «Lista» o «Alinear» ya no da error.

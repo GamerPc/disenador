@@ -8975,7 +8975,7 @@ window.addEventListener('resize', ubicarAsa);
 (function(){
   const bc = document.createElement('button'); bc.id = 'bCapasFlot'; bc.className = 'btnS'; bc.title = 'Ver las capas del diseño';
   bc.innerHTML = `${icoUI('capas')} Capas`;
-  bc.onclick = () => { $('app').classList.add('propsFijo'); revisarProps(); ajustarZoom(); const t = document.querySelector('.tabsProps [data-pt="capas"]'); t && t.click(); };
+  bc.onclick = () => abrirOpcionesCompletas(bc, 'capas');
   $('centro').appendChild(bc);
   const x = document.createElement('button'); x.id = 'bCerrarProps'; x.title = 'Cerrar el panel'; x.setAttribute('aria-label', 'Cerrar el panel'); x.innerHTML = icoUI('cerrar');
   x.onclick = () => { $('app').classList.remove('propsFijo'); revisarProps(); ajustarZoom(); };
@@ -9159,47 +9159,66 @@ const icoBR = k => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${IC
 // ¿se ve esta parte del panel para lo seleccionado?
 function seVe(el){ for (let n = el; n && n !== document.body; n = n.parentElement){ if (n.hidden || n.style.display === 'none') return false; if (n.id === 'props') break; } return !!el; }
 function secEfectos(){ return [...document.querySelectorAll('.secGen')].find(g => { const h = g.querySelector(':scope > h4'); return h && /^Efectos/.test(h.textContent.trim()); }); }
-// mueve partes reales del panel a una ventanita y las regresa al cerrar (así todo sigue funcionando igual)
+// Las opciones se abren en el PANEL IZQUIERDO (como Canva), así no tapan lo que editas.
+// Se «prestan» partes reales del panel de propiedades y se regresan al cerrar (todo sigue funcionando igual).
+(function(){
+  const t = document.createElement('div'); t.className = 'panelTab'; t.id = 'tOpciones';
+  t.innerHTML = `<div class="cabOpc"><button class="pb" id="opcAtras" title="Volver" aria-label="Volver">${icoUI('izq')}</button><h3 id="opcTitulo"></h3><button class="pb" id="opcCerrar" title="Cerrar" aria-label="Cerrar">${icoUI('cerrar')}</button></div><div id="opcCuerpo"></div>`;
+  $('lateral').appendChild(t);
+  $('opcAtras').onclick = () => cerrarPopRapido();
+  $('opcCerrar').onclick = () => cerrarPopRapido();
+})();
 let popRapido = null;
-function cerrarPopRapido(){
+function cerrarPopRapido(op = {}){
   if (!popRapido) return;
-  popRapido.prestados.forEach(([el, marca]) => { marca.parentNode && marca.parentNode.insertBefore(el, marca); marca.remove(); });
-  popRapido.caja.remove(); document.querySelectorAll('#barraRapida button.abierto').forEach(b => b.classList.remove('abierto'));
-  popRapido = null;
+  const p = popRapido; popRapido = null;
+  p.prestados.forEach(([el, marca]) => { marca.parentNode && marca.parentNode.insertBefore(el, marca); marca.remove(); });
+  $('opcCuerpo').innerHTML = ''; $('tOpciones').classList.remove('activa');
+  document.querySelectorAll('#barraRapida button.abierto, #bCapasFlot.abierto').forEach(b => b.classList.remove('abierto'));
+  if (!op.porPestana){
+    if (p.tabAntes){ const tb = $(p.tabAntes); tb && tb.classList.add('activa'); const bt = document.querySelector(`#pestanas button[data-tab="${p.tabAntes}"]`); bt && bt.classList.add('activa'); }
+    if (p.lateralCerrado && esEscritorio() && interfazLimpia()) ponerLateral(false, false);
+    else if (p.lateralCerrado && !esEscritorio() && typeof abrirLateral === 'function') abrirLateral(false);
+  }
 }
-function abrirPopRapido(boton, titulo, contenido){
-  const yaAbierto = popRapido && popRapido.boton === boton;
-  cerrarPopRapido(); if (yaAbierto) return;
-  const caja = document.createElement('div'); caja.id = 'popRapido'; caja.setAttribute('role', 'dialog'); caja.setAttribute('aria-label', titulo);
-  caja.innerHTML = `<div class="cabPop"><b>${esc(titulo)}</b><button class="cerrarPop" aria-label="Cerrar">${icoUI('cerrar')}</button></div><div class="cuerpoPop"></div>`;
-  document.body.appendChild(caja);
-  const cuerpo = caja.querySelector('.cuerpoPop'), prestados = [];
+function abrirPopRapido(boton, titulo, contenido, op = {}){
+  const clave = boton ? (boton.dataset.k || boton.id) : null;
+  if (popRapido && clave && popRapido.clave === clave){ cerrarPopRapido(); return null; }     // segundo clic: cerrar
+  let tabAntes, lateralCerrado;
+  if (popRapido){ tabAntes = popRapido.tabAntes; lateralCerrado = popRapido.lateralCerrado; cerrarPopRapido({ porPestana:true }); }
+  else {
+    const a = document.querySelector('.panelTab.activa:not(#tOpciones)'); tabAntes = a ? a.id : null;
+    lateralCerrado = esEscritorio() ? $('app').classList.contains('sinLateral') : !$('lateral').classList.contains('abierto');
+  }
+  document.querySelectorAll('.panelTab').forEach(x => x.classList.remove('activa'));
+  document.querySelectorAll('#pestanas button').forEach(x => x.classList.remove('activa'));
+  $('tOpciones').classList.add('activa');
+  if (esEscritorio()){ if ($('app').classList.contains('sinLateral')) ponerLateral(true, false); }
+  else if (typeof abrirLateral === 'function') abrirLateral(true);
+  $('opcTitulo').textContent = titulo;
+  const cuerpo = $('opcCuerpo'), prestados = [];
+  cuerpo.innerHTML = '';
   (Array.isArray(contenido) ? contenido : [contenido]).filter(Boolean).forEach(el => {
     if (typeof el === 'string'){ cuerpo.insertAdjacentHTML('beforeend', el); return; }
-    if (el.closest && el.closest('#props')){
-      const marca = document.createComment('pop'); el.before(marca); prestados.push([el, marca]);
-    }
+    if (el.closest && el.closest('#props')){ const marca = document.createComment('prestado'); el.before(marca); prestados.push([el, marca]); }
     cuerpo.appendChild(el);
   });
-  caja.querySelector('.cerrarPop').onclick = cerrarPopRapido;
-  popRapido = { caja, prestados, boton };
-  boton.classList.add('abierto');
-  const r = boton.getBoundingClientRect(), w = caja.offsetWidth;
-  caja.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + 'px';
-  caja.style.top = (r.bottom + 8) + 'px';
-  caja.style.maxHeight = (innerHeight - r.bottom - 24) + 'px';
+  popRapido = { prestados, boton, clave, tabAntes, lateralCerrado, persistente:!!op.persistente };
+  boton && boton.classList.add('abierto');
+  $('lateral').scrollTop = 0;
   return cuerpo;
 }
-document.addEventListener('pointerdown', e => {
-  if (!popRapido) return;
-  if (popRapido.caja.contains(e.target) || e.target.closest('#barraRapida') || e.target.closest('.modal')) return;
-  if (e.target.closest('.canvas-container')) return;     // seguir ajustando en el lienzo sin cerrar
-  cerrarPopRapido();
-}, true);
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && popRapido){ e.stopImmediatePropagation(); cerrarPopRapido(); } }, true);
-canvas.on('selection:cleared', cerrarPopRapido);
-canvas.on('selection:updated', () => { if (popRapido) cerrarPopRapido(); });
-
+// cambiar de pestaña a la izquierda cierra las opciones (sin regresar a la pestaña anterior)
+$('pestanas').addEventListener('click', e => { if (popRapido && e.target.closest('button[data-tab]')) cerrarPopRapido({ porPestana:true }); }, true);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && popRapido && !document.querySelector('.modal.abierto') && !(activo() && activo().isEditing)){ e.stopImmediatePropagation(); cerrarPopRapido(); } }, true);
+canvas.on('selection:cleared', () => { if (popRapido && !popRapido.persistente) cerrarPopRapido(); });
+canvas.on('selection:updated', () => { if (popRapido && !popRapido.persistente) cerrarPopRapido(); });
+// panel completo de propiedades (⚙ y «Capas») también a la izquierda
+function abrirOpcionesCompletas(boton, pestana){
+  const r = abrirPopRapido(boton, pestana === 'capas' ? 'Capas' : 'Todas las opciones', [...$('props').children].filter(x => !x.classList.contains('cerrarHoja')), { persistente:true });
+  if (r && pestana){ const t = r.querySelector(`.tabsProps [data-pt="${pestana}"]`); t && t.click(); }
+  return r;
+}
 // un control «espejo» que maneja el control real del panel
 const disparar = (el, v) => { if (!el) return; if (v !== undefined) el.value = v; el.dispatchEvent(new Event('input', { bubbles:true })); el.dispatchEvent(new Event('change', { bubbles:true })); };
 let brochaActiva = false;
@@ -9220,7 +9239,7 @@ function botonBR(clave, html, titulo, f, extra = ''){
 }
 function construirBarraRapida(){
   const bar = $('barraRapida'), o = activo(), tipo = tipoSeleccion(o);
-  cerrarPopRapido();
+  if (popRapido && !popRapido.persistente) cerrarPopRapido();
   if (!o){ bar.hidden = true; bar.innerHTML = ''; return; }
   const items = [];
   const sep = () => items.push('|');
@@ -9240,7 +9259,7 @@ function construirBarraRapida(){
       const real = document.querySelector(`#alineaciones .pb[data-al="${sig}"]`); real && real.click(); setTimeout(construirBarraRapida, 30);
     }));
     items.push(botonBR('lista', icoBR('lista'), 'Lista', btn => {
-      const c = abrirPopRapido(btn, 'Lista', ['<div class="filaPop"><button class="pb" data-l="v">• Viñetas</button><button class="pb" data-l="n">1. Numerada</button></div>']);
+      const c = abrirPopRapido(btn, 'Lista', ['<div class="filaPop"><button class="pb" data-l="v">• Viñetas</button><button class="pb" data-l="n">1. Numerada</button></div>']); if (!c) return;
       c.querySelectorAll('[data-l]').forEach(x => x.onclick = () => { hacerLista(x.dataset.l); });
     }));
     items.push(botonBR('espacio', icoBR('espacio'), 'Espaciado', btn => abrirPopRapido(btn, 'Espaciado', [$('pInter') && $('pInter').closest('.fila'), $('pEsp') && $('pEsp').closest('.fila')])));
@@ -9262,7 +9281,7 @@ function construirBarraRapida(){
   } else if (tipo === 'varios'){
     items.push(botonBR('agrupar', `${icoBR('grupo')}<span>Agrupar</span>`, 'Agrupar (Ctrl+G)', () => { agruparToggle(); setTimeout(construirBarraRapida, 30); }));
     items.push(botonBR('alinear', `${icoBR('centrar')}<span>Alinear</span>`, 'Alinear y distribuir', btn => {
-      const c = abrirPopRapido(btn, 'Alinear', ['<div class="gridPop">' + [['izq','Izquierda'],['centroH','Centro'],['der','Derecha'],['arriba','Arriba'],['centroV','En medio'],['abajo','Abajo']].map(([k, n]) => `<button class="pb" data-al="${k}">${n}</button>`).join('') + '</div><div class="filaPop"><button class="pb" data-d="h">Distribuir ↔</button><button class="pb" data-d="v">Distribuir ↕</button></div>']);
+      const c = abrirPopRapido(btn, 'Alinear', ['<div class="gridPop">' + [['izq','Izquierda'],['centroH','Centro'],['der','Derecha'],['arriba','Arriba'],['centroV','En medio'],['abajo','Abajo']].map(([k, n]) => `<button class="pb" data-al="${k}">${n}</button>`).join('') + '</div><div class="filaPop"><button class="pb" data-d="h">Distribuir ↔</button><button class="pb" data-d="v">Distribuir ↕</button></div>']); if (!c) return;
       c.querySelectorAll('[data-al]').forEach(x => x.onclick = () => alinear(x.dataset.al)); c.querySelectorAll('[data-d]').forEach(x => x.onclick = () => distribuir(x.dataset.d));
     }));
   }
@@ -9279,31 +9298,32 @@ function construirBarraRapida(){
   if (tipo !== 'varios') items.push(botonBR('brocha', icoBR('brocha'), 'Copiar estilo: toca aquí y luego el elemento al que se lo quieres poner', () => {
     copiarEstilo(); brochaActiva = o; bar.querySelector('[data-k="brocha"]').classList.add('on'); toast('Ahora toca el elemento al que le quieres poner este estilo');
   }, brochaActiva ? 'on' : ''));
-  items.push(botonBR('todo', icoBR('ajustes'), 'Todas las opciones (panel completo)', () => { $('app').classList.add('propsFijo'); revisarProps(); ajustarZoom(); }));
+  items.push(botonBR('todo', icoBR('ajustes'), 'Todas las opciones (panel completo)', btn => abrirOpcionesCompletas(btn)));
   // pintar
   bar.innerHTML = items.map(it => {
     if (it === '|') return '<span class="sepBR"></span>';
-    if (it.tipo === 'select') return `<select class="fuenteBR" aria-label="Tipo de letra" title="Tipo de letra">${$('pFuente').innerHTML}</select>`;
+    if (it.tipo === 'select') return `<button class="fuenteBR" data-k="fuente" title="Tipo de letra" aria-label="Tipo de letra: ${esc($('pFuente').value)}"><span style="font-family:'${esc($('pFuente').value)}'">${esc($('pFuente').value)}</span>${icoUI('chevron')}</button>`;
     if (it.tipo === 'tam') return `<div class="tamBR"><button data-t="-1" aria-label="Más chico" title="Más chico">${icoBR('menos')}</button><input type="number" min="4" max="999" aria-label="Tamaño de letra" title="Tamaño de letra"><button data-t="1" aria-label="Más grande" title="Más grande">${icoBR('mas')}</button></div>`;
     return `<button data-k="${it.clave}" class="${it.extra}" title="${esc(it.titulo)}" aria-label="${esc(it.titulo)}">${it.html}</button>`;
   }).join('');
   const lista = items.filter(x => x !== '|' && x.f);
   bar.querySelectorAll('button[data-k]').forEach(btn => { const it = lista.find(x => x.clave === btn.dataset.k); if (it) btn.onclick = () => it.f(btn); });
   const sel = bar.querySelector('.fuenteBR');
-  if (sel){ sel.value = $('pFuente').value; sel.onchange = () => { disparar($('pFuente'), sel.value); setTimeout(refrescarBarraRapida, 50); }; }
+  if (sel) sel.onclick = () => abrirSelectorFuentes(sel);
   const tam = bar.querySelector('.tamBR');
   if (tam){
     const inp = tam.querySelector('input'); inp.value = $('pTam').value;
     inp.onchange = () => disparar($('pTam'), Math.max(4, +inp.value || 4));
     tam.querySelectorAll('button').forEach(x => x.onclick = () => { const v = Math.max(4, (+$('pTam').value || 0) + (+x.dataset.t)); inp.value = v; disparar($('pTam'), v); });
   }
+  if (popRapido && popRapido.clave){ const ab = bar.querySelector(`[data-k="${popRapido.clave}"]`); ab && ab.classList.add('abierto'); }
   bar.hidden = !(interfazLimpia() && esEscritorio());
   ubicarBarraRapida();
 }
 function refrescarBarraRapida(){
   const bar = $('barraRapida'); if (bar.hidden) return;
   ['bNegrita', 'bCursiva', 'bSubrayado', 'bTachado', 'bMayus'].forEach(id => { const b = bar.querySelector(`[data-k="${id}"]`); if (b && $(id)) b.classList.toggle('on', $(id).classList.contains('on')); });
-  const sel = bar.querySelector('.fuenteBR'); if (sel && document.activeElement !== sel) sel.value = $('pFuente').value;
+  const sel = bar.querySelector('.fuenteBR span'); if (sel){ sel.textContent = $('pFuente').value; sel.style.fontFamily = `'${$('pFuente').value}'`; }
   const inp = bar.querySelector('.tamBR input'); if (inp && document.activeElement !== inp) inp.value = $('pTam').value;
   const o = activo(), c = bar.querySelector('[data-k="color"] .muestraBR, [data-k="color"] .aColor');
   if (o && c){ const v = o.type === 'conector' ? o.stroke : o.fill; if (typeof v === 'string'){ if (c.classList.contains('aColor')) c.style.setProperty('--c', v); else c.style.background = v; } }
@@ -9335,7 +9355,9 @@ function abrirPosicion(btn){
     '<p class="subPop">Alinear en la página</p><div class="gridPop">' + [['izq','Izquierda'],['centroH','Centro'],['der','Derecha'],['arriba','Arriba'],['centroV','En medio'],['abajo','Abajo']].map(([k, n]) => `<button class="pb" data-al="${k}">${n}</button>`).join('') + '</div>',
     '<p class="subPop">Medidas (px)</p><div class="medidasPop"><label>Ancho<input type="number" data-m="w" min="1"></label><label>Alto<input type="number" data-m="h" min="1"></label><label>X<input type="number" data-m="x"></label><label>Y<input type="number" data-m="y"></label><label>Giro °<input type="number" data-m="g" min="-360" max="360"></label><label class="propPop"><input type="checkbox" data-m="p" checked> Proporcional</label></div>'
   ]);
-  const llenar = () => { const r = activo(); if (!r) return; const b = r.getBoundingRect(true, true);
+  if (!c) return;      // se volvió a tocar «Posición»: solo se cierra
+  const llenar = () => { if (!c.querySelector('[data-m="w"]')){ canvas.off('object:modified', llenar); return; }   // ya se cerró
+    const r = activo(); if (!r) return; const b = r.getBoundingRect(true, true);
     c.querySelector('[data-m="w"]').value = Math.round(r.getScaledWidth()); c.querySelector('[data-m="h"]').value = Math.round(r.getScaledHeight());
     c.querySelector('[data-m="x"]').value = Math.round(b.left); c.querySelector('[data-m="y"]').value = Math.round(b.top); c.querySelector('[data-m="g"]').value = Math.round(r.angle || 0); };
   llenar();
@@ -9352,8 +9374,6 @@ function abrirPosicion(btn){
     canvas.requestRenderAll(); guardarEstado(); llenar();
   });
   canvas.on('object:modified', llenar);
-  const quitar = () => canvas.off('object:modified', llenar);
-  const obs = new MutationObserver(() => { if (!c.isConnected){ quitar(); obs.disconnect(); } }); obs.observe(document.body, { childList:true });
 }
 /* =========================================================
    DE IMAGEN A DIAGRAMA EDITABLE (con IA)
@@ -9630,6 +9650,171 @@ function construirDiagramaIA(d, img, op = {}){
 function convertirImagenSeleccionada(){
   const o = activo(); if (!o || o.type !== 'image') return;
   abrirImagenADiagrama(o.getSrc ? o.getSrc() : o._element && o._element.src);
+}
+/* =========================================================
+   MÁS COLORES SÓLIDOS Y MÁS FUENTES
+   - Paleta de colores sólidos (y los colores que ya usa tu diseño) en Relleno y Borde.
+   - Más de 150 fuentes de Google Fonts, con buscador y categorías; cada nombre se ve con su propia letra.
+     Las fuentes nuevas se descargan solo cuando las usas.
+   ========================================================= */
+
+/* ---------- colores sólidos ---------- */
+const hsl2hex = (h, s, l) => {
+  s /= 100; l /= 100;
+  const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l), f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  return '#' + [f(0), f(8), f(4)].map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('');
+};
+const PALETA_SOLIDA = (() => {
+  const filas = [['#000000', '#262626', '#404040', '#595959', '#737373', '#8c8c8c', '#a6a6a6', '#bfbfbf', '#d9d9d9', '#ffffff']];
+  const tonos = [[0, 80], [16, 85], [32, 90], [48, 92], [80, 60], [130, 55], [165, 60], [190, 70], [210, 75], [230, 70], [265, 65], [290, 60], [320, 65], [345, 75], [25, 35]];
+  const luces = [95, 88, 80, 70, 60, 50, 40, 31, 23, 15];
+  tonos.forEach(([h, s]) => filas.push(luces.map(l => hsl2hex(h, s, l))));
+  return filas;
+})();
+const COLORES_FAVORITOS = ['#ff3131', '#ff5757', '#ff66c4', '#cb6ce6', '#8c52ff', '#5e17eb', '#0097b2', '#0cc0df', '#5ce1e6', '#38b6ff', '#5271ff', '#004aad',
+  '#00bf63', '#7ed957', '#c1ff72', '#ffde59', '#ffbd59', '#ff914d', '#1f2330', '#f5f0e6', '#2d5a6e', '#4f5a2b', '#7c3aed', '#19c8ff'];
+function coloresDelDiseno(){
+  const set = new Set();
+  canvas.getObjects().forEach(o => (o.getObjects ? o.getObjects() : [o]).forEach(x => {
+    [x.fill, x.stroke].forEach(c => { if (typeof c === 'string' && /^#|^rgb/.test(c) && !/rgba\(0, ?0, ?0, ?0\)/.test(c)) set.add(aHex(c).toLowerCase()); });
+  }));
+  if (typeof canvas.backgroundColor === 'string') set.add(aHex(canvas.backgroundColor).toLowerCase());
+  return [...set].slice(0, 20);
+}
+function crearPaleta(destino, alElegir){
+  const caja = document.createElement('div'); caja.className = 'paletaSolida';
+  const pinta = () => {
+    const abierto = !!(caja.querySelector('details.todosPal') || {}).open;
+    const usados = coloresDelDiseno();
+    caja.innerHTML = (usados.length ? `<p class="subPal">Colores de tu diseño</p><div class="filaPal">${usados.map(c => `<button style="background:${c}" data-c="${c}" title="${c}" aria-label="Color ${c}"></button>`).join('')}</div>` : '')
+      + `<p class="subPal">Colores frecuentes</p><div class="filaPal">${COLORES_FAVORITOS.map(c => `<button style="background:${c}" data-c="${c}" title="${c}" aria-label="Color ${c}"></button>`).join('')}</div>`
+      + `<details class="todosPal"${abierto ? ' open' : ''}><summary class="subPal">Todos los colores sólidos</summary>${PALETA_SOLIDA.map(f => `<div class="filaPal">${f.map(c => `<button style="background:${c}" data-c="${c}" title="${c}" aria-label="Color ${c}"></button>`).join('')}</div>`).join('')}</details>`
+      + `<div class="hexPal"><label>Código</label><input type="text" maxlength="7" placeholder="#000000" aria-label="Código de color"></div>`;
+    caja.querySelectorAll('[data-c]').forEach(b => b.onclick = () => alElegir(b.dataset.c));
+    const inp = caja.querySelector('.hexPal input');
+    inp.addEventListener('keydown', e => e.stopPropagation());
+    inp.onchange = () => { let v = inp.value.trim(); if (!v.startsWith('#')) v = '#' + v; if (/^#[0-9a-f]{6}$/i.test(v)) alElegir(v.toLowerCase()); else toast('Escribe el color así: #ff5733'); };
+  };
+  pinta();
+  destino.appendChild(caja);
+  return { caja, pinta };
+}
+(function(){
+  // relleno (formas y texto)
+  const filaR = $('pRelleno') && $('pRelleno').closest('.fila');
+  if (filaR){
+    const cont = document.createElement('div'); filaR.after(cont);
+    const p = crearPaleta(cont, c => { disparar($('pRelleno'), c); p.pinta(); });
+    alActualizarPanel(() => p.pinta());
+  }
+  // borde y líneas
+  const filaB = $('pBorde') && $('pBorde').closest('.fila');
+  if (filaB){
+    const cont = document.createElement('div'); filaB.after(cont);
+    const p = crearPaleta(cont, c => {
+      disparar($('pBorde'), c);
+      const o = activo(); if (o && o.type !== 'conector' && !esLinea(o) && !(+$('pGrosor').value)) disparar($('pGrosor'), Math.max(2, Math.round(4 * s())));
+      p.pinta();
+    });
+    p.caja.classList.add('compacta');
+    alActualizarPanel(() => p.pinta());
+  }
+})();
+
+/* ---------- más fuentes ---------- */
+const FUENTES_CATALOGO = {
+  'Sin serifa':['Inter','Montserrat','Poppins','Roboto','Open Sans','Lato','Raleway','Nunito','Work Sans','Rubik','Quicksand','DM Sans','Manrope','Outfit','Urbanist','Lexend','Mulish','Karla','Barlow','Josefin Sans','Archivo','Figtree','Plus Jakarta Sans','Source Sans 3','PT Sans','Noto Sans','Ubuntu','Cabin','Exo 2','Kanit','Heebo','Hind','Titillium Web','Fira Sans','Oxygen','Varela Round','Maven Pro','Assistant','Sora','Space Grotesk','Red Hat Display','Albert Sans','Be Vietnam Pro','Arial','Verdana'],
+  'Con serifa':['Playfair Display','Merriweather','Lora','Libre Baskerville','EB Garamond','Cormorant Garamond','Crimson Text','PT Serif','Noto Serif','Roboto Slab','Arvo','Bitter','Cinzel','DM Serif Display','Abril Fatface','Prata','Spectral','Libre Caslon Text','Zilla Slab','Source Serif 4','Domine','Vollkorn','Alegreya','Old Standard TT','Cardo','Josefin Slab','Playfair Display SC','Bodoni Moda','Marcellus','Gilda Display','Yeseva One','Georgia','Times New Roman'],
+  'Manuscrita':['Dancing Script','Pacifico','Great Vibes','Sacramento','Satisfy','Allura','Parisienne','Kaushan Script','Caveat','Patrick Hand','Gochi Hand','Shadows Into Light','Gloria Hallelujah','Indie Flower','Amatic SC','Permanent Marker','Kalam','Handlee','Courgette','Cookie','Yellowtail','Homemade Apple','Rock Salt','Nothing You Could Do','Covered By Your Grace','Architects Daughter','Reenie Beanie','Mr Dafoe','Lobster','Lobster Two','Alex Brush','Pinyon Script','Tangerine','Italianno','Marck Script','Mrs Saint Delafield','Bad Script','Itim','Neucha','Schoolbell','Just Another Hand','Coming Soon','Short Stack','Delius','Mynerve'],
+  'Llamativa':['Bebas Neue','Anton','Oswald','Righteous','Fredoka','Bangers','Bungee','Luckiest Guy','Lilita One','Alfa Slab One','Black Ops One','Russo One','Staatliches','Passion One','Titan One','Chewy','Baloo 2','Comfortaa','Concert One','Shrikhand','Sigmar One','Paytone One','Archivo Black','Changa One','Bowlby One SC','Ultra','Rye','Cinzel Decorative','Monoton','Creepster','Special Elite','Press Start 2P','Orbitron','Audiowide','Fascinate','UnifrakturMaguntia','Bungee Shade','Rubik Mono One','Dela Gothic One','Climate Crisis','Nosifer'],
+  'Monoespaciada':['Roboto Mono','Space Mono','Fira Code','JetBrains Mono','IBM Plex Mono','Source Code Pro','Inconsolata','Courier Prime','VT323','Courier New']
+};
+const FUENTES_LOCALES = new Set(['Arial', 'Verdana', 'Georgia', 'Times New Roman', 'Courier New']);
+const FUENTES_TODAS = [...new Set(Object.values(FUENTES_CATALOGO).flat())];
+const fuentesCargadas = new Set(FUENTES), fuentesFallidas = new Set(), fuentesPedidas = {};
+const urlFuente = (f, completa) => 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(f).replace(/%20/g, '+') + (completa ? ':ital,wght@0,400;0,700;1,400;1,700' : '') + '&display=swap';
+// descarga una fuente de Google (con negrita y cursiva si existen)
+function cargarFuente(f){
+  if (FUENTES_LOCALES.has(f) || fuentesCargadas.has(f)) return Promise.resolve();
+  if (fuentesPedidas[f]) return fuentesPedidas[f];
+  const poner = (url) => new Promise((ok, mal) => { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = url; l.onload = ok; l.onerror = () => { l.remove(); mal(); }; document.head.appendChild(l); });
+  return (fuentesPedidas[f] = poner(urlFuente(f, true)).catch(() => poner(urlFuente(f, false)))
+    .then(() => Promise.all(['400', '700', 'italic 400'].map(p => document.fonts.load(`${p} 40px "${f}"`).catch(() => null))))
+    .then(() => { fuentesCargadas.add(f); fuentesFallidas.delete(f); })
+    .catch(() => { delete fuentesPedidas[f]; fuentesFallidas.add(f); throw new Error('sin fuente'); }));
+}
+// muestra (solo las letras del nombre, pesa casi nada)
+const muestrasPedidas = new Set();
+function cargarMuestra(f){
+  if (FUENTES_LOCALES.has(f) || fuentesCargadas.has(f) || muestrasPedidas.has(f)) return;
+  muestrasPedidas.add(f);
+  const l = document.createElement('link'); l.rel = 'stylesheet';
+  l.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(f).replace(/%20/g, '+') + '&text=' + encodeURIComponent(f) + '&display=swap';
+  document.head.appendChild(l);
+}
+// el selector del panel también tiene todas
+(function(){
+  const sel = $('pFuente'), ya = new Set([...sel.options].map(o => o.value));
+  const g = document.createElement('optgroup'); g.label = 'Más fuentes';
+  FUENTES_TODAS.filter(f => !ya.has(f)).forEach(f => { const o = document.createElement('option'); o.value = f; o.textContent = f; g.appendChild(o); });
+  sel.appendChild(g);
+  // antes de cambiar la letra, se descarga
+  sel.addEventListener('change', e => {
+    const f = sel.value; if (fuentesCargadas.has(f) || fuentesFallidas.has(f) || FUENTES_LOCALES.has(f) || !FUENTES_TODAS.includes(f)) return;
+    e.stopImmediatePropagation();
+    cargando(true);
+    cargarFuente(f).then(() => { cargando(false); sel.dispatchEvent(new Event('change')); },
+      () => { cargando(false); toast('No se pudo descargar «' + f + '» (¿sin internet?). Se usará una letra parecida.'); sel.dispatchEvent(new Event('change')); });
+  }, true);
+})();
+// diseños guardados con fuentes nuevas: se descargan al abrirlos y se vuelven a dibujar
+canvas.on('object:added', e => {
+  const o = e.target; if (!o) return;
+  (o.getObjects ? o.getObjects() : [o]).forEach(t => {
+    const f = t.fontFamily; if (!f || fuentesCargadas.has(f) || fuentesFallidas.has(f) || FUENTES_LOCALES.has(f) || !FUENTES_TODAS.includes(f)) return;
+    cargarFuente(f).then(() => { if (typeof redibujarTextos === 'function') redibujarTextos(f); else { fabric.util.clearFabricFontCache(f); canvas.requestRenderAll(); } }, () => {});
+  });
+});
+function aplicarFuente(f){
+  const sel = $('pFuente');
+  if (![...sel.options].some(o => o.value === f)) return;
+  sel.value = f; sel.dispatchEvent(new Event('change'));
+}
+// selector de fuentes en el panel izquierdo
+function abrirSelectorFuentes(boton){
+  const c = abrirPopRapido(boton, 'Fuentes', [`<div class="selFuentes">
+    <input class="buscador" id="busFuente" placeholder="Buscar fuente…" aria-label="Buscar fuente" autocomplete="off">
+    <div class="chipsFuente">${['Todas', ...Object.keys(FUENTES_CATALOGO), 'Mis fuentes'].map((k, i) => `<button class="chip${i ? '' : ' on'}" data-cat="${k}">${k}</button>`).join('')}</div>
+    <div id="listaFuentes" role="listbox" aria-label="Fuentes"></div></div>`]);
+  if (!c) return;
+  const actual = $('pFuente').value, mias = [...$('pFuente').querySelectorAll('optgroup[label="Mis fuentes"] option')].map(o => o.value);
+  const enDiseno = [...new Set(canvas.getObjects().flatMap(o => o.getObjects ? o.getObjects() : [o]).map(t => t.fontFamily).filter(Boolean))];
+  let cat = 'Todas';
+  const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting){ cargarMuestra(en.target.dataset.f); io.unobserve(en.target); } }), { root:$('lateral') }) : null;
+  const fila = f => `<button class="itemFuente${f === actual ? ' on' : ''}" role="option" aria-selected="${f === actual}" data-f="${esc(f)}" style="font-family:'${esc(f)}', sans-serif">${esc(f)}${f === actual ? ' <span class="ok">✓</span>' : ''}</button>`;
+  const pintar = () => {
+    const q = c.querySelector('#busFuente').value.trim().toLowerCase();
+    const base = cat === 'Todas' ? FUENTES_TODAS : cat === 'Mis fuentes' ? mias : FUENTES_CATALOGO[cat];
+    const lista = base.filter(f => !q || f.toLowerCase().includes(q));
+    let html = '';
+    if (cat === 'Todas' && !q && enDiseno.length) html += `<p class="subPal">En tu diseño</p>${enDiseno.map(fila).join('')}<p class="subPal">Todas las fuentes</p>`;
+    html += lista.length ? lista.map(fila).join('') : `<p class="hint">${cat === 'Mis fuentes' ? 'Aún no subes fuentes propias (pestaña Texto → Mis fuentes).' : 'No hay fuentes con ese nombre.'}</p>`;
+    const l = c.querySelector('#listaFuentes'); l.innerHTML = html;
+    l.querySelectorAll('.itemFuente').forEach(b => {
+      if (io) io.observe(b); else cargarMuestra(b.dataset.f);
+      b.onclick = () => {
+        const f = b.dataset.f;
+        l.querySelectorAll('.itemFuente').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); const ok = x.querySelector('.ok'); ok && ok.remove(); });
+        b.insertAdjacentHTML('beforeend', ' <span class="ok">…</span>');
+        const listo = () => { aplicarFuente(f); const ok = b.querySelector('.ok'); if (ok) ok.textContent = '✓'; setTimeout(refrescarBarraRapida, 80); };
+        cargarFuente(f).then(listo, () => { toast('No se pudo descargar «' + f + '» (¿sin internet?). Se usará una letra parecida.'); listo(); });
+      };
+    });
+  };
+  c.querySelectorAll('.chipsFuente .chip').forEach(ch => ch.onclick = () => { cat = ch.dataset.cat; c.querySelectorAll('.chipsFuente .chip').forEach(x => x.classList.toggle('on', x === ch)); pintar(); });
+  const bus = c.querySelector('#busFuente'); bus.addEventListener('keydown', e => e.stopPropagation()); bus.oninput = pintar;
+  pintar();
+  setTimeout(() => { const on = c.querySelector('.itemFuente.on'); on && on.scrollIntoView({ block:'center' }); bus.focus({ preventScroll:true }); }, 30);
 }
 /* =========================================================
    PESTAÑAS E INICIO

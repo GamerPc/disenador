@@ -1,0 +1,165 @@
+/* =========================================================
+   MÁS COLORES SÓLIDOS Y MÁS FUENTES
+   - Paleta de colores sólidos (y los colores que ya usa tu diseño) en Relleno y Borde.
+   - Más de 150 fuentes de Google Fonts, con buscador y categorías; cada nombre se ve con su propia letra.
+     Las fuentes nuevas se descargan solo cuando las usas.
+   ========================================================= */
+
+/* ---------- colores sólidos ---------- */
+const hsl2hex = (h, s, l) => {
+  s /= 100; l /= 100;
+  const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l), f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  return '#' + [f(0), f(8), f(4)].map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('');
+};
+const PALETA_SOLIDA = (() => {
+  const filas = [['#000000', '#262626', '#404040', '#595959', '#737373', '#8c8c8c', '#a6a6a6', '#bfbfbf', '#d9d9d9', '#ffffff']];
+  const tonos = [[0, 80], [16, 85], [32, 90], [48, 92], [80, 60], [130, 55], [165, 60], [190, 70], [210, 75], [230, 70], [265, 65], [290, 60], [320, 65], [345, 75], [25, 35]];
+  const luces = [95, 88, 80, 70, 60, 50, 40, 31, 23, 15];
+  tonos.forEach(([h, s]) => filas.push(luces.map(l => hsl2hex(h, s, l))));
+  return filas;
+})();
+const COLORES_FAVORITOS = ['#ff3131', '#ff5757', '#ff66c4', '#cb6ce6', '#8c52ff', '#5e17eb', '#0097b2', '#0cc0df', '#5ce1e6', '#38b6ff', '#5271ff', '#004aad',
+  '#00bf63', '#7ed957', '#c1ff72', '#ffde59', '#ffbd59', '#ff914d', '#1f2330', '#f5f0e6', '#2d5a6e', '#4f5a2b', '#7c3aed', '#19c8ff'];
+function coloresDelDiseno(){
+  const set = new Set();
+  canvas.getObjects().forEach(o => (o.getObjects ? o.getObjects() : [o]).forEach(x => {
+    [x.fill, x.stroke].forEach(c => { if (typeof c === 'string' && /^#|^rgb/.test(c) && !/rgba\(0, ?0, ?0, ?0\)/.test(c)) set.add(aHex(c).toLowerCase()); });
+  }));
+  if (typeof canvas.backgroundColor === 'string') set.add(aHex(canvas.backgroundColor).toLowerCase());
+  return [...set].slice(0, 20);
+}
+function crearPaleta(destino, alElegir){
+  const caja = document.createElement('div'); caja.className = 'paletaSolida';
+  const pinta = () => {
+    const abierto = !!(caja.querySelector('details.todosPal') || {}).open;
+    const usados = coloresDelDiseno();
+    caja.innerHTML = (usados.length ? `<p class="subPal">Colores de tu diseño</p><div class="filaPal">${usados.map(c => `<button style="background:${c}" data-c="${c}" title="${c}" aria-label="Color ${c}"></button>`).join('')}</div>` : '')
+      + `<p class="subPal">Colores frecuentes</p><div class="filaPal">${COLORES_FAVORITOS.map(c => `<button style="background:${c}" data-c="${c}" title="${c}" aria-label="Color ${c}"></button>`).join('')}</div>`
+      + `<details class="todosPal"${abierto ? ' open' : ''}><summary class="subPal">Todos los colores sólidos</summary>${PALETA_SOLIDA.map(f => `<div class="filaPal">${f.map(c => `<button style="background:${c}" data-c="${c}" title="${c}" aria-label="Color ${c}"></button>`).join('')}</div>`).join('')}</details>`
+      + `<div class="hexPal"><label>Código</label><input type="text" maxlength="7" placeholder="#000000" aria-label="Código de color"></div>`;
+    caja.querySelectorAll('[data-c]').forEach(b => b.onclick = () => alElegir(b.dataset.c));
+    const inp = caja.querySelector('.hexPal input');
+    inp.addEventListener('keydown', e => e.stopPropagation());
+    inp.onchange = () => { let v = inp.value.trim(); if (!v.startsWith('#')) v = '#' + v; if (/^#[0-9a-f]{6}$/i.test(v)) alElegir(v.toLowerCase()); else toast('Escribe el color así: #ff5733'); };
+  };
+  pinta();
+  destino.appendChild(caja);
+  return { caja, pinta };
+}
+(function(){
+  // relleno (formas y texto)
+  const filaR = $('pRelleno') && $('pRelleno').closest('.fila');
+  if (filaR){
+    const cont = document.createElement('div'); filaR.after(cont);
+    const p = crearPaleta(cont, c => { disparar($('pRelleno'), c); p.pinta(); });
+    alActualizarPanel(() => p.pinta());
+  }
+  // borde y líneas
+  const filaB = $('pBorde') && $('pBorde').closest('.fila');
+  if (filaB){
+    const cont = document.createElement('div'); filaB.after(cont);
+    const p = crearPaleta(cont, c => {
+      disparar($('pBorde'), c);
+      const o = activo(); if (o && o.type !== 'conector' && !esLinea(o) && !(+$('pGrosor').value)) disparar($('pGrosor'), Math.max(2, Math.round(4 * s())));
+      p.pinta();
+    });
+    p.caja.classList.add('compacta');
+    alActualizarPanel(() => p.pinta());
+  }
+})();
+
+/* ---------- más fuentes ---------- */
+const FUENTES_CATALOGO = {
+  'Sin serifa':['Inter','Montserrat','Poppins','Roboto','Open Sans','Lato','Raleway','Nunito','Work Sans','Rubik','Quicksand','DM Sans','Manrope','Outfit','Urbanist','Lexend','Mulish','Karla','Barlow','Josefin Sans','Archivo','Figtree','Plus Jakarta Sans','Source Sans 3','PT Sans','Noto Sans','Ubuntu','Cabin','Exo 2','Kanit','Heebo','Hind','Titillium Web','Fira Sans','Oxygen','Varela Round','Maven Pro','Assistant','Sora','Space Grotesk','Red Hat Display','Albert Sans','Be Vietnam Pro','Arial','Verdana'],
+  'Con serifa':['Playfair Display','Merriweather','Lora','Libre Baskerville','EB Garamond','Cormorant Garamond','Crimson Text','PT Serif','Noto Serif','Roboto Slab','Arvo','Bitter','Cinzel','DM Serif Display','Abril Fatface','Prata','Spectral','Libre Caslon Text','Zilla Slab','Source Serif 4','Domine','Vollkorn','Alegreya','Old Standard TT','Cardo','Josefin Slab','Playfair Display SC','Bodoni Moda','Marcellus','Gilda Display','Yeseva One','Georgia','Times New Roman'],
+  'Manuscrita':['Dancing Script','Pacifico','Great Vibes','Sacramento','Satisfy','Allura','Parisienne','Kaushan Script','Caveat','Patrick Hand','Gochi Hand','Shadows Into Light','Gloria Hallelujah','Indie Flower','Amatic SC','Permanent Marker','Kalam','Handlee','Courgette','Cookie','Yellowtail','Homemade Apple','Rock Salt','Nothing You Could Do','Covered By Your Grace','Architects Daughter','Reenie Beanie','Mr Dafoe','Lobster','Lobster Two','Alex Brush','Pinyon Script','Tangerine','Italianno','Marck Script','Mrs Saint Delafield','Bad Script','Itim','Neucha','Schoolbell','Just Another Hand','Coming Soon','Short Stack','Delius','Mynerve'],
+  'Llamativa':['Bebas Neue','Anton','Oswald','Righteous','Fredoka','Bangers','Bungee','Luckiest Guy','Lilita One','Alfa Slab One','Black Ops One','Russo One','Staatliches','Passion One','Titan One','Chewy','Baloo 2','Comfortaa','Concert One','Shrikhand','Sigmar One','Paytone One','Archivo Black','Changa One','Bowlby One SC','Ultra','Rye','Cinzel Decorative','Monoton','Creepster','Special Elite','Press Start 2P','Orbitron','Audiowide','Fascinate','UnifrakturMaguntia','Bungee Shade','Rubik Mono One','Dela Gothic One','Climate Crisis','Nosifer'],
+  'Monoespaciada':['Roboto Mono','Space Mono','Fira Code','JetBrains Mono','IBM Plex Mono','Source Code Pro','Inconsolata','Courier Prime','VT323','Courier New']
+};
+const FUENTES_LOCALES = new Set(['Arial', 'Verdana', 'Georgia', 'Times New Roman', 'Courier New']);
+const FUENTES_TODAS = [...new Set(Object.values(FUENTES_CATALOGO).flat())];
+const fuentesCargadas = new Set(FUENTES), fuentesFallidas = new Set(), fuentesPedidas = {};
+const urlFuente = (f, completa) => 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(f).replace(/%20/g, '+') + (completa ? ':ital,wght@0,400;0,700;1,400;1,700' : '') + '&display=swap';
+// descarga una fuente de Google (con negrita y cursiva si existen)
+function cargarFuente(f){
+  if (FUENTES_LOCALES.has(f) || fuentesCargadas.has(f)) return Promise.resolve();
+  if (fuentesPedidas[f]) return fuentesPedidas[f];
+  const poner = (url) => new Promise((ok, mal) => { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = url; l.onload = ok; l.onerror = () => { l.remove(); mal(); }; document.head.appendChild(l); });
+  return (fuentesPedidas[f] = poner(urlFuente(f, true)).catch(() => poner(urlFuente(f, false)))
+    .then(() => Promise.all(['400', '700', 'italic 400'].map(p => document.fonts.load(`${p} 40px "${f}"`).catch(() => null))))
+    .then(() => { fuentesCargadas.add(f); fuentesFallidas.delete(f); })
+    .catch(() => { delete fuentesPedidas[f]; fuentesFallidas.add(f); throw new Error('sin fuente'); }));
+}
+// muestra (solo las letras del nombre, pesa casi nada)
+const muestrasPedidas = new Set();
+function cargarMuestra(f){
+  if (FUENTES_LOCALES.has(f) || fuentesCargadas.has(f) || muestrasPedidas.has(f)) return;
+  muestrasPedidas.add(f);
+  const l = document.createElement('link'); l.rel = 'stylesheet';
+  l.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(f).replace(/%20/g, '+') + '&text=' + encodeURIComponent(f) + '&display=swap';
+  document.head.appendChild(l);
+}
+// el selector del panel también tiene todas
+(function(){
+  const sel = $('pFuente'), ya = new Set([...sel.options].map(o => o.value));
+  const g = document.createElement('optgroup'); g.label = 'Más fuentes';
+  FUENTES_TODAS.filter(f => !ya.has(f)).forEach(f => { const o = document.createElement('option'); o.value = f; o.textContent = f; g.appendChild(o); });
+  sel.appendChild(g);
+  // antes de cambiar la letra, se descarga
+  sel.addEventListener('change', e => {
+    const f = sel.value; if (fuentesCargadas.has(f) || fuentesFallidas.has(f) || FUENTES_LOCALES.has(f) || !FUENTES_TODAS.includes(f)) return;
+    e.stopImmediatePropagation();
+    cargando(true);
+    cargarFuente(f).then(() => { cargando(false); sel.dispatchEvent(new Event('change')); },
+      () => { cargando(false); toast('No se pudo descargar «' + f + '» (¿sin internet?). Se usará una letra parecida.'); sel.dispatchEvent(new Event('change')); });
+  }, true);
+})();
+// diseños guardados con fuentes nuevas: se descargan al abrirlos y se vuelven a dibujar
+canvas.on('object:added', e => {
+  const o = e.target; if (!o) return;
+  (o.getObjects ? o.getObjects() : [o]).forEach(t => {
+    const f = t.fontFamily; if (!f || fuentesCargadas.has(f) || fuentesFallidas.has(f) || FUENTES_LOCALES.has(f) || !FUENTES_TODAS.includes(f)) return;
+    cargarFuente(f).then(() => { if (typeof redibujarTextos === 'function') redibujarTextos(f); else { fabric.util.clearFabricFontCache(f); canvas.requestRenderAll(); } }, () => {});
+  });
+});
+function aplicarFuente(f){
+  const sel = $('pFuente');
+  if (![...sel.options].some(o => o.value === f)) return;
+  sel.value = f; sel.dispatchEvent(new Event('change'));
+}
+// selector de fuentes en el panel izquierdo
+function abrirSelectorFuentes(boton){
+  const c = abrirPopRapido(boton, 'Fuentes', [`<div class="selFuentes">
+    <input class="buscador" id="busFuente" placeholder="Buscar fuente…" aria-label="Buscar fuente" autocomplete="off">
+    <div class="chipsFuente">${['Todas', ...Object.keys(FUENTES_CATALOGO), 'Mis fuentes'].map((k, i) => `<button class="chip${i ? '' : ' on'}" data-cat="${k}">${k}</button>`).join('')}</div>
+    <div id="listaFuentes" role="listbox" aria-label="Fuentes"></div></div>`]);
+  if (!c) return;
+  const actual = $('pFuente').value, mias = [...$('pFuente').querySelectorAll('optgroup[label="Mis fuentes"] option')].map(o => o.value);
+  const enDiseno = [...new Set(canvas.getObjects().flatMap(o => o.getObjects ? o.getObjects() : [o]).map(t => t.fontFamily).filter(Boolean))];
+  let cat = 'Todas';
+  const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting){ cargarMuestra(en.target.dataset.f); io.unobserve(en.target); } }), { root:$('lateral') }) : null;
+  const fila = f => `<button class="itemFuente${f === actual ? ' on' : ''}" role="option" aria-selected="${f === actual}" data-f="${esc(f)}" style="font-family:'${esc(f)}', sans-serif">${esc(f)}${f === actual ? ' <span class="ok">✓</span>' : ''}</button>`;
+  const pintar = () => {
+    const q = c.querySelector('#busFuente').value.trim().toLowerCase();
+    const base = cat === 'Todas' ? FUENTES_TODAS : cat === 'Mis fuentes' ? mias : FUENTES_CATALOGO[cat];
+    const lista = base.filter(f => !q || f.toLowerCase().includes(q));
+    let html = '';
+    if (cat === 'Todas' && !q && enDiseno.length) html += `<p class="subPal">En tu diseño</p>${enDiseno.map(fila).join('')}<p class="subPal">Todas las fuentes</p>`;
+    html += lista.length ? lista.map(fila).join('') : `<p class="hint">${cat === 'Mis fuentes' ? 'Aún no subes fuentes propias (pestaña Texto → Mis fuentes).' : 'No hay fuentes con ese nombre.'}</p>`;
+    const l = c.querySelector('#listaFuentes'); l.innerHTML = html;
+    l.querySelectorAll('.itemFuente').forEach(b => {
+      if (io) io.observe(b); else cargarMuestra(b.dataset.f);
+      b.onclick = () => {
+        const f = b.dataset.f;
+        l.querySelectorAll('.itemFuente').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); const ok = x.querySelector('.ok'); ok && ok.remove(); });
+        b.insertAdjacentHTML('beforeend', ' <span class="ok">…</span>');
+        const listo = () => { aplicarFuente(f); const ok = b.querySelector('.ok'); if (ok) ok.textContent = '✓'; setTimeout(refrescarBarraRapida, 80); };
+        cargarFuente(f).then(listo, () => { toast('No se pudo descargar «' + f + '» (¿sin internet?). Se usará una letra parecida.'); listo(); });
+      };
+    });
+  };
+  c.querySelectorAll('.chipsFuente .chip').forEach(ch => ch.onclick = () => { cat = ch.dataset.cat; c.querySelectorAll('.chipsFuente .chip').forEach(x => x.classList.toggle('on', x === ch)); pintar(); });
+  const bus = c.querySelector('#busFuente'); bus.addEventListener('keydown', e => e.stopPropagation()); bus.oninput = pintar;
+  pintar();
+  setTimeout(() => { const on = c.querySelector('.itemFuente.on'); on && on.scrollIntoView({ block:'center' }); bus.focus({ preventScroll:true }); }, 30);
+}

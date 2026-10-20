@@ -150,7 +150,7 @@ window.addEventListener('resize', ubicarAsa);
 (function(){
   const bc = document.createElement('button'); bc.id = 'bCapasFlot'; bc.className = 'btnS'; bc.title = 'Ver las capas del diseño';
   bc.innerHTML = `${icoUI('capas')} Capas`;
-  bc.onclick = () => { $('app').classList.add('propsFijo'); revisarProps(); ajustarZoom(); const t = document.querySelector('.tabsProps [data-pt="capas"]'); t && t.click(); };
+  bc.onclick = () => abrirOpcionesCompletas(bc, 'capas');
   $('centro').appendChild(bc);
   const x = document.createElement('button'); x.id = 'bCerrarProps'; x.title = 'Cerrar el panel'; x.setAttribute('aria-label', 'Cerrar el panel'); x.innerHTML = icoUI('cerrar');
   x.onclick = () => { $('app').classList.remove('propsFijo'); revisarProps(); ajustarZoom(); };
