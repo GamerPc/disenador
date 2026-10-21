@@ -157,8 +157,9 @@ function pegarTablaEnLienzo(d){
   ordenarVinculos && ordenarVinculos();
   canvas.requestRenderAll(); renderCapas(); guardarEstado(); if (typeof revisarAuto === 'function') revisarAuto();
   if (typeof seleccionarTabla === 'function') seleccionarTabla(id);
+  setTimeout(() => { const a = activo(); if (a){ a.setCoords(); canvas.requestRenderAll(); } }, 60);   // tras ajustar el zoom
   const alto = Math.max(...celdasDe(id).map(c => cajaAbs(c)).map(r => r.top + r.height));
-  toast(`✓ Tabla pegada: ${d.filas} filas × ${d.cols} columnas. Doble clic en una celda para escribir.` + (alto > H + 1 ? ' No cabe completa en la página: agranda el lienzo (Tamaño) o usa «Auto».' : ''));
+  toast(`✓ Tabla pegada: ${d.filas} filas × ${d.cols} columnas. Para escribir, toca la celda (o doble clic).` + (alto > H + 1 ? ' No cabe completa en la página: agranda el lienzo (Tamaño) o usa «Auto».' : ''));
   return id;
 }
 function pegarTextoEnLienzo(texto){
@@ -211,3 +212,39 @@ document.addEventListener('paste', e => {
   const hayImagen = [...(cd.items || [])].some(i => i.type.startsWith('image/'));
   if (texto && texto.trim() && !texto.startsWith(MARCA_COPIA) && !hayImagen){ e.preventDefault(); e.stopImmediatePropagation(); pegarTextoEnLienzo(texto); }
 }, true);
+
+// ---------- tablas: que nunca se queden «trabadas» ----------
+// una tabla que quedó agrupada se desagrupa y queda lista para editar
+function desagruparTabla(g, editarEn){
+  if (!g || g.type !== 'group') return;
+  const id = (g.getObjects().find(x => x.tabla) || {}).tabla;
+  restaurando = true; const sel = g.toActiveSelection(); restaurando = false;
+  canvas.discardActiveObject();
+  canvas.requestRenderAll(); renderCapas(); guardarEstado();
+  if (editarEn){ const c = celdaEn(id, editarEn); if (c){ editarCelda(c); return; } }
+  if (id) seleccionarTabla(id);
+  toast('Listo: doble clic en una celda para escribir.');
+}
+function celdaEn(id, q){ return celdasDe(id).find(c => { const r = cajaAbs(c); return q.x >= r.left && q.x <= r.left + r.width && q.y >= r.top && q.y <= r.top + r.height; }); }
+canvas.on('mouse:dblclick', e => {
+  const o = e.target;
+  if (o && o.type === 'group' && o.getObjects().some(x => x.tabla)) desagruparTabla(o, canvas.getPointer(e.e));
+});
+// con la tabla ya seleccionada, un clic en una celda (sin arrastrar) la abre para escribir
+let clicTabla = null;
+canvas.on('mouse:down', e => {
+  const a = activo();
+  clicTabla = a && a.esTabla && e.target === a && !(e.e && (e.e.shiftKey || e.e.button === 2)) ? { id:a.esTabla, x:e.e.clientX, y:e.e.clientY, t:Date.now() } : null;
+});
+canvas.on('mouse:up', e => {
+  const c0 = clicTabla; clicTabla = null; if (!c0 || !e.e) return;
+  if (Math.hypot(e.e.clientX - c0.x, e.e.clientY - c0.y) > 4 || Date.now() - c0.t > 600) return;
+  const c = celdaEn(c0.id, canvas.getPointer(e.e)); if (c) setTimeout(() => { if (!(activo() && activo().isEditing)) editarCelda(c); }, 0);
+});
+// «Agrupar» una tabla sola no se permite (así no se traba)
+const agruparToggleBase80 = agruparToggle;
+agruparToggle = function(){
+  const o = activo();
+  if (o && o.esTabla){ toast('Las tablas no se agrupan: ya se mueven como una sola pieza.'); return; }
+  return agruparToggleBase80.apply(this, arguments);
+};

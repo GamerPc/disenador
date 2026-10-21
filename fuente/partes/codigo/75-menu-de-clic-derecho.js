@@ -56,7 +56,7 @@ function opcionesMenuCtx(){
     L.push({ t:'Enviar atrás', a:'Ctrl+↓', i:'abajo', des:varios, f:() => orden('atras') });
     L.push({ t:'Enviar al fondo', a:'Ctrl+Shift+↓', i:'fondo', des:varios, f:() => orden('fondo') });
     L.push('-');
-    if (varios) L.push({ t:'Agrupar', a:'Ctrl+G', i:'grupo', f:agruparToggle });
+    if (varios && !o.esTabla) L.push({ t:'Agrupar', a:'Ctrl+G', i:'grupo', f:agruparToggle });
     else if (o.type === 'group') L.push({ t:'Desagrupar', a:'Ctrl+G', i:'grupo', f:agruparToggle });
     L.push({ t:'Centrar en la página', i:'centrar', f:() => { alinear('centroH'); alinear('centroV'); } });
     L.push({ t:'Voltear horizontal', i:'voltearH', des:varios, f:() => voltear('flipX') });

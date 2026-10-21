@@ -150,6 +150,8 @@ const disparar = (el, v) => { if (!el) return; if (v !== undefined) el.value = v
 let brochaActiva = false;
 function tipoSeleccion(o){
   if (!o) return null;
+  if (o.type === 'group' && o.getObjects().some(x => x.tabla)) return 'tablaAgrupada';
+  if (o.esTabla) return 'tabla';
   if (o.type === 'activeSelection') return 'varios';
   if (o.type === 'conector') return 'linea';
   if (o.type === 'image') return 'imagen';
@@ -165,6 +167,7 @@ function botonBR(clave, html, titulo, f, extra = ''){
 }
 function construirBarraRapida(){
   const bar = $('barraRapida'), o = activo(), tipo = tipoSeleccion(o);
+  bar.dataset.tipo = tipo || '';
   if (popRapido && !popRapido.persistente) cerrarPopRapido();
   if (!o){ bar.hidden = true; bar.innerHTML = ''; return; }
   const items = [];
@@ -204,6 +207,16 @@ function construirBarraRapida(){
     items.push(botonBR('color', `<span class="muestraBR" style="background:${esc(o.stroke || '#1f2330')}"></span>`, 'Color y grosor de la línea', btn => abrirPopRapido(btn, 'Color y grosor', [$('secBorde')])));
     items.push(botonBR('linea', `${icoBR('linea')}<span>Tipo de línea</span>`, 'Recta, curva o codo · puntas · trazo · texto', btn => abrirPopRapido(btn, 'Tipo de línea', [$('secConector')])));
     if (o.desvio) items.push(botonBR('enderezar', '<span>Enderezar</span>', 'Quitar el doblez', () => { o.desvio = null; o.dirty = true; canvas.requestRenderAll(); guardarEstado(); construirBarraRapida(); }));
+  } else if (tipo === 'tabla'){
+    items.push(botonBR('editarCelda', `${icoBR('texto')}<span>Escribir</span>`, 'Escribir en una celda: doble clic (o un clic más) en la celda', () => {
+      toast('Haz doble clic en la celda que quieres cambiar (o, con la tabla seleccionada, un clic en la celda).'); }));
+    items.push(botonBR('filaMas', '<span>＋ Fila</span>', 'Agregar una fila al final', () => { tablaFila(1); }));
+    items.push(botonBR('filaMenos', '<span>− Fila</span>', 'Quitar la última fila', () => { tablaFila(-1); }));
+    items.push(botonBR('colMas', '<span>＋ Columna</span>', 'Agregar una columna al final', () => { tablaCol(1); }));
+    items.push(botonBR('colMenos', '<span>− Columna</span>', 'Quitar la última columna', () => { tablaCol(-1); }));
+    items.push(botonBR('tablaOpc', `${icoBR('ajustes')}<span>Tabla</span>`, 'Colores del encabezado y las celdas, ancho y más', btn => abrirPopRapido(btn, 'Tabla', [$('secTabla')])));
+  } else if (tipo === 'tablaAgrupada'){
+    items.push(botonBR('desagruparTabla', `${icoBR('grupo')}<span>Desagrupar para editar la tabla</span>`, 'Esta tabla quedó agrupada: desagrúpala para poder escribir en sus celdas', () => { desagruparTabla(o); }));
   } else if (tipo === 'varios'){
     items.push(botonBR('agrupar', `${icoBR('grupo')}<span>Agrupar</span>`, 'Agrupar (Ctrl+G)', () => { agruparToggle(); setTimeout(construirBarraRapida, 30); }));
     items.push(botonBR('alinear', `${icoBR('centrar')}<span>Alinear</span>`, 'Alinear y distribuir', btn => {
@@ -211,7 +224,7 @@ function construirBarraRapida(){
       c.querySelectorAll('[data-al]').forEach(x => x.onclick = () => alinear(x.dataset.al)); c.querySelectorAll('[data-d]').forEach(x => x.onclick = () => distribuir(x.dataset.d));
     }));
   }
-  if (tipo !== 'linea'){
+  if (tipo !== 'linea' && tipo !== 'tabla'){
     const fOp = $('pOpac') && $('pOpac').closest('.fila');
     if (fOp) items.push(botonBR('transp', icoBR('transp'), 'Transparencia', btn => abrirPopRapido(btn, 'Transparencia', [fOp])));
   }
@@ -221,7 +234,7 @@ function construirBarraRapida(){
   if ($('secAnim')) items.push(botonBR('animar', '<span>Animar</span>', 'Animación al presentar', btn => abrirPopRapido(btn, 'Animar', [$('secAnim')])));
   items.push(botonBR('posicion', '<span>Posición</span>', 'Orden, alinear en la página y medidas exactas', btn => abrirPosicion(btn)));
   sep();
-  if (tipo !== 'varios') items.push(botonBR('brocha', icoBR('brocha'), 'Copiar estilo: toca aquí y luego el elemento al que se lo quieres poner', () => {
+  if (tipo !== 'varios' && tipo !== 'tabla' && tipo !== 'tablaAgrupada') items.push(botonBR('brocha', icoBR('brocha'), 'Copiar estilo: toca aquí y luego el elemento al que se lo quieres poner', () => {
     copiarEstilo(); brochaActiva = o; bar.querySelector('[data-k="brocha"]').classList.add('on'); toast('Ahora toca el elemento al que le quieres poner este estilo');
   }, brochaActiva ? 'on' : ''));
   items.push(botonBR('todo', icoBR('ajustes'), 'Todas las opciones (panel completo)', btn => abrirOpcionesCompletas(btn)));
@@ -247,7 +260,11 @@ function construirBarraRapida(){
   ubicarBarraRapida();
 }
 function refrescarBarraRapida(){
-  const bar = $('barraRapida'); if (bar.hidden) return;
+  const bar = $('barraRapida');
+  // si cambió el tipo de lo seleccionado sin aviso (por ejemplo, al agrupar), se vuelve a armar
+  const tipoAhora = tipoSeleccion(activo()) || '';
+  if ((bar.dataset.tipo || '') !== tipoAhora){ construirBarraRapida(); return; }
+  if (bar.hidden) return;
   ['bNegrita', 'bCursiva', 'bSubrayado', 'bTachado', 'bMayus'].forEach(id => { const b = bar.querySelector(`[data-k="${id}"]`); if (b && $(id)) b.classList.toggle('on', $(id).classList.contains('on')); });
   const sel = bar.querySelector('.fuenteBR span'); if (sel){ sel.textContent = $('pFuente').value; sel.style.fontFamily = `'${$('pFuente').value}'`; }
   const inp = bar.querySelector('.tamBR input'); if (inp && document.activeElement !== inp) inp.value = $('pTam').value;
