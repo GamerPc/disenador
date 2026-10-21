@@ -181,3 +181,8 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - Las opciones de la barra rápida (color, borde, efectos, animar, posición, fuentes, ⚙ todas las opciones y Capas) se abren en el panel izquierdo (`#tOpciones`), como Canva; los controles reales del panel se prestan y se regresan.
 - `79-mas-colores-y-fuentes.js`: paleta de colores sólidos (de tu diseño, frecuentes, 150 tonos y código #hex) en Relleno y Borde; más de 170 fuentes de Google por categorías, con buscador y vista de cada nombre en su letra; se descargan solo al usarlas (y al abrir diseños que las usan).
 - Arreglo: tocar dos veces «Posición», «Lista» o «Alinear» ya no da error.
+
+## v46: pegar tablas y texto de Word, Excel y Google Docs
+- `80-pegar-tablas-de-word-y-excel.js`: Ctrl+V con una tabla copiada (HTML del portapapeles) arma una tabla editable con filas, columnas, anchos proporcionales, color de cada celda, color de letra, negritas, alineación, saltos de línea y viñetas; celdas combinadas se respetan (texto en la primera). Texto con tabuladores (Excel/Sheets) también; texto normal crea un cuadro de texto. Si la página está vacía y la tabla es larga, la página se alarga.
+- Copiar dentro del Diseñador deja una marca en el portapapeles: Ctrl+V pega lo interno solo si fue lo último copiado (antes bloqueaba pegar de otras apps).
+- Celdas con `alinV:'arriba'` ponen el texto arriba (como Word).

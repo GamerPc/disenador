@@ -1,0 +1,213 @@
+/* =========================================================
+   PEGAR TABLAS Y TEXTO DE WORD, EXCEL Y GOOGLE DOCS
+   Ctrl + V con una tabla copiada: se arma una tabla editable con sus filas, columnas,
+   anchos, colores de celda, color de letra, negritas y saltos de línea.
+   Con texto (sin tabla): se crea un cuadro de texto.
+   ========================================================= */
+EXTRA.push('alinV');
+// el texto de una celda puede ir arriba (como en Word) en vez de centrado
+const centrarTextoBase80 = centrarTexto;
+centrarTexto = function(t, f){
+  centrarTextoBase80(t, f);
+  if (f && f.alinV === 'arriba'){
+    const alto = f.getScaledHeight(), pad = typeof PAD === 'function' ? PAD() * 0.55 : 12;
+    const h = t.getScaledHeight ? t.getScaledHeight() : t.height;
+    if (alto > h + 2 * pad) t.set('top', f.getCenterPoint().y - alto / 2 + pad + h / 2);
+    t.setCoords();
+  }
+};
+// ---------- leer el HTML del portapapeles ----------
+function colorCSS(v){
+  if (!v) return null;
+  v = String(v).trim().toLowerCase();
+  if (!v || v === 'transparent' || v === 'none' || v === 'inherit' || v === 'auto' || v === 'windowtext') return v === 'windowtext' ? '#000000' : null;
+  const d = document.createElement('div'); d.style.color = v; if (!d.style.color) return null;
+  document.body.appendChild(d); const c = getComputedStyle(d).color; d.remove();
+  const m = c.match(/rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?/); if (!m || (m[4] !== undefined && +m[4] === 0)) return null;
+  return '#' + [m[1], m[2], m[3]].map(x => (+x).toString(16).padStart(2, '0')).join('');
+}
+const aPx80 = v => { if (v == null) return null; const m = String(v).match(/([\d.]+)\s*(pt|px|cm|mm|in)?/i); if (!m) return null;
+  const n = +m[1], u = (m[2] || 'px').toLowerCase(); return u === 'pt' ? n * 96 / 72 : u === 'cm' ? n * 96 / 2.54 : u === 'mm' ? n * 96 / 25.4 : u === 'in' ? n * 96 : n; };
+// estilo de un elemento leyendo su style en línea (Word no deja que el navegador lo calcule sin ponerlo en la página)
+const estiloDe = (el, prop) => { const st = el.getAttribute && el.getAttribute('style') || ''; const m = st.match(new RegExp('(?:^|;)\\s*' + prop + '\\s*:\\s*([^;]+)', 'i')); return m ? m[1].trim() : null; };
+function textoDeCelda(td){
+  // párrafos y saltos → renglones; viñetas → «• »
+  const partes = [];
+  const recorrer = (n, linea) => {
+    if (n.nodeType === 3){ linea.t += n.nodeValue.replace(/\s+/g, ' '); return; }
+    if (n.nodeType !== 1) return;
+    const tag = n.tagName.toLowerCase();
+    if (tag === 'br'){ partes.push(linea.t); linea.t = ''; return; }
+    if (/^(style|script|o:p)$/.test(tag) && !n.textContent.trim()) return;
+    if (/^(p|div|li|h[1-6])$/.test(tag)){
+      if (linea.t.trim()){ partes.push(linea.t); linea.t = ''; }
+      const nueva = { t:tag === 'li' || /mso-list/i.test(n.getAttribute('style') || '') ? '• ' : '' };
+      n.childNodes.forEach(h => recorrer(h, nueva));
+      partes.push(nueva.t); return;
+    }
+    if (/mso-list:\s*ignore/i.test(n.getAttribute('style') || '')) return;   // los numeritos de lista de Word
+    n.childNodes.forEach(h => recorrer(h, linea));
+  };
+  const l = { t:'' }; td.childNodes.forEach(h => recorrer(h, l)); if (l.t) partes.push(l.t);
+  return partes.map(x => x.replace(/ /g, ' ').replace(/\s+$/,'').replace(/^\s+(?!•)/, '')).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+function negritaDe(td){
+  const txt = td.textContent.replace(/\s/g, ''); if (!txt) return false;
+  let negro = 0;
+  td.querySelectorAll('b, strong, [style*="font-weight"]').forEach(b => { const fw = b.tagName.match(/^(B|STRONG)$/) ? 'bold' : estiloDe(b, 'font-weight'); if (fw && (fw === 'bold' || +fw >= 600)) negro += b.textContent.replace(/\s/g, '').length; });
+  if (/bold|[6-9]00/.test(estiloDe(td, 'font-weight') || '')) return true;
+  return negro >= txt.length * 0.6;
+}
+function colorLetraDe(td){
+  const conColor = [...td.querySelectorAll('[style*="color"], font[color]')].find(x => x.textContent.trim());
+  if (conColor){ const c = colorCSS(conColor.getAttribute('color') || estiloDe(conColor, 'color')); if (c) return c; }
+  return colorCSS(estiloDe(td, 'color'));
+}
+function tamLetraDe(td){
+  const el = [...td.querySelectorAll('[style*="font-size"]')].find(x => x.textContent.trim());
+  return aPx80(el ? estiloDe(el, 'font-size') : estiloDe(td, 'font-size'));
+}
+function fondoDe(el){ return colorCSS(estiloDe(el, 'background-color') || (estiloDe(el, 'background') || '').split(/\s+/).find(x => /^#|^rgb|^[a-z]+$/i.test(x)) || el.getAttribute('bgcolor')); }
+function alinDe(td){
+  const p = td.querySelector('p, div'); const a = (p && (estiloDe(p, 'text-align') || p.getAttribute('align'))) || estiloDe(td, 'text-align') || td.getAttribute('align') || '';
+  return /center/i.test(a) ? 'center' : /right/i.test(a) ? 'right' : /justify/i.test(a) ? 'justify' : 'left';
+}
+// tabla HTML → cuadrícula (respeta celdas combinadas)
+function leerTablaHTML(tabla){
+  const filas = [...tabla.rows].filter(r => r.cells.length);
+  const grid = [], info = [];
+  filas.forEach((tr, f) => {
+    grid[f] = grid[f] || []; info[f] = info[f] || [];
+    let c = 0;
+    [...tr.cells].forEach(td => {
+      while (grid[f][c] !== undefined) c++;
+      const cs = Math.max(1, +td.colSpan || 1), rs = Math.max(1, +td.rowSpan || 1);
+      const dato = { texto:textoDeCelda(td), fondo:fondoDe(td) || fondoDe(tr), color:colorLetraDe(td), negrita:negritaDe(td) || td.tagName === 'TH',
+        tam:tamLetraDe(td), alin:alinDe(td), ancho:aPx80(estiloDe(td, 'width')) || aPx80(td.getAttribute('width')), cs };
+      for (let df = 0; df < rs; df++) for (let dc = 0; dc < cs; dc++){
+        grid[f + df] = grid[f + df] || []; info[f + df] = info[f + df] || [];
+        grid[f + df][c + dc] = df === 0 && dc === 0 ? dato.texto : '';
+        info[f + df][c + dc] = df === 0 && dc === 0 ? dato : { ...dato, texto:'', cubierta:true };
+      }
+      c += cs;
+    });
+  });
+  const cols = Math.max(...grid.map(r => r.length));
+  grid.forEach((r, f) => { for (let c = 0; c < cols; c++){ if (r[c] === undefined){ r[c] = ''; info[f][c] = { texto:'', fondo:null }; } } });
+  // anchos de columna: de las celdas que no están combinadas
+  const anchos = Array(cols).fill(null);
+  info.forEach(r => r.forEach((d, c) => { if (d && !d.cubierta && d.cs === 1 && d.ancho && !anchos[c]) anchos[c] = d.ancho; }));
+  const conocidos = anchos.filter(Boolean), prom = conocidos.length ? conocidos.reduce((a, b) => a + b, 0) / conocidos.length : 150;
+  return { grid, info, cols, filas:grid.length, anchos:anchos.map(a => a || prom) };
+}
+// texto con tabuladores (Excel, Sheets, PDF) → cuadrícula
+function leerTablaTexto(t){
+  const filas = t.replace(/\r/g, '').replace(/\n+$/, '').split('\n').map(l => l.split('\t'));
+  if (filas.length < 2 || Math.max(...filas.map(f => f.length)) < 2) return null;
+  const cols = Math.max(...filas.map(f => f.length));
+  const grid = filas.map(f => { const r = f.map(x => x.replace(/^"|"$/g, '').trim()); while (r.length < cols) r.push(''); return r; });
+  return { grid, info:grid.map((r, f) => r.map(x => ({ texto:x, negrita:f === 0 }))), cols, filas:grid.length, anchos:Array(cols).fill(150) };
+}
+// ---------- armar la tabla en el lienzo ----------
+function pegarTablaEnLienzo(d){
+  const o = activo(); if (o && o.isEditing) o.exitEditing();
+  canvas.discardActiveObject();
+  const totalNat = d.anchos.reduce((a, b) => a + b, 0) || 600;
+  const vacio = !canvas.getObjects().some(x => !x.esFondo);
+  const ancho = W * 0.92;
+  const k = ancho / totalNat;                              // de píxeles de Word a píxeles del diseño
+  const tamNat = (() => { const t = d.info.flat().map(x => x && x.tam).filter(Boolean).sort((a, b) => a - b); return t.length ? t[Math.floor(t.length / 2)] : 14; })();
+  let factor = 1, id = null;
+  const encOscuro = d.info[0] && d.info[0].every(x => !x || !x.fondo || esOscuro(x.fondo));
+  const armar = () => {
+    restaurando = true;
+    const tam = Math.max(W / 66, tamNat * k) * factor;     // que se lea bien en el diseño
+    id = crearTabla(W / 2, H / 2, d.filas, d.cols, { anchos:d.anchos.map(a => a * k), alto:Math.max(30, tam * 1.9), tam, tamEnc:tam, enc:null, celda:'#ffffff', borde:'#7f8a99', grosor:Math.max(1, s() * 1.5), fuente:'Arial', fuenteEnc:'Arial' }, d.grid);
+    // colores, negritas y alineación de cada celda
+    celdasDe(id).forEach(c => {
+      const inf = d.info[c.fila] && d.info[c.fila][c.col] || {}, t = porId(c.formaTexto);
+      c.set({ fill:inf.fondo || '#ffffff', alinV:'arriba' });
+      if (t){
+        t.set({ fontWeight:inf.negrita ? '700' : '400', textAlign:inf.alin || 'left', fontSize:Math.max(W / 66, (inf.tam || tamNat) * k) * factor,
+          fill:inf.color || (esOscuro(c.fill) ? '#ffffff' : '#1f2330') });
+        t.initDimensions();
+      }
+    });
+    reorganizarTabla(id);
+    restaurando = false;
+  };
+  armar();
+  const altoTabla = () => { const rs = celdasDe(id).map(c => cajaAbs(c)); return Math.max(...rs.map(r => r.top + r.height)) - Math.min(...rs.map(r => r.top)); };
+  if (vacio && altoTabla() > H * 0.94){
+    // página vacía: se alarga para que la tabla quepa completa, con la letra a buen tamaño
+    cambiarTamano(W, Math.ceil(altoTabla() + W * 0.08));
+  } else {
+    // si no cabe a lo alto, se vuelve a armar con letra más chica (sin bajar de lo legible)
+    for (let i = 0; i < 4; i++){
+      const alto = altoTabla();
+      if (alto <= H * 0.94 || factor < 0.55) break;
+      quitarCeldas(celdasDe(id)); factor *= Math.max(0.55, (H * 0.94) / alto); armar();
+    }
+  }
+  // centrar en la página
+  const cs = celdasDe(id), rs = cs.map(c => cajaAbs(c));
+  const L = Math.min(...rs.map(r => r.left)), R = Math.max(...rs.map(r => r.left + r.width)), T = Math.min(...rs.map(r => r.top)), B = Math.max(...rs.map(r => r.top + r.height));
+  const dx = W / 2 - (L + R) / 2, dy = Math.max(0, (H - (B - T)) / 2) - T;
+  cs.forEach(c => { c.set({ left:c.left + dx, top:c.top + dy }); c.setCoords(); const t = porId(c.formaTexto); if (t) centrarTexto(t, c); });
+  ordenarVinculos && ordenarVinculos();
+  canvas.requestRenderAll(); renderCapas(); guardarEstado(); if (typeof revisarAuto === 'function') revisarAuto();
+  if (typeof seleccionarTabla === 'function') seleccionarTabla(id);
+  const alto = Math.max(...celdasDe(id).map(c => cajaAbs(c)).map(r => r.top + r.height));
+  toast(`✓ Tabla pegada: ${d.filas} filas × ${d.cols} columnas. Doble clic en una celda para escribir.` + (alto > H + 1 ? ' No cabe completa en la página: agranda el lienzo (Tamaño) o usa «Auto».' : ''));
+  return id;
+}
+function pegarTextoEnLienzo(texto){
+  const o = activo(); if (o && o.isEditing) o.exitEditing();
+  restaurando = true;
+  const t = new fabric.Textbox(texto.trim(), { left:W * 0.08, top:H * 0.1, width:W * 0.84, fontSize:Math.max(18, 30 * s()), fontFamily:'Inter', fill:'#1f2330', lineHeight:1.25, id:nuevoId(), name:'Texto pegado' });
+  canvas.add(t); restaurando = false;
+  canvas.setActiveObject(t); canvas.requestRenderAll(); renderCapas(); guardarEstado();
+  if (typeof revisarAuto === 'function') revisarAuto();
+  toast('Texto pegado. Doble clic para editarlo.');
+}
+// ---------- copiar dentro del Diseñador deja una marca en el portapapeles del sistema ----------
+const MARCA_COPIA = 'apik-desing:copia:';
+let marcaActual = '';
+function marcarCopiaInterna(e){
+  marcaActual = MARCA_COPIA + Date.now();
+  if (e && e.clipboardData){ e.clipboardData.setData('text/plain', marcaActual); e.preventDefault(); }
+  else if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(marcaActual).catch(() => {});
+}
+document.addEventListener('copy', e => {
+  const tag = (document.activeElement || {}).tagName;
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || (document.activeElement && document.activeElement.isContentEditable) || document.querySelector('.modal.abierto')) return;
+  const o = activo(); if (!o || o.isEditing) return;
+  marcarCopiaInterna(e);
+});
+// ---------- Ctrl + V ----------
+document.addEventListener('paste', e => {
+  const tag = (document.activeElement || {}).tagName;
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || (document.activeElement && document.activeElement.isContentEditable)) return;
+  if (document.querySelector('.modal.abierto')) return;
+  const o = activo(); if (o && o.isEditing) return;
+  const cd = e.clipboardData; if (!cd) return;
+  const html = cd.getData('text/html'), texto = cd.getData('text/plain');
+  // lo último que copiaste fue algo del Diseñador
+  if (texto && texto.startsWith(MARCA_COPIA) && portapapeles){ e.preventDefault(); e.stopImmediatePropagation(); clonar(portapapeles, pegarClon); return; }
+  if (html && /<table/i.test(html)){
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const tablas = [...doc.querySelectorAll('table')].filter(t => !t.parentElement.closest('table'));    // la tabla de afuera
+    const t = tablas.sort((a, b) => b.rows.length - a.rows.length)[0];
+    if (t && t.rows.length){
+      e.preventDefault(); e.stopImmediatePropagation();
+      try { pegarTablaEnLienzo(leerTablaHTML(t)); } catch (er) { console.error(er); toast('No se pudo pegar la tabla: ' + er.message); }
+      return;
+    }
+  }
+  // Excel/Sheets sin HTML (o texto con tabuladores)
+  const tt = texto && /\t/.test(texto) ? leerTablaTexto(texto) : null;
+  if (tt && !(html && /<img/i.test(html) && !/<td/i.test(html))){ e.preventDefault(); e.stopImmediatePropagation(); pegarTablaEnLienzo(tt); return; }
+  // texto normal (si no viene una imagen)
+  const hayImagen = [...(cd.items || [])].some(i => i.type.startsWith('image/'));
+  if (texto && texto.trim() && !texto.startsWith(MARCA_COPIA) && !hayImagen){ e.preventDefault(); e.stopImmediatePropagation(); pegarTextoEnLienzo(texto); }
+}, true);

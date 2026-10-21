@@ -974,7 +974,7 @@ document.addEventListener('keydown', e => {
   else if (ctrl && e.altKey && k === 'c'){ e.preventDefault(); copiarEstilo(); }
   else if (ctrl && e.altKey && k === 'v'){ e.preventDefault(); pegarEstilo(); }
   else if (ctrl && k === 'c' && o){ clonar(o, c => portapapeles = c); }
-  else if (ctrl && k === 'v' && portapapeles){ e.preventDefault(); clonar(portapapeles, pegarClon); }
+  // Ctrl + V se resuelve en el evento «paste» (80-pegar…): así se puede pegar de Word, Excel o de aquí mismo
   else if (ctrl && k === 'g'){ e.preventDefault(); agruparToggle(); }
   else if (ctrl && k === 's'){ e.preventDefault(); guardarDrive(); }
   else if (ctrl && k === 'a'){ e.preventDefault(); const objs = canvas.getObjects().filter(x => x.selectable && x.visible); if (objs.length){ canvas.setActiveObject(new fabric.ActiveSelection(objs, { canvas })); canvas.requestRenderAll(); } }

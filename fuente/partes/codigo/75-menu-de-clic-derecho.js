@@ -37,7 +37,7 @@ function opcionesMenuCtx(){
   const o = activo(), varios = o && o.type === 'activeSelection', esTexto = o && /text/i.test(o.type || '') && !varios;
   const L = [];
   if (o){
-    L.push({ t:'Copiar', a:'Ctrl+C', i:'copiar', f:() => clonar(o, c => { portapapeles = c; toast('Copiado'); }) });
+    L.push({ t:'Copiar', a:'Ctrl+C', i:'copiar', f:() => clonar(o, c => { portapapeles = c; if (typeof marcarCopiaInterna === 'function') marcarCopiaInterna(); toast('Copiado'); }) });
     L.push({ t:'Pegar', a:'Ctrl+V', i:'pegar', des:!portapapeles, f:() => clonar(portapapeles, pegarClon) });
     L.push({ t:'Duplicar', a:'Ctrl+D', i:'duplicar', f:duplicar });
     L.push({ t:'Eliminar', a:'Supr', i:'eliminar', peligro:true, des:!!o.bloqueado, f:eliminar });
