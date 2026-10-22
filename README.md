@@ -216,3 +216,8 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - `84-plantillas-neon-tecnologicas.js`: nueva categoría (chip «✨ Neón y tech») con 8 plantillas para redes: Funciones ocultas, Prototipado de apps y web, Mapas mentales ultra rápidos, Todo en un solo lugar, Mi kit de marca (1080×1080), Tip del día (1080×1350), ¡Ya disponible! (1080×1080) y Nueva función (historia 1080×1920).
 - Todo es editable: textos con degradado, brillo, contorno neón e inclinación; ventanas y teléfonos en líneas, cursores, burbujas de «me gusta», nodos con íconos de línea, barras, arcos, cuadrículas, puntos, QR decorativo (se cambia por uno real en Elementos → QR) y paleta de marca.
 - Las miniaturas se rehacen cuando cargan las letras (Bebas Neue, Montserrat, Pacifico…).
+
+## v54: esquemas y líneas del tiempo
+- `85-esquemas-y-lineas-de-tiempo.js`: categoría «Esquemas y líneas de tiempo» (chip «🕒») con 19 plantillas editables.
+- Líneas del tiempo: con tarjetas y años, vertical (tamaño carta), en camino (de inicio a meta), por épocas, cronología en flechas, biografía y hoja de ruta por trimestres.
+- Esquemas: llaves de 3 niveles, árbol de izquierda a derecha (con conectores que siguen a las cajas), índice numerado (carta), rueda de 6 partes, pirámide de 5 niveles, embudo de 4 etapas, ciclo de 6 pasos, causas y consecuencias, comparación A vs B, escalera hacia la meta, Venn de 3 y matriz de prioridades 2×2.

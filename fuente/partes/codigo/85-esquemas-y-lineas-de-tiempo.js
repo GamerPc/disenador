@@ -1,0 +1,299 @@
+/* =========================================================
+   ESQUEMAS Y LÍNEAS DE TIEMPO (más plantillas)
+   Líneas del tiempo (tarjetas, vertical, camino, épocas, flechas, biografía, hoja de ruta)
+   y esquemas (llaves, árbol, índice numerado, rueda, pirámide, embudo, ciclo,
+   causas y consecuencias, A vs B, escalera, Venn de 3, matriz 2×2).
+   Todo editable: cajas con texto, conectores que se mueven con las cajas y figuras.
+   ========================================================= */
+const CAT_ESQ = 'Esquemas y líneas de tiempo';
+const PAL_ESQ = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#8b5cf6'];
+const GRIS_ESQ = '#475569', TINTA_ESQ = '#1f2937';
+function CAB_ESQ(tit, sub, o = {}){
+  T(tit, o.x || W / 2, o.y || 92, { f:'Montserrat', s:o.s || 64, b:'800', c:o.c || TINTA_ESQ, w:o.w || W - 200 });
+  if (sub) T(sub, o.x || W / 2, (o.y || 92) + (o.s || 64) * 0.95, { f:'Poppins', s:28, c:o.cs || GRIS_ESQ, w:o.w || W - 200 });
+}
+const tinte = (c, a = 0.12) => hexA(c, a);
+const cajaEsq = (texto, x, y, w, h, col, o = {}) => nodo(o.tipo || 'redondo', texto, x, y, { w, h, anchoMax:w - 36, fill:o.fill ?? '#ffffff', stroke:o.stroke === undefined ? col : o.stroke, grosor:o.grosor ?? 3,
+  color:o.color || TINTA_ESQ, tam:o.tam || 24, fuente:o.fuente || 'Poppins', peso:o.peso, nombre:o.nombre });
+function sectorD(cx, cy, r0, r1, a0, a1){
+  const p = (r, a) => `${(cx + r * Math.cos(a * Math.PI / 180)).toFixed(1)} ${(cy + r * Math.sin(a * Math.PI / 180)).toFixed(1)}`, g = Math.abs(a1 - a0) > 180 ? 1 : 0;
+  return `M${p(r1, a0)}A${r1} ${r1} 0 ${g} 1 ${p(r1, a1)}L${p(r0, a1)}A${r0} ${r0} 0 ${g} 0 ${p(r0, a0)}Z`;
+}
+// círculo con número (tamaño fijo: no crece con el texto)
+function NUM_ESQ(texto, x, y, d, col, tam, o = {}){
+  const c = CIRC(x, y, d / 2, col, { nombre:'Círculo' }); c.set({ esDeco:false, stroke:o.borde || null, strokeWidth:o.borde ? (o.grosor || 5) : 0 });
+  if (texto) T(texto, x, y, { f:'Montserrat', s:tam || d * 0.42, b:'800', c:'#ffffff', w:d });
+  return c;
+}
+// figura con relleno (no conectable), para pirámides, embudos, flechas…
+const FIG = (d, fill, o = {}) => N_P(d, { fill, sw:o.sw || 0, stroke:o.stroke || null, op:o.op ?? 1, nombre:o.nombre || 'Figura', grad:o.grad, gradAng:o.gradAng });
+
+const PLANTILLAS_ESQ = [
+  // ================= LÍNEAS DEL TIEMPO =================
+  { nombre:'Línea del tiempo con tarjetas', tam:[1920, 1080], crear(){
+    FONDO('#f8fafc');
+    CAB_ESQ('Línea del tiempo', 'Ordena los acontecimientos de tu tema');
+    FIG(rr(120, 552, 1680, 16, 8), null, { grad:PAL_ESQ.slice(0, 6), gradAng:0, nombre:'Línea' });
+    ['2000', '2004', '2008', '2012', '2016', '2020'].forEach((a, i) => {
+      const x = 245 + i * 286, col = PAL_ESQ[i], arriba = i % 2 === 0;
+      if (arriba) LINEA(x, 412, x, 528, col, 3); else LINEA(x, 592, x, 708, col, 3);
+      nodo('pildora', a, x, 560, { w:150, h:64, fill:col, color:'#ffffff', tam:28, peso:'700', fuente:'Montserrat' });
+      cajaEsq('Título del evento\nEscribe qué pasó y por qué es importante.', x, arriba ? 300 : 820, 262, 220, col, { tam:21 });
+    });
+  }},
+  { nombre:'Línea del tiempo vertical', tam:[1240, 1754], crear(){
+    FONDO('#ffffff');
+    FIG(rr(0, 0, 1240, 250, 0), null, { grad:[PAL_ESQ[0], PAL_ESQ[6]], gradAng:0, nombre:'Encabezado' });
+    CAB_ESQ('Línea del tiempo', 'Nombre del tema · Alumno · Grupo', { y:105, c:'#ffffff', cs:'#e0e7ff' });
+    RECT(612, 330, 16, 1340, '#e2e8f0', { r:8 });
+    for (let i = 0; i < 6; i++){
+      const y = 410 + i * 245, col = PAL_ESQ[i], izq = i % 2 === 0, x = izq ? 320 : 920;
+      LINEA(izq ? 555 : 685, y, izq ? 578 : 662, y, col, 4);
+      NUM_ESQ(String(i + 1), 620, y, 86, col, 36);
+      cajaEsq('AÑO\nDescribe el acontecimiento en dos o tres líneas.', x, y, 470, 190, col, { fill:tinte(col), tam:26 });
+    }
+  }},
+  { nombre:'Línea del tiempo en camino', tam:[1920, 1080], crear(){
+    DEGRADADO('#f0fdf4', '#ecfeff');
+    const camino = 'M150 330H1620C1840 330 1840 760 1620 760H250';
+    N_P(camino, { stroke:'#334155', sw:72, nombre:'Camino' });
+    N_P(camino, { stroke:'#ffffff', sw:5, nombre:'Rayas del camino' }).set('strokeDashArray', [26, 22]);
+    nodo('pildora', '🚩 Inicio', 150, 330, { w:190, h:76, fill:'#0f172a', color:'#ffffff', tam:28, peso:'700', fuente:'Montserrat' });
+    nodo('pildora', '🏆 Meta', 250, 760, { w:190, h:76, fill:'#0f172a', color:'#ffffff', tam:28, peso:'700', fuente:'Montserrat' });
+    const hitos = [[420, 330], [860, 330], [1300, 330], [1785, 545], [1380, 760], [940, 760], [500, 760]];
+    hitos.forEach(([x, y], i) => {
+      const col = PAL_ESQ[i % PAL_ESQ.length];
+      nodo('circulo', String(i + 1), x, y, { w:100, h:100, fill:col, stroke:'#ffffff', grosor:6, color:'#ffffff', tam:38, peso:'700', fuente:'Montserrat' });
+      const [lx, ly] = i < 3 ? [x, 160] : i === 3 ? [1530, 545] : [x, 935];
+      cajaEsq('Hito ' + (i + 1) + '\nDescríbelo en una frase.', lx, ly, 330, 140, col, { tam:23 });
+    });
+    T('Mi camino', 900, 500, { f:'Montserrat', s:78, b:'800', c:TINTA_ESQ, w:900 });
+    T('Los pasos que me trajeron hasta aquí', 900, 585, { f:'Poppins', s:30, c:GRIS_ESQ, w:900 });
+  }},
+  { nombre:'Línea del tiempo por épocas', tam:[1920, 1080], crear(){
+    FONDO('#fffbeb');
+    CAB_ESQ('Línea del tiempo por épocas', 'Marca los periodos y los acontecimientos de cada uno');
+    LINEA(120, 700, 1800, 700, TINTA_ESQ, 4);
+    const epocas = [['Época 1', 'años', 420, '#b45309'], ['Época 2', 'años', 380, '#15803d'], ['Época 3', 'años', 460, '#1d4ed8'], ['Época 4', 'años', 420, '#7e22ce']];
+    let x0 = 120;
+    epocas.forEach(([n, a, w, c]) => { nodo('redondo', n + '\n' + a, x0 + w / 2, 775, { w:w - 8, h:100, fill:c, color:'#ffffff', tam:28, peso:'700', fuente:'Montserrat' }); x0 += w; });
+    [[230, 420, '#b45309'], [450, 560, '#b45309'], [700, 420, '#15803d'], [1010, 560, '#1d4ed8'], [1270, 420, '#1d4ed8'], [1600, 560, '#7e22ce']].forEach(([x, y, c]) => {
+      LINEA(x, y + 58, x, 700, c, 3); const p = CIRC(x, 700, 15, c); p.set({ stroke:'#ffffff', strokeWidth:4 });
+      cajaEsq('Año · Acontecimiento importante', x, y, 260, 112, c, { tam:22 });
+    });
+    T('Escribe aquí una conclusión: ¿qué cambió de una época a otra?', 960, 950, { f:'Poppins', s:28, c:GRIS_ESQ, w:1500, it:true });
+  }},
+  { nombre:'Cronología en flechas (etapas)', tam:[1920, 1080], crear(){
+    FONDO('#ffffff');
+    CAB_ESQ('Etapas del proceso', 'Cinco etapas en orden, de la primera a la última');
+    for (let i = 0; i < 5; i++){
+      const x = 120 + i * 340, y = 300, w = 360, h = 170, d = 60, col = PAL_ESQ[i];
+      FIG(`M${x} ${y}H${x + w - d}L${x + w} ${y + h / 2}L${x + w - d} ${y + h}H${x}` + (i ? `L${x + d} ${y + h / 2}Z` : 'Z'), col, { nombre:'Flecha ' + (i + 1) });
+      T(String(i + 1).padStart(2, '0'), x + w / 2 + (i ? 10 : -10), y + 62, { f:'Montserrat', s:62, b:'800', c:'#ffffff', w:200 });
+      T('ETAPA', x + w / 2 + (i ? 10 : -10), y + 122, { f:'Montserrat', s:24, b:'700', c:'#ffffff', w:200, cs:200 });
+      LINEA(x + w / 2, y + h + 20, x + w / 2, y + h + 70, col, 3).set('strokeDashArray', [6, 8]);
+      cajaEsq('Nombre de la etapa\nQué se hace y cuánto dura.', x + w / 2 - (i ? 0 : 20), 720, 300, 280, col, { fill:tinte(col), stroke:null, tam:24 });
+    }
+  }},
+  { nombre:'Biografía en línea del tiempo', tam:[1920, 1080], crear(){
+    FONDO('#fdf2f8');
+    FIG(rr(0, 0, 640, 1080, 0), null, { grad:[PAL_ESQ[5], PAL_ESQ[6]], gradAng:90, nombre:'Panel' });
+    CIRC(320, 330, 175, '#ffffff', { op:0.22, nombre:'Lugar de la foto' }); N_ICO('persona', 320, 330, 190, '#ffffff', { sw:1.2 });
+    T('Pon aquí su foto', 320, 545, { f:'Poppins', s:22, c:'#fbcfe8', w:400 });
+    T('Nombre del personaje', 320, 635, { f:'Montserrat', s:46, b:'800', c:'#ffffff', w:520 });
+    T('Nació · Murió', 320, 735, { f:'Poppins', s:30, b:'600', c:'#fce7f3', w:520 });
+    T('Escribe una frase que lo describa: por qué es importante y qué aportó.', 320, 860, { f:'Poppins', s:28, c:'#ffffff', w:480, lh:1.35 });
+    RECT(788, 160, 8, 820, '#f9a8d4', { r:4 });
+    for (let i = 0; i < 5; i++){
+      const y = 200 + i * 185, col = PAL_ESQ[(i + 4) % PAL_ESQ.length];
+      NUM_ESQ('', 792, y, 44, col, 0, { borde:'#ffffff', grosor:6 });
+      TL('AÑO', 850, y - 28, { f:'Montserrat', s:34, b:'800', c:col, w:900 });
+      TL('Qué pasó en su vida en este momento (estudios, obras, logros…).', 850, y + 22, { f:'Poppins', s:27, c:TINTA_ESQ, w:950 });
+    }
+  }},
+  { nombre:'Hoja de ruta por trimestres', tam:[1920, 1080], crear(){
+    FONDO('#f8fafc');
+    CAB_ESQ('Hoja de ruta', 'Qué se hace en cada trimestre', { y:80 });
+    const tr = ['Trimestre 1\nEne – Mar', 'Trimestre 2\nAbr – Jun', 'Trimestre 3\nJul – Sep', 'Trimestre 4\nOct – Dic'];
+    tr.forEach((t, i) => { const cx = 575 + i * 350; nodo('redondo', t, cx, 240, { w:330, h:110, fill:PAL_ESQ[i], color:'#ffffff', tam:26, peso:'700', fuente:'Montserrat' });
+      if (i) LINEA(cx - 175, 310, cx - 175, 980, '#cbd5e1', 2).set('strokeDashArray', [8, 10]); });
+    const carriles = ['Diseño', 'Desarrollo', 'Lanzamiento'];
+    carriles.forEach((c, i) => { const y = 420 + i * 210; nodo('redondo', c, 250, y, { w:240, h:130, fill:'#e2e8f0', color:TINTA_ESQ, tam:30, peso:'700', fuente:'Montserrat' }); RECT(400, y + 85, 1400, 2, '#e2e8f0'); });
+    const barra = (txt, x1, x2, y, col) => nodo('pildora', txt, (x1 + x2) / 2, y, { w:x2 - x1, h:74, fill:col, color:'#ffffff', tam:24, peso:'600', fuente:'Poppins' });
+    barra('Investigación y bocetos', 410, 1050, 420, '#6366f1'); barra('Prototipo', 1080, 1440, 420, '#818cf8');
+    barra('Desarrollo', 760, 1440, 630, '#0ea5e9'); barra('Pruebas', 1470, 1790, 630, '#38bdf8');
+    barra('Campaña', 1150, 1440, 840, '#10b981'); barra('¡Lanzamiento! 🚀', 1470, 1790, 840, '#f59e0b');
+    LINEA(900, 300, 900, 985, '#ef4444', 4).set('strokeDashArray', [12, 10]);
+    nodo('pildora', 'Hoy', 900, 1010, { w:110, h:52, fill:'#ef4444', color:'#ffffff', tam:24, peso:'700' });
+  }},
+  // ================= ESQUEMAS =================
+  { nombre:'Esquema de llaves (3 niveles)', tam:[1920, 1080], crear(){
+    FONDO('#ffffff');
+    T('Cuadro sinóptico', 960, 60, { f:'Montserrat', s:44, b:'800', c:TINTA_ESQ, w:1400 });
+    nodo('redondo', 'Tema principal', 220, 560, { w:300, h:190, anchoMax:260, fill:PAL_ESQ[0], color:'#ffffff', tam:38, peso:'700', fuente:'Montserrat' });
+    LLAVE(395, 150, 820, 70, '#334155', 6);
+    [250, 560, 870].forEach((y, i) => {
+      const col = PAL_ESQ[i + 1];
+      nodo('redondo', 'Subtema ' + (i + 1), 640, y, { w:310, h:120, fill:tinte(col, 0.18), stroke:col, grosor:3, color:TINTA_ESQ, tam:32, peso:'700', fuente:'Montserrat' });
+      LLAVE(815, y - 118, 236, 42, col, 4);
+      [-80, 0, 80].forEach(dy => cajaEsq('Detalle, característica o ejemplo', 1180, y + dy, 640, 66, col, { fill:'#f8fafc', stroke:null, tam:24 }));
+    });
+  }},
+  { nombre:'Esquema de árbol (izquierda a derecha)', tam:[1920, 1080], crear(){
+    FONDO('#f8fafc');
+    const raiz = nodo('redondo', 'Tema', 230, 540, { w:300, h:170, fill:TINTA_ESQ, color:'#ffffff', tam:44, peso:'800', fuente:'Montserrat' });
+    [190, 540, 890].forEach((y, i) => {
+      const col = PAL_ESQ[i * 2];
+      const r = nodo('redondo', 'Idea ' + (i + 1), 780, y, { w:330, h:110, fill:col, color:'#ffffff', tam:32, peso:'700', fuente:'Montserrat' });
+      unir(raiz, r, { estilo:'curva', fin:'nada', color:col, ancho:6, lados:['der', 'izq'] });
+      [-75, 75].forEach(dy => { const h = cajaEsq('Detalle o ejemplo de la idea', 1420, y + dy, 470, 96, col, { fill:'#ffffff', tam:24 }); unir(r, h, { estilo:'curva', fin:'nada', color:col, ancho:4, lados:['der', 'izq'] }); });
+    });
+  }},
+  { nombre:'Esquema numerado (índice)', tam:[1240, 1754], crear(){
+    FONDO('#ffffff');
+    CAB_ESQ('Esquema del tema', 'Materia · Nombre · Fecha', { y:130 });
+    for (let i = 0; i < 4; i++){
+      const y0 = 320 + i * 355, col = PAL_ESQ[i];
+      NUM_ESQ(String(i + 1), 170, y0, 92, col, 40);
+      TL('Título de la sección', 245, y0, { f:'Montserrat', s:42, b:'800', c:col, w:900 });
+      RECT(166, y0 + 56, 8, 255, tinte(col, 0.35), { r:4 });
+      for (let k = 0; k < 3; k++){
+        const y = y0 + 110 + k * 72;
+        CIRC(222, y, 8, col);
+        TL(`${i + 1}.${k + 1}  Idea secundaria: explícala en una línea.`, 245, y, { f:'Poppins', s:28, c:'#334155', w:900 });
+      }
+    }
+  }},
+  { nombre:'Rueda de 6 partes', tam:[1920, 1080], crear(){
+    FONDO('#ffffff');
+    const cx = 960, cy = 545;
+    for (let i = 0; i < 6; i++){
+      const a0 = -90 + i * 60 + 2, a1 = a0 + 56, col = PAL_ESQ[i], am = (a0 + a1) / 2 * Math.PI / 180;
+      FIG(sectorD(cx, cy, 160, 340, a0, a1), col, { nombre:'Parte ' + (i + 1) });
+      T(String(i + 1), cx + 250 * Math.cos(am), cy + 250 * Math.sin(am), { f:'Montserrat', s:60, b:'800', c:'#ffffff', w:120 });
+      const lx = cx + 600 * Math.cos(am), ly = cy + 430 * Math.sin(am);
+      cajaEsq('Parte ' + (i + 1) + '\nDescríbela brevemente.', lx, ly, 340, 130, col, { fill:tinte(col), tam:24 });
+    }
+    nodo('circulo', 'Tema central', cx, cy, { w:290, h:290, anchoMax:230, fill:TINTA_ESQ, color:'#ffffff', tam:36, peso:'800', fuente:'Montserrat' });
+  }},
+  { nombre:'Pirámide de 5 niveles', tam:[1920, 1080], crear(){
+    FONDO('#f8fafc');
+    CAB_ESQ('Pirámide', 'Del nivel más básico (abajo) al más alto (arriba)', { x:700, w:1200, y:80 });
+    const cx = 700, top = 190, base = 1010, mitad = 520, n = 5, alto = (base - top) / n;
+    for (let i = 0; i < n; i++){
+      const y1 = top + i * alto + (i ? 6 : 0), y2 = top + (i + 1) * alto - 6, w1 = (y1 - top) / (base - top) * mitad, w2 = (y2 - top) / (base - top) * mitad, col = PAL_ESQ[i];
+      FIG(`M${cx - w1} ${y1}H${cx + w1}L${cx + w2} ${y2}H${cx - w2}Z`, col, { nombre:'Nivel ' + (5 - i) });
+      T(i ? 'Nivel ' + (5 - i) : 'Cima', cx, (y1 + y2) / 2 + (i ? 0 : 22), { f:'Montserrat', s:i ? 32 : 26, b:'800', c:'#ffffff', w:Math.max(160, w2 * 1.6) });
+      const ym = (y1 + y2) / 2;
+      LINEA(cx + (w1 + w2) / 2 + 24, ym, 1235, ym, col, 3).set('strokeDashArray', [6, 8]);
+      cajaEsq('Explica qué hay en este nivel.', 1530, ym, 560, alto - 30, col, { tam:24 });
+    }
+  }},
+  { nombre:'Embudo de 4 etapas', tam:[1920, 1080], crear(){
+    FONDO('#ffffff');
+    CAB_ESQ('Embudo', 'Cómo se reduce de una etapa a la siguiente', { x:700, w:1200, y:80 });
+    const cx = 700, top = 210, alto = 190, ws = [560, 440, 320, 200, 130];
+    ['Etapa 1', 'Etapa 2', 'Etapa 3', 'Etapa 4'].forEach((t, i) => {
+      const y1 = top + i * alto, y2 = y1 + alto - 14, col = PAL_ESQ[i];
+      FIG(`M${cx - ws[i]} ${y1}H${cx + ws[i]}L${cx + ws[i + 1]} ${y2}H${cx - ws[i + 1]}Z`, col, { nombre:t });
+      T(t, cx, (y1 + y2) / 2, { f:'Montserrat', s:38, b:'800', c:'#ffffff', w:ws[i + 1] * 2 });
+      const ym = (y1 + y2) / 2;
+      LINEA(cx + (ws[i] + ws[i + 1]) / 2 + 20, ym, 1265, ym, col, 3).set('strokeDashArray', [6, 8]);
+      cajaEsq(['100%', '60%', '30%', '10%'][i] + ' · Describe esta etapa', 1550, ym, 520, 130, col, { tam:26 });
+    });
+  }},
+  { nombre:'Ciclo de 6 pasos', tam:[1920, 1080], crear(){
+    FONDO('#f8fafc');
+    const cx = 960, cy = 545, R = 365;
+    for (let i = 0; i < 6; i++){
+      const a = (-90 + i * 60), b = a + 60, col = PAL_ESQ[i], rad = v => v * Math.PI / 180;
+      // flecha curva al siguiente paso
+      const a0 = rad(a + 17), a1 = rad(b - 17), p0 = [cx + R * Math.cos(a0), cy + R * Math.sin(a0)], p1 = [cx + R * Math.cos(a1), cy + R * Math.sin(a1)];
+      N_P(`M${p0[0]} ${p0[1]}A${R} ${R} 0 0 1 ${p1[0]} ${p1[1]}`, { stroke:col, sw:9, nombre:'Flecha' });
+      const tx = -Math.sin(a1), ty = Math.cos(a1), nx = Math.cos(a1), ny = Math.sin(a1);
+      FIG(`M${p1[0] + tx * 26} ${p1[1] + ty * 26}L${p1[0] - tx * 6 + nx * 18} ${p1[1] - ty * 6 + ny * 18}L${p1[0] - tx * 6 - nx * 18} ${p1[1] - ty * 6 - ny * 18}Z`, col, { nombre:'Punta' });
+      const x = cx + R * Math.cos(rad(a)), y = cy + R * Math.sin(rad(a));
+      nodo('circulo', 'Paso ' + (i + 1) + '\nQué pasa', x, y, { w:210, h:210, anchoMax:170, fill:col, color:'#ffffff', tam:26, peso:'700', fuente:'Montserrat' });
+    }
+    T('Nombre\ndel ciclo', cx, cy - 20, { f:'Montserrat', s:58, b:'800', c:TINTA_ESQ, w:420, lh:1.05 });
+    T('Se repite una y otra vez', cx, cy + 85, { f:'Poppins', s:26, c:GRIS_ESQ, w:420 });
+  }},
+  { nombre:'Causas y consecuencias', tam:[1920, 1080], crear(){
+    FONDO('#fff7ed');
+    CAB_ESQ('Causas y consecuencias', '¿Por qué pasa? ¿Qué provoca?', { y:80 });
+    const prob = nodo('redondo', 'Problema central', 960, 600, { w:420, h:230, anchoMax:360, fill:'#ef4444', color:'#ffffff', tam:42, peso:'800', fuente:'Montserrat' });
+    T('CAUSAS', 330, 230, { f:'Montserrat', s:34, b:'800', c:'#d97706', w:400, cs:150 });
+    T('CONSECUENCIAS', 1590, 230, { f:'Montserrat', s:34, b:'800', c:'#7c3aed', w:500, cs:150 });
+    [370, 600, 830].forEach((y, i) => {
+      const c = cajaEsq('Causa ' + (i + 1) + ': escribe por qué pasa', 330, y, 430, 150, '#f59e0b', { tam:26 });
+      unir(c, prob, { estilo:'curva', fin:'flecha', color:'#f59e0b', ancho:5, lados:['der', 'izq'] });
+      const k = cajaEsq('Consecuencia ' + (i + 1) + ': qué provoca', 1590, y, 430, 150, '#8b5cf6', { tam:26 });
+      unir(prob, k, { estilo:'curva', fin:'flecha', color:'#8b5cf6', ancho:5, lados:['der', 'izq'] });
+    });
+  }},
+  { nombre:'Comparación A vs B', tam:[1920, 1080], crear(){
+    FONDO('#ffffff');
+    RECT(0, 0, 960, 1080, '#e0f2fe', { nombre:'Lado A' }); RECT(960, 0, 960, 1080, '#fce7f3', { nombre:'Lado B' });
+    nodo('redondo', 'Opción A', 470, 150, { w:520, h:120, fill:'#0284c7', color:'#ffffff', tam:48, peso:'800', fuente:'Montserrat' });
+    nodo('redondo', 'Opción B', 1450, 150, { w:520, h:120, fill:'#db2777', color:'#ffffff', tam:48, peso:'800', fuente:'Montserrat' });
+    nodo('circulo', 'VS', 960, 150, { w:170, h:170, fill:'#111827', stroke:'#ffffff', grosor:8, color:'#ffffff', tam:58, peso:'800', fuente:'Montserrat' });
+    for (let i = 0; i < 4; i++){
+      const y = 355 + i * 160;
+      cajaEsq('Cómo es A en este punto', 470, y, 560, 120, '#7dd3fc', { tam:26 });
+      cajaEsq('Cómo es B en este punto', 1450, y, 560, 120, '#f9a8d4', { tam:26 });
+      nodo('pildora', 'Criterio ' + (i + 1), 960, y, { w:230, h:66, fill:'#ffffff', stroke:'#cbd5e1', grosor:2, color:'#111827', tam:24, peso:'700', fuente:'Montserrat' });
+    }
+    nodo('redondo', 'Conclusión: ¿cuál conviene más y por qué?', 960, 1005, { w:1500, h:90, fill:'#111827', color:'#ffffff', tam:30, peso:'600', fuente:'Poppins' });
+  }},
+  { nombre:'Escalera de pasos hacia la meta', tam:[1920, 1080], crear(){
+    DEGRADADO('#ecfdf5', '#eff6ff');
+    TL('Escalera hacia la meta', 120, 90, { f:'Montserrat', s:60, b:'800', c:TINTA_ESQ, w:1000 });
+    TL('Cada escalón es un paso que te acerca', 120, 160, { f:'Poppins', s:28, c:GRIS_ESQ, w:1000 });
+    for (let i = 0; i < 5; i++){
+      const x = 150 + i * 330, top = 900 - (i + 1) * 125, col = PAL_ESQ[i];
+      FIG(rr(x, top, 318, 1010 - top, 16), col, { nombre:'Escalón ' + (i + 1) });
+      T(String(i + 1), x + 159, top + 62, { f:'Montserrat', s:64, b:'800', c:'#ffffff', w:200 });
+      cajaEsq('Paso ' + (i + 1) + '\nDescríbelo', x + 159, top - 88, 300, 130, col, { tam:24 });
+    }
+    N_P('M1818 150V270', { stroke:TINTA_ESQ, sw:6, nombre:'Asta' }); FIG('M1821 150L1890 172L1821 196Z', '#ef4444', { nombre:'Bandera' });
+    T('¡META!', 1825, 300, { f:'Montserrat', s:26, b:'800', c:'#ef4444', w:200 });
+  }},
+  { nombre:'Diagrama de Venn de 3', tam:[1920, 1080], crear(){
+    FONDO('#ffffff');
+    CAB_ESQ('Diagrama de Venn', 'Lo que tienen en común y lo que los hace distintos', { y:70, s:56 });
+    [[810, 500, PAL_ESQ[0]], [1110, 500, PAL_ESQ[5]], [960, 760, PAL_ESQ[2]]].forEach(([x, y, c], i) => {
+      const k = new fabric.Circle({ left:x, top:y, radius:290, originX:'center', originY:'center', fill:hexA(c, 0.28), stroke:c, strokeWidth:4, name:'Conjunto ' + 'ABC'[i], id:nuevoId() });
+      canvas.add(k);
+    });
+    T('Grupo A', 680, 390, { f:'Montserrat', s:40, b:'800', c:PAL_ESQ[0], w:300 }); T('Solo A', 680, 450, { f:'Poppins', s:24, c:GRIS_ESQ, w:260 });
+    T('Grupo B', 1240, 390, { f:'Montserrat', s:40, b:'800', c:PAL_ESQ[5], w:300 }); T('Solo B', 1240, 450, { f:'Poppins', s:24, c:GRIS_ESQ, w:260 });
+    T('Grupo C', 960, 900, { f:'Montserrat', s:40, b:'800', c:'#047857', w:300 }); T('Solo C', 960, 955, { f:'Poppins', s:24, c:GRIS_ESQ, w:260 });
+    T('A y B', 960, 400, { f:'Poppins', s:24, b:'600', c:TINTA_ESQ, w:160 }); T('A y C', 830, 690, { f:'Poppins', s:24, b:'600', c:TINTA_ESQ, w:160 });
+    T('B y C', 1090, 690, { f:'Poppins', s:24, b:'600', c:TINTA_ESQ, w:160 });
+    nodo('circulo', 'Los tres', 960, 590, { w:120, h:120, fill:'#ffffff', stroke:TINTA_ESQ, grosor:3, color:TINTA_ESQ, tam:22, peso:'700' });
+  }},
+  { nombre:'Matriz de prioridades (2 × 2)', tam:[1920, 1080], crear(){
+    FONDO('#ffffff');
+    CAB_ESQ('Matriz de prioridades', null, { y:70, s:54 });
+    T('URGENTE', 710, 165, { f:'Montserrat', s:28, b:'800', c:GRIS_ESQ, w:500, cs:200 }); T('NO URGENTE', 1410, 165, { f:'Montserrat', s:28, b:'800', c:GRIS_ESQ, w:500, cs:200 });
+    T('IMPORTANTE', 290, 400, { f:'Montserrat', s:28, b:'800', c:GRIS_ESQ, w:380, cs:200, ang:-90 }); T('NO IMPORTANTE', 290, 800, { f:'Montserrat', s:28, b:'800', c:GRIS_ESQ, w:380, cs:200, ang:-90 });
+    [['Hazlo ya', '#dcfce7', '#15803d', 360, 200], ['Planéalo', '#dbeafe', '#1d4ed8', 1070, 200], ['Delégalo', '#fef9c3', '#a16207', 360, 610], ['Elimínalo', '#fee2e2', '#b91c1c', 1070, 610]].forEach(([t, f, c, x, y]) => {
+      RECT(x, y, 690, 390, f, { r:22, nombre:t });
+      TL(t, x + 40, y + 60, { f:'Montserrat', s:44, b:'800', c, w:600 });
+      TL('• Escribe aquí una tarea\n• Otra tarea\n• Otra más', x + 40, y + 200, { f:'Poppins', s:30, c:TINTA_ESQ, w:600, lh:1.5 });
+    });
+  }}
+];
+const FUENTES_ESQ = ['Montserrat', 'Poppins'];
+function usarPlantillaEsq(p){
+  const fin = () => { FUENTES_ESQ.forEach(f => fabric.util.clearFabricFontCache(f)); usarOrganizador(p); };
+  Promise.race([Promise.all(FUENTES_ESQ.flatMap(f => ['400', '600', '700', '800'].map(b => document.fonts.load(`${b} 40px "${f}"`).catch(() => null)))), new Promise(r => setTimeout(r, 2500))]).then(fin, fin);
+}
+PLANTILLAS_ESQ.forEach(p => CATALOGO.push({ nombre:p.nombre, cat:CAT_ESQ, tam:p.tam, crear:p.crear, usar:() => usarPlantillaEsq(p) }));
+CATEGORIAS.splice(CATEGORIAS.indexOf(CAT_NEON) + 1, 0, CAT_ESQ);
+(function(){
+  const c = document.createElement('button'); c.className = 'chip'; c.textContent = '🕒 Esquemas y líneas del tiempo';
+  c.onclick = () => { catActiva = CAT_ESQ; document.querySelectorAll('#chipsCat .chip').forEach(x => x.classList.toggle('on', x === c)); renderCatalogo(); };
+  const neon = [...document.querySelectorAll('#chipsCat .chip')].find(x => x.textContent.includes('Neón'));
+  if (neon) neon.after(c); else $('chipsCat').appendChild(c);
+})();
