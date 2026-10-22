@@ -211,3 +211,8 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - La compu ve una vista previa en vivo; el teléfono graba con MediaRecorder a su máxima calidad (720p, 1080p o 4K; MP4 en iPhone) y al detener manda el archivo completo por el canal de datos, con barra de avance. Si se corta la conexión, el teléfono puede guardar el video ahí mismo.
 - Funciona con «Cámara», «Pantalla + cámara» y «Mi presentación + cámara» (burbuja con el video del teléfono, su micrófono opcional y el desfase de arranque compensado). Si la compu no tiene cámara, el estudio ofrece usar el teléfono.
 - **Hay que publicar las reglas nuevas de `firestore.rules`** (sección `camaras`).
+
+## v53: plantillas «Neón y tecnología»
+- `84-plantillas-neon-tecnologicas.js`: nueva categoría (chip «✨ Neón y tech») con 8 plantillas para redes: Funciones ocultas, Prototipado de apps y web, Mapas mentales ultra rápidos, Todo en un solo lugar, Mi kit de marca (1080×1080), Tip del día (1080×1350), ¡Ya disponible! (1080×1080) y Nueva función (historia 1080×1920).
+- Todo es editable: textos con degradado, brillo, contorno neón e inclinación; ventanas y teléfonos en líneas, cursores, burbujas de «me gusta», nodos con íconos de línea, barras, arcos, cuadrículas, puntos, QR decorativo (se cambia por uno real en Elementos → QR) y paleta de marca.
+- Las miniaturas se rehacen cuando cargan las letras (Bebas Neue, Montserrat, Pacifico…).
