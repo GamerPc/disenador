@@ -193,3 +193,9 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - Editar: subir videos, fotos y música; páginas de tu diseño como clips; línea de tiempo con recortar, dividir (S), reordenar, velocidad, volumen, silenciar, fundido, acercamiento lento; textos encima con fondo; música con volumen; deshacer/rehacer.
 - Exportar: se reproduce en tiempo real a un lienzo (`captureStream`) con el audio mezclado (Web Audio) y se descarga «Mi video.mp4». Formatos 16:9, 9:16, 1:1 y 4:3.
 - Todo se guarda en el navegador (IndexedDB `disenador_video`), no en la nube.
+
+## v49: transiciones y plantillas de video
+- Transiciones entre clips (`c.trans = {tipo, dur}` en el clip que entra, centradas en el corte, sin cambiar la duración): disolver, pasar por negro, destello blanco, deslizar (← → ↑), empujar, barrido, círculo, zoom, desenfoque y girar. Pestaña 🔀 Transiciones con muestras animadas, rombo ◆ entre clips en la línea de tiempo, «usar en todos los cortes» y opción en Editar. El clip que no suena se dibuja con una foto de su primer/último cuadro (`EV.snaps`), así funciona aunque los dos pedazos sean del mismo video.
+- Textos con animación de entrada (aparecer, subir, rebotar, deslizar, máquina de escribir), 14 letras, color de fondo, contorno estilo TikTok y mayúsculas; se arrastran sobre la vista previa y se achican solos si una palabra no cabe. Nuevos estilos en la pestaña Texto.
+- `82-plantillas-de-video.js`: 12 plantillas (3 tips, antes y después, un día en mi vida, tutorial, anuncio de evento, frase del día, carrusel de fotos, promoción, cumpleaños, intro de YouTube, exposición de clase, noticiero escolar) por categoría: Reels y TikTok (9:16), Instagram (1:1 y 4:5), YouTube y escuela (16:9). Cada escena es un espacio: tocar la vista previa, soltar un archivo encima o elegir uno de «Mis archivos» la cambia por tu foto o video sin perder textos ni transiciones.
+- Las páginas de tu diseño se agregan con la transición que elijas.

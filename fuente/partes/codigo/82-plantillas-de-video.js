@@ -1,0 +1,242 @@
+/* =========================================================
+   PLANTILLAS DE VIDEO (Reels, TikTok, Instagram, YouTube y escuela)
+   Cada plantilla arma escenas con fondo de color, textos animados y transiciones.
+   Cada escena es un «espacio»: toca la vista previa (o «Poner mi foto o video») para cambiarla por tu foto o video.
+   También: arrastrar los textos sobre el video y soltar un archivo sobre la vista previa para reemplazar la escena.
+   ========================================================= */
+const CATS_PLANTILLA_EV = { todas:'Todas', reels:'Reels y TikTok', insta:'Instagram', youtube:'YouTube', escuela:'Escuela' };
+// atajos para escribir las plantillas
+const TT = (texto, y, tam, extra = {}) => ({ texto, y, tam, ...extra });
+const PLANTILLAS_EV = [
+  { id:'tips', nombre:'3 tips', cats:['reels'], formato:'9:16', fuente:'Anton', estilo:{ mayus:true, borde:'#000000', anim:'pop' }, trans:'empujarIzq',
+    escenas:[
+      { dur:2.6, bg:['#ff3d7f', '#7b2ff7'], deco:'circulos', textos:[TT('3 tips para\nestudiar mejor', 0.42, 0.075), TT('(el #3 es el mejor) 👇', 0.6, 0.032, { fuente:'Poppins', mayus:false, borde:null, anim:'subir', desde:0.6 })] },
+      { dur:3.2, bg:['#0f172a', '#1e293b'], deco:'puntos', textos:[TT('1', 0.2, 0.14, { color:'#ffd60a' }), TT('Haz resúmenes con tus propias palabras', 0.8, 0.042, { fuente:'Poppins', mayus:false, borde:null, fondo:'#000000b3', anim:'escribir', desde:0.3 })] },
+      { dur:3.2, bg:['#052e2b', '#0f766e'], deco:'puntos', textos:[TT('2', 0.2, 0.14, { color:'#5eead4' }), TT('Estudia 25 minutos y descansa 5', 0.8, 0.042, { fuente:'Poppins', mayus:false, borde:null, fondo:'#000000b3', anim:'escribir', desde:0.3 })] },
+      { dur:3.2, bg:['#3b0764', '#7e22ce'], deco:'puntos', textos:[TT('3', 0.2, 0.14, { color:'#f0abfc' }), TT('Explícaselo a alguien más', 0.8, 0.042, { fuente:'Poppins', mayus:false, borde:null, fondo:'#000000b3', anim:'escribir', desde:0.3 })] },
+      { dur:2.6, bg:['#7b2ff7', '#ff3d7f'], deco:'circulos', trans:'zoom', textos:[TT('Sígueme\npara más', 0.44, 0.08), TT('❤  💬  ↗', 0.6, 0.05, { borde:null, anim:'subir', desde:0.5 })] }
+    ] },
+  { id:'antesdespues', nombre:'Antes y después', cats:['reels', 'insta'], formato:'9:16', fuente:'Bebas Neue', estilo:{ anim:'deslizar' }, trans:'barrido',
+    escenas:[
+      { dur:3, bg:['#374151', '#111827'], deco:'marco', textos:[TT('ANTES', 0.1, 0.06, { fondo:'#ef4444e6' })] },
+      { dur:3.5, bg:['#065f46', '#10b981'], deco:'marco', trDur:1, textos:[TT('DESPUÉS', 0.1, 0.06, { fondo:'#22c55ee6' }), TT('✨ ¿Qué te parece? ✨', 0.86, 0.04, { fuente:'Poppins', anim:'subir', desde:0.8 })] }
+    ] },
+  { id:'vlog', nombre:'Un día en mi vida', cats:['reels'], formato:'9:16', fuente:'Poppins', estilo:{ anim:'deslizar', fondo:'#ffffffe6', color:'#111111' }, trans:'zoom',
+    escenas:[
+      { dur:2.2, bg:['#f59e0b', '#ef4444'], deco:'ondas', zoom:true, textos:[TT('UN DÍA EN\nMI VIDA', 0.45, 0.085, { fuente:'Bebas Neue', fondo:null, color:'#ffffff', anim:'pop' })] },
+      { dur:1.7, bg:['#fde68a', '#f59e0b'], zoom:true, textos:[TT('7:00 am ☀️', 0.1, 0.04)] },
+      { dur:1.7, bg:['#bfdbfe', '#3b82f6'], zoom:true, trans:'deslizarArriba', textos:[TT('9:00 am 📚', 0.1, 0.04)] },
+      { dur:1.7, bg:['#fecaca', '#ef4444'], zoom:true, textos:[TT('2:00 pm 🍜', 0.1, 0.04)] },
+      { dur:1.7, bg:['#bbf7d0', '#22c55e'], zoom:true, trans:'deslizarArriba', textos:[TT('6:00 pm 🏃', 0.1, 0.04)] },
+      { dur:2.2, bg:['#312e81', '#0f172a'], zoom:true, textos:[TT('10:00 pm 🌙', 0.1, 0.04), TT('¿Cómo es tu día?', 0.82, 0.045, { fondo:null, color:'#ffffff', anim:'subir', desde:0.6 })] }
+    ] },
+  { id:'tutorial', nombre:'Tutorial paso a paso', cats:['reels', 'escuela'], formato:'9:16', fuente:'Montserrat', estilo:{ anim:'subir' }, trans:'deslizarIzq',
+    escenas:[
+      { dur:2.8, bg:['#0ea5e9', '#6366f1'], deco:'circulos', textos:[TT('CÓMO HACER\nUN MAPA MENTAL', 0.42, 0.06, { anim:'pop' }), TT('en 3 pasos', 0.57, 0.04, { negrita:false, desde:0.5 })] },
+      { dur:3.2, bg:['#e0f2fe', '#bae6fd'], deco:'lineas', textos:[TT('PASO 1', 0.1, 0.045, { fondo:'#0ea5e9e6' }), TT('Escribe el tema al centro', 0.86, 0.04, { fondo:'#000000b3', desde:0.4 })] },
+      { dur:3.2, bg:['#ede9fe', '#ddd6fe'], deco:'lineas', textos:[TT('PASO 2', 0.1, 0.045, { fondo:'#6366f1e6' }), TT('Saca ramas con las ideas principales', 0.86, 0.04, { fondo:'#000000b3', desde:0.4 })] },
+      { dur:3.2, bg:['#fae8ff', '#f5d0fe'], deco:'lineas', textos:[TT('PASO 3', 0.1, 0.045, { fondo:'#c026d3e6' }), TT('Agrega dibujos y colores', 0.86, 0.04, { fondo:'#000000b3', desde:0.4 })] },
+      { dur:2.5, bg:['#22c55e', '#0ea5e9'], deco:'confeti', trans:'circulo', textos:[TT('¡LISTO! ✅', 0.45, 0.08, { anim:'pop' })] }
+    ] },
+  { id:'evento', nombre:'Anuncio de evento', cats:['reels', 'escuela', 'insta'], formato:'9:16', fuente:'Anton', estilo:{ mayus:true, anim:'pop' }, trans:'blanco',
+    escenas:[
+      { dur:1.8, bg:['#facc15', '#f97316'], deco:'lineas', textos:[TT('¡ATENCIÓN!', 0.45, 0.1, { color:'#111111' })] },
+      { dur:2.6, bg:['#1d4ed8', '#7c3aed'], deco:'circulos', textos:[TT('Feria de\nciencias', 0.45, 0.09)] },
+      { dur:2.4, bg:['#0f172a', '#1e3a8a'], deco:'puntos', trans:'deslizarIzq', textos:[TT('📅 15 de noviembre', 0.42, 0.055), TT('📍 Patio principal · 10:00 am', 0.55, 0.035, { fuente:'Poppins', anim:'subir', desde:0.5 })] },
+      { dur:2.4, bg:['#f97316', '#ef4444'], deco:'confeti', trans:'zoom', textos:[TT('¡No faltes!', 0.45, 0.1)] }
+    ] },
+  { id:'frase', nombre:'Frase del día', cats:['reels', 'insta'], formato:'9:16', fuente:'Playfair Display', estilo:{ negrita:false, cursiva:true, anim:'escribir' },
+    escenas:[
+      { dur:7, bg:['#1f2937', '#4b5563'], deco:'marco', zoom:true, textos:[TT('“El éxito es la suma de pequeños esfuerzos repetidos día tras día.”', 0.45, 0.05, { dura:6.6 }), TT('— Robert Collier', 0.62, 0.032, { fuente:'Poppins', cursiva:false, anim:'subir', desde:3.5 })] }
+    ] },
+  { id:'carrusel', nombre:'Carrusel de fotos', cats:['insta'], formato:'1:1', fuente:'Pacifico', estilo:{ negrita:false, anim:'subir' }, trans:'disolver',
+    escenas:[
+      { dur:2.6, bg:['#fb7185', '#f59e0b'], deco:'circulos', zoom:true, textos:[TT('Mis fotos favoritas', 0.5, 0.09, { anim:'pop' })] },
+      { dur:2.4, bg:['#a78bfa', '#60a5fa'], zoom:true, textos:[] },
+      { dur:2.4, bg:['#34d399', '#22d3ee'], zoom:true, textos:[] },
+      { dur:2.4, bg:['#f472b6', '#c084fc'], zoom:true, textos:[] },
+      { dur:2.6, bg:['#f59e0b', '#fb7185'], zoom:true, textos:[TT('Gracias por ver ❤', 0.85, 0.06)] }
+    ] },
+  { id:'promo', nombre:'Promoción / venta', cats:['insta', 'reels'], formato:'4:5', fuente:'Montserrat', estilo:{ mayus:true, anim:'pop' }, trans:'deslizarIzq',
+    escenas:[
+      { dur:2, bg:['#111827', '#374151'], deco:'lineas', textos:[TT('Nuevo', 0.45, 0.1, { color:'#facc15' })] },
+      { dur:2.8, bg:['#fef3c7', '#fde68a'], deco:'marco', textos:[TT('Galletas caseras', 0.12, 0.05, { fondo:'#111827e6' })] },
+      { dur:2.4, bg:['#dc2626', '#f97316'], deco:'confeti', trans:'zoom', textos:[TT('-20% hoy', 0.45, 0.12, { borde:'#000000' })] },
+      { dur:2.6, bg:['#111827', '#1f2937'], deco:'puntos', textos:[TT('Pide las tuyas 📩', 0.45, 0.06), TT('@tu_usuario', 0.56, 0.035, { mayus:false, negrita:false, anim:'subir', desde:0.5 })] }
+    ] },
+  { id:'cumple', nombre:'Feliz cumpleaños', cats:['insta'], formato:'1:1', fuente:'Pacifico', estilo:{ negrita:false, anim:'pop', borde:'#000000' }, trans:'circulo',
+    escenas:[
+      { dur:3, bg:['#f472b6', '#a855f7'], deco:'confeti', textos:[TT('¡Feliz\ncumpleaños!', 0.45, 0.11)] },
+      { dur:3, bg:['#fbbf24', '#f472b6'], deco:'confeti', zoom:true, textos:[TT('Nombre', 0.82, 0.08)] },
+      { dur:3, bg:['#a855f7', '#6366f1'], deco:'confeti', textos:[TT('🎂 🎉 🎈', 0.45, 0.1, { borde:null }), TT('Que se cumplan tus deseos', 0.6, 0.05, { fuente:'Poppins', borde:null, anim:'subir', desde:0.5 })] }
+    ] },
+  { id:'intro', nombre:'Intro de YouTube', cats:['youtube'], formato:'16:9', fuente:'Bebas Neue', estilo:{ anim:'pop' }, trans:'circulo',
+    escenas:[
+      { dur:2.2, bg:['#ef4444', '#7f1d1d'], deco:'circulos', textos:[TT('NOMBRE DEL CANAL', 0.47, 0.14)] },
+      { dur:2.6, bg:['#0f172a', '#1e293b'], deco:'lineas', textos:[TT('Video nuevo cada semana', 0.45, 0.08, { fuente:'Poppins', anim:'subir' }), TT('🔔 Suscríbete', 0.62, 0.06, { fuente:'Poppins', fondo:'#ef4444e6', anim:'deslizar', desde:0.6 })] }
+    ] },
+  { id:'expo', nombre:'Exposición de clase', cats:['escuela', 'youtube'], formato:'16:9', fuente:'Montserrat', estilo:{ anim:'subir' }, trans:'deslizarIzq',
+    escenas:[
+      { dur:3.5, bg:['#1e3a8a', '#0ea5e9'], deco:'marco', textos:[TT('Tema de la exposición', 0.42, 0.09, { anim:'pop' }), TT('Nombre · Grupo · Fecha', 0.6, 0.045, { negrita:false, desde:0.6 })] },
+      { dur:4, bg:['#f8fafc', '#e2e8f0'], deco:'lineas', textos:[TT('Introducción', 0.1, 0.06, { fondo:'#1e3a8ae6' }), TT('¿De qué trata y por qué importa?', 0.86, 0.045, { fondo:'#000000b3', desde:0.5 })] },
+      { dur:4, bg:['#f8fafc', '#e2e8f0'], deco:'lineas', textos:[TT('Punto 1', 0.1, 0.06, { fondo:'#0ea5e9e6' }), TT('Explica la primera idea', 0.86, 0.045, { fondo:'#000000b3', desde:0.5 })] },
+      { dur:4, bg:['#f8fafc', '#e2e8f0'], deco:'lineas', textos:[TT('Punto 2', 0.1, 0.06, { fondo:'#0ea5e9e6' }), TT('Explica la segunda idea', 0.86, 0.045, { fondo:'#000000b3', desde:0.5 })] },
+      { dur:4, bg:['#f8fafc', '#e2e8f0'], deco:'lineas', textos:[TT('Conclusión', 0.1, 0.06, { fondo:'#1e3a8ae6' }), TT('Lo más importante en una frase', 0.86, 0.045, { fondo:'#000000b3', desde:0.5 })] },
+      { dur:3, bg:['#0ea5e9', '#1e3a8a'], deco:'confeti', trans:'desenfoque', textos:[TT('¡Gracias!', 0.47, 0.12, { anim:'pop' })] }
+    ] },
+  { id:'noticiero', nombre:'Noticiero escolar', cats:['escuela', 'youtube'], formato:'16:9', fuente:'Oswald', estilo:{ mayus:true, anim:'deslizar' }, trans:'empujarIzq',
+    escenas:[
+      { dur:3, bg:['#991b1b', '#111827'], deco:'lineas', textos:[TT('Noticiero escolar', 0.45, 0.13, { anim:'pop' }), TT('Edición de hoy', 0.62, 0.05, { fuente:'Poppins', mayus:false, negrita:false, anim:'subir', desde:0.6 })] },
+      { dur:5, bg:['#1f2937', '#374151'], textos:[TT('Última hora', 0.74, 0.04, { fondo:'#dc2626f2', x:0.2 }), TT('Título de la noticia 1', 0.86, 0.05, { fondo:'#111827e6', desde:0.3 })] },
+      { dur:5, bg:['#1f2937', '#374151'], textos:[TT('Deportes', 0.74, 0.04, { fondo:'#2563ebf2', x:0.2 }), TT('Título de la noticia 2', 0.86, 0.05, { fondo:'#111827e6', desde:0.3 })] },
+      { dur:3, bg:['#111827', '#991b1b'], deco:'lineas', trans:'negro', textos:[TT('Hasta la próxima', 0.47, 0.1, { anim:'pop' })] }
+    ] }
+];
+
+/* ---------- fondos de las escenas ---------- */
+function azarEV(semilla){ let a = semilla >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function dibujarFondoPlantillaEV(x, W, H, es, semilla = 1){
+  const [c1, c2] = es.bg || ['#7b2ff7', '#ff3d7f'], g = x.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, c1); g.addColorStop(1, c2); x.fillStyle = g; x.fillRect(0, 0, W, H);
+  const rnd = azarEV(semilla * 9973 + 7), m = Math.min(W, H);
+  x.save();
+  switch (es.deco){
+    case 'circulos':
+      for (let i = 0; i < 5; i++){ const r = m * (0.18 + rnd() * 0.35); x.globalAlpha = 0.12 + rnd() * 0.1; x.fillStyle = '#ffffff'; x.beginPath(); x.arc(rnd() * W, rnd() * H, r, 0, Math.PI * 2); x.fill(); }
+      break;
+    case 'puntos':
+      x.globalAlpha = 0.14; x.fillStyle = '#ffffff';
+      for (let y = m * 0.04; y < H; y += m * 0.07) for (let xx = m * 0.04; xx < W; xx += m * 0.07){ x.beginPath(); x.arc(xx, y, m * 0.006, 0, Math.PI * 2); x.fill(); }
+      break;
+    case 'lineas':
+      x.globalAlpha = 0.09; x.strokeStyle = '#ffffff'; x.lineWidth = m * 0.03;
+      for (let i = -H; i < W + H; i += m * 0.12){ x.beginPath(); x.moveTo(i, 0); x.lineTo(i + H, H); x.stroke(); }
+      break;
+    case 'ondas':
+      x.globalAlpha = 0.18; x.fillStyle = '#ffffff';
+      for (let k = 0; k < 3; k++){ x.beginPath(); x.moveTo(0, H); const base = H * (0.78 + k * 0.07);
+        for (let xx = 0; xx <= W; xx += 8) x.lineTo(xx, base + Math.sin(xx / W * Math.PI * (2 + k) + k) * m * 0.035); x.lineTo(W, H); x.closePath(); x.fill(); }
+      break;
+    case 'marco':
+      x.globalAlpha = 0.5; x.strokeStyle = '#ffffff'; x.lineWidth = m * 0.008; const p = m * 0.05;
+      x.beginPath(); x.roundRect ? x.roundRect(p, p, W - 2 * p, H - 2 * p, m * 0.03) : x.rect(p, p, W - 2 * p, H - 2 * p); x.stroke();
+      break;
+    case 'confeti': {
+      const cols = ['#facc15', '#22d3ee', '#f472b6', '#a3e635', '#ffffff', '#fb923c'];
+      for (let i = 0; i < 70; i++){ x.save(); x.globalAlpha = 0.85; x.fillStyle = cols[i % cols.length]; x.translate(rnd() * W, rnd() * H); x.rotate(rnd() * Math.PI); x.fillRect(-m * 0.012, -m * 0.005, m * 0.024, m * 0.01); x.restore(); }
+      break;
+    }
+  }
+  x.restore();
+}
+function textosDeEscenaEV(pl, es, t0){
+  return (es.textos || []).map(tx => {
+    const desde = tx.desde ?? 0.15, o = { id:nid(), color:'#ffffff', fuente:pl.fuente || 'Poppins', negrita:true, pos:'centro', tam:0.07, fondo:null, anim:'subir', ...(pl.estilo || {}), ...tx };
+    delete o.desde; delete o.dura; o.texto = tx.texto; o.inicio = t0 + desde; o.dur = tx.dura || Math.max(0.5, es.dur - desde - 0.1);
+    Object.keys(o).forEach(k => { if (o[k] === null && k !== 'fondo') delete o[k]; });
+    return o;
+  });
+}
+const fuentesPlantillaEV = pl => [...new Set([pl.fuente || 'Poppins', ...pl.escenas.flatMap(e => (e.textos || []).map(t => t.fuente).filter(Boolean))])];
+function cargarFuentesEV(lista){ return Promise.all(lista.map(f => Promise.all([document.fonts.load(`700 40px "${f}"`), document.fonts.load(`400 40px "${f}"`), document.fonts.load(`italic 400 40px "${f}"`)]).catch(() => {}))); }
+
+/* ---------- miniaturas y lista ---------- */
+const miniPlantillasEV = {};
+function miniPlantillaEV(pl){
+  if (miniPlantillasEV[pl.id]) return miniPlantillasEV[pl.id];
+  const [w, h] = FORMATOS_EV[pl.formato], k = 220 / Math.max(w, h), W = Math.round(w * k), H = Math.round(h * k);
+  const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+  const es = pl.escenas[0]; dibujarFondoPlantillaEV(x, W, H, es, 1);
+  textosDeEscenaEV(pl, es, 0).forEach(tx => dibujarTextoEV(x, { ...tx, anim:'ninguna' }, tx.inicio + 0.01, W, H, false));
+  return (miniPlantillasEV[pl.id] = c.toDataURL('image/jpeg', 0.85));
+}
+let catPlantillaEV = 'todas', fuentesListasEV = false;
+async function pintarPlantillasEV(){
+  const cats = $('evPlCats'), lista = $('evPlLista'); if (!lista) return;
+  cats.innerHTML = Object.entries(CATS_PLANTILLA_EV).map(([k, n]) => `<button class="chip${k === catPlantillaEV ? ' on' : ''}" data-cat="${k}">${n}</button>`).join('');
+  cats.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => { catPlantillaEV = b.dataset.cat; pintarPlantillasEV(); });
+  if (!fuentesListasEV){
+    lista.innerHTML = '<p class="hint">Cargando plantillas…</p>';
+    await cargarFuentesEV([...new Set(PLANTILLAS_EV.flatMap(fuentesPlantillaEV))]); fuentesListasEV = true;
+  }
+  const vis = PLANTILLAS_EV.filter(p => catPlantillaEV === 'todas' || p.cats.includes(catPlantillaEV));
+  lista.innerHTML = vis.map(p => { const dur = p.escenas.reduce((s, e) => s + e.dur, 0);
+    return `<button class="evPlantilla f${p.formato.replace(':', 'x')}" data-pl="${p.id}" title="Usar «${esc(p.nombre)}»"><img src="${miniPlantillaEV(p)}" alt=""><b>${esc(p.nombre)}</b><small>${p.formato} · ${p.escenas.length} escena${p.escenas.length > 1 ? 's' : ''} · ${Math.round(dur)} s</small></button>`; }).join('');
+  lista.querySelectorAll('[data-pl]').forEach(b => b.onclick = () => usarPlantillaEV(PLANTILLAS_EV.find(p => p.id === b.dataset.pl)));
+}
+async function usarPlantillaEV(pl){
+  if (!pl) return;
+  if (EV.p.clips.length && !confirm('¿Empezar con la plantilla «' + pl.nombre + '»?\nLo que tienes ahora en la línea de tiempo se reemplaza (puedes deshacer con Ctrl+Z).')) return;
+  reproducirEV(false); cargando(true);
+  try {
+    await cargarFuentesEV(fuentesPlantillaEV(pl));
+    const [W0, H0] = FORMATOS_EV[pl.formato], clips = [], textos = [];
+    let t = 0;
+    for (const [i, es] of pl.escenas.entries()){
+      const c = document.createElement('canvas'); c.width = W0; c.height = H0;
+      dibujarFondoPlantillaEV(c.getContext('2d'), W0, H0, es, i + 1);
+      const blob = await new Promise(ok => c.toBlob(ok, 'image/jpeg', 0.9));
+      const id = nid(); await guardarMedioEV(id, { blob, nombre:pl.nombre + ' · escena ' + (i + 1), tipo:'imagen', plantilla:true });
+      await cargarMedioEV(id);
+      const tr = es.trans || pl.trans;
+      clips.push({ id:nid(), blob:id, tipo:'imagen', nombre:'Escena ' + (i + 1), ini:0, fin:es.dur, vol:1, mute:false, vel:1, ajuste:'cubrir', fundido:false, zoomLento:!!es.zoom, cam:null, hueco:true,
+        trans:i && tr && tr !== 'ninguna' ? { tipo:tr, dur:es.trDur || 0.6 } : null });
+      textos.push(...textosDeEscenaEV(pl, es, t));
+      t += es.dur;
+    }
+    EV.p = { ...EV.p, formato:pl.formato, clips, textos, nombre:pl.nombre };
+    EV.sel = { tipo:'clip', id:clips[0].id }; EV.t = 0;
+    ajustarLienzoEV(); $('evNombre').value = EV.p.nombre;
+    guardarProyectoEV(); pintarTodoEV(); verEnEV(0.6);
+    toast('✨ Plantilla lista: toca cada texto para cambiarlo y cada escena para poner tu foto o video');
+  } catch (e) { toast('No se pudo usar la plantilla: ' + e.message); } finally { cargando(false); }
+}
+
+/* ---------- vista previa: arrastrar textos, tocar un espacio para reemplazarlo, soltar archivos ---------- */
+(function(){
+  const cv = $('evLienzo');
+  const punto = e => { const b = cv.getBoundingClientRect(); return { b, fx:(e.clientX - b.left) / b.width, fy:(e.clientY - b.top) / b.height }; };
+  const textoEn = (fx, fy) => { const X = fx * cv.width, Y = fy * cv.height; const cajas = (EV.cajasTexto || []).slice().reverse(); return cajas.find(c => X >= c.x0 && X <= c.x1 && Y >= c.y0 && Y <= c.y1); };
+  let arrastro = false;
+  cv.addEventListener('pointerdown', e => {
+    arrastro = false;
+    const { b, fx, fy } = punto(e), caja = textoEn(fx, fy); if (!caja) return;
+    const tx = EV.p.textos.find(t => t.id === caja.id); if (!tx) return;
+    e.preventDefault(); e.stopImmediatePropagation(); if (EV.play) reproducirEV(false);
+    EV.sel = { tipo:'texto', id:tx.id }; pintarLineaEV(); tabEV('editar');
+    const cx0 = (caja.x0 + caja.x1) / 2 / cv.width, cy0 = (caja.y0 + caja.y1) / 2 / cv.height, x0 = e.clientX, y0 = e.clientY;
+    cv.setPointerCapture(e.pointerId);
+    const mover = ev => {
+      if (Math.hypot(ev.clientX - x0, ev.clientY - y0) > 3) arrastro = true; if (!arrastro) return;
+      let nx = cx0 + (ev.clientX - x0) / b.width, ny = cy0 + (ev.clientY - y0) / b.height;
+      if (Math.abs(nx - 0.5) < 0.02) nx = 0.5;     // se pega al centro
+      tx.x = Math.max(0.05, Math.min(0.95, nx)); tx.y = Math.max(0.04, Math.min(0.96, ny)); cuadroEV();
+    };
+    const fin = () => { cv.removeEventListener('pointermove', mover); cv.removeEventListener('pointerup', fin); if (arrastro){ guardarProyectoEV(); pintarInspectorEV(); } else setTimeout(() => { const ta = document.querySelector('#evInspector textarea'); if (ta) ta.focus(); }, 30); };
+    cv.addEventListener('pointermove', mover); cv.addEventListener('pointerup', fin);
+  }, true);
+  cv.addEventListener('click', e => {
+    if (arrastro){ arrastro = false; return; }
+    const { fx, fy } = punto(e); if (textoEn(fx, fy)) return;
+    const r = clipEnEV(EV.t); if (!r || !r.c.hueco) return;
+    if (r.c.cam && Math.hypot((fx - r.c.cam.x) * cv.width, (fy - r.c.cam.y) * cv.height) <= Math.min(cv.width, cv.height) * r.c.cam.tam / 2) return;
+    if (EV.play) reproducirEV(false);
+    abrirReemplazoEV(r.c);
+  });
+  cv.addEventListener('pointermove', e => {
+    if (e.buttons) return; const { fx, fy } = punto(e);
+    if (textoEn(fx, fy)) cv.style.cursor = 'move';
+    else { const r = clipEnEV(EV.t); if (r && r.c.hueco && !r.c.cam) cv.style.cursor = 'pointer'; }
+  });
+  // soltar un video o foto sobre la vista previa = reemplazar la escena que se ve
+  const vista = cv.parentElement;
+  vista.addEventListener('dragover', e => { if ([...(e.dataTransfer.types || [])].includes('Files') && EV.p.clips.length){ e.preventDefault(); vista.classList.add('soltarAqui'); } });
+  vista.addEventListener('dragleave', () => vista.classList.remove('soltarAqui'));
+  vista.addEventListener('drop', async e => {
+    vista.classList.remove('soltarAqui');
+    const f = e.dataTransfer.files[0], r = clipEnEV(EV.t);
+    if (!f || !r || !/^(video|image)\//.test(f.type)) return;
+    e.preventDefault(); e.stopPropagation(); $('evDrop').classList.remove('sobre');
+    await reemplazarClipEV(r.c, f);
+  });
+})();

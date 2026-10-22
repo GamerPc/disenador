@@ -40,6 +40,7 @@ function guardarProyectoEV(conHistorial = true){
   }
   clearTimeout(tGuardarEV);
   tGuardarEV = setTimeout(() => dbEVop('estado', 'readwrite', st => st.put(JSON.stringify(EV.p), 'proyecto')).catch(() => {}), 500);
+  clearTimeout(tSnapEV); tSnapEV = setTimeout(() => { if (!EV.play && !EV.exportando) prepararSnapsEV(); }, 700);
 }
 function deshacerEV(d){
   const i = EV.hi + d; if (i < 0 || i >= EV.hist.length) return;
@@ -61,7 +62,7 @@ async function cargarMedioEV(id){
   const m = EV.medios[id] = {};
   m.listo = (async () => {
     const d = await leerMedioEV(id); if (!d) throw new Error('falta');
-    m.tipo = d.tipo; m.nombre = d.nombre; m.url = URL.createObjectURL(d.blob);
+    m.tipo = d.tipo; m.nombre = d.nombre; m.plantilla = !!d.plantilla; m.url = URL.createObjectURL(d.blob);
     if (d.tipo === 'imagen'){
       m.el = new Image(); m.el.src = m.url; await m.el.decode().catch(() => {}); m.w = m.el.naturalWidth; m.h = m.el.naturalHeight; m.dur = 5;
       m.thumb = miniEV(m.el, m.w, m.h);
@@ -142,48 +143,175 @@ function dibujarMedioEV(x, el, w, h, W0, H0, ajuste, zoomK){
   const k = (ajuste === 'encajar' ? Math.min(W0 / w, H0 / h) : Math.max(W0 / w, H0 / h)) * (zoomK || 1);
   const dw = w * k, dh = h * k; x.drawImage(el, (W0 - dw) / 2, (H0 - dh) / 2, dw, dh);
 }
+/* ---------- transiciones entre clips ----------
+   La transición vive en el clip que ENTRA (c.trans = {tipo, dur}) y se centra en el corte:
+   la mitad usa el final del clip anterior y la otra mitad el inicio del siguiente (no cambia la duración del video).
+   El clip que no está sonando se dibuja con una «foto» de su primer/último cuadro (EV.snaps). */
+const TRANS_EV = { ninguna:'Sin transición', disolver:'Disolver', negro:'Pasar por negro', blanco:'Destello blanco', deslizarIzq:'Deslizar ←', deslizarDer:'Deslizar →', deslizarArriba:'Deslizar ↑', empujarIzq:'Empujar ←', barrido:'Barrido', circulo:'Círculo', zoom:'Zoom', desenfoque:'Desenfoque', girar:'Girar' };
+EV.snaps = {};
+const suaveEV = p => p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+const claveSnap = (blob, tt) => blob + '@' + (+tt).toFixed(2);
+const transActiva = c => !!(c && c.trans && c.trans.tipo && c.trans.tipo !== 'ninguna');
+const durTransEV = (A, B) => Math.max(0.1, Math.min(B.trans.dur || 0.6, largoClip(A), largoClip(B)));
+function transicionEnEV(r){
+  if (!r) return null;
+  const cl = EV.p.clips, L = largoClip(r.c), sig = cl[r.i + 1], ant = cl[r.i - 1];
+  if (transActiva(sig)){ const d = durTransEV(r.c, sig); if (L - r.local < d / 2) return { A:r.c, B:sig, p:(r.local - (L - d / 2)) / d, vivoA:true }; }
+  if (ant && transActiva(r.c)){ const d = durTransEV(ant, r.c); if (r.local < d / 2) return { A:ant, B:r.c, p:0.5 + r.local / d, vivoA:false }; }
+  return null;
+}
+function fuenteEV(blob, tiempo, vivo){
+  const m = EV.medios[blob]; if (!m || !m.el) return null;
+  if (m.tipo === 'imagen') return { el:m.el, w:m.w, h:m.h };
+  if (!vivo){ const s = EV.snaps[claveSnap(blob, tiempo)]; if (s) return { el:s, w:s.width, h:s.height }; }
+  return { el:m.el, w:m.w || m.el.videoWidth, h:m.h || m.el.videoHeight };
+}
+function snapsNecesariosEV(){
+  const out = [], cl = EV.p.clips;
+  for (let i = 1; i < cl.length; i++){
+    if (!transActiva(cl[i])) continue;
+    [[cl[i - 1], cl[i - 1].fin], [cl[i], cl[i].ini]].forEach(([c, tt]) => [c.blob, c.cam && c.cam.blob].filter(Boolean).forEach(b => {
+      const m = EV.medios[b]; if (m && m.tipo === 'video' && !EV.snaps[claveSnap(b, tt)] && !out.some(o => o[0] === b && claveSnap(b, o[1]) === claveSnap(b, tt))) out.push([b, tt]);
+    }));
+  }
+  return out;
+}
+let prepSnapsEV = null, tSnapEV = null;
+function prepararSnapsEV(){
+  if (prepSnapsEV) return prepSnapsEV;
+  const lista = snapsNecesariosEV(); if (!lista.length) return Promise.resolve();
+  prepSnapsEV = (async () => {
+    for (const [b, tt] of lista){
+      const m = EV.medios[b]; if (!m || !m.el) continue;
+      try {
+        m.el.pause(); await buscarEV(m.el, Math.max(0, Math.min(tt - 0.04, (m.dur || tt) - 0.06)));
+        const w = m.el.videoWidth, h = m.el.videoHeight; if (!w) continue;
+        const k = Math.min(1, 1280 / Math.max(w, h)), c = document.createElement('canvas');
+        c.width = Math.round(w * k); c.height = Math.round(h * k); c.getContext('2d').drawImage(m.el, 0, 0, c.width, c.height);
+        EV.snaps[claveSnap(b, tt)] = c;
+      } catch (e) {}
+    }
+  })().finally(() => { prepSnapsEV = null; if (!EV.play && !EV.exportando) verEnEV(EV.t); });
+  return prepSnapsEV;
+}
+const lienzosTr = [];
+function lienzoTr(i, W0, H0){
+  let c = lienzosTr[i]; if (!c) c = lienzosTr[i] = document.createElement('canvas');
+  if (c.width !== W0 || c.height !== H0){ c.width = W0; c.height = H0; }
+  const x = c.getContext('2d'); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.filter = 'none'; x.fillStyle = '#000'; x.fillRect(0, 0, W0, H0);
+  return c;
+}
+function componerTransEV(x, tipo, p, A, B, W, H){
+  const e = suaveEV(p);
+  x.save();
+  const dib = (c, dx = 0, dy = 0) => x.drawImage(c, dx, dy);
+  const escalado = (c, k, alfa, giro = 0) => { x.save(); x.globalAlpha = alfa; x.translate(W / 2, H / 2); if (giro) x.rotate(giro); x.scale(k, k); x.drawImage(c, -W / 2, -H / 2); x.restore(); };
+  switch (tipo){
+    case 'disolver': dib(A); x.globalAlpha = e; dib(B); break;
+    case 'negro': case 'blanco':
+      x.fillStyle = tipo === 'negro' ? '#000' : '#fff'; x.fillRect(0, 0, W, H);
+      if (p < 0.5){ x.globalAlpha = 1 - suaveEV(p * 2); dib(A); } else { x.globalAlpha = suaveEV(p * 2 - 1); dib(B); }
+      break;
+    case 'deslizarIzq': dib(A); dib(B, (1 - e) * W, 0); break;
+    case 'deslizarDer': dib(A); dib(B, -(1 - e) * W, 0); break;
+    case 'deslizarArriba': dib(A); dib(B, 0, (1 - e) * H); break;
+    case 'empujarIzq': dib(A, -e * W, 0); dib(B, (1 - e) * W, 0); break;
+    case 'barrido': dib(A); x.beginPath(); x.rect(0, 0, e * W, H); x.clip(); dib(B); break;
+    case 'circulo': dib(A); x.beginPath(); x.arc(W / 2, H / 2, Math.max(0.1, e * Math.hypot(W, H) / 2), 0, Math.PI * 2); x.clip(); dib(B); break;
+    case 'zoom': escalado(A, 1 + e * 0.6, 1 - e); escalado(B, 0.7 + 0.3 * e, e); break;
+    case 'desenfoque': { const bl = Math.sin(p * Math.PI) * Math.min(W, H) * 0.03; x.filter = 'blur(' + bl.toFixed(1) + 'px)'; dib(A); x.globalAlpha = e; dib(B); x.filter = 'none'; break; }
+    case 'girar':
+      if (p < 0.5){ const q = suaveEV(p * 2); escalado(A, 1 - q * 0.95, 1, q * Math.PI / 2); }
+      else { const q = suaveEV(p * 2 - 1); escalado(B, 0.05 + q * 0.95, 1, -(1 - q) * Math.PI / 2); }
+      break;
+    default: dib(p < 0.5 ? A : B);
+  }
+  x.restore();
+}
+function pintarClipEV(x, c, local, W0, H0, vivo){
+  const L = largoClip(c);
+  x.save();
+  if (c.fundido) x.globalAlpha = Math.max(0, Math.min(1, local / 0.5, (L - local) / 0.5));
+  const tm = c.ini + local * (c.vel || 1), f = fuenteEV(c.blob, tm, vivo);
+  if (f){ const zk = c.zoomLento ? 1 + 0.12 * (local / L) : 1; dibujarMedioEV(x, f.el, f.w, f.h, W0, H0, c.ajuste, zk); }
+  // burbuja de la cámara
+  if (c.cam && c.cam.visible !== false){
+    const fc = fuenteEV(c.cam.blob, tm, vivo);
+    if (fc && fc.w){
+      const lado = Math.min(W0, H0) * c.cam.tam, cx = c.cam.x * W0, cy = c.cam.y * H0;
+      x.save(); x.beginPath();
+      if (c.cam.forma === 'cuadro') x.roundRect ? x.roundRect(cx - lado / 2, cy - lado / 2, lado, lado, lado * 0.12) : x.rect(cx - lado / 2, cy - lado / 2, lado, lado);
+      else x.arc(cx, cy, lado / 2, 0, Math.PI * 2);
+      x.closePath(); x.save(); x.clip();
+      const k = Math.max(lado / fc.w, lado / fc.h);
+      x.drawImage(fc.el, cx - fc.w * k / 2, cy - fc.h * k / 2, fc.w * k, fc.h * k);
+      x.restore();
+      x.lineWidth = Math.max(3, lado * 0.025); x.strokeStyle = c.cam.borde || '#ffffff'; x.stroke(); x.restore();
+    }
+  }
+  x.restore();
+}
 function dibujarCuadroEV(t, x, W0, H0){
+  const principal = x.canvas && x.canvas.id === 'evLienzo';
+  if (principal) EV.cajasTexto = [];
   x.save(); x.fillStyle = '#000'; x.fillRect(0, 0, W0, H0);
   const r = clipEnEV(t);
   if (r){
-    const c = r.c, m = EV.medios[c.blob];
-    let alfa = 1; const L = largoClip(c);
-    if (c.fundido){ alfa = Math.min(1, r.local / 0.5, (L - r.local) / 0.5); alfa = Math.max(0, alfa); }
-    x.globalAlpha = alfa;
-    if (m && m.el){ const zk = c.zoomLento ? 1 + 0.12 * (r.local / L) : 1; dibujarMedioEV(x, m.el, m.w || m.el.videoWidth, m.h || m.el.videoHeight, W0, H0, c.ajuste, zk); }
-    // burbuja de la cámara
-    if (c.cam && c.cam.visible !== false){
-      const mc = EV.medios[c.cam.blob];
-      if (mc && mc.el && mc.el.videoWidth){
-        const lado = Math.min(W0, H0) * c.cam.tam, cx = c.cam.x * W0, cy = c.cam.y * H0;
-        x.save(); x.beginPath();
-        if (c.cam.forma === 'cuadro') x.roundRect ? x.roundRect(cx - lado / 2, cy - lado / 2, lado, lado, lado * 0.12) : x.rect(cx - lado / 2, cy - lado / 2, lado, lado);
-        else x.arc(cx, cy, lado / 2, 0, Math.PI * 2);
-        x.closePath(); x.save(); x.clip();
-        const vw = mc.el.videoWidth, vh = mc.el.videoHeight, k = Math.max(lado / vw, lado / vh);
-        x.drawImage(mc.el, cx - vw * k / 2, cy - vh * k / 2, vw * k, vh * k);
-        x.restore();
-        x.lineWidth = Math.max(3, lado * 0.025); x.strokeStyle = c.cam.borde || '#ffffff'; x.stroke(); x.restore();
-      }
+    const tr = transicionEnEV(r);
+    if (!tr) pintarClipEV(x, r.c, r.local, W0, H0, true);
+    else {
+      const cA = lienzoTr(0, W0, H0), cB = lienzoTr(1, W0, H0);
+      pintarClipEV(cA.getContext('2d'), tr.A, tr.vivoA ? r.local : largoClip(tr.A), W0, H0, tr.vivoA);
+      pintarClipEV(cB.getContext('2d'), tr.B, tr.vivoA ? 0 : r.local, W0, H0, !tr.vivoA);
+      componerTransEV(x, tr.B.trans.tipo, Math.max(0, Math.min(1, tr.p)), cA, cB, W0, H0);
     }
-    x.globalAlpha = 1;
+    // espacio de plantilla: aviso solo en la vista previa (no sale en el video)
+    if (r.c.hueco && principal && !EV.exportando){
+      const tam = Math.round(Math.min(W0, H0) * 0.032), msg = '📷 Toca aquí para poner tu foto o video';
+      x.save(); x.font = `600 ${tam}px Poppins, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle';
+      const w = x.measureText(msg).width + tam * 1.4, h = tam * 2, y = H0 * 0.03;
+      x.fillStyle = 'rgba(0,0,0,.55)'; x.beginPath(); x.roundRect ? x.roundRect(W0 / 2 - w / 2, y, w, h, h / 2) : x.rect(W0 / 2 - w / 2, y, w, h); x.fill();
+      x.setLineDash([tam * 0.4, tam * 0.3]); x.strokeStyle = 'rgba(255,255,255,.7)'; x.lineWidth = 2; x.stroke();
+      x.fillStyle = '#fff'; x.fillText(msg, W0 / 2, y + h / 2); x.restore();
+    }
   }
-  // textos encima
-  EV.p.textos.forEach(tx => {
-    if (t < tx.inicio || t > tx.inicio + tx.dur) return;
-    const ap = Math.min(1, (t - tx.inicio) / 0.25, (tx.inicio + tx.dur - t) / 0.25);
-    const tam = Math.round(H0 * (tx.tam || 0.07)), fuente = `${tx.negrita === false ? 400 : 700} ${tam}px "${tx.fuente || 'Poppins'}", sans-serif`;
-    x.save(); x.globalAlpha = Math.max(0, ap); x.font = fuente; x.textAlign = 'center'; x.textBaseline = 'middle';
-    const lineas = partirTextoEV(x, tx.texto || '', W0 * 0.86), alto = tam * 1.25 * lineas.length;
-    const cy = tx.pos === 'arriba' ? H0 * 0.12 + alto / 2 : tx.pos === 'centro' ? H0 / 2 : H0 * 0.86 - alto / 2;
-    if (tx.fondo){
-      const ancho = Math.max(...lineas.map(l => x.measureText(l).width)) + tam * 1.2;
-      x.fillStyle = tx.fondo; const rx = W0 / 2 - ancho / 2, ry = cy - alto / 2 - tam * 0.35;
-      x.beginPath(); x.roundRect ? x.roundRect(rx, ry, ancho, alto + tam * 0.7, tam * 0.3) : x.rect(rx, ry, ancho, alto + tam * 0.7); x.fill();
-    } else { x.shadowColor = 'rgba(0,0,0,.6)'; x.shadowBlur = tam * 0.25; }
-    x.fillStyle = tx.color || '#ffffff';
-    lineas.forEach((l, i) => x.fillText(l, W0 / 2, cy - alto / 2 + tam * 1.25 * (i + 0.5)));
-    x.restore();
+  EV.p.textos.forEach(tx => dibujarTextoEV(x, tx, t, W0, H0, principal));
+  x.restore();
+}
+/* ---------- textos encima (con animación de entrada) ---------- */
+const FUENTES_EV = ['Poppins', 'Montserrat', 'Bebas Neue', 'Anton', 'Oswald', 'Raleway', 'Roboto', 'Playfair Display', 'Pacifico', 'Lobster', 'Dancing Script', 'Fredoka', 'Caveat', 'Permanent Marker'];
+const ANIM_TEXTO_EV = { fade:'Aparecer', subir:'Subir', pop:'Rebotar (pop)', deslizar:'Deslizar', escribir:'Máquina de escribir', ninguna:'Sin animación' };
+function dibujarTextoEV(x, tx, t, W0, H0, guardarCaja){
+  if (t < tx.inicio || t > tx.inicio + tx.dur) return;
+  const an = tx.anim || 'fade', ent = Math.min(1, (t - tx.inicio) / 0.4), sal = Math.min(1, (tx.inicio + tx.dur - t) / 0.25), eo = 1 - Math.pow(1 - ent, 3);
+  let alfa = Math.min(ent, sal), dx = 0, dy = 0, esc = 1, frac = 1;
+  if (an === 'subir') dy = (1 - eo) * H0 * 0.06;
+  else if (an === 'pop'){ const s = 1.70158, q = ent - 1; esc = 0.5 + 0.5 * (1 + (s + 1) * q * q * q + s * q * q); alfa = Math.min(1, ent * 2, sal); }
+  else if (an === 'deslizar') dx = -(1 - eo) * W0 * 0.25;
+  else if (an === 'escribir'){ frac = Math.min(1, (t - tx.inicio) / Math.min(1.5, tx.dur * 0.6)); alfa = sal; }
+  else if (an === 'ninguna') alfa = 1;
+  let tam = Math.round(H0 * (tx.tam || 0.07));
+  const letra = n => `${tx.cursiva ? 'italic ' : ''}${tx.negrita === false ? 400 : 700} ${n}px "${tx.fuente || 'Poppins'}", sans-serif`;
+  x.save(); x.globalAlpha = Math.max(0, alfa); x.font = letra(tam); x.textAlign = 'center'; x.textBaseline = 'middle';
+  const texto = tx.mayus ? String(tx.texto || '').toUpperCase() : String(tx.texto || '');
+  let lineas = partirTextoEV(x, texto, W0 * 0.86), ancho = Math.max(1, ...lineas.map(l => x.measureText(l).width));
+  // una palabra muy larga: se achica la letra hasta que quepa
+  while (ancho > W0 * 0.9 && tam > 8){ tam = Math.floor(tam * 0.92); x.font = letra(tam); lineas = partirTextoEV(x, texto, W0 * 0.86); ancho = Math.max(1, ...lineas.map(l => x.measureText(l).width)); }
+  const lh = tam * 1.25, alto = lh * lineas.length;
+  const cx = (tx.x ?? 0.5) * W0;
+  const cy = tx.y != null ? tx.y * H0 : tx.pos === 'arriba' ? H0 * 0.12 + alto / 2 : tx.pos === 'centro' ? H0 / 2 : H0 * 0.86 - alto / 2;
+  if (guardarCaja) EV.cajasTexto.push({ id:tx.id, x0:cx - ancho / 2 - tam * 0.6, x1:cx + ancho / 2 + tam * 0.6, y0:cy - alto / 2 - tam * 0.35, y1:cy + alto / 2 + tam * 0.35 });
+  x.translate(cx + dx, cy + dy); if (esc !== 1) x.scale(esc, esc);
+  let vis = lineas;
+  if (frac < 1){ let n = Math.ceil(lineas.join('').length * frac); vis = lineas.map(l => { const s = l.slice(0, Math.max(0, n)); n -= l.length; return s; }); }
+  if (tx.fondo){
+    x.fillStyle = tx.fondo; const rx = -ancho / 2 - tam * 0.6, ry = -alto / 2 - tam * 0.35;
+    x.beginPath(); x.roundRect ? x.roundRect(rx, ry, ancho + tam * 1.2, alto + tam * 0.7, tam * 0.3) : x.rect(rx, ry, ancho + tam * 1.2, alto + tam * 0.7); x.fill();
+  } else if (!tx.borde){ x.shadowColor = 'rgba(0,0,0,.6)'; x.shadowBlur = tam * 0.25; }
+  vis.forEach((l, i) => {
+    const y = -alto / 2 + lh * (i + 0.5);
+    if (tx.borde){ x.lineWidth = Math.max(2, tam * 0.14); x.lineJoin = 'round'; x.strokeStyle = tx.borde; x.strokeText(l, 0, y); }
+    x.fillStyle = tx.color || '#ffffff'; x.fillText(l, 0, y);
   });
   x.restore();
 }
@@ -239,15 +367,17 @@ function verEnEV(t){
 function reproducirEV(v){
   if (v === undefined) v = !EV.play;
   if (v && !EV.p.clips.length) return toast('Primero agrega un video, una imagen o una grabación');
+  if (v && !EV.play && snapsNecesariosEV().length){ prepararSnapsEV().then(() => reproducirEV(true)); return; }
   audioEV();
   EV.play = v; $('evPlay').innerHTML = v ? '❚❚' : '▶'; $('evPlay').setAttribute('aria-label', v ? 'Pausa' : 'Reproducir');
   if (EV.t >= totalEV() - 0.05) EV.t = 0;
   cancelAnimationFrame(rafEV);
-  if (!v){ pausarTodoEV(); verEnEV(EV.t); return; }
+  if (!v){ EV.pararEn = null; pausarTodoEV(); verEnEV(EV.t); return; }
   inicioPlay = performance.now(); tInicioPlay = EV.t;
   const paso = () => {
     if (!EV.play) return;
     EV.t = tInicioPlay + (performance.now() - inicioPlay) / 1000;
+    if (EV.pararEn != null && EV.t >= EV.pararEn){ EV.pararEn = null; reproducirEV(false); return; }
     if (EV.t >= totalEV()){ EV.t = totalEV(); cuadroEV(); if (EV.alTerminar){ const f = EV.alTerminar; EV.alTerminar = null; f(); } reproducirEV(false); return; }
     sincronizarEV(clipEnEV(EV.t), true); cuadroEV();
     rafEV = requestAnimationFrame(paso);
@@ -272,9 +402,14 @@ function reproducirEV(v){
   <div class="evCuerpo">
     <aside class="evLado">
       <nav class="evTabs" role="tablist">
-        <button data-et="grabar" class="on">🎥 Grabar</button><button data-et="subir">⬆ Subir</button><button data-et="diseno">🖼 Mi diseño</button>
-        <button data-et="texto">T Texto</button><button data-et="musica">♪ Música</button><button data-et="editar">✎ Editar</button>
+        <button data-et="plantillas">✨ Plantillas</button><button data-et="grabar" class="on">🎥 Grabar</button><button data-et="subir">⬆ Subir</button><button data-et="diseno">🖼 Mi diseño</button>
+        <button data-et="texto">T Texto</button><button data-et="transiciones">🔀 Transiciones</button><button data-et="musica">♪ Música</button><button data-et="editar">✎ Editar</button>
       </nav>
+      <div class="evPanel" id="etPlantillas" hidden>
+        <p class="hint">Elige una plantilla, cambia los textos y pon tus fotos o videos en cada escena.</p>
+        <div class="evChips" id="evPlCats"></div>
+        <div class="evPlantillas" id="evPlLista"></div>
+      </div>
       <div class="evPanel" id="etGrabar">
         <p class="hint">Graba y aparece en tu línea de tiempo, lista para editar.</p>
         <div class="evModos">
@@ -297,7 +432,8 @@ function reproducirEV(v){
       <div class="evPanel" id="etDiseno" hidden>
         <p class="hint">Convierte las páginas de tu diseño en diapositivas del video.</p>
         <label class="fila"><span>Segundos por página</span><input type="number" id="evSegPag" min="1" max="60" value="5"></label>
-        <label class="filaCheck"><input type="checkbox" id="evPagFundido" checked> Aparecer y desaparecer suave</label>
+        <label class="fila"><span>Transición</span><select id="evPagTrans">${Object.entries(TRANS_EV).map(([k, n]) => `<option value="${k}"${k === 'disolver' ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
+        <label class="filaCheck"><input type="checkbox" id="evPagFundido"> Aparecer y desaparecer desde negro</label>
         <button class="bigbtn" id="evTodasPag">🖼 Agregar todas las páginas</button>
         <button class="bigbtn" id="evPagActual">Agregar solo la página actual</button>
       </div>
@@ -306,6 +442,20 @@ function reproducirEV(v){
         <button class="bigbtn" data-txt="titulo" style="font-weight:800;font-size:18px">Título grande al centro</button>
         <button class="bigbtn" data-txt="subtitulo">Subtítulo abajo (con fondo)</button>
         <button class="bigbtn" data-txt="arriba">Texto arriba</button>
+        <h4>Estilos para reels y TikTok</h4>
+        <button class="bigbtn" data-txt="tiktok" style="font-family:'Anton';font-size:19px;letter-spacing:.5px;color:#fff;-webkit-text-stroke:1px #000;text-shadow:0 0 2px #000">TEXTO CON CONTORNO</button>
+        <button class="bigbtn" data-txt="etiqueta"><span style="background:#ffd60a;color:#111;padding:2px 8px;border-radius:6px;font-weight:700">Etiqueta de color</span></button>
+        <button class="bigbtn" data-txt="escribir" style="font-family:'Courier New',monospace">Texto que se escribe solo_</button>
+        <button class="bigbtn" data-txt="elegante" style="font-family:'Playfair Display';font-style:italic;font-size:17px">Frase elegante</button>
+        <button class="bigbtn" data-txt="divertido" style="font-family:'Pacifico';font-size:17px">Divertido</button>
+      </div>
+      <div class="evPanel" id="etTransiciones" hidden>
+        <p class="hint" id="evTrInfo"></p>
+        <div class="evTrans" id="evTransGrid"></div>
+        <label class="fila"><span>Duración</span><input type="range" id="evTrDur" min="0.2" max="1.5" step="0.1" value="0.6"><b id="evTrDurTxt">0.6 s</b></label>
+        <button class="bigbtn" id="evTrTodos">🔀 Usar esta transición en todos los cortes</button>
+        <button class="bigbtn" id="evTrQuitar">Quitar todas las transiciones</button>
+        <p class="hint">También puedes tocar el rombo ◆ entre dos clips en la línea de tiempo.</p>
       </div>
       <div class="evPanel" id="etMusica" hidden>
         <button class="bigbtn" id="evMusicaBtn">♪ Subir una canción o audio</button>
@@ -317,7 +467,7 @@ function reproducirEV(v){
     </aside>
     <section class="evCentro">
       <div class="evVista"><canvas id="evLienzo" width="1280" height="720"></canvas>
-        <div id="evVacio" class="evVacio"><b>Tu video empieza aquí</b><span>Graba tu pantalla o cámara, sube un video o agrega las páginas de tu diseño.</span></div></div>
+        <div id="evVacio" class="evVacio"><b>Tu video empieza aquí</b><span>Graba tu pantalla o cámara, sube un video, agrega las páginas de tu diseño o empieza con una ✨ plantilla.</span></div></div>
       <div class="evControles">
         <button class="pb" id="evInicio" title="Ir al inicio" aria-label="Ir al inicio">⏮</button>
         <button class="btnP" id="evPlay" aria-label="Reproducir">▶</button>
@@ -338,6 +488,7 @@ function reproducirEV(v){
   </div>
   <div id="evGrabando" hidden><span class="punto"></span><b id="evGrabTiempo">0:00</b><button class="pb" id="evGrabPausa">❚❚ Pausa</button><button class="btnP" id="evGrabStop">■ Detener</button></div>
   <div id="evCuentaAtras" hidden></div>
+  <input type="file" id="evReemplazo" accept="video/*,image/*" hidden>
   <div id="evCamVivo" hidden><video autoplay muted playsinline></video></div>
   <div id="evExportando" hidden><div class="caja"><h3>⬇ Creando tu video…</h3><p class="hint">No cambies de pestaña mientras se crea (el navegador lo pausaría).</p><div class="evBarraProg"><i id="evProg"></i></div><p id="evProgTxt" class="hint"></p><div class="acciones"><button class="btnS" id="evCancelarExp">Cancelar</button></div></div></div>`;
   document.body.appendChild(d);
@@ -370,7 +521,7 @@ function reproducirEV(v){
   $('evGrabStop').onclick = () => detenerGrabacionEV(); $('evGrabPausa').onclick = () => pausarGrabacionEV();
   // línea de tiempo: clic en la regla o en un espacio vacío mueve la línea roja
   $('evLinea').addEventListener('pointerdown', e => {
-    if (e.target.closest('.clipEv, .textoEv, .musicaEv')) return;
+    if (e.target.closest('.clipEv, .textoEv, .musicaEv, .transEv')) return;
     const mover = ev => { const r = $('evLinea').getBoundingClientRect(); verEnEV((ev.clientX - r.left + $('evLinea').scrollLeft - 90) / EV.pps); };
     if (EV.play) reproducirEV(false);
     mover(e);
@@ -420,6 +571,8 @@ function tabEV(k){
   document.querySelectorAll('.evPanel').forEach(p => p.hidden = p.id !== 'et' + k[0].toUpperCase() + k.slice(1));
   if (k === 'editar') pintarInspectorEV();
   if (k === 'subir') pintarBibliotecaEV();
+  if (k === 'transiciones') pintarTransEV();
+  if (k === 'plantillas' && window.pintarPlantillasEV) pintarPlantillasEV();
 }
 function ajustarLienzoEV(){
   const [w, h] = FORMATOS_EV[EV.p.formato] || FORMATOS_EV['16:9'], cv = $('evLienzo');
@@ -439,6 +592,7 @@ async function abrirEstudioVideo(){
   }
   $('evNombre').value = EV.p.nombre || 'Mi video';
   ajustarLienzoEV(); pintarTodoEV(); verEnEV(EV.t);
+  prepararSnapsEV();
 }
 function cerrarEstudioVideo(){ reproducirEV(false); $('estudioVideo').classList.remove('abierto'); }
 function pintarTodoEV(){
@@ -465,8 +619,16 @@ function pintarLineaEV(){
     return `<div class="clipEv${sel ? ' sel' : ''}${c.tipo === 'imagen' ? ' img' : ''}" data-id="${c.id}" data-i="${i}" style="left:${x}px;width:${Math.max(6, L * EV.pps - 2)}px;background-image:url('${m.thumb || ''}')" title="${esc(c.nombre)} · ${fmtT(L)}">
       <span class="asaEv izq" data-asa="izq"></span><b>${c.cam ? '📷 ' : ''}${esc(c.nombre)}</b><small>${fmtT(L)}${c.vel !== 1 ? ' · ' + c.vel + '×' : ''}${c.mute ? ' · 🔇' : ''}</small><span class="asaEv der" data-asa="der"></span></div>`;
   }).join('');
+  // rombos de transición entre clips
+  acc = 0;
+  $('evPistaVideo').insertAdjacentHTML('beforeend', EV.p.clips.map((c, i) => { const x = 90 + acc * EV.pps; acc += largoClip(c); if (!i) return '';
+    const on = transActiva(c); return `<button class="transEv${on ? ' on' : ''}" data-i="${i}" style="left:${x - 11}px" title="${on ? 'Transición: ' + TRANS_EV[c.trans.tipo] : 'Poner una transición'}">${on ? '◆' : '◇'}</button>`; }).join(''));
   $('evPistaVideo').style.width = (90 + ancho) + 'px';
-  $('evPistaTexto').innerHTML = EV.p.textos.map(tx => `<div class="textoEv${EV.sel && EV.sel.tipo === 'texto' && EV.sel.id === tx.id ? ' sel' : ''}" data-id="${tx.id}" style="left:${90 + tx.inicio * EV.pps}px;width:${Math.max(6, tx.dur * EV.pps - 2)}px" title="${esc(tx.texto)}">T ${esc(tx.texto.split('\n')[0])}<span class="asaEv der" data-asa="der"></span></div>`).join('');
+  // textos que se enciman van en carriles distintos
+  const carriles = [], carril = {};
+  EV.p.textos.slice().sort((a, b) => a.inicio - b.inicio).forEach(tx => { let k = carriles.findIndex(f => f <= tx.inicio + 0.01); if (k < 0){ k = carriles.length; carriles.push(0); } carriles[k] = tx.inicio + tx.dur; carril[tx.id] = k; });
+  $('evPistaTexto').style.height = Math.max(34, carriles.length * 26 + 8) + 'px';
+  $('evPistaTexto').innerHTML = EV.p.textos.map(tx => `<div class="textoEv${EV.sel && EV.sel.tipo === 'texto' && EV.sel.id === tx.id ? ' sel' : ''}" data-id="${tx.id}" style="left:${90 + tx.inicio * EV.pps}px;width:${Math.max(6, tx.dur * EV.pps - 2)}px;top:${4 + carril[tx.id] * 26}px;bottom:auto;height:22px" title="${esc(tx.texto)}">T ${esc(tx.texto.split('\n')[0])}<span class="asaEv der" data-asa="der"></span></div>`).join('');
   $('evPistaTexto').style.width = (90 + ancho) + 'px';
   const mu = EV.p.musica;
   $('evPistaMusica').innerHTML = mu ? `<div class="musicaEv${EV.sel && EV.sel.tipo === 'musica' ? ' sel' : ''}" style="left:90px;width:${Math.max(60, total * EV.pps - 2)}px">♪ ${esc(mu.nombre)} · volumen ${Math.round(mu.vol * 100)}%</div>` : '';
@@ -514,6 +676,9 @@ function conectarLineaEV(){
     const fin = () => { window.removeEventListener('pointermove', mover); window.removeEventListener('pointerup', fin); if (!movido){ verEnEV(tx.inicio + 0.3); tabEV('editar'); } guardarProyectoEV(); pintarTodoEV(); };
     window.addEventListener('pointermove', mover); window.addEventListener('pointerup', fin);
   });
+  document.querySelectorAll('.transEv').forEach(b => { b.onpointerdown = e => e.stopPropagation(); b.onclick = e => {
+    e.stopPropagation(); const c = EV.p.clips[+b.dataset.i]; if (!c) return; if (EV.play) reproducirEV(false);
+    EV.sel = { tipo:'clip', id:c.id }; verEnEV(inicioClipEV(c.id)); pintarLineaEV(); tabEV('transiciones'); }; });
   const mu = document.querySelector('.musicaEv');
   if (mu) mu.onpointerdown = e => { e.stopPropagation(); EV.sel = { tipo:'musica' }; pintarLineaEV(); tabEV('editar'); };
 }
@@ -524,7 +689,10 @@ function pintarInspectorEV(){
   if (s && s.tipo === 'clip'){
     const c = EV.p.clips.find(x => x.id === s.id); if (!c){ EV.sel = null; return pintarInspectorEV(); }
     const m = EV.medios[c.blob] || {}, video = c.tipo === 'video';
-    box.innerHTML = `<h4>${video ? '🎞 Clip de video' : '🖼 Imagen'}</h4>
+    const idx = EV.p.clips.indexOf(c);
+    box.innerHTML = `<h4>${c.hueco ? '✨ Escena de plantilla' : video ? '🎞 Clip de video' : '🖼 Imagen'}</h4>
+      ${c.hueco ? `<p class="hint">Este es un espacio para tu foto o video. Los textos se quedan.</p>` : ''}
+      <button class="bigbtn" id="evInsReemplazar">🔁 ${c.hueco ? 'Poner mi foto o video aquí' : 'Cambiar por otra foto o video'}</button>
       <label class="fila"><span>Nombre</span><input class="buscador" data-c="nombre" value="${esc(c.nombre)}"></label>
       ${video ? `<label class="fila"><span>Empieza en</span><input type="number" step="0.1" min="0" data-c="ini" value="${c.ini.toFixed(1)}"> s</label>
       <label class="fila"><span>Termina en</span><input type="number" step="0.1" min="0" data-c="fin" value="${c.fin.toFixed(1)}"> s</label>
@@ -535,7 +703,8 @@ function pintarInspectorEV(){
       : `<label class="fila"><span>Duración</span><input type="number" step="0.5" min="0.5" data-c="durImg" value="${(c.fin - c.ini).toFixed(1)}"> s</label>
       <label class="filaCheck"><input type="checkbox" data-c="zoomLento"${c.zoomLento ? ' checked' : ''}> Acercamiento lento (efecto documental)</label>`}
       <label class="fila"><span>Ajuste</span><select data-c="ajuste"><option value="cubrir"${c.ajuste === 'cubrir' ? ' selected' : ''}>Llenar toda la pantalla</option><option value="encajar"${c.ajuste === 'encajar' ? ' selected' : ''}>Que se vea completo</option></select></label>
-      <label class="filaCheck"><input type="checkbox" data-c="fundido"${c.fundido ? ' checked' : ''}> Aparecer y desaparecer suave</label>
+      <label class="filaCheck"><input type="checkbox" data-c="fundido"${c.fundido ? ' checked' : ''}> Aparecer y desaparecer desde negro</label>
+      ${idx > 0 ? `<label class="fila"><span>Transición al entrar</span><select data-c="trans">${Object.entries(TRANS_EV).map(([k, n]) => `<option value="${k}"${(c.trans && c.trans.tipo || 'ninguna') === k ? ' selected' : ''}>${n}</option>`).join('')}</select></label>` : ''}
       ${c.cam ? `<h4>📷 Burbuja de la cámara</h4>
         <label class="filaCheck"><input type="checkbox" data-cam="visible"${c.cam.visible !== false ? ' checked' : ''}> Mostrar</label>
         <label class="fila"><span>Tamaño</span><input type="range" min="0.12" max="0.6" step="0.01" data-cam="tam" value="${c.cam.tam}"></label>
@@ -549,6 +718,7 @@ function pintarInspectorEV(){
         if (k === 'mute' || k === 'fundido' || k === 'zoomLento') c[k] = inp.checked;
         else if (k === 'nombre') c.nombre = inp.value;
         else if (k === 'ajuste') c.ajuste = inp.value;
+        else if (k === 'trans') c.trans = inp.value === 'ninguna' ? null : { tipo:inp.value, dur:(c.trans && c.trans.dur) || 0.6 };
         else if (k === 'vel' || k === 'vol') c[k] = +inp.value;
         else if (k === 'ini') c.ini = Math.max(0, Math.min(c.fin - 0.1, +inp.value || 0));
         else if (k === 'fin') c.fin = Math.max(c.ini + 0.1, Math.min(m.dur || 9999, +inp.value || 0));
@@ -562,6 +732,7 @@ function pintarInspectorEV(){
       inp.oninput = ap; inp.onchange = () => { ap(); guardarProyectoEV(); }; });
     box.querySelectorAll('[data-esq]').forEach(b => b.onclick = () => { const [x, y] = b.dataset.esq.split(',').map(Number); c.cam.x = x; c.cam.y = y; cuadroEV(); guardarProyectoEV(); });
     $('evInsDividir').onclick = dividirEV; $('evInsBorrar').onclick = borrarSelEV;
+    $('evInsReemplazar').onclick = () => abrirReemplazoEV(c);
     $('evInsDup').onclick = () => { const i = EV.p.clips.indexOf(c), n = JSON.parse(JSON.stringify(c)); n.id = nid(); EV.p.clips.splice(i + 1, 0, n); EV.sel = { tipo:'clip', id:n.id }; guardarProyectoEV(); pintarTodoEV(); };
     const mover = d => { const i = EV.p.clips.indexOf(c), j = i + d; if (j < 0 || j >= EV.p.clips.length) return; EV.p.clips.splice(i, 1); EV.p.clips.splice(j, 0, c); guardarProyectoEV(); pintarTodoEV(); };
     $('evInsIzq').onclick = () => mover(-1); $('evInsDer').onclick = () => mover(1);
@@ -571,16 +742,27 @@ function pintarInspectorEV(){
     const tx = EV.p.textos.find(x => x.id === s.id); if (!tx){ EV.sel = null; return pintarInspectorEV(); }
     box.innerHTML = `<h4>T Texto</h4>
       <textarea data-t="texto" rows="3" style="width:100%;box-sizing:border-box">${esc(tx.texto)}</textarea>
-      <label class="fila"><span>Posición</span><select data-t="pos"><option value="arriba"${tx.pos === 'arriba' ? ' selected' : ''}>Arriba</option><option value="centro"${tx.pos === 'centro' ? ' selected' : ''}>Centro</option><option value="abajo"${tx.pos === 'abajo' ? ' selected' : ''}>Abajo</option></select></label>
+      <label class="fila"><span>Posición</span><select data-t="pos">${tx.y != null ? '<option value="" selected>Donde lo dejé</option>' : ''}<option value="arriba"${tx.y == null && tx.pos === 'arriba' ? ' selected' : ''}>Arriba</option><option value="centro"${tx.y == null && tx.pos === 'centro' ? ' selected' : ''}>Centro</option><option value="abajo"${tx.y == null && tx.pos === 'abajo' ? ' selected' : ''}>Abajo</option></select></label>
+      <p class="hint">También puedes arrastrarlo sobre el video.</p>
+      <label class="fila"><span>Animación</span><select data-t="anim">${Object.entries(ANIM_TEXTO_EV).map(([k, n]) => `<option value="${k}"${(tx.anim || 'fade') === k ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
+      <label class="fila"><span>Letra</span><select data-t="fuente">${FUENTES_EV.map(f => `<option style="font-family:'${f}'"${(tx.fuente || 'Poppins') === f ? ' selected' : ''}>${f}</option>`).join('')}</select></label>
       <label class="fila"><span>Tamaño</span><input type="range" min="0.03" max="0.16" step="0.005" data-t="tam" value="${tx.tam}"></label>
       <label class="fila"><span>Color</span><input type="color" data-t="color" value="${tx.color}"></label>
-      <label class="filaCheck"><input type="checkbox" data-t="fondo"${tx.fondo ? ' checked' : ''}> Con fondo oscuro</label>
+      <label class="filaCheck"><input type="checkbox" data-t="fondo"${tx.fondo ? ' checked' : ''}> Con fondo <input type="color" data-t="fondoColor" value="${/^#[0-9a-f]{6}/i.test(tx.fondo || '') ? tx.fondo.slice(0, 7) : '#000000'}" title="Color del fondo"></label>
+      <label class="filaCheck"><input type="checkbox" data-t="borde"${tx.borde ? ' checked' : ''}> Contorno negro (estilo TikTok)</label>
       <label class="filaCheck"><input type="checkbox" data-t="negrita"${tx.negrita !== false ? ' checked' : ''}> Negrita</label>
+      <label class="filaCheck"><input type="checkbox" data-t="mayus"${tx.mayus ? ' checked' : ''}> MAYÚSCULAS</label>
       <label class="fila"><span>Aparece en</span><input type="number" step="0.1" min="0" data-t="inicio" value="${tx.inicio.toFixed(1)}"> s</label>
       <label class="fila"><span>Dura</span><input type="number" step="0.1" min="0.3" data-t="dur" value="${tx.dur.toFixed(1)}"> s</label>
       <div class="filaPop"><button class="pb peligro" id="evInsBorrar">🗑 Borrar texto</button></div>`;
     box.querySelectorAll('[data-t]').forEach(inp => { const k = inp.dataset.t;
-      const ap = () => { if (k === 'fondo') tx.fondo = inp.checked ? 'rgba(0,0,0,.6)' : null; else if (k === 'negrita') tx.negrita = inp.checked; else if (k === 'tam' || k === 'inicio' || k === 'dur') tx[k] = Math.max(k === 'dur' ? 0.3 : 0, +inp.value || 0); else tx[k] = inp.value; pintarLineaEV(); verEnEV(EV.t); };
+      const ap = () => { if (k === 'fondo') tx.fondo = inp.checked ? box.querySelector('[data-t="fondoColor"]').value + 'b3' : null;
+        else if (k === 'fondoColor'){ tx.fondo = inp.value + 'b3'; box.querySelector('[data-t="fondo"]').checked = true; }
+        else if (k === 'borde') tx.borde = inp.checked ? '#000000' : null;
+        else if (k === 'mayus') tx.mayus = inp.checked;
+        else if (k === 'pos'){ if (!inp.value) return; tx.pos = inp.value; delete tx.y; delete tx.x; }
+        else if (k === 'fuente'){ tx.fuente = inp.value; document.fonts.load(`700 40px "${inp.value}"`).then(() => verEnEV(EV.t)).catch(() => {}); }
+        else if (k === 'negrita') tx.negrita = inp.checked; else if (k === 'tam' || k === 'inicio' || k === 'dur') tx[k] = Math.max(k === 'dur' ? 0.3 : 0, +inp.value || 0); else tx[k] = inp.value; pintarLineaEV(); verEnEV(EV.t); };
       inp.oninput = ap; inp.onchange = () => { ap(); guardarProyectoEV(); }; inp.addEventListener('keydown', e => e.stopPropagation()); });
     $('evInsBorrar').onclick = borrarSelEV;
     return;
@@ -605,12 +787,15 @@ async function pintarBibliotecaEV(){
   ids = ids.filter(id => !usados.has(id));
   if (!ids.length){ b.innerHTML = '<p class="hint">Aquí aparecen tus grabaciones y archivos.</p>'; return; }
   await Promise.all(ids.map(id => cargarMedioEV(id).catch(() => null)));
+  ids = ids.filter(id => !(EV.medios[id] || {}).plantilla);
+  if (!ids.length){ b.innerHTML = '<p class="hint">Aquí aparecen tus grabaciones y archivos.</p>'; return; }
   b.innerHTML = ids.map(id => { const m = EV.medios[id] || {}; return `<button class="evMedio" data-id="${id}" title="Agregar al final del video">${m.thumb ? `<img src="${m.thumb}" alt="">` : `<span>${m.tipo === 'audio' ? '♪' : '🎞'}</span>`}<small>${esc(m.nombre || '')}${m.dur && m.tipo !== 'imagen' ? ' · ' + fmtT(m.dur) : ''}</small><i class="evQuitarMedio" data-q="${id}" title="Borrar de mis archivos">✕</i></button>`; }).join('');
   b.querySelectorAll('.evMedio').forEach(x => x.onclick = async e => {
     const q = e.target.closest('[data-q]');
     if (q){ e.stopPropagation(); if (EV.p.clips.some(c => c.blob === q.dataset.q) || (EV.p.musica && EV.p.musica.blob === q.dataset.q)) return toast('Ese archivo se usa en tu video: quítalo primero de la línea de tiempo'); if (!confirm('¿Borrar este archivo?')) return; await borrarMedioEV(q.dataset.q); delete EV.medios[q.dataset.q]; pintarBibliotecaEV(); return; }
     const m = await cargarMedioEV(x.dataset.id);
-    if (m.tipo === 'audio') ponerMusicaEV(x.dataset.id, m); else agregarClipEV(x.dataset.id, m);
+    const hueco = EV.sel && EV.sel.tipo === 'clip' && EV.p.clips.find(c => c.id === EV.sel.id && c.hueco);
+    if (m.tipo === 'audio') ponerMusicaEV(x.dataset.id, m); else if (hueco) reemplazarConMedioEV(hueco, x.dataset.id, m); else agregarClipEV(x.dataset.id, m);
   });
 }
 // ---------- editar ----------
@@ -630,8 +815,15 @@ function borrarSelEV(){
 }
 function agregarTextoEV(tipo){
   const base = { id:nid(), texto:'Escribe tu texto', inicio:Math.min(EV.t, Math.max(0, totalEV() - 0.5)), dur:3, color:'#ffffff', fuente:'Poppins', negrita:true };
-  const t = tipo === 'titulo' ? { ...base, texto:'Título de mi video', pos:'centro', tam:0.1, fondo:null }
-    : tipo === 'arriba' ? { ...base, pos:'arriba', tam:0.055, fondo:null } : { ...base, texto:'Subtítulo', pos:'abajo', tam:0.05, fondo:'rgba(0,0,0,.6)' };
+  const t = tipo === 'titulo' ? { ...base, texto:'Título de mi video', pos:'centro', tam:0.1, fondo:null, anim:'pop' }
+    : tipo === 'arriba' ? { ...base, pos:'arriba', tam:0.055, fondo:null }
+    : tipo === 'tiktok' ? { ...base, texto:'Escribe aquí', pos:'centro', tam:0.075, fondo:null, fuente:'Anton', mayus:true, borde:'#000000', anim:'pop' }
+    : tipo === 'etiqueta' ? { ...base, texto:'Etiqueta', pos:'arriba', tam:0.05, fondo:'#ffd60ae6', color:'#111111', anim:'deslizar' }
+    : tipo === 'escribir' ? { ...base, texto:'Esto se escribe solo…', pos:'abajo', tam:0.05, fondo:'#000000b3', anim:'escribir', dur:4 }
+    : tipo === 'elegante' ? { ...base, texto:'Una frase bonita', pos:'centro', tam:0.07, fondo:null, fuente:'Playfair Display', cursiva:true, negrita:false, anim:'subir' }
+    : tipo === 'divertido' ? { ...base, texto:'¡Hola!', pos:'centro', tam:0.09, fondo:null, fuente:'Pacifico', negrita:false, anim:'pop', color:'#ffd60a', borde:'#000000' }
+    : { ...base, texto:'Subtítulo', pos:'abajo', tam:0.05, fondo:'rgba(0,0,0,.6)' };
+  if (t.fuente !== 'Poppins') document.fonts.load(`700 40px "${t.fuente}"`).then(() => verEnEV(EV.t)).catch(() => {});
   EV.p.textos.push(t); EV.sel = { tipo:'texto', id:t.id }; guardarProyectoEV(); pintarTodoEV(); tabEV('editar');
   setTimeout(() => { const ta = document.querySelector('#evInspector textarea'); if (ta){ ta.focus(); ta.select(); } }, 50);
 }
@@ -640,7 +832,7 @@ async function paginasAClipsEV(todas){
   cargando(true);
   try {
     guardarPaginaActual();
-    const lista = todas ? paginas.map((p, i) => i) : [actual], seg = Math.max(1, +$('evSegPag').value || 5), fundido = $('evPagFundido').checked;
+    const lista = todas ? paginas.map((p, i) => i) : [actual], seg = Math.max(1, +$('evSegPag').value || 5), fundido = $('evPagFundido').checked, trTipo = $('evPagTrans').value;
     const k = Math.min(2, 1920 / Math.max(W, H));   // la página a buena resolución (lado largo hasta 1920 px)
     for (const i of lista){
       const el = document.createElement('canvas'), sc = new fabric.StaticCanvas(el, { width:Math.round(W * k), height:Math.round(H * k), enableRetinaScaling:false });
@@ -648,11 +840,77 @@ async function paginasAClipsEV(todas){
       const blob = await new Promise(ok => el.toBlob(ok, 'image/png'));
       const id = nid(); await guardarMedioEV(id, { blob, nombre:($('nombreDiseno').value || 'Diseño') + ' · página ' + (i + 1), tipo:'imagen' });
       const m = await cargarMedioEV(id);
-      agregarClipEV(id, m, { fin:seg, fundido, ajuste:'encajar' });
+      agregarClipEV(id, m, { fin:seg, fundido, ajuste:'encajar', trans:trTipo !== 'ninguna' && EV.p.clips.length ? { tipo:trTipo, dur:0.7 } : null });
       sc.dispose();
     }
     toast('🖼 ' + lista.length + ' página' + (lista.length > 1 ? 's agregadas' : ' agregada') + ' al video');
   } catch (e) { toast('No se pudieron agregar las páginas: ' + e.message); } finally { cargando(false); }
+}
+
+/* ---------- panel de transiciones ---------- */
+EV.trElegida = 'disolver';
+function destinoTransEV(){
+  const cl = EV.p.clips; if (cl.length < 2) return null;
+  const s = EV.sel && EV.sel.tipo === 'clip' && cl.find(c => c.id === EV.sel.id);
+  if (s && cl.indexOf(s) > 0) return s;
+  const r = clipEnEV(EV.t); if (r && r.i > 0) return r.c;
+  return cl[1];
+}
+function pintarTransEV(){
+  const g = $('evTransGrid'); if (!g) return;
+  const c = destinoTransEV(), info = $('evTrInfo');
+  if (!c){ info.textContent = 'Agrega al menos dos clips para poner transiciones entre ellos.'; g.innerHTML = ''; return; }
+  const i = EV.p.clips.indexOf(c), actual = c.trans && c.trans.tipo || 'ninguna';
+  info.innerHTML = `Entre <b>${esc(EV.p.clips[i - 1].nombre)}</b> y <b>${esc(c.nombre)}</b>. Toca una para verla.`;
+  g.innerHTML = Object.entries(TRANS_EV).map(([k, n]) => `<button class="trTile${k === actual ? ' on' : ''}" data-tr="${k}"><span class="trCaja"><i class="trA">A</i><i class="trB">B</i></span><small>${n}</small></button>`).join('');
+  $('evTrDur').value = (c.trans && c.trans.dur) || 0.6; $('evTrDurTxt').textContent = (+$('evTrDur').value).toFixed(1) + ' s';
+  g.querySelectorAll('.trTile').forEach(b => b.onclick = () => {
+    const k = b.dataset.tr; EV.trElegida = k;
+    c.trans = k === 'ninguna' ? null : { tipo:k, dur:+$('evTrDur').value };
+    guardarProyectoEV(); pintarLineaEV(); pintarTransEV(); verTransEV(c);
+  });
+}
+function verTransEV(c){
+  // muestra la transición: un poco antes del corte hasta un poco después
+  const b = inicioClipEV(c.id), d = c.trans ? c.trans.dur : 0.6;
+  if (EV.play) reproducirEV(false);
+  verEnEV(Math.max(0, b - d / 2 - 0.6)); EV.pararEn = Math.min(totalEV(), b + d / 2 + 0.6);
+  prepararSnapsEV().then(() => { const fin = EV.pararEn; reproducirEV(true); EV.pararEn = fin; });
+}
+(function(){
+  $('evTrDur').oninput = e => {
+    $('evTrDurTxt').textContent = (+e.target.value).toFixed(1) + ' s';
+    const c = destinoTransEV(); if (c && c.trans){ c.trans.dur = +e.target.value; verEnEV(EV.t); }
+  };
+  $('evTrDur').onchange = () => { const c = destinoTransEV(); if (c && c.trans){ guardarProyectoEV(); verTransEV(c); } };
+  $('evTrTodos').onclick = () => {
+    if (EV.p.clips.length < 2) return toast('Agrega al menos dos clips');
+    const k = EV.trElegida === 'ninguna' ? 'disolver' : EV.trElegida, d = +$('evTrDur').value;
+    EV.p.clips.forEach((c, i) => { if (i) c.trans = { tipo:k, dur:d }; });
+    guardarProyectoEV(); pintarLineaEV(); pintarTransEV(); toast('🔀 «' + TRANS_EV[k] + '» en todos los cortes');
+  };
+  $('evTrQuitar').onclick = () => { EV.p.clips.forEach(c => { c.trans = null; }); guardarProyectoEV(); pintarLineaEV(); pintarTransEV(); };
+  $('evReemplazo').onchange = async e => {
+    const f = e.target.files[0]; e.target.value = ''; const c = EV.p.clips.find(x => x.id === EV.reemplazar); if (f && c) await reemplazarClipEV(c, f);
+  };
+})();
+/* ---------- cambiar la foto o el video de un clip (espacios de plantilla) ---------- */
+function abrirReemplazoEV(c){ EV.reemplazar = c.id; $('evReemplazo').click(); }
+async function reemplazarClipEV(c, file){
+  const tipo = file.type.startsWith('video/') ? 'video' : file.type.startsWith('image/') ? 'imagen' : null;
+  if (!tipo) return toast('Elige un video o una foto');
+  cargando(true);
+  try {
+    const id = nid(); await guardarMedioEV(id, { blob:file, nombre:file.name.replace(/\.[^.]+$/, '').slice(0, 60), tipo });
+    reemplazarConMedioEV(c, id, await cargarMedioEV(id));
+  } catch (e) { toast('No se pudo usar ese archivo: ' + e.message); } finally { cargando(false); }
+}
+function reemplazarConMedioEV(c, id, m){
+  const largo = largoClip(c);
+  Object.assign(c, { blob:id, tipo:m.tipo, nombre:m.nombre || c.nombre, ini:0, vel:1, hueco:false, ajuste:'cubrir' });
+  c.fin = m.tipo === 'imagen' ? largo : Math.min(m.dur || largo, largo);
+  if (m.tipo === 'video' && m.dur > largo + 0.5) toast('🎞 Se usan los primeros ' + fmtT(largo).replace(/\.0$/, '') + ' s del video. Jala la orilla del clip para usar más.');
+  EV.sel = { tipo:'clip', id:c.id }; guardarProyectoEV(); pintarTodoEV(); verEnEV(inicioClipEV(c.id) + 0.05);
 }
 
 /* ---------- grabar ---------- */
@@ -757,6 +1015,7 @@ async function exportarEV(){
   if (!window.MediaRecorder) return toast('Este navegador no puede crear videos. Usa Chrome o Edge.');
   const cv = $('evLienzo'), total = totalEV();
   reproducirEV(false); audioEV();
+  await prepararSnapsEV();
   const stream = cv.captureStream(30);
   EV.recDest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
   const mime = mimeGrab(), rec = new MediaRecorder(stream, mime ? { mimeType:mime, videoBitsPerSecond:6e6, audioBitsPerSecond:160000 } : {});
