@@ -1038,6 +1038,18 @@
   .tarjetaVideoPl b{font-size:14px}
   .tarjetaVideoPl small{font-size:11.5px;opacity:.9}
   .tarjetaVideoPl:hover{filter:brightness(1.08)}
+  /* v51: audio de la computadora al grabar */
+  #evPregunta{position:absolute;inset:0;z-index:31;background:rgba(3,5,9,.75);display:flex;align-items:center;justify-content:center}
+  #evPregunta[hidden]{display:none}
+  #evPregunta .caja{width:min(500px,92vw)}
+  #evPregunta .acciones{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+  #evPregunta .filaCheck{display:flex;gap:8px;align-items:center;font-size:13px;margin-top:10px}
+  .evPasos{padding-left:20px;line-height:1.5}
+  .evPasos li{margin:6px 0}
+  .evNivel{display:flex;align-items:center;gap:4px;font-size:13px}
+  .evNivel[hidden]{display:none}
+  .pistaNivel{display:block;width:46px;height:6px;border-radius:3px;background:rgba(255,255,255,.15);overflow:hidden}
+  .pistaNivel i{display:block;width:0;height:100%;background:#22c55e;transition:width .08s}
 
 </style>
 </head>
@@ -1045,7 +1057,7 @@
 
 <!-- ====== BARRA SUPERIOR ====== -->
 <div id="barra">
-  <div class="logo"><img class="logoImg" src="data:image/png;base64,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" alt=""><span class="logoTxt">Diseñador<small class="logoMarca">APIK-DESING</small></span><small class="ver">v50</small></div>
+  <div class="logo"><img class="logoImg" src="data:image/png;base64,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" alt=""><span class="logoTxt">Diseñador<small class="logoMarca">APIK-DESING</small></span><small class="ver">v51</small></div>
   <input class="nombre" id="nombreDiseno" value="Mi diseño" title="Nombre del diseño">
   <span id="estadoGuardado" title="Estado del guardado en Drive">No guardado en Drive</span>
   <button class="tb" onclick="nuevoDiseno()">Nuevo</button>
@@ -12471,8 +12483,9 @@ function reproducirEV(v){
     <div class="evPista evPistaMusica" id="evPistaMusica" data-nombre="Música"></div>
     <div class="evCabezal" id="evCabezal"></div>
   </div>
-  <div id="evGrabando" hidden><span class="punto"></span><b id="evGrabTiempo">0:00</b><button class="pb" id="evGrabPausa">❚❚ Pausa</button><button class="btnP" id="evGrabStop">■ Detener</button></div>
+  <div id="evGrabando" hidden><span class="punto"></span><b id="evGrabTiempo">0:00</b><span class="evNivel" id="evNivelMic" title="Tu voz (micrófono)" hidden>🎤<span class="pistaNivel"><i></i></span></span><span class="evNivel" id="evNivelPc" title="Sonido de la computadora" hidden>🔊<span class="pistaNivel"><i></i></span></span><button class="pb" id="evGrabPausa">❚❚ Pausa</button><button class="btnP" id="evGrabStop">■ Detener</button></div>
   <div id="evCuentaAtras" hidden></div>
+  <div id="evPregunta" hidden><div class="caja"><h3></h3><div class="evPregCuerpo"></div><label class="filaCheck" hidden><input type="checkbox"> <span></span></label><div class="acciones"></div></div></div>
   <input type="file" id="evReemplazo" accept="video/*,image/*" hidden>
   <div id="evCamVivo" hidden><video autoplay muted playsinline></video></div>
   <div id="evExportando" hidden><div class="caja"><h3>⬇ Creando tu video…</h3><p class="hint">No cambies de pestaña mientras se crea (el navegador lo pausaría).</p><div class="evBarraProg"><i id="evProg"></i></div><p id="evProgTxt" class="hint"></p><div class="acciones"><button class="btnS" id="evCancelarExp">Cancelar</button></div></div></div>`;
@@ -12900,19 +12913,58 @@ function reemplazarConMedioEV(c, id, m){
 
 /* ---------- grabar ---------- */
 const tiposGrabacion = ['video/mp4;codecs=avc1.42E01F,mp4a.40.2', 'video/mp4;codecs=avc1,mp4a.40.2', 'video/mp4;codecs=avc1,opus', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/mp4', 'video/webm'];   // MP4 con H.264 primero (WhatsApp, Windows, celulares)
+// ventana de pregunta dentro del estudio; devuelve {v, check}
+function preguntaEV(titulo, html, botones, textoCheck){
+  return new Promise(ok => {
+    const d = $('evPregunta'), lab = d.querySelector('.filaCheck');
+    d.querySelector('h3').textContent = titulo; d.querySelector('.evPregCuerpo').innerHTML = html;
+    lab.hidden = !textoCheck; lab.querySelector('input').checked = false; lab.querySelector('span').textContent = textoCheck || '';
+    const acc = d.querySelector('.acciones'); acc.innerHTML = '';
+    botones.forEach(b => { const x = document.createElement('button'); x.className = b.clase || 'btnS'; x.textContent = b.t; x.onclick = () => { d.hidden = true; ok({ v:b.v, check:lab.querySelector('input').checked }); }; acc.appendChild(x); });
+    d.hidden = false; acc.lastChild && acc.lastChild.focus();
+  });
+}
+const esMacEV = /Mac/i.test(navigator.platform || navigator.userAgent);
+function guiaAudioPcHTML(modo){
+  if (modo === 'presentacion') return `<p>En la ventana de Chrome, deja elegida <b>esta pestaña</b> y deja activado <b>«Compartir también el audio de la pestaña»</b>.</p><p class="hint">Así se graban los videos o sonidos de tu presentación.</p>`;
+  return `<ol class="evPasos">
+    <li>En la ventana que abre Chrome elige <b>«Pantalla completa»</b> (o <b>«Pestaña de Chrome»</b> si lo que suena está en una pestaña).</li>
+    <li>Activa el interruptor <b>«Compartir audio del sistema»</b>${esMacEV ? '' : ' (o «Compartir también el audio de la pestaña»)'} abajo a la izquierda.</li>
+    <li>Toca <b>Compartir</b>.</li></ol>
+    <p class="hint">⚠ Si eliges una <b>ventana</b> suelta, Chrome no comparte su sonido.${esMacEV ? ' En Mac, el audio de pantalla completa necesita Chrome actualizado y macOS 14 o más nuevo; con «Pestaña» siempre funciona.' : ''}</p>`;
+}
+function sinAudioPcHTML(sup){
+  const que = sup === 'window' ? 'Elegiste una <b>ventana</b>: Chrome no comparte el sonido de las ventanas.' : sup === 'monitor' ? 'Elegiste la pantalla completa, pero el interruptor <b>«Compartir audio del sistema»</b> quedó apagado.' : 'El interruptor de audio quedó apagado al compartir.';
+  return `<p>${que}</p><p>Vuelve a elegir <b>«Pantalla completa»</b> o una <b>pestaña</b> y activa el audio antes de tocar Compartir.</p><p class="hint">Tu voz con el micrófono sí se graba de todos modos.</p>`;
+}
 const mimeGrab = () => window.MediaRecorder ? tiposGrabacion.find(x => MediaRecorder.isTypeSupported(x)) || '' : '';
 let GR = null;
-async function grabarEV(modo){
+async function grabarEV(modo, sinGuia){
   if (GR) return toast('Ya estás grabando');
   if (!window.MediaRecorder) return toast('Este navegador no puede grabar. Usa Chrome o Edge en computadora.');
   const quiereMic = $('evMic').checked, quierePc = $('evAudioPc').checked;
   const pistas = [];
   let pantalla = null, cam = null, mic = null;
+  const usaPantalla = modo === 'pantalla' || modo === 'ambas' || modo === 'presentacion';
+  // guía: dónde activar el audio de la computadora en la ventana de Chrome
+  if (usaPantalla && quierePc && !sinGuia && !leerLS('disenador_guiaAudioPc')){
+    const r = await preguntaEV('🔊 Para grabar el sonido de tu computadora', guiaAudioPcHTML(modo), [{ t:'Cancelar', v:'no', clase:'btnS' }, { t:'Entendido, elegir pantalla', v:'si', clase:'btnP' }], 'No volver a mostrar');
+    if (r.v !== 'si') return;
+    if (r.check) guardarLS('disenador_guiaAudioPc', '1');
+  }
   try {
-    if (modo === 'pantalla' || modo === 'ambas' || modo === 'presentacion'){
-      pantalla = await navigator.mediaDevices.getDisplayMedia({ video:{ frameRate:30, width:{ ideal:1920 }, height:{ ideal:1080 } }, audio:quierePc,
-        preferCurrentTab:modo === 'presentacion', selfBrowserSurface:modo === 'presentacion' ? 'include' : 'exclude', surfaceSwitching:'include', systemAudio:quierePc ? 'include' : 'exclude' });
+    if (usaPantalla){
+      pantalla = await navigator.mediaDevices.getDisplayMedia({ video:{ frameRate:30, width:{ ideal:1920 }, height:{ ideal:1080 } },
+        audio:quierePc ? { echoCancellation:false, noiseSuppression:false, autoGainControl:false, suppressLocalAudioPlayback:false } : false,
+        preferCurrentTab:modo === 'presentacion', selfBrowserSurface:modo === 'presentacion' ? 'include' : 'exclude', surfaceSwitching:'include',
+        systemAudio:quierePc ? 'include' : 'exclude', windowAudio:quierePc ? 'system' : 'exclude' });
       pistas.push(pantalla);
+      // pidió el audio de la compu pero no se compartió: avisar antes de empezar
+      if (quierePc && !pantalla.getAudioTracks().length){
+        const sup = (pantalla.getVideoTracks()[0].getSettings() || {}).displaySurface;
+        const r = await preguntaEV('🔇 No se compartió el sonido de la computadora', sinAudioPcHTML(sup), [{ t:'Grabar sin ese sonido', v:'sigue', clase:'btnS' }, { t:'↺ Volver a elegir con sonido', v:'otra', clase:'btnP' }]);
+        if (r.v === 'otra'){ pistas.forEach(st => st.getTracks().forEach(t => t.stop())); return grabarEV(modo, true); }
+      }
     }
     if (modo === 'camara' || modo === 'ambas' || modo === 'presentacion'){
       cam = await navigator.mediaDevices.getUserMedia({ video:{ width:{ ideal:1280 }, height:{ ideal:720 }, facingMode:'user' }, audio:false });
@@ -12943,6 +12995,13 @@ async function grabarEV(modo){
   if ($('evCuenta').checked) await cuentaRegresivaEV();
   if (!GR) return;
   GR.recP.start(1000); if (GR.recC) GR.recC.start(1000);
+  GR.medidores = [];
+  [['evNivelMic', mic], ['evNivelPc', pantalla]].forEach(([id, st]) => {
+    const el = $(id); el.hidden = !(st && st.getAudioTracks().length); if (el.hidden) return;
+    try { const an = ctx.createAnalyser(); an.fftSize = 512; ctx.createMediaStreamSource(st).connect(an); GR.medidores.push([el.querySelector('i'), an, new Uint8Array(an.fftSize)]); } catch (e) {}
+  });
+  const medir = () => { if (!GR) return; GR.medidores.forEach(([i, an, buf]) => { an.getByteTimeDomainData(buf); let m = 0; for (const v of buf) m = Math.max(m, Math.abs(v - 128)); i.style.width = Math.min(100, m / 128 * 160) + '%'; }); GR.rafNivel = requestAnimationFrame(medir); };
+  medir();
   GR.inicio = Date.now();
   $('evGrabando').hidden = false;
   GR.reloj = setInterval(() => { if (!GR || GR.pausado) return; GR.segundos += 0.5; $('evGrabTiempo').textContent = fmtT(GR.segundos).replace(/\.\d$/, ''); }, 500);
@@ -12968,7 +13027,7 @@ function pausarGrabacionEV(){
 }
 async function detenerGrabacionEV(){
   const g = GR; if (!g || g.parando) return; g.parando = true;
-  clearInterval(g.reloj);
+  clearInterval(g.reloj); cancelAnimationFrame(g.rafNivel);
   const parar = r => new Promise(ok => { if (!r || r.state === 'inactive') return ok(); r.onstop = ok; try { r.stop(); } catch (e) { ok(); } });
   await Promise.all([parar(g.recP), parar(g.recC)]);
   g.pistas.forEach(s => s.getTracks().forEach(t => t.stop()));

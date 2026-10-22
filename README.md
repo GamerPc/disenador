@@ -199,3 +199,9 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - Textos con animación de entrada (aparecer, subir, rebotar, deslizar, máquina de escribir), 14 letras, color de fondo, contorno estilo TikTok y mayúsculas; se arrastran sobre la vista previa y se achican solos si una palabra no cabe. Nuevos estilos en la pestaña Texto.
 - `82-plantillas-de-video.js`: 12 plantillas (3 tips, antes y después, un día en mi vida, tutorial, anuncio de evento, frase del día, carrusel de fotos, promoción, cumpleaños, intro de YouTube, exposición de clase, noticiero escolar) por categoría: Reels y TikTok (9:16), Instagram (1:1 y 4:5), YouTube y escuela (16:9). Cada escena es un espacio: tocar la vista previa, soltar un archivo encima o elegir uno de «Mis archivos» la cambia por tu foto o video sin perder textos ni transiciones.
 - Las páginas de tu diseño se agregan con la transición que elijas.
+
+## v51: sonido de la computadora al grabar
+- Antes de elegir la pantalla, una guía explica dónde activar «Compartir audio del sistema» (pantalla completa) o el audio de la pestaña; se puede ocultar.
+- Si se pidió el sonido de la computadora y Chrome no lo compartió (por ejemplo, al elegir una ventana), avisa antes de grabar y ofrece volver a elegir o seguir sin ese sonido.
+- El audio de la pantalla se pide sin cancelación de eco ni supresión de ruido (suena tal cual) y con `systemAudio`/`windowAudio`.
+- Mientras se graba, la barra muestra dos medidores en vivo: 🎤 tu voz y 🔊 el sonido de la computadora.

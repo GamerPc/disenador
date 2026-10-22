@@ -489,8 +489,9 @@ function reproducirEV(v){
     <div class="evPista evPistaMusica" id="evPistaMusica" data-nombre="Música"></div>
     <div class="evCabezal" id="evCabezal"></div>
   </div>
-  <div id="evGrabando" hidden><span class="punto"></span><b id="evGrabTiempo">0:00</b><button class="pb" id="evGrabPausa">❚❚ Pausa</button><button class="btnP" id="evGrabStop">■ Detener</button></div>
+  <div id="evGrabando" hidden><span class="punto"></span><b id="evGrabTiempo">0:00</b><span class="evNivel" id="evNivelMic" title="Tu voz (micrófono)" hidden>🎤<span class="pistaNivel"><i></i></span></span><span class="evNivel" id="evNivelPc" title="Sonido de la computadora" hidden>🔊<span class="pistaNivel"><i></i></span></span><button class="pb" id="evGrabPausa">❚❚ Pausa</button><button class="btnP" id="evGrabStop">■ Detener</button></div>
   <div id="evCuentaAtras" hidden></div>
+  <div id="evPregunta" hidden><div class="caja"><h3></h3><div class="evPregCuerpo"></div><label class="filaCheck" hidden><input type="checkbox"> <span></span></label><div class="acciones"></div></div></div>
   <input type="file" id="evReemplazo" accept="video/*,image/*" hidden>
   <div id="evCamVivo" hidden><video autoplay muted playsinline></video></div>
   <div id="evExportando" hidden><div class="caja"><h3>⬇ Creando tu video…</h3><p class="hint">No cambies de pestaña mientras se crea (el navegador lo pausaría).</p><div class="evBarraProg"><i id="evProg"></i></div><p id="evProgTxt" class="hint"></p><div class="acciones"><button class="btnS" id="evCancelarExp">Cancelar</button></div></div></div>`;
@@ -918,19 +919,58 @@ function reemplazarConMedioEV(c, id, m){
 
 /* ---------- grabar ---------- */
 const tiposGrabacion = ['video/mp4;codecs=avc1.42E01F,mp4a.40.2', 'video/mp4;codecs=avc1,mp4a.40.2', 'video/mp4;codecs=avc1,opus', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/mp4', 'video/webm'];   // MP4 con H.264 primero (WhatsApp, Windows, celulares)
+// ventana de pregunta dentro del estudio; devuelve {v, check}
+function preguntaEV(titulo, html, botones, textoCheck){
+  return new Promise(ok => {
+    const d = $('evPregunta'), lab = d.querySelector('.filaCheck');
+    d.querySelector('h3').textContent = titulo; d.querySelector('.evPregCuerpo').innerHTML = html;
+    lab.hidden = !textoCheck; lab.querySelector('input').checked = false; lab.querySelector('span').textContent = textoCheck || '';
+    const acc = d.querySelector('.acciones'); acc.innerHTML = '';
+    botones.forEach(b => { const x = document.createElement('button'); x.className = b.clase || 'btnS'; x.textContent = b.t; x.onclick = () => { d.hidden = true; ok({ v:b.v, check:lab.querySelector('input').checked }); }; acc.appendChild(x); });
+    d.hidden = false; acc.lastChild && acc.lastChild.focus();
+  });
+}
+const esMacEV = /Mac/i.test(navigator.platform || navigator.userAgent);
+function guiaAudioPcHTML(modo){
+  if (modo === 'presentacion') return `<p>En la ventana de Chrome, deja elegida <b>esta pestaña</b> y deja activado <b>«Compartir también el audio de la pestaña»</b>.</p><p class="hint">Así se graban los videos o sonidos de tu presentación.</p>`;
+  return `<ol class="evPasos">
+    <li>En la ventana que abre Chrome elige <b>«Pantalla completa»</b> (o <b>«Pestaña de Chrome»</b> si lo que suena está en una pestaña).</li>
+    <li>Activa el interruptor <b>«Compartir audio del sistema»</b>${esMacEV ? '' : ' (o «Compartir también el audio de la pestaña»)'} abajo a la izquierda.</li>
+    <li>Toca <b>Compartir</b>.</li></ol>
+    <p class="hint">⚠ Si eliges una <b>ventana</b> suelta, Chrome no comparte su sonido.${esMacEV ? ' En Mac, el audio de pantalla completa necesita Chrome actualizado y macOS 14 o más nuevo; con «Pestaña» siempre funciona.' : ''}</p>`;
+}
+function sinAudioPcHTML(sup){
+  const que = sup === 'window' ? 'Elegiste una <b>ventana</b>: Chrome no comparte el sonido de las ventanas.' : sup === 'monitor' ? 'Elegiste la pantalla completa, pero el interruptor <b>«Compartir audio del sistema»</b> quedó apagado.' : 'El interruptor de audio quedó apagado al compartir.';
+  return `<p>${que}</p><p>Vuelve a elegir <b>«Pantalla completa»</b> o una <b>pestaña</b> y activa el audio antes de tocar Compartir.</p><p class="hint">Tu voz con el micrófono sí se graba de todos modos.</p>`;
+}
 const mimeGrab = () => window.MediaRecorder ? tiposGrabacion.find(x => MediaRecorder.isTypeSupported(x)) || '' : '';
 let GR = null;
-async function grabarEV(modo){
+async function grabarEV(modo, sinGuia){
   if (GR) return toast('Ya estás grabando');
   if (!window.MediaRecorder) return toast('Este navegador no puede grabar. Usa Chrome o Edge en computadora.');
   const quiereMic = $('evMic').checked, quierePc = $('evAudioPc').checked;
   const pistas = [];
   let pantalla = null, cam = null, mic = null;
+  const usaPantalla = modo === 'pantalla' || modo === 'ambas' || modo === 'presentacion';
+  // guía: dónde activar el audio de la computadora en la ventana de Chrome
+  if (usaPantalla && quierePc && !sinGuia && !leerLS('disenador_guiaAudioPc')){
+    const r = await preguntaEV('🔊 Para grabar el sonido de tu computadora', guiaAudioPcHTML(modo), [{ t:'Cancelar', v:'no', clase:'btnS' }, { t:'Entendido, elegir pantalla', v:'si', clase:'btnP' }], 'No volver a mostrar');
+    if (r.v !== 'si') return;
+    if (r.check) guardarLS('disenador_guiaAudioPc', '1');
+  }
   try {
-    if (modo === 'pantalla' || modo === 'ambas' || modo === 'presentacion'){
-      pantalla = await navigator.mediaDevices.getDisplayMedia({ video:{ frameRate:30, width:{ ideal:1920 }, height:{ ideal:1080 } }, audio:quierePc,
-        preferCurrentTab:modo === 'presentacion', selfBrowserSurface:modo === 'presentacion' ? 'include' : 'exclude', surfaceSwitching:'include', systemAudio:quierePc ? 'include' : 'exclude' });
+    if (usaPantalla){
+      pantalla = await navigator.mediaDevices.getDisplayMedia({ video:{ frameRate:30, width:{ ideal:1920 }, height:{ ideal:1080 } },
+        audio:quierePc ? { echoCancellation:false, noiseSuppression:false, autoGainControl:false, suppressLocalAudioPlayback:false } : false,
+        preferCurrentTab:modo === 'presentacion', selfBrowserSurface:modo === 'presentacion' ? 'include' : 'exclude', surfaceSwitching:'include',
+        systemAudio:quierePc ? 'include' : 'exclude', windowAudio:quierePc ? 'system' : 'exclude' });
       pistas.push(pantalla);
+      // pidió el audio de la compu pero no se compartió: avisar antes de empezar
+      if (quierePc && !pantalla.getAudioTracks().length){
+        const sup = (pantalla.getVideoTracks()[0].getSettings() || {}).displaySurface;
+        const r = await preguntaEV('🔇 No se compartió el sonido de la computadora', sinAudioPcHTML(sup), [{ t:'Grabar sin ese sonido', v:'sigue', clase:'btnS' }, { t:'↺ Volver a elegir con sonido', v:'otra', clase:'btnP' }]);
+        if (r.v === 'otra'){ pistas.forEach(st => st.getTracks().forEach(t => t.stop())); return grabarEV(modo, true); }
+      }
     }
     if (modo === 'camara' || modo === 'ambas' || modo === 'presentacion'){
       cam = await navigator.mediaDevices.getUserMedia({ video:{ width:{ ideal:1280 }, height:{ ideal:720 }, facingMode:'user' }, audio:false });
@@ -961,6 +1001,13 @@ async function grabarEV(modo){
   if ($('evCuenta').checked) await cuentaRegresivaEV();
   if (!GR) return;
   GR.recP.start(1000); if (GR.recC) GR.recC.start(1000);
+  GR.medidores = [];
+  [['evNivelMic', mic], ['evNivelPc', pantalla]].forEach(([id, st]) => {
+    const el = $(id); el.hidden = !(st && st.getAudioTracks().length); if (el.hidden) return;
+    try { const an = ctx.createAnalyser(); an.fftSize = 512; ctx.createMediaStreamSource(st).connect(an); GR.medidores.push([el.querySelector('i'), an, new Uint8Array(an.fftSize)]); } catch (e) {}
+  });
+  const medir = () => { if (!GR) return; GR.medidores.forEach(([i, an, buf]) => { an.getByteTimeDomainData(buf); let m = 0; for (const v of buf) m = Math.max(m, Math.abs(v - 128)); i.style.width = Math.min(100, m / 128 * 160) + '%'; }); GR.rafNivel = requestAnimationFrame(medir); };
+  medir();
   GR.inicio = Date.now();
   $('evGrabando').hidden = false;
   GR.reloj = setInterval(() => { if (!GR || GR.pausado) return; GR.segundos += 0.5; $('evGrabTiempo').textContent = fmtT(GR.segundos).replace(/\.\d$/, ''); }, 500);
@@ -986,7 +1033,7 @@ function pausarGrabacionEV(){
 }
 async function detenerGrabacionEV(){
   const g = GR; if (!g || g.parando) return; g.parando = true;
-  clearInterval(g.reloj);
+  clearInterval(g.reloj); cancelAnimationFrame(g.rafNivel);
   const parar = r => new Promise(ok => { if (!r || r.state === 'inactive') return ok(); r.onstop = ok; try { r.stop(); } catch (e) { ok(); } });
   await Promise.all([parar(g.recP), parar(g.recC)]);
   g.pistas.forEach(s => s.getTracks().forEach(t => t.stop()));
