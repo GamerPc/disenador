@@ -10216,6 +10216,795 @@ agruparToggle = function(){
   return agruparToggleBase80.apply(this, arguments);
 };
 /* =========================================================
+   ESTUDIO DE VIDEO
+   - Grabar: pantalla, cámara, pantalla + cámara (burbuja editable) o tu presentación + cámara.
+   - Subir videos, imágenes y música. Usar las páginas de tu diseño como diapositivas.
+   - Línea de tiempo: recortar, dividir, reordenar, velocidad, volumen, textos encima, música de fondo.
+   - Exportar a MP4 (o WebM si el navegador no puede MP4).
+   Todo se guarda en este navegador (IndexedDB), así no se pierde al recargar.
+   ========================================================= */
+const FORMATOS_EV = { '16:9':[1280, 720], '9:16':[720, 1280], '1:1':[1080, 1080], '4:5':[1080, 1350] };
+const EV = {
+  p:{ formato:'16:9', clips:[], textos:[], musica:null, nombre:'Mi video' },
+  sel:null, t:0, play:false, pps:40, medios:{}, hist:[], hi:-1, ctx:null, master:null, recDest:null, exportando:false
+};
+const nid = () => 'v' + Math.random().toString(36).slice(2, 10);
+const fmtT = s => { s = Math.max(0, s || 0); const m = Math.floor(s / 60), r = s - m * 60; return m + ':' + (r < 10 ? '0' : '') + r.toFixed(1); };
+
+/* ---------- guardar en el navegador (IndexedDB) ---------- */
+let dbEV = null;
+function abrirDBEV(){
+  if (dbEV) return Promise.resolve(dbEV);
+  return new Promise((ok, mal) => {
+    const r = indexedDB.open('disenador_video', 1);
+    r.onupgradeneeded = () => { const d = r.result; if (!d.objectStoreNames.contains('medios')) d.createObjectStore('medios'); if (!d.objectStoreNames.contains('estado')) d.createObjectStore('estado'); };
+    r.onsuccess = () => { dbEV = r.result; ok(dbEV); }; r.onerror = () => mal(r.error);
+  });
+}
+async function dbEVop(store, modo, fn){
+  const d = await abrirDBEV();
+  return new Promise((ok, mal) => { const tx = d.transaction(store, modo), st = tx.objectStore(store), r = fn(st); tx.oncomplete = () => ok(r && r.result); tx.onerror = () => mal(tx.error); });
+}
+const guardarMedioEV = (id, datos) => dbEVop('medios', 'readwrite', st => st.put(datos, id));
+const leerMedioEV = id => dbEVop('medios', 'readonly', st => st.get(id));
+const borrarMedioEV = id => dbEVop('medios', 'readwrite', st => st.delete(id));
+const listarMediosEV = () => dbEVop('medios', 'readonly', st => st.getAllKeys());
+let tGuardarEV = null;
+function guardarProyectoEV(conHistorial = true){
+  if (conHistorial){
+    const j = JSON.stringify(EV.p);
+    if (EV.hist[EV.hi] !== j){ EV.hist = EV.hist.slice(0, EV.hi + 1); EV.hist.push(j); if (EV.hist.length > 60) EV.hist.shift(); EV.hi = EV.hist.length - 1; }
+  }
+  clearTimeout(tGuardarEV);
+  tGuardarEV = setTimeout(() => dbEVop('estado', 'readwrite', st => st.put(JSON.stringify(EV.p), 'proyecto')).catch(() => {}), 500);
+}
+function deshacerEV(d){
+  const i = EV.hi + d; if (i < 0 || i >= EV.hist.length) return;
+  EV.hi = i; EV.p = JSON.parse(EV.hist[i]); EV.sel = null; guardarProyectoEV(false); pintarTodoEV();
+}
+
+/* ---------- medios (videos, imágenes, audios) ---------- */
+// duración real de los videos grabados (Chrome a veces dice «Infinity»)
+function duracionReal(el){
+  return new Promise(ok => {
+    if (isFinite(el.duration) && el.duration > 0) return ok(el.duration);
+    const fin = () => { el.removeEventListener('durationchange', ver); el.currentTime = 0; ok(isFinite(el.duration) ? el.duration : 0); };
+    const ver = () => { if (isFinite(el.duration)) fin(); };
+    el.addEventListener('durationchange', ver); el.currentTime = 1e101; setTimeout(fin, 4000);
+  });
+}
+async function cargarMedioEV(id){
+  if (EV.medios[id]) return EV.medios[id].listo;
+  const m = EV.medios[id] = {};
+  m.listo = (async () => {
+    const d = await leerMedioEV(id); if (!d) throw new Error('falta');
+    m.tipo = d.tipo; m.nombre = d.nombre; m.url = URL.createObjectURL(d.blob);
+    if (d.tipo === 'imagen'){
+      m.el = new Image(); m.el.src = m.url; await m.el.decode().catch(() => {}); m.w = m.el.naturalWidth; m.h = m.el.naturalHeight; m.dur = 5;
+      m.thumb = miniEV(m.el, m.w, m.h);
+    } else {
+      const v = document.createElement(d.tipo === 'audio' ? 'audio' : 'video');
+      v.preload = 'auto'; v.playsInline = true; v.src = m.url; v.crossOrigin = 'anonymous';
+      await new Promise(ok => { v.onloadedmetadata = ok; v.onerror = ok; setTimeout(ok, 6000); });
+      m.el = v; m.w = v.videoWidth || 0; m.h = v.videoHeight || 0;
+      m.dur = d.dur || await duracionReal(v);
+      if (d.tipo === 'video'){
+        await buscarEV(v, Math.min(1, m.dur / 3));
+        m.thumb = miniEV(v, m.w, m.h);
+      }
+      conectarAudioEV(v);
+    }
+    return m;
+  })();
+  return m.listo;
+}
+function miniEV(el, w, h){ try { const c = document.createElement('canvas'), k = 90 / Math.max(1, h || 90); c.width = Math.max(1, Math.round((w || 160) * k)); c.height = 90; c.getContext('2d').drawImage(el, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', 0.6); } catch (e) { return ''; } }
+function buscarEV(v, t){
+  return new Promise(ok => {
+    if (Math.abs(v.currentTime - t) < 0.02 && v.readyState >= 2) return ok();
+    const listo = () => { v.removeEventListener('seeked', listo); clearTimeout(tm); ok(); };
+    const tm = setTimeout(listo, 1500);
+    v.addEventListener('seeked', listo); try { v.currentTime = Math.max(0, t); } catch (e) { listo(); }
+  });
+}
+async function agregarArchivoEV(file){
+  const tipo = file.type.startsWith('video/') ? 'video' : file.type.startsWith('image/') ? 'imagen' : file.type.startsWith('audio/') ? 'audio' : null;
+  if (!tipo) return toast('Ese archivo no es video, imagen ni audio');
+  const id = nid();
+  await guardarMedioEV(id, { blob:file, nombre:file.name.replace(/\.[^.]+$/, '').slice(0, 60), tipo });
+  const m = await cargarMedioEV(id);
+  if (tipo === 'audio') ponerMusicaEV(id, m);
+  else agregarClipEV(id, m);
+  pintarBibliotecaEV();
+}
+function agregarClipEV(id, m, extra = {}){
+  const c = { id:nid(), blob:id, tipo:m.tipo, nombre:m.nombre || 'Clip', ini:0, fin:m.tipo === 'imagen' ? 5 : m.dur, vol:1, mute:false, vel:1, ajuste:m.tipo === 'imagen' ? 'encajar' : 'cubrir', fundido:false, zoomLento:false, cam:null, ...extra };
+  EV.p.clips.push(c); EV.sel = { tipo:'clip', id:c.id };
+  guardarProyectoEV(); pintarTodoEV();
+  return c;
+}
+function ponerMusicaEV(id, m){
+  EV.p.musica = { blob:id, nombre:m.nombre || 'Música', vol:0.35, desde:0 };
+  conectarAudioEV(m.el); EV.sel = { tipo:'musica' }; guardarProyectoEV(); pintarTodoEV(); toast('♪ Música agregada (se repite si es más corta que el video)');
+}
+
+/* ---------- audio: todo pasa por aquí para poder grabarlo al exportar ---------- */
+function audioEV(){
+  if (!EV.ctx){
+    EV.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    EV.master = EV.ctx.createGain(); EV.master.connect(EV.ctx.destination);
+    EV.recDest = EV.ctx.createMediaStreamDestination(); EV.master.connect(EV.recDest);
+  }
+  if (EV.ctx.state === 'suspended') EV.ctx.resume().catch(() => {});
+  return EV.ctx;
+}
+function conectarAudioEV(el){
+  if (!el || el._gain) return;
+  try { const ctx = audioEV(), src = ctx.createMediaElementSource(el), g = ctx.createGain(); src.connect(g); g.connect(EV.master); el._gain = g; } catch (e) {}
+}
+
+/* ---------- tiempo ---------- */
+const largoClip = c => Math.max(0.1, (c.fin - c.ini) / (c.vel || 1));
+const totalEV = () => EV.p.clips.reduce((s, c) => s + largoClip(c), 0);
+function clipEnEV(t){
+  let acc = 0;
+  for (let i = 0; i < EV.p.clips.length; i++){ const c = EV.p.clips[i], L = largoClip(c); if (t < acc + L || i === EV.p.clips.length - 1) return { c, i, t0:acc, local:Math.min(L, Math.max(0, t - acc)) }; acc += L; }
+  return null;
+}
+const inicioClipEV = id => { let acc = 0; for (const c of EV.p.clips){ if (c.id === id) return acc; acc += largoClip(c); } return 0; };
+
+/* ---------- dibujo de un cuadro ---------- */
+function dibujarMedioEV(x, el, w, h, W0, H0, ajuste, zoomK){
+  if (!el || !w || !h) return;
+  const k = (ajuste === 'encajar' ? Math.min(W0 / w, H0 / h) : Math.max(W0 / w, H0 / h)) * (zoomK || 1);
+  const dw = w * k, dh = h * k; x.drawImage(el, (W0 - dw) / 2, (H0 - dh) / 2, dw, dh);
+}
+function dibujarCuadroEV(t, x, W0, H0){
+  x.save(); x.fillStyle = '#000'; x.fillRect(0, 0, W0, H0);
+  const r = clipEnEV(t);
+  if (r){
+    const c = r.c, m = EV.medios[c.blob];
+    let alfa = 1; const L = largoClip(c);
+    if (c.fundido){ alfa = Math.min(1, r.local / 0.5, (L - r.local) / 0.5); alfa = Math.max(0, alfa); }
+    x.globalAlpha = alfa;
+    if (m && m.el){ const zk = c.zoomLento ? 1 + 0.12 * (r.local / L) : 1; dibujarMedioEV(x, m.el, m.w || m.el.videoWidth, m.h || m.el.videoHeight, W0, H0, c.ajuste, zk); }
+    // burbuja de la cámara
+    if (c.cam && c.cam.visible !== false){
+      const mc = EV.medios[c.cam.blob];
+      if (mc && mc.el && mc.el.videoWidth){
+        const lado = Math.min(W0, H0) * c.cam.tam, cx = c.cam.x * W0, cy = c.cam.y * H0;
+        x.save(); x.beginPath();
+        if (c.cam.forma === 'cuadro') x.roundRect ? x.roundRect(cx - lado / 2, cy - lado / 2, lado, lado, lado * 0.12) : x.rect(cx - lado / 2, cy - lado / 2, lado, lado);
+        else x.arc(cx, cy, lado / 2, 0, Math.PI * 2);
+        x.closePath(); x.save(); x.clip();
+        const vw = mc.el.videoWidth, vh = mc.el.videoHeight, k = Math.max(lado / vw, lado / vh);
+        x.drawImage(mc.el, cx - vw * k / 2, cy - vh * k / 2, vw * k, vh * k);
+        x.restore();
+        x.lineWidth = Math.max(3, lado * 0.025); x.strokeStyle = c.cam.borde || '#ffffff'; x.stroke(); x.restore();
+      }
+    }
+    x.globalAlpha = 1;
+  }
+  // textos encima
+  EV.p.textos.forEach(tx => {
+    if (t < tx.inicio || t > tx.inicio + tx.dur) return;
+    const ap = Math.min(1, (t - tx.inicio) / 0.25, (tx.inicio + tx.dur - t) / 0.25);
+    const tam = Math.round(H0 * (tx.tam || 0.07)), fuente = `${tx.negrita === false ? 400 : 700} ${tam}px "${tx.fuente || 'Poppins'}", sans-serif`;
+    x.save(); x.globalAlpha = Math.max(0, ap); x.font = fuente; x.textAlign = 'center'; x.textBaseline = 'middle';
+    const lineas = partirTextoEV(x, tx.texto || '', W0 * 0.86), alto = tam * 1.25 * lineas.length;
+    const cy = tx.pos === 'arriba' ? H0 * 0.12 + alto / 2 : tx.pos === 'centro' ? H0 / 2 : H0 * 0.86 - alto / 2;
+    if (tx.fondo){
+      const ancho = Math.max(...lineas.map(l => x.measureText(l).width)) + tam * 1.2;
+      x.fillStyle = tx.fondo; const rx = W0 / 2 - ancho / 2, ry = cy - alto / 2 - tam * 0.35;
+      x.beginPath(); x.roundRect ? x.roundRect(rx, ry, ancho, alto + tam * 0.7, tam * 0.3) : x.rect(rx, ry, ancho, alto + tam * 0.7); x.fill();
+    } else { x.shadowColor = 'rgba(0,0,0,.6)'; x.shadowBlur = tam * 0.25; }
+    x.fillStyle = tx.color || '#ffffff';
+    lineas.forEach((l, i) => x.fillText(l, W0 / 2, cy - alto / 2 + tam * 1.25 * (i + 0.5)));
+    x.restore();
+  });
+  x.restore();
+}
+function partirTextoEV(x, texto, max){
+  const out = [];
+  String(texto).split('\n').forEach(par => {
+    let l = ''; par.split(' ').forEach(p => { const prueba = l ? l + ' ' + p : p; if (x.measureText(prueba).width > max && l){ out.push(l); l = p; } else l = prueba; });
+    out.push(l);
+  });
+  return out;
+}
+
+/* ---------- reproducción ---------- */
+function elementosEnUso(r){ const out = []; if (!r) return out; const m = EV.medios[r.c.blob]; if (m && m.el && m.tipo !== 'imagen') out.push([m.el, r.c, false]); if (r.c.cam){ const mc = EV.medios[r.c.cam.blob]; if (mc && mc.el) out.push([mc.el, r.c, true]); } return out; }
+function pausarTodoEV(){ Object.values(EV.medios).forEach(m => { if (m.el && m.el.pause) m.el.pause(); }); }
+let clipSonando = null, rafEV = 0, inicioPlay = 0, tInicioPlay = 0;
+function sincronizarEV(r, reproduciendo){
+  const usados = elementosEnUso(r);
+  Object.values(EV.medios).forEach(m => { if (m.el && m.el.pause && m.tipo !== 'audio' && !usados.some(u => u[0] === m.el)) m.el.pause(); });
+  usados.forEach(([el, c, esCam]) => {
+    const quiero = c.ini + r.local * (c.vel || 1);
+    el.playbackRate = c.vel || 1;
+    if (el._gain) el._gain.gain.value = esCam || c.mute ? 0 : (c.vol ?? 1);
+    if (reproduciendo){
+      if (Math.abs(el.currentTime - quiero) > 0.35 || el.paused){ try { el.currentTime = quiero; } catch (e) {} }
+      if (el.paused) el.play().catch(() => {});
+    } else { el.pause(); try { if (Math.abs(el.currentTime - quiero) > 0.03) el.currentTime = quiero; } catch (e) {} }
+  });
+  // música
+  const mu = EV.p.musica, mm = mu && EV.medios[mu.blob];
+  if (mm && mm.el){
+    if (mm.el._gain) mm.el._gain.gain.value = mu.vol ?? 0.35;
+    const quiero = ((mu.desde || 0) + EV.t) % Math.max(0.5, mm.dur);
+    if (reproduciendo){ if (Math.abs(mm.el.currentTime - quiero) > 0.4) mm.el.currentTime = quiero; if (mm.el.paused) mm.el.play().catch(() => {}); }
+    else mm.el.pause();
+  }
+}
+function cuadroEV(){
+  const cv = $('evLienzo'); if (!cv) return;
+  dibujarCuadroEV(EV.t, cv.getContext('2d'), cv.width, cv.height);
+  pintarCabezalEV();
+}
+function verEnEV(t){
+  EV.t = Math.max(0, Math.min(t, totalEV()));
+  const r = clipEnEV(EV.t);
+  sincronizarEV(r, EV.play);
+  if (!EV.play){
+    const us = elementosEnUso(r);
+    Promise.all(us.map(([el]) => new Promise(ok => { if (el.seeking){ el.addEventListener('seeked', ok, { once:true }); setTimeout(ok, 800); } else ok(); }))).then(cuadroEV);
+  }
+  cuadroEV();
+}
+function reproducirEV(v){
+  if (v === undefined) v = !EV.play;
+  if (v && !EV.p.clips.length) return toast('Primero agrega un video, una imagen o una grabación');
+  audioEV();
+  EV.play = v; $('evPlay').innerHTML = v ? '❚❚' : '▶'; $('evPlay').setAttribute('aria-label', v ? 'Pausa' : 'Reproducir');
+  if (EV.t >= totalEV() - 0.05) EV.t = 0;
+  cancelAnimationFrame(rafEV);
+  if (!v){ pausarTodoEV(); verEnEV(EV.t); return; }
+  inicioPlay = performance.now(); tInicioPlay = EV.t;
+  const paso = () => {
+    if (!EV.play) return;
+    EV.t = tInicioPlay + (performance.now() - inicioPlay) / 1000;
+    if (EV.t >= totalEV()){ EV.t = totalEV(); cuadroEV(); if (EV.alTerminar){ const f = EV.alTerminar; EV.alTerminar = null; f(); } reproducirEV(false); return; }
+    sincronizarEV(clipEnEV(EV.t), true); cuadroEV();
+    rafEV = requestAnimationFrame(paso);
+  };
+  sincronizarEV(clipEnEV(EV.t), true);
+  rafEV = requestAnimationFrame(paso);
+}
+
+/* ---------- interfaz ---------- */
+(function(){
+  const d = document.createElement('div'); d.id = 'estudioVideo'; d.className = 'modal'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', 'Estudio de video');
+  d.innerHTML = `
+  <header class="evCab">
+    <button class="pb" id="evVolver" title="Volver al diseño">‹ Volver al diseño</button>
+    <b class="evTitulo">🎬 Estudio de video</b>
+    <input id="evNombre" class="buscador" maxlength="60" aria-label="Nombre del video">
+    <span class="evEsp"></span>
+    <label class="evFmt">Formato <select id="evFormato">${Object.keys(FORMATOS_EV).map(k => `<option value="${k}">${{ '16:9':'16:9 horizontal (YouTube, clase)', '9:16':'9:16 vertical (Reels, TikTok)', '1:1':'1:1 cuadrado', '4:5':'4:5 (Instagram)' }[k]}</option>`).join('')}</select></label>
+    <button class="pb" id="evDeshacer" title="Deshacer (Ctrl+Z)" aria-label="Deshacer">↶</button><button class="pb" id="evRehacer" title="Rehacer (Ctrl+Y)" aria-label="Rehacer">↷</button>
+    <button class="btnP" id="evExportar">⬇ Exportar video</button>
+  </header>
+  <div class="evCuerpo">
+    <aside class="evLado">
+      <nav class="evTabs" role="tablist">
+        <button data-et="grabar" class="on">🎥 Grabar</button><button data-et="subir">⬆ Subir</button><button data-et="diseno">🖼 Mi diseño</button>
+        <button data-et="texto">T Texto</button><button data-et="musica">♪ Música</button><button data-et="editar">✎ Editar</button>
+      </nav>
+      <div class="evPanel" id="etGrabar">
+        <p class="hint">Graba y aparece en tu línea de tiempo, lista para editar.</p>
+        <div class="evModos">
+          <button class="evModo" data-m="pantalla"><span>🖥</span><b>Pantalla</b><small>Una ventana, pestaña o toda la pantalla</small></button>
+          <button class="evModo" data-m="camara"><span>📷</span><b>Cámara</b><small>Solo tú</small></button>
+          <button class="evModo" data-m="ambas"><span>🖥📷</span><b>Pantalla + cámara</b><small>Tú en una burbuja que puedes mover</small></button>
+          <button class="evModo" data-m="presentacion"><span>▶📷</span><b>Mi presentación + cámara</b><small>Presenta tu diseño mientras te grabas</small></button>
+        </div>
+        <label class="filaCheck"><input type="checkbox" id="evMic" checked> Grabar mi voz (micrófono)</label>
+        <label class="filaCheck"><input type="checkbox" id="evAudioPc" checked> Grabar el sonido de la computadora (si lo permites al compartir)</label>
+        <label class="filaCheck"><input type="checkbox" id="evCuenta" checked> Cuenta regresiva de 3 segundos</label>
+        <p class="hint" id="evSinPantalla" hidden>Este dispositivo no permite grabar la pantalla (en celulares solo se puede la cámara).</p>
+      </div>
+      <div class="evPanel" id="etSubir" hidden>
+        <button class="bigbtn" id="evSubirBtn">⬆ Subir videos, imágenes o música</button>
+        <input type="file" id="evArchivo" accept="video/*,image/*,audio/*" multiple hidden>
+        <div class="drop" id="evDrop">o arrástralos aquí</div>
+        <h4>Mis archivos</h4><div id="evBiblio" class="evBiblio"></div>
+      </div>
+      <div class="evPanel" id="etDiseno" hidden>
+        <p class="hint">Convierte las páginas de tu diseño en diapositivas del video.</p>
+        <label class="fila"><span>Segundos por página</span><input type="number" id="evSegPag" min="1" max="60" value="5"></label>
+        <label class="filaCheck"><input type="checkbox" id="evPagFundido" checked> Aparecer y desaparecer suave</label>
+        <button class="bigbtn" id="evTodasPag">🖼 Agregar todas las páginas</button>
+        <button class="bigbtn" id="evPagActual">Agregar solo la página actual</button>
+      </div>
+      <div class="evPanel" id="etTexto" hidden>
+        <p class="hint">Se agrega en el punto donde está la línea roja.</p>
+        <button class="bigbtn" data-txt="titulo" style="font-weight:800;font-size:18px">Título grande al centro</button>
+        <button class="bigbtn" data-txt="subtitulo">Subtítulo abajo (con fondo)</button>
+        <button class="bigbtn" data-txt="arriba">Texto arriba</button>
+      </div>
+      <div class="evPanel" id="etMusica" hidden>
+        <button class="bigbtn" id="evMusicaBtn">♪ Subir una canción o audio</button>
+        <input type="file" id="evArchivoMusica" accept="audio/*" hidden>
+        <p class="hint">Usa música libre de derechos (por ejemplo, la Biblioteca de audio de YouTube).</p>
+        <div id="evMusicaInfo"></div>
+      </div>
+      <div class="evPanel" id="etEditar" hidden><div id="evInspector"><p class="hint">Toca un clip, un texto o la música en la línea de tiempo para editarlo.</p></div></div>
+    </aside>
+    <section class="evCentro">
+      <div class="evVista"><canvas id="evLienzo" width="1280" height="720"></canvas>
+        <div id="evVacio" class="evVacio"><b>Tu video empieza aquí</b><span>Graba tu pantalla o cámara, sube un video o agrega las páginas de tu diseño.</span></div></div>
+      <div class="evControles">
+        <button class="pb" id="evInicio" title="Ir al inicio" aria-label="Ir al inicio">⏮</button>
+        <button class="btnP" id="evPlay" aria-label="Reproducir">▶</button>
+        <span id="evTiempo">0:00.0 / 0:00.0</span>
+        <span class="evEsp"></span>
+        <button class="pb" id="evDividir" title="Dividir el clip en la línea roja (S)">✂ Dividir</button>
+        <button class="pb" id="evBorrar" title="Borrar lo seleccionado (Supr)">🗑</button>
+        <label class="evZoom">🔍 <input type="range" id="evZoomLinea" min="8" max="240" value="40" aria-label="Acercar la línea de tiempo"></label>
+      </div>
+    </section>
+  </div>
+  <div class="evLinea" id="evLinea">
+    <div class="evRegla" id="evRegla"></div>
+    <div class="evPista" id="evPistaVideo" data-nombre="Video"></div>
+    <div class="evPista evPistaTexto" id="evPistaTexto" data-nombre="Textos"></div>
+    <div class="evPista evPistaMusica" id="evPistaMusica" data-nombre="Música"></div>
+    <div class="evCabezal" id="evCabezal"></div>
+  </div>
+  <div id="evGrabando" hidden><span class="punto"></span><b id="evGrabTiempo">0:00</b><button class="pb" id="evGrabPausa">❚❚ Pausa</button><button class="btnP" id="evGrabStop">■ Detener</button></div>
+  <div id="evCuentaAtras" hidden></div>
+  <div id="evCamVivo" hidden><video autoplay muted playsinline></video></div>
+  <div id="evExportando" hidden><div class="caja"><h3>⬇ Creando tu video…</h3><p class="hint">No cambies de pestaña mientras se crea (el navegador lo pausaría).</p><div class="evBarraProg"><i id="evProg"></i></div><p id="evProgTxt" class="hint"></p><div class="acciones"><button class="btnS" id="evCancelarExp">Cancelar</button></div></div></div>`;
+  document.body.appendChild(d);
+  // pestañas
+  d.querySelectorAll('.evTabs button').forEach(b => b.onclick = () => tabEV(b.dataset.et));
+  $('evVolver').onclick = cerrarEstudioVideo;
+  $('evNombre').oninput = e => { EV.p.nombre = e.target.value; guardarProyectoEV(false); };
+  $('evFormato').onchange = e => { EV.p.formato = e.target.value; ajustarLienzoEV(); guardarProyectoEV(); verEnEV(EV.t); };
+  $('evDeshacer').onclick = () => deshacerEV(-1); $('evRehacer').onclick = () => deshacerEV(1);
+  $('evPlay').onclick = () => reproducirEV(); $('evInicio').onclick = () => { reproducirEV(false); verEnEV(0); };
+  $('evDividir').onclick = dividirEV; $('evBorrar').onclick = borrarSelEV;
+  $('evZoomLinea').oninput = e => { EV.pps = +e.target.value; pintarLineaEV(); };
+  $('evExportar').onclick = exportarEV; $('evCancelarExp').onclick = () => { EV.cancelado = true; };
+  // subir
+  $('evSubirBtn').onclick = () => $('evArchivo').click();
+  $('evArchivo').onchange = async e => { for (const f of e.target.files) await agregarArchivoEV(f); e.target.value = ''; };
+  $('evMusicaBtn').onclick = () => $('evArchivoMusica').click();
+  $('evArchivoMusica').onchange = async e => { if (e.target.files[0]) await agregarArchivoEV(e.target.files[0]); e.target.value = ''; };
+  const drop = $('evDrop');
+  ['dragover', 'dragenter'].forEach(n => d.addEventListener(n, e => { if ([...(e.dataTransfer.types || [])].includes('Files')){ e.preventDefault(); drop.classList.add('sobre'); } }));
+  ['dragleave', 'drop'].forEach(n => d.addEventListener(n, () => drop.classList.remove('sobre')));
+  d.addEventListener('drop', async e => { if (!e.dataTransfer.files.length) return; e.preventDefault(); for (const f of e.dataTransfer.files) await agregarArchivoEV(f); });
+  // diseño → diapositivas
+  $('evTodasPag').onclick = () => paginasAClipsEV(true); $('evPagActual').onclick = () => paginasAClipsEV(false);
+  // textos
+  d.querySelectorAll('[data-txt]').forEach(b => b.onclick = () => agregarTextoEV(b.dataset.txt));
+  // grabar
+  d.querySelectorAll('.evModo').forEach(b => b.onclick = () => grabarEV(b.dataset.m));
+  if (!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia)){ d.querySelectorAll('.evModo[data-m="pantalla"], .evModo[data-m="ambas"], .evModo[data-m="presentacion"]').forEach(b => b.hidden = true); $('evSinPantalla').hidden = false; }
+  $('evGrabStop').onclick = () => detenerGrabacionEV(); $('evGrabPausa').onclick = () => pausarGrabacionEV();
+  // línea de tiempo: clic en la regla o en un espacio vacío mueve la línea roja
+  $('evLinea').addEventListener('pointerdown', e => {
+    if (e.target.closest('.clipEv, .textoEv, .musicaEv')) return;
+    const mover = ev => { const r = $('evLinea').getBoundingClientRect(); verEnEV((ev.clientX - r.left + $('evLinea').scrollLeft - 90) / EV.pps); };
+    if (EV.play) reproducirEV(false);
+    mover(e);
+    const fin = () => { window.removeEventListener('pointermove', mover); window.removeEventListener('pointerup', fin); };
+    window.addEventListener('pointermove', mover); window.addEventListener('pointerup', fin);
+  });
+  // mover la burbuja de la cámara con el mouse sobre la vista previa
+  const cv = $('evLienzo');
+  cv.addEventListener('pointerdown', e => {
+    const r = clipEnEV(EV.t); if (!r || !r.c.cam) return;
+    const b = cv.getBoundingClientRect(), fx = (e.clientX - b.left) / b.width, fy = (e.clientY - b.top) / b.height;
+    const lado = Math.min(cv.width, cv.height) * r.c.cam.tam;
+    if (Math.hypot((fx - r.c.cam.x) * cv.width, (fy - r.c.cam.y) * cv.height) > lado / 2) return;
+    e.preventDefault(); cv.setPointerCapture(e.pointerId);
+    const c = r.c, mover = ev => { c.cam.x = Math.max(0.05, Math.min(0.95, (ev.clientX - b.left) / b.width)); c.cam.y = Math.max(0.05, Math.min(0.95, (ev.clientY - b.top) / b.height)); cuadroEV(); };
+    const fin = () => { cv.removeEventListener('pointermove', mover); cv.removeEventListener('pointerup', fin); guardarProyectoEV(); pintarInspectorEV(); };
+    cv.addEventListener('pointermove', mover); cv.addEventListener('pointerup', fin);
+  });
+  cv.addEventListener('pointermove', e => {
+    const r = clipEnEV(EV.t); if (!r || !r.c.cam){ cv.style.cursor = ''; return; }
+    const b = cv.getBoundingClientRect(), lado = Math.min(cv.width, cv.height) * r.c.cam.tam;
+    cv.style.cursor = Math.hypot(((e.clientX - b.left) / b.width - r.c.cam.x) * cv.width, ((e.clientY - b.top) / b.height - r.c.cam.y) * cv.height) <= lado / 2 ? 'move' : '';
+  });
+  // teclado dentro del estudio
+  document.addEventListener('keydown', e => {
+    if (!d.classList.contains('abierto')) return;
+    const tag = (document.activeElement || {}).tagName;
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag)){ e.stopImmediatePropagation(); return; }
+    const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
+    let ok = true;
+    if (k === ' ') reproducirEV();
+    else if (ctrl && k === 'z' && !e.shiftKey) deshacerEV(-1);
+    else if (ctrl && (k === 'y' || (k === 'z' && e.shiftKey))) deshacerEV(1);
+    else if (k === 's' && !ctrl) dividirEV();
+    else if (k === 'delete' || k === 'backspace') borrarSelEV();
+    else if (k === 'arrowleft') verEnEV(EV.t - (e.shiftKey ? 1 : 1 / 30));
+    else if (k === 'arrowright') verEnEV(EV.t + (e.shiftKey ? 1 : 1 / 30));
+    else if (k === 'home') verEnEV(0);
+    else if (k === 'escape'){ if (EV.play) reproducirEV(false); else ok = false; }
+    else ok = !ctrl;      // en el estudio, las teclas no llegan al diseño
+    if (ok) e.preventDefault();
+    e.stopImmediatePropagation();
+  }, true);
+})();
+function tabEV(k){
+  document.querySelectorAll('.evTabs button').forEach(b => b.classList.toggle('on', b.dataset.et === k));
+  document.querySelectorAll('.evPanel').forEach(p => p.hidden = p.id !== 'et' + k[0].toUpperCase() + k.slice(1));
+  if (k === 'editar') pintarInspectorEV();
+  if (k === 'subir') pintarBibliotecaEV();
+}
+function ajustarLienzoEV(){
+  const [w, h] = FORMATOS_EV[EV.p.formato] || FORMATOS_EV['16:9'], cv = $('evLienzo');
+  if (cv.width !== w || cv.height !== h){ cv.width = w; cv.height = h; }
+  $('evFormato').value = EV.p.formato;
+}
+async function abrirEstudioVideo(){
+  cerrarMenuCtx && cerrarMenuCtx();
+  const d = $('estudioVideo'); d.classList.add('abierto');
+  audioEV();
+  if (!EV.cargado){
+    EV.cargado = true;
+    try { const j = await dbEVop('estado', 'readonly', st => st.get('proyecto')); if (j) EV.p = { ...EV.p, ...JSON.parse(j) }; } catch (e) {}
+    const ids = new Set([...EV.p.clips.flatMap(c => [c.blob, c.cam && c.cam.blob]), EV.p.musica && EV.p.musica.blob].filter(Boolean));
+    await Promise.all([...ids].map(id => cargarMedioEV(id).catch(() => { EV.p.clips = EV.p.clips.filter(c => c.blob !== id); })));
+    EV.hist = [JSON.stringify(EV.p)]; EV.hi = 0;
+  }
+  $('evNombre').value = EV.p.nombre || 'Mi video';
+  ajustarLienzoEV(); pintarTodoEV(); verEnEV(EV.t);
+}
+function cerrarEstudioVideo(){ reproducirEV(false); $('estudioVideo').classList.remove('abierto'); }
+function pintarTodoEV(){
+  $('evVacio').hidden = EV.p.clips.length > 0;
+  pintarLineaEV(); pintarInspectorEV(); pintarMusicaInfoEV();
+  verEnEV(Math.min(EV.t, totalEV()));
+}
+function pintarCabezalEV(){
+  const cab = $('evCabezal'); if (cab) cab.style.left = (90 + EV.t * EV.pps) + 'px';
+  const tt = $('evTiempo'); if (tt) tt.textContent = fmtT(EV.t) + ' / ' + fmtT(totalEV());
+}
+function pintarLineaEV(){
+  const total = totalEV(), ancho = Math.max(600, (total + 8) * EV.pps);
+  // regla
+  const reg = $('evRegla'); let h = '';
+  const paso = EV.pps > 120 ? 1 : EV.pps > 50 ? 2 : EV.pps > 20 ? 5 : 10;
+  for (let s = 0; s <= total + 8; s += paso) h += `<span style="left:${90 + s * EV.pps}px">${fmtT(s).replace(/\.\d$/, '')}</span>`;
+  reg.innerHTML = h; reg.style.width = (90 + ancho) + 'px';
+  // clips
+  let acc = 0;
+  $('evPistaVideo').innerHTML = EV.p.clips.map((c, i) => {
+    const L = largoClip(c), m = EV.medios[c.blob] || {}, x = 90 + acc * EV.pps; acc += L;
+    const sel = EV.sel && EV.sel.tipo === 'clip' && EV.sel.id === c.id;
+    return `<div class="clipEv${sel ? ' sel' : ''}${c.tipo === 'imagen' ? ' img' : ''}" data-id="${c.id}" data-i="${i}" style="left:${x}px;width:${Math.max(6, L * EV.pps - 2)}px;background-image:url('${m.thumb || ''}')" title="${esc(c.nombre)} · ${fmtT(L)}">
+      <span class="asaEv izq" data-asa="izq"></span><b>${c.cam ? '📷 ' : ''}${esc(c.nombre)}</b><small>${fmtT(L)}${c.vel !== 1 ? ' · ' + c.vel + '×' : ''}${c.mute ? ' · 🔇' : ''}</small><span class="asaEv der" data-asa="der"></span></div>`;
+  }).join('');
+  $('evPistaVideo').style.width = (90 + ancho) + 'px';
+  $('evPistaTexto').innerHTML = EV.p.textos.map(tx => `<div class="textoEv${EV.sel && EV.sel.tipo === 'texto' && EV.sel.id === tx.id ? ' sel' : ''}" data-id="${tx.id}" style="left:${90 + tx.inicio * EV.pps}px;width:${Math.max(6, tx.dur * EV.pps - 2)}px" title="${esc(tx.texto)}">T ${esc(tx.texto.split('\n')[0])}<span class="asaEv der" data-asa="der"></span></div>`).join('');
+  $('evPistaTexto').style.width = (90 + ancho) + 'px';
+  const mu = EV.p.musica;
+  $('evPistaMusica').innerHTML = mu ? `<div class="musicaEv${EV.sel && EV.sel.tipo === 'musica' ? ' sel' : ''}" style="left:90px;width:${Math.max(60, total * EV.pps - 2)}px">♪ ${esc(mu.nombre)} · volumen ${Math.round(mu.vol * 100)}%</div>` : '';
+  $('evPistaMusica').style.width = (90 + ancho) + 'px';
+  $('evCabezal').style.height = $('evLinea').scrollHeight + 'px';
+  conectarLineaEV(); pintarCabezalEV();
+}
+function conectarLineaEV(){
+  // clips: tocar = seleccionar; arrastrar = cambiar de lugar; orillas = recortar
+  document.querySelectorAll('.clipEv').forEach(el => el.onpointerdown = e => {
+    e.preventDefault(); e.stopPropagation(); if (EV.play) reproducirEV(false);
+    const c = EV.p.clips.find(x => x.id === el.dataset.id), asa = e.target.dataset.asa, x0 = e.clientX;
+    EV.sel = { tipo:'clip', id:c.id };
+    document.querySelectorAll('.clipEv, .textoEv, .musicaEv').forEach(x => x.classList.toggle('sel', x === el));
+    const iniO = c.ini, finO = c.fin, durMax = (EV.medios[c.blob] || {}).dur || 9999;
+    let movido = false;
+    const mover = ev => {
+      const dx = (ev.clientX - x0) / EV.pps; if (Math.abs(ev.clientX - x0) > 3) movido = true;
+      if (asa === 'izq'){ c.ini = Math.max(0, Math.min(c.fin - 0.1, iniO + dx * (c.vel || 1))); }
+      else if (asa === 'der'){ c.fin = c.tipo === 'imagen' ? Math.max(c.ini + 0.3, finO + dx) : Math.max(c.ini + 0.1, Math.min(durMax, finO + dx * (c.vel || 1))); }
+      else { el.style.transform = `translateX(${ev.clientX - x0}px)`; el.style.zIndex = 5; return; }
+      pintarLineaEV(); verEnEV(asa === 'izq' ? inicioClipEV(c.id) : inicioClipEV(c.id) + largoClip(c) - 0.01);
+    };
+    const fin = ev => {
+      window.removeEventListener('pointermove', mover); window.removeEventListener('pointerup', fin);
+      if (!asa && movido){
+        // nueva posición según dónde se soltó
+        const r = $('evLinea').getBoundingClientRect(), t = (ev.clientX - r.left + $('evLinea').scrollLeft - 90) / EV.pps;
+        const sin = EV.p.clips.filter(x => x !== c); let acc = 0, pos = sin.length;
+        for (let i = 0; i < sin.length; i++){ const L = largoClip(sin[i]); if (t < acc + L / 2){ pos = i; break; } acc += L; }
+        sin.splice(pos, 0, c); EV.p.clips = sin;
+      } else if (!asa && !movido){ verEnEV(inicioClipEV(c.id) + 0.001); tabEV('editar'); }
+      guardarProyectoEV(); pintarTodoEV();
+    };
+    window.addEventListener('pointermove', mover); window.addEventListener('pointerup', fin);
+  });
+  document.querySelectorAll('.textoEv').forEach(el => el.onpointerdown = e => {
+    e.preventDefault(); e.stopPropagation(); if (EV.play) reproducirEV(false);
+    const tx = EV.p.textos.find(x => x.id === el.dataset.id), asa = e.target.dataset.asa, x0 = e.clientX, i0 = tx.inicio, d0 = tx.dur;
+    EV.sel = { tipo:'texto', id:tx.id };
+    let movido = false;
+    const mover = ev => { const dx = (ev.clientX - x0) / EV.pps; if (Math.abs(ev.clientX - x0) > 3) movido = true;
+      if (asa === 'der') tx.dur = Math.max(0.3, d0 + dx); else tx.inicio = Math.max(0, i0 + dx);
+      pintarLineaEV(); verEnEV(asa === 'der' ? tx.inicio + tx.dur - 0.01 : tx.inicio + 0.01); };
+    const fin = () => { window.removeEventListener('pointermove', mover); window.removeEventListener('pointerup', fin); if (!movido){ verEnEV(tx.inicio + 0.3); tabEV('editar'); } guardarProyectoEV(); pintarTodoEV(); };
+    window.addEventListener('pointermove', mover); window.addEventListener('pointerup', fin);
+  });
+  const mu = document.querySelector('.musicaEv');
+  if (mu) mu.onpointerdown = e => { e.stopPropagation(); EV.sel = { tipo:'musica' }; pintarLineaEV(); tabEV('editar'); };
+}
+// ---------- inspector (pestaña Editar) ----------
+function pintarInspectorEV(){
+  const box = $('evInspector'); if (!box) return;
+  const s = EV.sel;
+  if (s && s.tipo === 'clip'){
+    const c = EV.p.clips.find(x => x.id === s.id); if (!c){ EV.sel = null; return pintarInspectorEV(); }
+    const m = EV.medios[c.blob] || {}, video = c.tipo === 'video';
+    box.innerHTML = `<h4>${video ? '🎞 Clip de video' : '🖼 Imagen'}</h4>
+      <label class="fila"><span>Nombre</span><input class="buscador" data-c="nombre" value="${esc(c.nombre)}"></label>
+      ${video ? `<label class="fila"><span>Empieza en</span><input type="number" step="0.1" min="0" data-c="ini" value="${c.ini.toFixed(1)}"> s</label>
+      <label class="fila"><span>Termina en</span><input type="number" step="0.1" min="0" data-c="fin" value="${c.fin.toFixed(1)}"> s</label>
+      <p class="hint">Duración original: ${fmtT(m.dur)}. También puedes recortar jalando las orillas del clip.</p>
+      <label class="fila"><span>Velocidad</span><select data-c="vel">${[0.5, 0.75, 1, 1.25, 1.5, 2].map(v => `<option value="${v}"${v === c.vel ? ' selected' : ''}>${v}×</option>`).join('')}</select></label>
+      <label class="fila"><span>Volumen</span><input type="range" min="0" max="2" step="0.05" data-c="vol" value="${c.vol}"></label>
+      <label class="filaCheck"><input type="checkbox" data-c="mute"${c.mute ? ' checked' : ''}> Silenciar este clip</label>`
+      : `<label class="fila"><span>Duración</span><input type="number" step="0.5" min="0.5" data-c="durImg" value="${(c.fin - c.ini).toFixed(1)}"> s</label>
+      <label class="filaCheck"><input type="checkbox" data-c="zoomLento"${c.zoomLento ? ' checked' : ''}> Acercamiento lento (efecto documental)</label>`}
+      <label class="fila"><span>Ajuste</span><select data-c="ajuste"><option value="cubrir"${c.ajuste === 'cubrir' ? ' selected' : ''}>Llenar toda la pantalla</option><option value="encajar"${c.ajuste === 'encajar' ? ' selected' : ''}>Que se vea completo</option></select></label>
+      <label class="filaCheck"><input type="checkbox" data-c="fundido"${c.fundido ? ' checked' : ''}> Aparecer y desaparecer suave</label>
+      ${c.cam ? `<h4>📷 Burbuja de la cámara</h4>
+        <label class="filaCheck"><input type="checkbox" data-cam="visible"${c.cam.visible !== false ? ' checked' : ''}> Mostrar</label>
+        <label class="fila"><span>Tamaño</span><input type="range" min="0.12" max="0.6" step="0.01" data-cam="tam" value="${c.cam.tam}"></label>
+        <label class="fila"><span>Forma</span><select data-cam="forma"><option value="circulo"${c.cam.forma !== 'cuadro' ? ' selected' : ''}>Círculo</option><option value="cuadro"${c.cam.forma === 'cuadro' ? ' selected' : ''}>Cuadro</option></select></label>
+        <div class="gridPop evEsquinas">${[['↖', 0.15, 0.2], ['↗', 0.85, 0.2], ['↙', 0.15, 0.8], ['↘', 0.85, 0.8]].map(([n, x, y]) => `<button class="pb" data-esq="${x},${y}">${n}</button>`).join('')}</div>
+        <p class="hint">También puedes arrastrar la burbuja sobre el video.</p>` : ''}
+      <div class="filaPop" style="margin-top:12px"><button class="pb" id="evInsDividir">✂ Dividir aquí</button><button class="pb" id="evInsDup">⧉ Duplicar</button><button class="pb" id="evInsIzq">← Mover</button><button class="pb" id="evInsDer">Mover →</button><button class="pb peligro" id="evInsBorrar">🗑 Borrar</button></div>`;
+    box.querySelectorAll('[data-c]').forEach(inp => {
+      const k = inp.dataset.c;
+      const aplicar = () => {
+        if (k === 'mute' || k === 'fundido' || k === 'zoomLento') c[k] = inp.checked;
+        else if (k === 'nombre') c.nombre = inp.value;
+        else if (k === 'ajuste') c.ajuste = inp.value;
+        else if (k === 'vel' || k === 'vol') c[k] = +inp.value;
+        else if (k === 'ini') c.ini = Math.max(0, Math.min(c.fin - 0.1, +inp.value || 0));
+        else if (k === 'fin') c.fin = Math.max(c.ini + 0.1, Math.min(m.dur || 9999, +inp.value || 0));
+        else if (k === 'durImg') c.fin = c.ini + Math.max(0.5, +inp.value || 5);
+        pintarLineaEV(); verEnEV(EV.t);
+      };
+      inp.oninput = aplicar; inp.onchange = () => { aplicar(); guardarProyectoEV(); };
+    });
+    box.querySelectorAll('[data-cam]').forEach(inp => { const k = inp.dataset.cam;
+      const ap = () => { c.cam[k] = k === 'visible' ? inp.checked : k === 'tam' ? +inp.value : inp.value; cuadroEV(); };
+      inp.oninput = ap; inp.onchange = () => { ap(); guardarProyectoEV(); }; });
+    box.querySelectorAll('[data-esq]').forEach(b => b.onclick = () => { const [x, y] = b.dataset.esq.split(',').map(Number); c.cam.x = x; c.cam.y = y; cuadroEV(); guardarProyectoEV(); });
+    $('evInsDividir').onclick = dividirEV; $('evInsBorrar').onclick = borrarSelEV;
+    $('evInsDup').onclick = () => { const i = EV.p.clips.indexOf(c), n = JSON.parse(JSON.stringify(c)); n.id = nid(); EV.p.clips.splice(i + 1, 0, n); EV.sel = { tipo:'clip', id:n.id }; guardarProyectoEV(); pintarTodoEV(); };
+    const mover = d => { const i = EV.p.clips.indexOf(c), j = i + d; if (j < 0 || j >= EV.p.clips.length) return; EV.p.clips.splice(i, 1); EV.p.clips.splice(j, 0, c); guardarProyectoEV(); pintarTodoEV(); };
+    $('evInsIzq').onclick = () => mover(-1); $('evInsDer').onclick = () => mover(1);
+    return;
+  }
+  if (s && s.tipo === 'texto'){
+    const tx = EV.p.textos.find(x => x.id === s.id); if (!tx){ EV.sel = null; return pintarInspectorEV(); }
+    box.innerHTML = `<h4>T Texto</h4>
+      <textarea data-t="texto" rows="3" style="width:100%;box-sizing:border-box">${esc(tx.texto)}</textarea>
+      <label class="fila"><span>Posición</span><select data-t="pos"><option value="arriba"${tx.pos === 'arriba' ? ' selected' : ''}>Arriba</option><option value="centro"${tx.pos === 'centro' ? ' selected' : ''}>Centro</option><option value="abajo"${tx.pos === 'abajo' ? ' selected' : ''}>Abajo</option></select></label>
+      <label class="fila"><span>Tamaño</span><input type="range" min="0.03" max="0.16" step="0.005" data-t="tam" value="${tx.tam}"></label>
+      <label class="fila"><span>Color</span><input type="color" data-t="color" value="${tx.color}"></label>
+      <label class="filaCheck"><input type="checkbox" data-t="fondo"${tx.fondo ? ' checked' : ''}> Con fondo oscuro</label>
+      <label class="filaCheck"><input type="checkbox" data-t="negrita"${tx.negrita !== false ? ' checked' : ''}> Negrita</label>
+      <label class="fila"><span>Aparece en</span><input type="number" step="0.1" min="0" data-t="inicio" value="${tx.inicio.toFixed(1)}"> s</label>
+      <label class="fila"><span>Dura</span><input type="number" step="0.1" min="0.3" data-t="dur" value="${tx.dur.toFixed(1)}"> s</label>
+      <div class="filaPop"><button class="pb peligro" id="evInsBorrar">🗑 Borrar texto</button></div>`;
+    box.querySelectorAll('[data-t]').forEach(inp => { const k = inp.dataset.t;
+      const ap = () => { if (k === 'fondo') tx.fondo = inp.checked ? 'rgba(0,0,0,.6)' : null; else if (k === 'negrita') tx.negrita = inp.checked; else if (k === 'tam' || k === 'inicio' || k === 'dur') tx[k] = Math.max(k === 'dur' ? 0.3 : 0, +inp.value || 0); else tx[k] = inp.value; pintarLineaEV(); verEnEV(EV.t); };
+      inp.oninput = ap; inp.onchange = () => { ap(); guardarProyectoEV(); }; inp.addEventListener('keydown', e => e.stopPropagation()); });
+    $('evInsBorrar').onclick = borrarSelEV;
+    return;
+  }
+  if (s && s.tipo === 'musica' && EV.p.musica){
+    const mu = EV.p.musica;
+    box.innerHTML = `<h4>♪ Música de fondo</h4><p><b>${esc(mu.nombre)}</b></p>
+      <label class="fila"><span>Volumen</span><input type="range" min="0" max="1" step="0.05" data-mu="vol" value="${mu.vol}"></label>
+      <label class="fila"><span>Empezar la canción en</span><input type="number" min="0" step="1" data-mu="desde" value="${mu.desde || 0}"> s</label>
+      <div class="filaPop"><button class="pb peligro" id="evQuitarMusica">Quitar la música</button></div>`;
+    box.querySelectorAll('[data-mu]').forEach(inp => { inp.oninput = () => { mu[inp.dataset.mu] = +inp.value; sincronizarEV(clipEnEV(EV.t), EV.play); pintarLineaEV(); }; inp.onchange = () => guardarProyectoEV(); });
+    $('evQuitarMusica').onclick = () => { EV.p.musica = null; EV.sel = null; pausarTodoEV(); guardarProyectoEV(); pintarTodoEV(); };
+    return;
+  }
+  box.innerHTML = '<p class="hint">Toca un clip, un texto o la música en la línea de tiempo para editarlo.</p>';
+}
+function pintarMusicaInfoEV(){ const i = $('evMusicaInfo'); if (i) i.innerHTML = EV.p.musica ? `<p class="hint">Ahora suena: <b>${esc(EV.p.musica.nombre)}</b>. Tócala en la línea de tiempo para cambiar el volumen.</p>` : ''; }
+async function pintarBibliotecaEV(){
+  const b = $('evBiblio'); if (!b) return;
+  let ids = []; try { ids = await listarMediosEV(); } catch (e) {}
+  const usados = new Set(EV.p.clips.map(c => c.cam && c.cam.blob).filter(Boolean));
+  ids = ids.filter(id => !usados.has(id));
+  if (!ids.length){ b.innerHTML = '<p class="hint">Aquí aparecen tus grabaciones y archivos.</p>'; return; }
+  await Promise.all(ids.map(id => cargarMedioEV(id).catch(() => null)));
+  b.innerHTML = ids.map(id => { const m = EV.medios[id] || {}; return `<button class="evMedio" data-id="${id}" title="Agregar al final del video">${m.thumb ? `<img src="${m.thumb}" alt="">` : `<span>${m.tipo === 'audio' ? '♪' : '🎞'}</span>`}<small>${esc(m.nombre || '')}${m.dur && m.tipo !== 'imagen' ? ' · ' + fmtT(m.dur) : ''}</small><i class="evQuitarMedio" data-q="${id}" title="Borrar de mis archivos">✕</i></button>`; }).join('');
+  b.querySelectorAll('.evMedio').forEach(x => x.onclick = async e => {
+    const q = e.target.closest('[data-q]');
+    if (q){ e.stopPropagation(); if (EV.p.clips.some(c => c.blob === q.dataset.q) || (EV.p.musica && EV.p.musica.blob === q.dataset.q)) return toast('Ese archivo se usa en tu video: quítalo primero de la línea de tiempo'); if (!confirm('¿Borrar este archivo?')) return; await borrarMedioEV(q.dataset.q); delete EV.medios[q.dataset.q]; pintarBibliotecaEV(); return; }
+    const m = await cargarMedioEV(x.dataset.id);
+    if (m.tipo === 'audio') ponerMusicaEV(x.dataset.id, m); else agregarClipEV(x.dataset.id, m);
+  });
+}
+// ---------- editar ----------
+function dividirEV(){
+  const r = clipEnEV(EV.t); if (!r) return toast('Pon la línea roja sobre un clip');
+  const c = r.c; if (r.local < 0.1 || largoClip(c) - r.local < 0.1) return toast('Mueve la línea roja un poco más adentro del clip');
+  const corte = c.ini + r.local * (c.vel || 1), n = JSON.parse(JSON.stringify(c)); n.id = nid(); n.ini = corte; c.fin = corte;
+  EV.p.clips.splice(r.i + 1, 0, n); EV.sel = { tipo:'clip', id:n.id };
+  guardarProyectoEV(); pintarTodoEV(); toast('✂ Clip dividido');
+}
+function borrarSelEV(){
+  const s = EV.sel; if (!s) return toast('Selecciona algo en la línea de tiempo');
+  if (s.tipo === 'clip') EV.p.clips = EV.p.clips.filter(c => c.id !== s.id);
+  else if (s.tipo === 'texto') EV.p.textos = EV.p.textos.filter(t => t.id !== s.id);
+  else if (s.tipo === 'musica'){ EV.p.musica = null; pausarTodoEV(); }
+  EV.sel = null; guardarProyectoEV(); pintarTodoEV();
+}
+function agregarTextoEV(tipo){
+  const base = { id:nid(), texto:'Escribe tu texto', inicio:Math.min(EV.t, Math.max(0, totalEV() - 0.5)), dur:3, color:'#ffffff', fuente:'Poppins', negrita:true };
+  const t = tipo === 'titulo' ? { ...base, texto:'Título de mi video', pos:'centro', tam:0.1, fondo:null }
+    : tipo === 'arriba' ? { ...base, pos:'arriba', tam:0.055, fondo:null } : { ...base, texto:'Subtítulo', pos:'abajo', tam:0.05, fondo:'rgba(0,0,0,.6)' };
+  EV.p.textos.push(t); EV.sel = { tipo:'texto', id:t.id }; guardarProyectoEV(); pintarTodoEV(); tabEV('editar');
+  setTimeout(() => { const ta = document.querySelector('#evInspector textarea'); if (ta){ ta.focus(); ta.select(); } }, 50);
+}
+// páginas del diseño → imágenes del video
+async function paginasAClipsEV(todas){
+  cargando(true);
+  try {
+    guardarPaginaActual();
+    const lista = todas ? paginas.map((p, i) => i) : [actual], seg = Math.max(1, +$('evSegPag').value || 5), fundido = $('evPagFundido').checked;
+    const k = Math.min(2, 1920 / Math.max(W, H));   // la página a buena resolución (lado largo hasta 1920 px)
+    for (const i of lista){
+      const el = document.createElement('canvas'), sc = new fabric.StaticCanvas(el, { width:Math.round(W * k), height:Math.round(H * k), enableRetinaScaling:false });
+      await new Promise(ok => sc.loadFromJSON(paginas[i] || PAGINA_VACIA(), ok)); sc.setZoom(k); sc.renderAll();
+      const blob = await new Promise(ok => el.toBlob(ok, 'image/png'));
+      const id = nid(); await guardarMedioEV(id, { blob, nombre:($('nombreDiseno').value || 'Diseño') + ' · página ' + (i + 1), tipo:'imagen' });
+      const m = await cargarMedioEV(id);
+      agregarClipEV(id, m, { fin:seg, fundido, ajuste:'encajar' });
+      sc.dispose();
+    }
+    toast('🖼 ' + lista.length + ' página' + (lista.length > 1 ? 's agregadas' : ' agregada') + ' al video');
+  } catch (e) { toast('No se pudieron agregar las páginas: ' + e.message); } finally { cargando(false); }
+}
+
+/* ---------- grabar ---------- */
+const tiposGrabacion = ['video/mp4;codecs=avc1.42E01F,mp4a.40.2', 'video/mp4;codecs=avc1,mp4a.40.2', 'video/mp4;codecs=avc1,opus', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/mp4', 'video/webm'];   // MP4 con H.264 primero (WhatsApp, Windows, celulares)
+const mimeGrab = () => window.MediaRecorder ? tiposGrabacion.find(x => MediaRecorder.isTypeSupported(x)) || '' : '';
+let GR = null;
+async function grabarEV(modo){
+  if (GR) return toast('Ya estás grabando');
+  if (!window.MediaRecorder) return toast('Este navegador no puede grabar. Usa Chrome o Edge en computadora.');
+  const quiereMic = $('evMic').checked, quierePc = $('evAudioPc').checked;
+  const pistas = [];
+  let pantalla = null, cam = null, mic = null;
+  try {
+    if (modo === 'pantalla' || modo === 'ambas' || modo === 'presentacion'){
+      pantalla = await navigator.mediaDevices.getDisplayMedia({ video:{ frameRate:30, width:{ ideal:1920 }, height:{ ideal:1080 } }, audio:quierePc,
+        preferCurrentTab:modo === 'presentacion', selfBrowserSurface:modo === 'presentacion' ? 'include' : 'exclude', surfaceSwitching:'include', systemAudio:quierePc ? 'include' : 'exclude' });
+      pistas.push(pantalla);
+    }
+    if (modo === 'camara' || modo === 'ambas' || modo === 'presentacion'){
+      cam = await navigator.mediaDevices.getUserMedia({ video:{ width:{ ideal:1280 }, height:{ ideal:720 }, facingMode:'user' }, audio:false });
+      pistas.push(cam);
+    }
+    if (quiereMic){
+      try { mic = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true } }); pistas.push(mic); }
+      catch (e) { toast('No se pudo usar el micrófono; se grabará sin tu voz.'); }
+    }
+  } catch (e) {
+    pistas.forEach(s => s.getTracks().forEach(t => t.stop()));
+    return toast(/NotAllowed|Permission/i.test(e.name + e.message) ? 'Necesitas dar permiso para grabar (pantalla, cámara o micrófono).' : 'No se pudo empezar a grabar: ' + e.message);
+  }
+  // sonido: computadora + micrófono en una sola pista
+  const ctx = audioEV(), mezcla = ctx.createMediaStreamDestination();
+  [pantalla, mic].forEach(s => { if (s && s.getAudioTracks().length){ try { ctx.createMediaStreamSource(s).connect(mezcla); } catch (e) {} } });
+  const hayAudio = (pantalla && pantalla.getAudioTracks().length) || (mic && mic.getAudioTracks().length);
+  const principal = new MediaStream([...(pantalla || cam).getVideoTracks(), ...(hayAudio ? mezcla.stream.getAudioTracks() : [])]);
+  const mime = mimeGrab();
+  const crearRec = (stream, bps) => new MediaRecorder(stream, mime ? { mimeType:mime, videoBitsPerSecond:bps } : {});
+  GR = { modo, pistas, partes:[], partesCam:[], recP:crearRec(principal, 5e6), recC:(pantalla && cam) ? crearRec(new MediaStream(cam.getVideoTracks()), 1.5e6) : null, segundos:0, pausado:false };
+  GR.recP.ondataavailable = e => e.data.size && GR.partes.push(e.data);
+  if (GR.recC) GR.recC.ondataavailable = e => e.data.size && GR.partesCam.push(e.data);
+  // vista en vivo de la cámara (solo cámara)
+  if (cam && !pantalla){ const v = $('evCamVivo').querySelector('video'); v.srcObject = cam; $('evCamVivo').hidden = false; }
+  // si deja de compartir la pantalla desde el aviso del navegador, se detiene
+  if (pantalla) pantalla.getVideoTracks()[0].addEventListener('ended', () => detenerGrabacionEV());
+  if ($('evCuenta').checked) await cuentaRegresivaEV();
+  if (!GR) return;
+  GR.recP.start(1000); if (GR.recC) GR.recC.start(1000);
+  GR.inicio = Date.now();
+  $('evGrabando').hidden = false;
+  GR.reloj = setInterval(() => { if (!GR || GR.pausado) return; GR.segundos += 0.5; $('evGrabTiempo').textContent = fmtT(GR.segundos).replace(/\.\d$/, ''); }, 500);
+  if (modo === 'presentacion'){
+    // se cierra el estudio y empieza la presentación del diseño
+    $('estudioVideo').classList.remove('abierto');
+    $('evGrabando').classList.add('flotante'); document.body.appendChild($('evGrabando'));
+    setTimeout(() => { try { presentar(0); } catch (e) {} }, 300);
+    toast('● Grabando tu presentación. Al terminar, sal con Esc y toca «Detener».');
+  }
+}
+function cuentaRegresivaEV(){
+  return new Promise(ok => {
+    const c = $('evCuentaAtras'); c.hidden = false; let n = 3; c.textContent = n;
+    const iv = setInterval(() => { n--; if (n <= 0){ clearInterval(iv); c.hidden = true; ok(); } else c.textContent = n; }, 1000);
+  });
+}
+function pausarGrabacionEV(){
+  if (!GR) return;
+  GR.pausado = !GR.pausado;
+  [GR.recP, GR.recC].forEach(r => { if (!r) return; try { GR.pausado ? r.pause() : r.resume(); } catch (e) {} });
+  $('evGrabPausa').textContent = GR.pausado ? '● Seguir' : '❚❚ Pausa';
+}
+async function detenerGrabacionEV(){
+  const g = GR; if (!g || g.parando) return; g.parando = true;
+  clearInterval(g.reloj);
+  const parar = r => new Promise(ok => { if (!r || r.state === 'inactive') return ok(); r.onstop = ok; try { r.stop(); } catch (e) { ok(); } });
+  await Promise.all([parar(g.recP), parar(g.recC)]);
+  g.pistas.forEach(s => s.getTracks().forEach(t => t.stop()));
+  $('evGrabando').hidden = true; $('evCamVivo').hidden = true; $('evCamVivo').querySelector('video').srcObject = null;
+  const barra = $('evGrabando'); barra.classList.remove('flotante'); $('estudioVideo').appendChild(barra);
+  GR = null;
+  if (!$('estudioVideo').classList.contains('abierto')) await abrirEstudioVideo();
+  if (!g.partes.length) return toast('La grabación quedó vacía');
+  cargando(true);
+  try {
+    const tipo = (g.recP.mimeType || 'video/webm').split(';')[0];
+    const nombre = { pantalla:'Grabación de pantalla', camara:'Video de cámara', ambas:'Pantalla con cámara', presentacion:'Mi presentación' }[g.modo] + ' ' + new Date().toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
+    const id = nid(), dur = Math.max(0.5, g.segundos);
+    await guardarMedioEV(id, { blob:new Blob(g.partes, { type:tipo }), nombre, tipo:'video', dur });
+    const m = await cargarMedioEV(id);
+    let camExtra = null;
+    if (g.partesCam.length){
+      const idc = nid(); await guardarMedioEV(idc, { blob:new Blob(g.partesCam, { type:tipo }), nombre:nombre + ' (cámara)', tipo:'video', dur });
+      await cargarMedioEV(idc); camExtra = { blob:idc, x:0.86, y:0.8, tam:0.28, forma:'circulo', visible:true };
+    }
+    agregarClipEV(id, m, { fin:Math.min(m.dur || dur, dur + 0.5) || m.dur, cam:camExtra });
+    toast('✓ Grabación lista en tu línea de tiempo (' + fmtT(dur).replace(/\.\d$/, '') + ').' + (camExtra ? ' Arrastra la burbuja para moverla.' : ''));
+  } catch (e) { toast('No se pudo guardar la grabación: ' + e.message); } finally { cargando(false); }
+}
+
+/* ---------- exportar ---------- */
+async function exportarEV(){
+  if (!EV.p.clips.length) return toast('Tu video está vacío: graba o agrega algo primero');
+  if (!window.MediaRecorder) return toast('Este navegador no puede crear videos. Usa Chrome o Edge.');
+  const cv = $('evLienzo'), total = totalEV();
+  reproducirEV(false); audioEV();
+  const stream = cv.captureStream(30);
+  EV.recDest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
+  const mime = mimeGrab(), rec = new MediaRecorder(stream, mime ? { mimeType:mime, videoBitsPerSecond:6e6, audioBitsPerSecond:160000 } : {});
+  const partes = []; rec.ondataavailable = e => e.data.size && partes.push(e.data);
+  EV.cancelado = false; EV.exportando = true; $('evExportando').hidden = false;
+  const prog = setInterval(() => { $('evProg').style.width = Math.min(100, EV.t / total * 100) + '%'; $('evProgTxt').textContent = fmtT(EV.t) + ' de ' + fmtT(total); if (EV.cancelado && EV.play) reproducirEV(false); }, 200);
+  // se cargan los primeros cuadros antes de empezar
+  verEnEV(0); await new Promise(r => setTimeout(r, 400));
+  rec.start(500);
+  await new Promise(ok => { EV.alTerminar = ok; reproducirEV(true); const vigila = setInterval(() => { if (EV.cancelado || !EV.play){ clearInterval(vigila); setTimeout(ok, 300); } }, 200); });
+  await new Promise(ok => { rec.onstop = ok; try { rec.stop(); } catch (e) { ok(); } });
+  stream.getVideoTracks().forEach(t => t.stop());
+  clearInterval(prog); EV.exportando = false; $('evExportando').hidden = true;
+  if (EV.cancelado) return toast('Exportación cancelada');
+  const tipo = (rec.mimeType || 'video/webm').split(';')[0], ext = tipo.includes('mp4') ? 'mp4' : 'webm';
+  const blob = new Blob(partes, { type:tipo });
+  bajarBlob(blob, (EV.p.nombre || 'Mi video').replace(/[\\/:*?"<>|]/g, '') + '.' + ext);
+  toast('✓ Video descargado (' + (blob.size / 1048576).toFixed(1) + ' MB, ' + ext.toUpperCase() + ')' + (ext === 'webm' ? '. Si WhatsApp no lo acepta, créalo desde Chrome actualizado (sale en MP4).' : ''));
+}
+
+/* ---------- botones para entrar ---------- */
+(function(){
+  const b = document.createElement('button'); b.className = 'tb'; b.id = 'bVideo'; b.title = 'Estudio de video: graba tu pantalla o cámara y edita videos';
+  b.innerHTML = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/></svg><span class="txtLargo"> Video</span>';
+  b.onclick = abrirEstudioVideo;
+  const pres = [...document.querySelectorAll('#barra .tb')].find(x => (x.getAttribute('onclick') || '').includes('mPresentar'));
+  if (pres) pres.before(b); else $('barra').appendChild(b);
+  const r = document.createElement('button'); r.id = 'pestanaVideo'; r.title = 'Estudio de video'; r.innerHTML = '<span>🎬</span>Video'; r.onclick = abrirEstudioVideo;
+  $('pestanas').appendChild(r);
+})();
+/* =========================================================
    PESTAÑAS E INICIO
    ========================================================= */
 document.querySelectorAll('#pestanas button').forEach(b => b.onclick = () => {

@@ -186,3 +186,10 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - `80-pegar-tablas-de-word-y-excel.js`: Ctrl+V con una tabla copiada (HTML del portapapeles) arma una tabla editable con filas, columnas, anchos proporcionales, color de cada celda, color de letra, negritas, alineación, saltos de línea y viñetas; celdas combinadas se respetan (texto en la primera). Texto con tabuladores (Excel/Sheets) también; texto normal crea un cuadro de texto. Si la página está vacía y la tabla es larga, la página se alarga.
 - Copiar dentro del Diseñador deja una marca en el portapapeles: Ctrl+V pega lo interno solo si fue lo último copiado (antes bloqueaba pegar de otras apps).
 - Celdas con `alinV:'arriba'` ponen el texto arriba (como Word).
+
+## v48: Estudio de video
+- `81-estudio-de-video.js`: botón 🎬 Video (barra y riel izquierdo) abre un editor de video a pantalla completa.
+- Grabar: pantalla, cámara, pantalla + cámara (burbuja movible, círculo o cuadro) y «Mi presentación + cámara»; micrófono y audio del sistema se mezclan; cuenta regresiva, pausa y detener. MediaRecorder graba MP4 (H.264) si el navegador puede, si no WebM.
+- Editar: subir videos, fotos y música; páginas de tu diseño como clips; línea de tiempo con recortar, dividir (S), reordenar, velocidad, volumen, silenciar, fundido, acercamiento lento; textos encima con fondo; música con volumen; deshacer/rehacer.
+- Exportar: se reproduce en tiempo real a un lienzo (`captureStream`) con el audio mezclado (Web Audio) y se descarga «Mi video.mp4». Formatos 16:9, 9:16, 1:1 y 4:3.
+- Todo se guarda en el navegador (IndexedDB `disenador_video`), no en la nube.
