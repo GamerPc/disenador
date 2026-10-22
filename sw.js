@@ -1,6 +1,6 @@
 /* Service worker del Diseñador: permite instalarlo y abrirlo aunque falle el internet.
    VERSION la pone construir.py; cuando cambia, el navegador baja la versión nueva. */
-const VERSION = 'c0af6854e1';
+const VERSION = 'c3afa23eda';
 const CACHE = 'disenador-' + VERSION;
 const BASE = ['./', 'index.html', 'config.js', 'js/app.js', 'js/almacen-local.js', 'js/pwa.js', 'js/nube.js', 'js/escuela.js', 'js/equipo.js', 'manifest.webmanifest',
   'icons/icono-192.png', 'icons/icono-512.png', 'icons/apple-touch-icon.png', 'icons/favicon.png'];
