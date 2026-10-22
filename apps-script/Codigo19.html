@@ -173,7 +173,8 @@ function snapsNecesariosEV(){
   const out = [], cl = EV.p.clips;
   for (let i = 1; i < cl.length; i++){
     if (!transActiva(cl[i])) continue;
-    [[cl[i - 1], cl[i - 1].fin], [cl[i], cl[i].ini]].forEach(([c, tt]) => [c.blob, c.cam && c.cam.blob].filter(Boolean).forEach(b => {
+    [[cl[i - 1], cl[i - 1].fin], [cl[i], cl[i].ini]].forEach(([c, t0]) => [c.blob, c.cam && c.cam.blob].filter(Boolean).forEach(b => {
+      const tt = c.cam && b === c.cam.blob ? Math.max(0, t0 - (c.cam.desfase || 0)) : t0;
       const m = EV.medios[b]; if (m && m.tipo === 'video' && !EV.snaps[claveSnap(b, tt)] && !out.some(o => o[0] === b && claveSnap(b, o[1]) === claveSnap(b, tt))) out.push([b, tt]);
     }));
   }
@@ -239,7 +240,7 @@ function pintarClipEV(x, c, local, W0, H0, vivo){
   if (f){ const zk = c.zoomLento ? 1 + 0.12 * (local / L) : 1; dibujarMedioEV(x, f.el, f.w, f.h, W0, H0, c.ajuste, zk); }
   // burbuja de la cámara
   if (c.cam && c.cam.visible !== false){
-    const fc = fuenteEV(c.cam.blob, tm, vivo);
+    const fc = fuenteEV(c.cam.blob, Math.max(0, tm - (c.cam.desfase || 0)), vivo);
     if (fc && fc.w){
       const lado = Math.min(W0, H0) * c.cam.tam, cx = c.cam.x * W0, cy = c.cam.y * H0;
       x.save(); x.beginPath();
@@ -335,9 +336,9 @@ function sincronizarEV(r, reproduciendo){
   const usados = elementosEnUso(r);
   Object.values(EV.medios).forEach(m => { if (m.el && m.el.pause && m.tipo !== 'audio' && !usados.some(u => u[0] === m.el)) m.el.pause(); });
   usados.forEach(([el, c, esCam]) => {
-    const quiero = c.ini + r.local * (c.vel || 1);
+    const quiero = Math.max(0, c.ini + r.local * (c.vel || 1) - (esCam ? (c.cam.desfase || 0) : 0));
     el.playbackRate = c.vel || 1;
-    if (el._gain) el._gain.gain.value = esCam || c.mute ? 0 : (c.vol ?? 1);
+    if (el._gain) el._gain.gain.value = (esCam && !c.cam.conAudio) || c.mute ? 0 : (c.vol ?? 1);
     if (reproduciendo){
       if (Math.abs(el.currentTime - quiero) > 0.35 || el.paused){ try { el.currentTime = quiero; } catch (e) {} }
       if (el.paused) el.play().catch(() => {});
@@ -952,6 +953,9 @@ async function grabarEV(modo, sinGuia){
   const pistas = [];
   let pantalla = null, cam = null, mic = null;
   const usaPantalla = modo === 'pantalla' || modo === 'ambas' || modo === 'presentacion';
+  // cámara del teléfono (si está conectado): graba allá con toda su calidad
+  const tel = modo !== 'pantalla' && typeof telefonoListoEV === 'function' && telefonoListoEV();
+  const vozTel = tel && (modo === 'camara' || TEL.vozDelTel);
   // guía: dónde activar el audio de la computadora en la ventana de Chrome
   if (usaPantalla && quierePc && !sinGuia && !leerLS('disenador_guiaAudioPc')){
     const r = await preguntaEV('🔊 Para grabar el sonido de tu computadora', guiaAudioPcHTML(modo), [{ t:'Cancelar', v:'no', clase:'btnS' }, { t:'Entendido, elegir pantalla', v:'si', clase:'btnP' }], 'No volver a mostrar');
@@ -972,11 +976,19 @@ async function grabarEV(modo, sinGuia){
         if (r.v === 'otra'){ pistas.forEach(st => st.getTracks().forEach(t => t.stop())); return grabarEV(modo, true); }
       }
     }
-    if (modo === 'camara' || modo === 'ambas' || modo === 'presentacion'){
-      cam = await navigator.mediaDevices.getUserMedia({ video:{ width:{ ideal:1280 }, height:{ ideal:720 }, facingMode:'user' }, audio:false });
+    if (!tel && (modo === 'camara' || modo === 'ambas' || modo === 'presentacion')){
+      try { cam = await navigator.mediaDevices.getUserMedia({ video:{ width:{ ideal:1280 }, height:{ ideal:720 }, facingMode:'user' }, audio:false }); }
+      catch (e) {
+        if (!/NotFound|NotReadable|Overconstrained|DevicesNotFound/i.test(e.name)) throw e;
+        // la compu no tiene cámara (o está ocupada): ofrecer la del teléfono
+        pistas.forEach(st => st.getTracks().forEach(t => t.stop()));
+        const r = await preguntaEV('📷 No encontré una cámara en esta compu', '<p>¿Quieres usar la cámara de tu <b>teléfono</b>? Escaneas un código y listo; el teléfono graba con toda su calidad.</p>', [{ t:'Cancelar', v:'no', clase:'btnS' }, { t:'📱 Usar mi teléfono', v:'tel', clase:'btnP' }]);
+        if (r.v === 'tel') conectarTelefonoEV();
+        return;
+      }
       pistas.push(cam);
     }
-    if (quiereMic){
+    if (quiereMic && !vozTel){
       try { mic = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true } }); pistas.push(mic); }
       catch (e) { toast('No se pudo usar el micrófono; se grabará sin tu voz.'); }
     }
@@ -988,19 +1000,21 @@ async function grabarEV(modo, sinGuia){
   const ctx = audioEV(), mezcla = ctx.createMediaStreamDestination();
   [pantalla, mic].forEach(s => { if (s && s.getAudioTracks().length){ try { ctx.createMediaStreamSource(s).connect(mezcla); } catch (e) {} } });
   const hayAudio = (pantalla && pantalla.getAudioTracks().length) || (mic && mic.getAudioTracks().length);
-  const principal = new MediaStream([...(pantalla || cam).getVideoTracks(), ...(hayAudio ? mezcla.stream.getAudioTracks() : [])]);
+  const fuenteV = pantalla || cam;
+  const principal = fuenteV ? new MediaStream([...fuenteV.getVideoTracks(), ...(hayAudio ? mezcla.stream.getAudioTracks() : [])]) : null;
   const mime = mimeGrab();
   const crearRec = (stream, bps) => new MediaRecorder(stream, mime ? { mimeType:mime, videoBitsPerSecond:bps } : {});
-  GR = { modo, pistas, partes:[], partesCam:[], recP:crearRec(principal, 5e6), recC:(pantalla && cam) ? crearRec(new MediaStream(cam.getVideoTracks()), 1.5e6) : null, segundos:0, pausado:false };
-  GR.recP.ondataavailable = e => e.data.size && GR.partes.push(e.data);
+  GR = { modo, pistas, partes:[], partesCam:[], recP:principal ? crearRec(principal, 5e6) : null, recC:(pantalla && cam) ? crearRec(new MediaStream(cam.getVideoTracks()), 1.5e6) : null, segundos:0, pausado:false, tel, vozTel };
+  if (GR.recP) GR.recP.ondataavailable = e => e.data.size && GR.partes.push(e.data);
   if (GR.recC) GR.recC.ondataavailable = e => e.data.size && GR.partesCam.push(e.data);
   // vista en vivo de la cámara (solo cámara)
-  if (cam && !pantalla){ const v = $('evCamVivo').querySelector('video'); v.srcObject = cam; $('evCamVivo').hidden = false; }
+  if (!pantalla && (cam || (tel && TEL.stream))){ const v = $('evCamVivo').querySelector('video'); v.srcObject = cam || TEL.stream; v.classList.toggle('sinEspejo', !cam && TEL.info.camara === 'trasera'); $('evCamVivo').hidden = false; }
   // si deja de compartir la pantalla desde el aviso del navegador, se detiene
   if (pantalla) pantalla.getVideoTracks()[0].addEventListener('ended', () => detenerGrabacionEV());
   if ($('evCuenta').checked) await cuentaRegresivaEV();
   if (!GR) return;
-  GR.recP.start(1000); if (GR.recC) GR.recC.start(1000);
+  if (GR.recP) GR.recP.start(1000); if (GR.recC) GR.recC.start(1000);
+  if (tel){ GR.desfaseTel = 0; empezarTelEV().then(d => { if (GR) GR.desfaseTel = GR.recP ? d : 0; }); }
   GR.medidores = [];
   [['evNivelMic', mic], ['evNivelPc', pantalla]].forEach(([id, st]) => {
     const el = $(id); el.hidden = !(st && st.getAudioTracks().length); if (el.hidden) return;
@@ -1029,6 +1043,7 @@ function pausarGrabacionEV(){
   if (!GR) return;
   GR.pausado = !GR.pausado;
   [GR.recP, GR.recC].forEach(r => { if (!r) return; try { GR.pausado ? r.pause() : r.resume(); } catch (e) {} });
+  if (GR.tel) enviarTel({ t:GR.pausado ? 'pausa' : 'seguir' });
   $('evGrabPausa').textContent = GR.pausado ? '● Seguir' : '❚❚ Pausa';
 }
 async function detenerGrabacionEV(){
@@ -1037,13 +1052,24 @@ async function detenerGrabacionEV(){
   const parar = r => new Promise(ok => { if (!r || r.state === 'inactive') return ok(); r.onstop = ok; try { r.stop(); } catch (e) { ok(); } });
   await Promise.all([parar(g.recP), parar(g.recC)]);
   g.pistas.forEach(s => s.getTracks().forEach(t => t.stop()));
+  $('evGrabando').hidden = true; $('evCamVivo').hidden = true;
+  const deTel = g.tel ? await terminarTelEV() : null;
   $('evGrabando').hidden = true; $('evCamVivo').hidden = true; $('evCamVivo').querySelector('video').srcObject = null;
   const barra = $('evGrabando'); barra.classList.remove('flotante'); $('estudioVideo').appendChild(barra);
   GR = null;
   if (!$('estudioVideo').classList.contains('abierto')) await abrirEstudioVideo();
-  if (!g.partes.length) return toast('La grabación quedó vacía');
+  if (!g.partes.length && !deTel) return toast(g.tel ? 'No llegó el video del teléfono. Guárdalo desde el teléfono con «Guardar en este teléfono» y súbelo en ⬆ Subir.' : 'La grabación quedó vacía');
   cargando(true);
   try {
+    const nombreT = { pantalla:'Grabación de pantalla', camara:'Video de cámara', ambas:'Pantalla con cámara', presentacion:'Mi presentación' }[g.modo] + ' ' + new Date().toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
+    // solo cámara del teléfono: el video del teléfono es el clip
+    if (deTel && !g.partes.length){
+      const id = nid(); await guardarMedioEV(id, { blob:deTel.blob, nombre:nombreT + ' (teléfono)', tipo:'video', dur:deTel.dur });
+      const m = await cargarMedioEV(id), vertical = m.h > m.w, fmtVertical = (FORMATOS_EV[EV.p.formato] || [16, 9])[1] > (FORMATOS_EV[EV.p.formato] || [16, 9])[0];
+      agregarClipEV(id, m, { ajuste:vertical === fmtVertical ? 'cubrir' : 'encajar' });
+      return toast('✓ Video del teléfono listo (' + (m.w || '?') + '×' + (m.h || '?') + ', ' + fmtT(m.dur).replace(/\.\d$/, '') + ')');
+    }
+    if (g.tel && !deTel) toast('⚠ No llegó el video del teléfono: se guardó solo la pantalla. En el teléfono puedes usar «Guardar en este teléfono».');
     const tipo = (g.recP.mimeType || 'video/webm').split(';')[0];
     const nombre = { pantalla:'Grabación de pantalla', camara:'Video de cámara', ambas:'Pantalla con cámara', presentacion:'Mi presentación' }[g.modo] + ' ' + new Date().toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
     const id = nid(), dur = Math.max(0.5, g.segundos);
@@ -1053,6 +1079,10 @@ async function detenerGrabacionEV(){
     if (g.partesCam.length){
       const idc = nid(); await guardarMedioEV(idc, { blob:new Blob(g.partesCam, { type:tipo }), nombre:nombre + ' (cámara)', tipo:'video', dur });
       await cargarMedioEV(idc); camExtra = { blob:idc, x:0.86, y:0.8, tam:0.28, forma:'circulo', visible:true };
+    }
+    if (deTel){
+      const idc = nid(); await guardarMedioEV(idc, { blob:deTel.blob, nombre:nombre + ' (teléfono)', tipo:'video', dur:deTel.dur });
+      await cargarMedioEV(idc); camExtra = { blob:idc, x:0.86, y:0.8, tam:0.28, forma:'circulo', visible:true, desfase:g.desfaseTel || 0, conAudio:!!g.vozTel };
     }
     agregarClipEV(id, m, { fin:Math.min(m.dur || dur, dur + 0.5) || m.dur, cam:camExtra });
     toast('✓ Grabación lista en tu línea de tiempo (' + fmtT(dur).replace(/\.\d$/, '') + ').' + (camExtra ? ' Arrastra la burbuja para moverla.' : ''));

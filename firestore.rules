@@ -60,6 +60,15 @@ service cloud.firestore {
       }
     }
 
+    // TELÉFONO COMO CÁMARA: la compu y el teléfono se encuentran con un código largo al azar (solo intercambian datos de conexión;
+    // el video va directo entre los dos). No se pueden listar: solo quien tiene el código lo puede leer.
+    match /camaras/{c} {
+      allow get, delete: if c.size() >= 16;
+      allow create: if c.size() >= 16 && request.resource.data.keys().hasOnly(['offer', 'creado']) && request.resource.data.offer is string && request.resource.data.offer.size() < 20000;
+      allow update: if c.size() >= 16 && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['answer']) && !('answer' in resource.data)
+        && request.resource.data.answer is string && request.resource.data.answer.size() < 20000;
+    }
+
     // TRABAJO EN EQUIPO: quien tenga el enlace (y haya entrado con su cuenta) puede ver y editar
     match /equipos/{e} {
       function abierto() { let d = get(/databases/$(database)/documents/equipos/$(e)).data; return d.abierto == true || d.dueno == request.auth.uid; }

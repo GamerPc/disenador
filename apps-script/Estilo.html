@@ -766,5 +766,38 @@
   .evNivel[hidden]{display:none}
   .pistaNivel{display:block;width:46px;height:6px;border-radius:3px;background:rgba(255,255,255,.15);overflow:hidden}
   .pistaNivel i{display:block;width:0;height:100%;background:#22c55e;transition:width .08s}
+  /* v52: el teléfono como cámara */
+  .evTel{margin:8px 0 4px}
+  .evTelBtn{display:grid;grid-template-columns:auto 1fr;column-gap:10px;align-items:center;width:100%;text-align:left;border:1px dashed var(--neon);background:rgba(25,200,255,.07);color:var(--texto);border-radius:12px;padding:10px 12px;cursor:pointer}
+  .evTelBtn[hidden]{display:none}
+  .evTelBtn:hover{background:rgba(25,200,255,.14)}
+  .evTelBtn span{grid-row:span 2;font-size:26px}
+  .evTelBtn b{font-size:13.5px}
+  .evTelBtn small{font-size:11.5px;color:var(--suave);line-height:1.3}
+  .evTelEstado{display:flex;gap:10px;align-items:flex-start;border:1px solid #22c55e;background:rgba(34,197,94,.08);border-radius:12px;padding:8px}
+  .evTelEstado[hidden]{display:none}
+  .evTelEstado video{width:82px;height:110px;object-fit:cover;border-radius:8px;background:#000;flex:none}
+  .evTelTxt{display:flex;flex-direction:column;gap:4px;min-width:0}
+  .evTelTxt #evTelInfo{display:flex;flex-direction:column}
+  .evTelTxt #evTelInfo small{color:var(--suave);font-size:11.5px}
+  .evTelTxt .filaCheck{margin:2px 0 !important;font-size:12px !important}
+  .evTelTxt .pb{align-self:flex-start;padding:4px 10px;font-size:12px}
+  .evModo.conTel{position:relative}
+  .evModo.conTel::after{content:'📱';position:absolute;top:8px;right:10px;font-size:15px}
+  #evTelPanel,#evTelRecibe{position:absolute;inset:0;z-index:32;background:rgba(3,5,9,.78);display:flex;align-items:center;justify-content:center}
+  #evTelPanel[hidden],#evTelRecibe[hidden]{display:none}
+  #evTelPanel .caja{width:min(560px,94vw)}
+  #evTelRecibe .caja{width:min(460px,92vw)}
+  .evTelPasos{display:flex;gap:16px;align-items:center;margin:8px 0}
+  .evTelPasos ol{padding-left:18px;line-height:1.5;margin:0}
+  .evTelQR{width:190px;height:190px;flex:none;border-radius:10px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center}
+  .evTelQR svg{width:100%;height:100%;display:block}
+  .evTelQR .hint{color:#334155;padding:10px;text-align:center}
+  #evTelPanel .fila{display:flex;align-items:center;gap:8px;font-size:13px}
+  #evTelPanel .fila span{color:var(--suave)}
+  #evTelPanel .fila input{flex:1;margin:0}
+  #evTelPanel .acciones{display:flex;justify-content:flex-end;margin-top:10px}
+  #evCamVivo video.sinEspejo{transform:none}
+  @media (max-width:560px){ .evTelPasos{flex-direction:column} }
 
 </style>

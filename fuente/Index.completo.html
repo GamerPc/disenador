@@ -1050,6 +1050,39 @@
   .evNivel[hidden]{display:none}
   .pistaNivel{display:block;width:46px;height:6px;border-radius:3px;background:rgba(255,255,255,.15);overflow:hidden}
   .pistaNivel i{display:block;width:0;height:100%;background:#22c55e;transition:width .08s}
+  /* v52: el teléfono como cámara */
+  .evTel{margin:8px 0 4px}
+  .evTelBtn{display:grid;grid-template-columns:auto 1fr;column-gap:10px;align-items:center;width:100%;text-align:left;border:1px dashed var(--neon);background:rgba(25,200,255,.07);color:var(--texto);border-radius:12px;padding:10px 12px;cursor:pointer}
+  .evTelBtn[hidden]{display:none}
+  .evTelBtn:hover{background:rgba(25,200,255,.14)}
+  .evTelBtn span{grid-row:span 2;font-size:26px}
+  .evTelBtn b{font-size:13.5px}
+  .evTelBtn small{font-size:11.5px;color:var(--suave);line-height:1.3}
+  .evTelEstado{display:flex;gap:10px;align-items:flex-start;border:1px solid #22c55e;background:rgba(34,197,94,.08);border-radius:12px;padding:8px}
+  .evTelEstado[hidden]{display:none}
+  .evTelEstado video{width:82px;height:110px;object-fit:cover;border-radius:8px;background:#000;flex:none}
+  .evTelTxt{display:flex;flex-direction:column;gap:4px;min-width:0}
+  .evTelTxt #evTelInfo{display:flex;flex-direction:column}
+  .evTelTxt #evTelInfo small{color:var(--suave);font-size:11.5px}
+  .evTelTxt .filaCheck{margin:2px 0 !important;font-size:12px !important}
+  .evTelTxt .pb{align-self:flex-start;padding:4px 10px;font-size:12px}
+  .evModo.conTel{position:relative}
+  .evModo.conTel::after{content:'📱';position:absolute;top:8px;right:10px;font-size:15px}
+  #evTelPanel,#evTelRecibe{position:absolute;inset:0;z-index:32;background:rgba(3,5,9,.78);display:flex;align-items:center;justify-content:center}
+  #evTelPanel[hidden],#evTelRecibe[hidden]{display:none}
+  #evTelPanel .caja{width:min(560px,94vw)}
+  #evTelRecibe .caja{width:min(460px,92vw)}
+  .evTelPasos{display:flex;gap:16px;align-items:center;margin:8px 0}
+  .evTelPasos ol{padding-left:18px;line-height:1.5;margin:0}
+  .evTelQR{width:190px;height:190px;flex:none;border-radius:10px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center}
+  .evTelQR svg{width:100%;height:100%;display:block}
+  .evTelQR .hint{color:#334155;padding:10px;text-align:center}
+  #evTelPanel .fila{display:flex;align-items:center;gap:8px;font-size:13px}
+  #evTelPanel .fila span{color:var(--suave)}
+  #evTelPanel .fila input{flex:1;margin:0}
+  #evTelPanel .acciones{display:flex;justify-content:flex-end;margin-top:10px}
+  #evCamVivo video.sinEspejo{transform:none}
+  @media (max-width:560px){ .evTelPasos{flex-direction:column} }
 
 </style>
 </head>
@@ -1057,7 +1090,7 @@
 
 <!-- ====== BARRA SUPERIOR ====== -->
 <div id="barra">
-  <div class="logo"><img class="logoImg" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAMAAAC5zwKfAAAAwFBMVEUHLGYDIRUAf/8TfsAFGR0EHyQAAP8k0tgACREAAAAAEhQD6/cG9v0Gtf0EqvoI2PQHx/sQaHAHJi4Ux9EFGCgLOFAMRk8AAAAOV3IUusgRh48Upq8AAQIQdq4KNTkMR24NVloPZpURiMgSk5kBAQIOWooAAQMAAgQSldMU09sReoUUs7oUmagJKUYShbEOm+QA//8QdnwTps8FFxYQbKMAAAAAOTcAJiYMPWQAVVUAf38CDSAAADIEEg4DFRQGIyT60TZkAAAAQHRSTlMFGwL/vNgB//4A/v7+/v7+/v7+/v7+/mz+/v7+Tv7+//3+/v4s/6/M/v7//v7+//0B//4p/5cLC/8EAv8FFNrEvWmOFQAAB8JJREFUeNqdmQd34jgQgLk+yEW23AtgSgyYkoT03b27//+vbsayjFxS9vTevsUYf56u0WQy/XjlURRBu/Ai/+SByQf3HvJtCSCCwr1PcVVuEQoG5TZ/+F/AzRPA3F17hmFel+Ed3YDB0+Zngc/RFuZpUrM0oLz20hC20ctPABHH4oOhANzzksMh8fZG+4LEZdvo+avADTDXkw/yQ+qGwmcMgDF/HrrrWmr8t68EbL4EnJRQSNz+WAjoLzZ3M17f5i6Uz58D863I6PfGwSUa6y+Cinv5xiTc5p8BI3A54bKQjdAYNNDGJsY9RB8CH0q2ph96hUZTunblZPRiwzyI8uF94C8gEnpvxUCDMTHHJViXioof6d37AB7eAz7AfI8/SeZXnCjSA4WLYey9rOqaAaCgnxtFhzjReQFHJY5XQxXkT315x5BptphLQ7o6caLLhzyjaoSQrjSNzpIh3fyApfiGjIixRrwCS4Fpi29rxIu9Pk0xk9pjZG7SZk3EsBwCI5YYHN/ViJeN0hpkNkfr4gtTAhORz6M+MIcj8kg+fD0EnnlVsq0MMrnpS8Ml8x2g1py0TljeBT5vY+RVUNsHQm5wSTO8LHVxpdm+wZnNDfw/BGnLA16tt7/80IGlcDg/ygAmZ3NOxMydq7AGEd7rVq2lapwtKHqKUpcQFeY8EVA/7iecePwYdEKZwijRkWkbriFe7UU+aYF3EHPHCWsegzNHafklGOQyMM/YS1MSsGrvQ2oS/64Foocdfm4UDh1aLkA3lenW0azEoXWXC9qb8CXS0wR82S4dxxLqKeItoCkttK+kGXom9ME1D/jd0RwAGRQoYrZtgN8i33acuJEjUDzpQnHkhtpJDC7oy0RGjg5kQHE7j36VEkLsOBe/EXDmWAhvSgveMbj0OFHrsKdI7kso/bKG6R0BN7CzLCWgf7Gcc2s0l8slCWsp9BiQRDS52JCEb0+BZdm+0tiyrFMjYK0+wSTRYx8ByYru0xsC/4alZc2UK2PtM+wQeEzPFylh2OS5AlbQDSnKRZIwJ40DxVjSZ6akdc71RiWqhOP2cQ26bmBfv57n08ndFrXcKY1hZt1ePzuVdA2AaxzbuHTHgeQWd3s3mZY3lvXYarmyzleNd9Akz9xxxGdA0jkrp5MchbIWLeQ3a9l+DtQ2zy7KgO8Dybamx/JJ5O8sW2gS3gx6BagMzQHvAt06tif5ybZW39unHwdAKo8XNgLMesA5fhejhIGtBQrc6BdNrFvOCdgQeOgBsSyaVTSBhaWZDa9WfeDZiYF9AYhJjsk0QZnshSaObYuuwrEzU6XiQ5Xr7MsQuOwA0eeLjnwni+rGGPDQB6KbEwTOLDvQAEFXZ4yBADptzfsS0sY/BGLgvGpXS6c1sJYSNdDr7xAVBeIQGGiJCK9a4vSBe7/nlftxIHppqblI1rJe0jbAcQkf+0A4t+V21lFfqfAeMJVO6XmZ5FL5F1uroFmhWkV4/x5wTRWxH4eKSDIGtm1balHxVpvBO0CMwyNMom6mtMRHjBi7WYrYQZpcwCBTUlkcBukL3x+tM3rrQ6ARwCCXXSpft9bKH5o+trWlK81b4LwLDHCnDVFCjGSMjcESV/Np8ul9Z19ClzZS7JjKx6FXZKWNr+sGL9xmVXxcQnJySZvUwtb2lJHoHlTwUWC9p6S0SeVoxF3fiMGIXdWjQike9hPIDHNqRYbJRxFzGpOtbsB9rzFit+5SrWG00b88LSy7Fziz4ValyZg09auAvsZPL3Wz5N/at50yjW/Y3fifAnUJIaYuvm6W/pxS/6FLdKpD73Z5GlGZkcojEuJRgFqbO9lwIuHW1yNGRrM9C4Yiwjwx3mlh4+iu6bG36JariMtrytmz1z4v5ubgGCAF9P6ZvqmmnURUVgw6OWevFr62BbLK4G4TNqoBbfYZ022b9umvVGUbR39fWXY3jWv/SPOJi5kIpmwoTz50uqG6cIBv3xTwGYPbbvIvRqF2iNGR9lLUfVjoGGldptrIBrb+C+/RATLMv+lHM4yU2i/+LaaIf1r8ZneR5J8l5zGB1UnV9Ao8W+EBLKbDXjn9cQU+/01+oZ5poZrZ02OLlNXmfDYudX3BzUg7quKReY7nfu/fBtUeb1FpqhGza3d8mkmkKmD8LPdNte3VxLQ+OaP2+eAAjt7F8F7pVeZ0tlpgfTSSMefvlc4mneAOrYd14A80Iz58c2t3ysICu1Gp8iUYNiMGDQvo/J2W05fBzGFD+x8J1CkU/lLyznqbIE8WNLKRvAw2byNjlk2TIzvWLY146iA7sC7RJPfKwVHGNuODICnjsHItd4OzM8ReRoHp9XndUdUGyI6rYLBNdzpONVUDdk+H0nV3jNgdpm3K11sUcukPGvfB5A9tUQ+B7svNx+M+Qbm8W3xQsJupWErieWH0+UDyhjyzWnzAo5EkTULM47/59OXTGWxJKUJFRowB6UOY1kM2ryi/MoO9Q9+8rij47HN8YoOOIqzkNNq7R+/efWVKjF9F28VZptxu5oaB8GkJERZV5snplef+gdZ7+/qkPdoGy0vd0eCyEloeV6MwnhX/RP9jdO8Hy52ltXDN8H5diJ8f3ZMpp5t8W4pweT5eEo9Wkh2rYv77Nt9MR4z3hb9WXP/8wdCAAj38hT9//AeaYVQBgkwsDAAAAABJRU5ErkJggg==" alt=""><span class="logoTxt">Diseñador<small class="logoMarca">APIK-DESING</small></span><small class="ver">v51</small></div>
+  <div class="logo"><img class="logoImg" src="data:image/png;base64,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" alt=""><span class="logoTxt">Diseñador<small class="logoMarca">APIK-DESING</small></span><small class="ver">v52</small></div>
   <input class="nombre" id="nombreDiseno" value="Mi diseño" title="Nombre del diseño">
   <span id="estadoGuardado" title="Estado del guardado en Drive">No guardado en Drive</span>
   <button class="tb" onclick="nuevoDiseno()">Nuevo</button>
@@ -12167,7 +12200,8 @@ function snapsNecesariosEV(){
   const out = [], cl = EV.p.clips;
   for (let i = 1; i < cl.length; i++){
     if (!transActiva(cl[i])) continue;
-    [[cl[i - 1], cl[i - 1].fin], [cl[i], cl[i].ini]].forEach(([c, tt]) => [c.blob, c.cam && c.cam.blob].filter(Boolean).forEach(b => {
+    [[cl[i - 1], cl[i - 1].fin], [cl[i], cl[i].ini]].forEach(([c, t0]) => [c.blob, c.cam && c.cam.blob].filter(Boolean).forEach(b => {
+      const tt = c.cam && b === c.cam.blob ? Math.max(0, t0 - (c.cam.desfase || 0)) : t0;
       const m = EV.medios[b]; if (m && m.tipo === 'video' && !EV.snaps[claveSnap(b, tt)] && !out.some(o => o[0] === b && claveSnap(b, o[1]) === claveSnap(b, tt))) out.push([b, tt]);
     }));
   }
@@ -12233,7 +12267,7 @@ function pintarClipEV(x, c, local, W0, H0, vivo){
   if (f){ const zk = c.zoomLento ? 1 + 0.12 * (local / L) : 1; dibujarMedioEV(x, f.el, f.w, f.h, W0, H0, c.ajuste, zk); }
   // burbuja de la cámara
   if (c.cam && c.cam.visible !== false){
-    const fc = fuenteEV(c.cam.blob, tm, vivo);
+    const fc = fuenteEV(c.cam.blob, Math.max(0, tm - (c.cam.desfase || 0)), vivo);
     if (fc && fc.w){
       const lado = Math.min(W0, H0) * c.cam.tam, cx = c.cam.x * W0, cy = c.cam.y * H0;
       x.save(); x.beginPath();
@@ -12329,9 +12363,9 @@ function sincronizarEV(r, reproduciendo){
   const usados = elementosEnUso(r);
   Object.values(EV.medios).forEach(m => { if (m.el && m.el.pause && m.tipo !== 'audio' && !usados.some(u => u[0] === m.el)) m.el.pause(); });
   usados.forEach(([el, c, esCam]) => {
-    const quiero = c.ini + r.local * (c.vel || 1);
+    const quiero = Math.max(0, c.ini + r.local * (c.vel || 1) - (esCam ? (c.cam.desfase || 0) : 0));
     el.playbackRate = c.vel || 1;
-    if (el._gain) el._gain.gain.value = esCam || c.mute ? 0 : (c.vol ?? 1);
+    if (el._gain) el._gain.gain.value = (esCam && !c.cam.conAudio) || c.mute ? 0 : (c.vol ?? 1);
     if (reproduciendo){
       if (Math.abs(el.currentTime - quiero) > 0.35 || el.paused){ try { el.currentTime = quiero; } catch (e) {} }
       if (el.paused) el.play().catch(() => {});
@@ -12946,6 +12980,9 @@ async function grabarEV(modo, sinGuia){
   const pistas = [];
   let pantalla = null, cam = null, mic = null;
   const usaPantalla = modo === 'pantalla' || modo === 'ambas' || modo === 'presentacion';
+  // cámara del teléfono (si está conectado): graba allá con toda su calidad
+  const tel = modo !== 'pantalla' && typeof telefonoListoEV === 'function' && telefonoListoEV();
+  const vozTel = tel && (modo === 'camara' || TEL.vozDelTel);
   // guía: dónde activar el audio de la computadora en la ventana de Chrome
   if (usaPantalla && quierePc && !sinGuia && !leerLS('disenador_guiaAudioPc')){
     const r = await preguntaEV('🔊 Para grabar el sonido de tu computadora', guiaAudioPcHTML(modo), [{ t:'Cancelar', v:'no', clase:'btnS' }, { t:'Entendido, elegir pantalla', v:'si', clase:'btnP' }], 'No volver a mostrar');
@@ -12966,11 +13003,19 @@ async function grabarEV(modo, sinGuia){
         if (r.v === 'otra'){ pistas.forEach(st => st.getTracks().forEach(t => t.stop())); return grabarEV(modo, true); }
       }
     }
-    if (modo === 'camara' || modo === 'ambas' || modo === 'presentacion'){
-      cam = await navigator.mediaDevices.getUserMedia({ video:{ width:{ ideal:1280 }, height:{ ideal:720 }, facingMode:'user' }, audio:false });
+    if (!tel && (modo === 'camara' || modo === 'ambas' || modo === 'presentacion')){
+      try { cam = await navigator.mediaDevices.getUserMedia({ video:{ width:{ ideal:1280 }, height:{ ideal:720 }, facingMode:'user' }, audio:false }); }
+      catch (e) {
+        if (!/NotFound|NotReadable|Overconstrained|DevicesNotFound/i.test(e.name)) throw e;
+        // la compu no tiene cámara (o está ocupada): ofrecer la del teléfono
+        pistas.forEach(st => st.getTracks().forEach(t => t.stop()));
+        const r = await preguntaEV('📷 No encontré una cámara en esta compu', '<p>¿Quieres usar la cámara de tu <b>teléfono</b>? Escaneas un código y listo; el teléfono graba con toda su calidad.</p>', [{ t:'Cancelar', v:'no', clase:'btnS' }, { t:'📱 Usar mi teléfono', v:'tel', clase:'btnP' }]);
+        if (r.v === 'tel') conectarTelefonoEV();
+        return;
+      }
       pistas.push(cam);
     }
-    if (quiereMic){
+    if (quiereMic && !vozTel){
       try { mic = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true } }); pistas.push(mic); }
       catch (e) { toast('No se pudo usar el micrófono; se grabará sin tu voz.'); }
     }
@@ -12982,19 +13027,21 @@ async function grabarEV(modo, sinGuia){
   const ctx = audioEV(), mezcla = ctx.createMediaStreamDestination();
   [pantalla, mic].forEach(s => { if (s && s.getAudioTracks().length){ try { ctx.createMediaStreamSource(s).connect(mezcla); } catch (e) {} } });
   const hayAudio = (pantalla && pantalla.getAudioTracks().length) || (mic && mic.getAudioTracks().length);
-  const principal = new MediaStream([...(pantalla || cam).getVideoTracks(), ...(hayAudio ? mezcla.stream.getAudioTracks() : [])]);
+  const fuenteV = pantalla || cam;
+  const principal = fuenteV ? new MediaStream([...fuenteV.getVideoTracks(), ...(hayAudio ? mezcla.stream.getAudioTracks() : [])]) : null;
   const mime = mimeGrab();
   const crearRec = (stream, bps) => new MediaRecorder(stream, mime ? { mimeType:mime, videoBitsPerSecond:bps } : {});
-  GR = { modo, pistas, partes:[], partesCam:[], recP:crearRec(principal, 5e6), recC:(pantalla && cam) ? crearRec(new MediaStream(cam.getVideoTracks()), 1.5e6) : null, segundos:0, pausado:false };
-  GR.recP.ondataavailable = e => e.data.size && GR.partes.push(e.data);
+  GR = { modo, pistas, partes:[], partesCam:[], recP:principal ? crearRec(principal, 5e6) : null, recC:(pantalla && cam) ? crearRec(new MediaStream(cam.getVideoTracks()), 1.5e6) : null, segundos:0, pausado:false, tel, vozTel };
+  if (GR.recP) GR.recP.ondataavailable = e => e.data.size && GR.partes.push(e.data);
   if (GR.recC) GR.recC.ondataavailable = e => e.data.size && GR.partesCam.push(e.data);
   // vista en vivo de la cámara (solo cámara)
-  if (cam && !pantalla){ const v = $('evCamVivo').querySelector('video'); v.srcObject = cam; $('evCamVivo').hidden = false; }
+  if (!pantalla && (cam || (tel && TEL.stream))){ const v = $('evCamVivo').querySelector('video'); v.srcObject = cam || TEL.stream; v.classList.toggle('sinEspejo', !cam && TEL.info.camara === 'trasera'); $('evCamVivo').hidden = false; }
   // si deja de compartir la pantalla desde el aviso del navegador, se detiene
   if (pantalla) pantalla.getVideoTracks()[0].addEventListener('ended', () => detenerGrabacionEV());
   if ($('evCuenta').checked) await cuentaRegresivaEV();
   if (!GR) return;
-  GR.recP.start(1000); if (GR.recC) GR.recC.start(1000);
+  if (GR.recP) GR.recP.start(1000); if (GR.recC) GR.recC.start(1000);
+  if (tel){ GR.desfaseTel = 0; empezarTelEV().then(d => { if (GR) GR.desfaseTel = GR.recP ? d : 0; }); }
   GR.medidores = [];
   [['evNivelMic', mic], ['evNivelPc', pantalla]].forEach(([id, st]) => {
     const el = $(id); el.hidden = !(st && st.getAudioTracks().length); if (el.hidden) return;
@@ -13023,6 +13070,7 @@ function pausarGrabacionEV(){
   if (!GR) return;
   GR.pausado = !GR.pausado;
   [GR.recP, GR.recC].forEach(r => { if (!r) return; try { GR.pausado ? r.pause() : r.resume(); } catch (e) {} });
+  if (GR.tel) enviarTel({ t:GR.pausado ? 'pausa' : 'seguir' });
   $('evGrabPausa').textContent = GR.pausado ? '● Seguir' : '❚❚ Pausa';
 }
 async function detenerGrabacionEV(){
@@ -13031,13 +13079,24 @@ async function detenerGrabacionEV(){
   const parar = r => new Promise(ok => { if (!r || r.state === 'inactive') return ok(); r.onstop = ok; try { r.stop(); } catch (e) { ok(); } });
   await Promise.all([parar(g.recP), parar(g.recC)]);
   g.pistas.forEach(s => s.getTracks().forEach(t => t.stop()));
+  $('evGrabando').hidden = true; $('evCamVivo').hidden = true;
+  const deTel = g.tel ? await terminarTelEV() : null;
   $('evGrabando').hidden = true; $('evCamVivo').hidden = true; $('evCamVivo').querySelector('video').srcObject = null;
   const barra = $('evGrabando'); barra.classList.remove('flotante'); $('estudioVideo').appendChild(barra);
   GR = null;
   if (!$('estudioVideo').classList.contains('abierto')) await abrirEstudioVideo();
-  if (!g.partes.length) return toast('La grabación quedó vacía');
+  if (!g.partes.length && !deTel) return toast(g.tel ? 'No llegó el video del teléfono. Guárdalo desde el teléfono con «Guardar en este teléfono» y súbelo en ⬆ Subir.' : 'La grabación quedó vacía');
   cargando(true);
   try {
+    const nombreT = { pantalla:'Grabación de pantalla', camara:'Video de cámara', ambas:'Pantalla con cámara', presentacion:'Mi presentación' }[g.modo] + ' ' + new Date().toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
+    // solo cámara del teléfono: el video del teléfono es el clip
+    if (deTel && !g.partes.length){
+      const id = nid(); await guardarMedioEV(id, { blob:deTel.blob, nombre:nombreT + ' (teléfono)', tipo:'video', dur:deTel.dur });
+      const m = await cargarMedioEV(id), vertical = m.h > m.w, fmtVertical = (FORMATOS_EV[EV.p.formato] || [16, 9])[1] > (FORMATOS_EV[EV.p.formato] || [16, 9])[0];
+      agregarClipEV(id, m, { ajuste:vertical === fmtVertical ? 'cubrir' : 'encajar' });
+      return toast('✓ Video del teléfono listo (' + (m.w || '?') + '×' + (m.h || '?') + ', ' + fmtT(m.dur).replace(/\.\d$/, '') + ')');
+    }
+    if (g.tel && !deTel) toast('⚠ No llegó el video del teléfono: se guardó solo la pantalla. En el teléfono puedes usar «Guardar en este teléfono».');
     const tipo = (g.recP.mimeType || 'video/webm').split(';')[0];
     const nombre = { pantalla:'Grabación de pantalla', camara:'Video de cámara', ambas:'Pantalla con cámara', presentacion:'Mi presentación' }[g.modo] + ' ' + new Date().toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
     const id = nid(), dur = Math.max(0.5, g.segundos);
@@ -13047,6 +13106,10 @@ async function detenerGrabacionEV(){
     if (g.partesCam.length){
       const idc = nid(); await guardarMedioEV(idc, { blob:new Blob(g.partesCam, { type:tipo }), nombre:nombre + ' (cámara)', tipo:'video', dur });
       await cargarMedioEV(idc); camExtra = { blob:idc, x:0.86, y:0.8, tam:0.28, forma:'circulo', visible:true };
+    }
+    if (deTel){
+      const idc = nid(); await guardarMedioEV(idc, { blob:deTel.blob, nombre:nombre + ' (teléfono)', tipo:'video', dur:deTel.dur });
+      await cargarMedioEV(idc); camExtra = { blob:idc, x:0.86, y:0.8, tam:0.28, forma:'circulo', visible:true, desfase:g.desfaseTel || 0, conAudio:!!g.vozTel };
     }
     agregarClipEV(id, m, { fin:Math.min(m.dur || dur, dur + 0.5) || m.dur, cam:camExtra });
     toast('✓ Grabación lista en tu línea de tiempo (' + fmtT(dur).replace(/\.\d$/, '') + ').' + (camExtra ? ' Arrastra la burbuja para moverla.' : ''));
@@ -13342,6 +13405,158 @@ async function abrirPlantillasDeVideo(){ await abrirEstudioVideo(); tabEV('plant
   b.onclick = abrirPlantillasDeVideo;
   const guardar = panel.querySelector('[onclick="guardarComoPlantilla()"]');
   if (guardar) guardar.before(b); else panel.prepend(b);
+})();
+/* =========================================================
+   EL TELÉFONO COMO CÁMARA (para compus sin cámara)
+   - La compu muestra un QR; el teléfono abre camara.html y se conectan directo (WebRTC).
+     La nube (Firebase) solo sirve para que se encuentren: el video NO pasa por ningún servidor.
+   - Mientras grabas, la compu ve una vista previa en vivo. El teléfono graba con toda su calidad
+     y al terminar manda el archivo completo a la compu (por eso no se pierde calidad aunque el Wi-Fi sea lento).
+   ========================================================= */
+const TEL = { pc:null, dc:null, stream:null, conectado:false, codigo:null, info:{}, vozDelTel:true, recibiendo:null, unsub:null };
+function telefonoListoEV(){ return !!(TEL.conectado && TEL.dc && TEL.dc.readyState === 'open'); }
+function urlCamaraEV(c){
+  const base = /^https?:$/.test(location.protocol) && !/script\.google|googleusercontent/.test(location.host) ? location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '') : 'https://gamerpc.github.io/disenador/';
+  return base + 'camara.html#' + c;
+}
+const SENAL_TEL = window.__SENAL_PRUEBA || {
+  async db(){ if (!window.NUBE_LISTA) throw new Error('La nube no está configurada'); await window.NUBE_LISTA; return firebase.firestore(); },
+  async crear(c, offer){ await (await this.db()).collection('camaras').doc(c).set({ offer, creado:Date.now() }); },
+  escuchar(c, cb){ let off = () => {}; this.db().then(db => { off = db.collection('camaras').doc(c).onSnapshot(s => cb(s.exists ? s.data() : null), () => {}); }); return () => off(); },
+  async borrar(c){ try { await (await this.db()).collection('camaras').doc(c).delete(); } catch (e) {} }
+};
+const codigoAzarTel = () => { const a = new Uint8Array(18); crypto.getRandomValues(a); return [...a].map(b => 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]).join(''); };
+function esperarICETel(p, ms){ return new Promise(ok => { if (p.iceGatheringState === 'complete') return ok(); const t = setTimeout(ok, ms); p.addEventListener('icegatheringstatechange', () => { if (p.iceGatheringState === 'complete'){ clearTimeout(t); ok(); } }); }); }
+function qrSVGTel(texto){
+  const qr = window.qrcode(0, 'M'); qr.addData(texto); qr.make();
+  const n = qr.getModuleCount(); let d = '';
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) d += `M${c + 2} ${r + 2}h1v1h-1z`;
+  return `<svg viewBox="0 0 ${n + 4} ${n + 4}" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
+}
+
+/* ---------- conectar ---------- */
+async function conectarTelefonoEV(){
+  if (GR) return toast('Termina la grabación primero');
+  desconectarTelefonoEV(true);
+  const panel = $('evTelPanel'); panel.hidden = false;
+  $('evTelQR').innerHTML = '<p class="hint">Creando el código…</p>'; $('evTelPaso').textContent = '';
+  try {
+    if (!window.RTCPeerConnection) throw new Error('Este navegador no puede conectarse con el teléfono');
+    const codigo = codigoAzarTel(), pc = new RTCPeerConnection({ iceServers:[{ urls:['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }] });
+    Object.assign(TEL, { pc, codigo, conectado:false, info:{} });
+    const dc = pc.createDataChannel('apik', { ordered:true }); configurarCanalTel(dc); TEL.dc = dc;
+    pc.addTransceiver('video', { direction:'recvonly' });
+    pc.ontrack = e => { TEL.stream = e.streams[0] || new MediaStream([e.track]); const v = $('evTelVivo'); v.srcObject = TEL.stream; v.play().catch(() => {}); };
+    pc.onconnectionstatechange = () => {
+      if (pc !== TEL.pc) return;
+      if (pc.connectionState === 'failed') $('evTelPaso').innerHTML = '⚠ No se pudo conectar. Pon la compu y el teléfono en <b>la misma red Wi-Fi</b> y vuelve a intentar.';
+      if (pc.connectionState === 'disconnected' || pc.connectionState === 'closed') perdidaTelEV();
+    };
+    await pc.setLocalDescription(await pc.createOffer());
+    await esperarICETel(pc, 2500);
+    await SENAL_TEL.crear(codigo, pc.localDescription.sdp);
+    const url = urlCamaraEV(codigo);
+    await cargarQR();
+    $('evTelQR').innerHTML = qrSVGTel(url);
+    $('evTelLink').value = url;
+    $('evTelPaso').textContent = 'Esperando al teléfono…';
+    TEL.unsub = SENAL_TEL.escuchar(codigo, async d => {
+      if (!d || !d.answer || pc.currentRemoteDescription || pc !== TEL.pc) return;
+      $('evTelPaso').textContent = 'Teléfono encontrado, conectando…';
+      try { await pc.setRemoteDescription({ type:'answer', sdp:d.answer }); } catch (e) { $('evTelPaso').textContent = 'No se pudo conectar: ' + e.message; }
+    });
+  } catch (e) {
+    const sinPermiso = /permission|insufficient/i.test(e.message);
+    $('evTelQR').innerHTML = `<p class="hint">⚠ ${sinPermiso ? 'La nube no dejó crear el código: hay que publicar las reglas nuevas de <b>firestore.rules</b> en Firebase.' : esc(e.message)}</p>`;
+  }
+}
+function configurarCanalTel(dc){
+  dc.binaryType = 'arraybuffer';
+  dc.onopen = () => {
+    TEL.conectado = true; if (TEL.unsub){ TEL.unsub(); TEL.unsub = null; } SENAL_TEL.borrar(TEL.codigo);
+    $('evTelPanel').hidden = true; pintarTelEV(); toast('📱 Teléfono conectado: ya puedes grabar con su cámara');
+  };
+  dc.onclose = () => perdidaTelEV();
+  dc.onmessage = e => {
+    if (typeof e.data !== 'string'){ const r = TEL.recibiendo; if (r){ r.partes.push(e.data); r.llevo += e.data.byteLength; progresoTelEV(r.llevo / Math.max(1, r.tam)); } return; }
+    let m; try { m = JSON.parse(e.data); } catch (x) { return; }
+    if (m.t === 'info'){ TEL.info = m; pintarTelEV(); }
+    else if (m.t === 'grabando' && TEL.alGrabar){ const f = TEL.alGrabar; TEL.alGrabar = null; f(); }
+    else if (m.t === 'archivo'){ TEL.recibiendo = { ...m, partes:[], llevo:0 }; }
+    else if (m.t === 'fin' && TEL.recibiendo){ const r = TEL.recibiendo; TEL.recibiendo = null; if (TEL.alArchivo){ const f = TEL.alArchivo; TEL.alArchivo = null; f({ blob:new Blob(r.partes, { type:r.tipo || 'video/webm' }), dur:r.dur, res:r.res }); } }
+  };
+}
+function perdidaTelEV(){
+  if (!TEL.conectado) return;
+  TEL.conectado = false; pintarTelEV();
+  if (TEL.alArchivo){ const f = TEL.alArchivo; TEL.alArchivo = null; f(null); }
+  toast(GR ? '⚠ Se desconectó el teléfono. Su video quedó guardado allá: usa «Guardar en este teléfono».' : '📱 El teléfono se desconectó');
+}
+function desconectarTelefonoEV(silencio){
+  if (TEL.unsub){ TEL.unsub(); TEL.unsub = null; }
+  if (TEL.codigo && !TEL.conectado) SENAL_TEL.borrar(TEL.codigo);
+  const estaba = TEL.conectado; TEL.conectado = false;
+  try { TEL.dc && TEL.dc.close(); } catch (e) {} try { TEL.pc && TEL.pc.close(); } catch (e) {}
+  Object.assign(TEL, { pc:null, dc:null, stream:null, codigo:null });
+  if ($('evTelVivo')) $('evTelVivo').srcObject = null;
+  pintarTelEV(); if (estaba && !silencio) toast('📱 Teléfono desconectado');
+}
+const enviarTel = m => { if (telefonoListoEV()) TEL.dc.send(JSON.stringify(m)); };
+// empieza a grabar en el teléfono; devuelve cuánto tardó en arrancar (para emparejar con la pantalla)
+function empezarTelEV(){
+  return new Promise(ok => {
+    const t0 = performance.now();
+    TEL.alGrabar = () => ok(Math.max(0, (performance.now() - t0) / 2000));
+    enviarTel({ t:'grabar' }); setTimeout(() => { if (TEL.alGrabar){ TEL.alGrabar = null; ok(0); } }, 5000);
+  });
+}
+// detiene el teléfono y espera su archivo completo
+function terminarTelEV(){
+  return new Promise(ok => {
+    TEL.alArchivo = ok; enviarTel({ t:'detener' });
+    const caja = $('evTelRecibe'); caja.hidden = false; progresoTelEV(0);
+  }).finally(() => { $('evTelRecibe').hidden = true; });
+}
+function progresoTelEV(p){ const i = $('evTelProg'); if (i) i.style.width = Math.round(p * 100) + '%'; const t = $('evTelProgTxt'); if (t) t.textContent = p ? Math.round(p * 100) + '% recibido' : 'Esperando al teléfono…'; }
+
+/* ---------- interfaz ---------- */
+function pintarTelEV(){
+  const ok = telefonoListoEV(), est = $('evTelEstado'), btn = $('evTelConectar'); if (!est) return;
+  btn.hidden = ok; est.hidden = !ok;
+  if (ok) $('evTelInfo').innerHTML = `<b>📱 Teléfono conectado</b><small>Cámara ${esc(TEL.info.camara || '')} · ${esc(TEL.info.res || '')}</small>`;
+  document.querySelectorAll('.evModo[data-m="camara"], .evModo[data-m="ambas"], .evModo[data-m="presentacion"]').forEach(b => b.classList.toggle('conTel', ok));
+}
+(function(){
+  const g = $('etGrabar'); if (!g) return;
+  g.querySelector('.evModos').insertAdjacentHTML('beforebegin', `
+    <div class="evTel">
+      <button class="evTelBtn" id="evTelConectar"><span>📱</span><b>Usar la cámara de mi teléfono</b><small>Si tu compu no tiene cámara, o para verte mejor. El teléfono graba con toda su calidad.</small></button>
+      <div id="evTelEstado" class="evTelEstado" hidden>
+        <video id="evTelVivo" autoplay muted playsinline></video>
+        <div class="evTelTxt"><span id="evTelInfo"></span>
+          <label class="filaCheck"><input type="checkbox" id="evTelVoz" checked> Usar también el micrófono del teléfono</label>
+          <button class="pb" id="evTelDesc">Desconectar</button></div>
+      </div>
+    </div>`);
+  $('estudioVideo').insertAdjacentHTML('beforeend', `
+    <div id="evTelPanel" hidden><div class="caja">
+      <h3>📱 Usa tu teléfono como cámara</h3>
+      <div class="evTelPasos">
+        <div id="evTelQR" class="evTelQR"></div>
+        <ol><li>Abre la <b>cámara</b> de tu teléfono y apunta a este código (o abre el enlace).</li>
+          <li>Permite usar la cámara y el micrófono.</li>
+          <li>Listo: graba desde aquí, con los botones de siempre.</li></ol>
+      </div>
+      <label class="fila"><span>Enlace</span><input id="evTelLink" class="buscador" readonly onclick="this.select()"></label>
+      <p class="hint" id="evTelPaso"></p>
+      <p class="hint">💡 Funciona mejor con la compu y el teléfono en la <b>misma red Wi-Fi</b>. El video va directo a tu compu, no se sube a internet.</p>
+      <div class="acciones"><button class="btnS" id="evTelCancelar">Cancelar</button></div>
+    </div></div>
+    <div id="evTelRecibe" hidden><div class="caja"><h3>📱 Recibiendo el video del teléfono…</h3><p class="hint">Llega completo, con toda su calidad. No cierres la página en el teléfono.</p><div class="evBarraProg"><i id="evTelProg"></i></div><p class="hint" id="evTelProgTxt"></p></div></div>`);
+  $('evTelConectar').onclick = conectarTelefonoEV;
+  $('evTelCancelar').onclick = () => { $('evTelPanel').hidden = true; desconectarTelefonoEV(true); };
+  $('evTelDesc').onclick = () => desconectarTelefonoEV();
+  $('evTelVoz').onchange = e => { TEL.vozDelTel = e.target.checked; };
 })();
 /* =========================================================
    PESTAÑAS E INICIO

@@ -205,3 +205,9 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - Si se pidió el sonido de la computadora y Chrome no lo compartió (por ejemplo, al elegir una ventana), avisa antes de grabar y ofrece volver a elegir o seguir sin ese sonido.
 - El audio de la pantalla se pide sin cancelación de eco ni supresión de ruido (suena tal cual) y con `systemAudio`/`windowAudio`.
 - Mientras se graba, la barra muestra dos medidores en vivo: 🎤 tu voz y 🔊 el sonido de la computadora.
+
+## v52: el teléfono como cámara
+- `camara.html` (página para el teléfono) + `83-camara-del-telefono.js`: en Grabar, «📱 Usar la cámara de mi teléfono» muestra un QR; el teléfono abre la página y se conecta directo con la compu (WebRTC). Firestore (`camaras/{código}`) solo guarda los datos de conexión y se borra al conectar; el video nunca pasa por un servidor.
+- La compu ve una vista previa en vivo; el teléfono graba con MediaRecorder a su máxima calidad (720p, 1080p o 4K; MP4 en iPhone) y al detener manda el archivo completo por el canal de datos, con barra de avance. Si se corta la conexión, el teléfono puede guardar el video ahí mismo.
+- Funciona con «Cámara», «Pantalla + cámara» y «Mi presentación + cámara» (burbuja con el video del teléfono, su micrófono opcional y el desfase de arranque compensado). Si la compu no tiene cámara, el estudio ofrece usar el teléfono.
+- **Hay que publicar las reglas nuevas de `firestore.rules`** (sección `camaras`).
