@@ -1,7 +1,7 @@
 /* =========================================================
    PESTAÑAS E INICIO
    ========================================================= */
-document.querySelectorAll('#pestanas button').forEach(b => b.onclick = () => {
+document.querySelectorAll('#pestanas button[data-tab]').forEach(b => b.onclick = () => {   // solo las pestañas de panel (🎬 Video tiene su propio botón)
   if (esTel()){
     const abierto = $('lateral').classList.contains('abierto');
     if (abierto && b.classList.contains('activa')){ abrirLateral(false); return; }

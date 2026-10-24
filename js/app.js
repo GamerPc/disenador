@@ -7986,7 +7986,7 @@ function svgIcono(n){ return `<svg class="ico${n === 'play' ? ' relleno' : ''}" 
     [e => e.classList.contains('donar'), 6], [e => e.id === 'tamTxt', 7], [e => (e.getAttribute('onclick') || '') === 'nuevoDiseno()', 8],
     [e => (e.getAttribute('onclick') || '') === 'ajustarZoom()', 9], [e => e.id === 'grupoZoom', 10], [e => e.id === 'bNube', 11], [e => e.id === 'bEscuela', 11.5], [e => e.id === 'bEquipo', 11.7],
     [e => (e.getAttribute('onclick') || '').includes('mCompartir'), 12], [e => (e.getAttribute('onclick') || '').includes('mProyectos'), 13],
-    [e => e.id === 'grupoHist', 14], [e => (e.getAttribute('onclick') || '').includes('mPresentar'), 15]
+    [e => e.id === 'grupoHist', 14], [e => (e.getAttribute('onclick') || '').includes('mPresentar'), 15], [e => e.id === 'bVideo', 15.5]
   ];
   const prioridad = e => { for (const [f, p] of PRIOR) if (f(e)) return p; return 0; };
   const todos = [];        // orden original de la barra
@@ -8019,6 +8019,10 @@ function svgIcono(n){ return `<svg class="ico${n === 'play' ? ' relleno' : ''}" 
     [...menu.children].sort((a, b) => todos.indexOf(a) - todos.indexOf(b)).forEach(e => menu.appendChild(e));
     barra.classList.remove('soloIconos');
     if (!cabe()) barra.classList.add('soloIconos');        // pantallas muy angostas: Guardar y Exportar solo con ícono
+    // si aún no cabe (celular angosto o letra grande en el teléfono), se achica el nombre del diseño
+    const nom = $('nombreDiseno'); if (nom){ nom.style.width = ''; nom.style.minWidth = '';
+      if (!cabe()){ const sobra = barra.scrollWidth - barra.clientWidth + 2, w = nom.getBoundingClientRect().width;
+        nom.style.minWidth = '0'; nom.style.width = Math.max(48, w - sobra) + 'px'; } }
     acomodando = false;
   }
   const abrir = v => {
@@ -12401,7 +12405,7 @@ CATEGORIAS.splice(CATEGORIAS.indexOf(CAT_NEON) + 1, 0, CAT_ESQ);
 /* =========================================================
    PESTAÑAS E INICIO
    ========================================================= */
-document.querySelectorAll('#pestanas button').forEach(b => b.onclick = () => {
+document.querySelectorAll('#pestanas button[data-tab]').forEach(b => b.onclick = () => {   // solo las pestañas de panel (🎬 Video tiene su propio botón)
   if (esTel()){
     const abierto = $('lateral').classList.contains('abierto');
     if (abierto && b.classList.contains('activa')){ abrirLateral(false); return; }

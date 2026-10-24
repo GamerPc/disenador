@@ -221,3 +221,7 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - `85-esquemas-y-lineas-de-tiempo.js`: categoría «Esquemas y líneas de tiempo» (chip «🕒») con 19 plantillas editables.
 - Líneas del tiempo: con tarjetas y años, vertical (tamaño carta), en camino (de inicio a meta), por épocas, cronología en flechas, biografía y hoja de ruta por trimestres.
 - Esquemas: llaves de 3 niveles, árbol de izquierda a derecha (con conectores que siguen a las cajas), índice numerado (carta), rueda de 6 partes, pirámide de 5 niveles, embudo de 4 etapas, ciclo de 6 pasos, causas y consecuencias, comparación A vs B, escalera hacia la meta, Venn de 3 y matriz de prioridades 2×2.
+
+## v55: arreglos en celular
+- El botón 🎬 Video del riel/barra de abajo abría un panel vacío y daba el error «Cannot read properties of null (reading 'classList')»: las pestañas solo toman botones con `data-tab`.
+- Barra de arriba en celulares angostos (o con letra grande): «Video» también pasa al menú «⋯» y, si aún no cabe, el nombre del diseño se achica; «Exportar» siempre se ve.
