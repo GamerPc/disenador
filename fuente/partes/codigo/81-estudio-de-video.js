@@ -1171,14 +1171,3 @@ async function exportarEV(){
   bajarBlob(blob, (EV.p.nombre || 'Mi video').replace(/[\\/:*?"<>|]/g, '') + '.' + ext);
   toast('✓ Video descargado (' + (blob.size / 1048576).toFixed(1) + ' MB, ' + ext.toUpperCase() + ')' + (ext === 'webm' ? '. Si WhatsApp no lo acepta, créalo desde Chrome actualizado (sale en MP4).' : ''));
 }
-
-/* ---------- botones para entrar ---------- */
-(function(){
-  const b = document.createElement('button'); b.className = 'tb'; b.id = 'bVideo'; b.title = 'Estudio de video: graba tu pantalla o cámara y edita videos';
-  b.innerHTML = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/></svg><span class="txtLargo"> Video</span>';
-  b.onclick = abrirEstudioVideo;
-  const pres = [...document.querySelectorAll('#barra .tb')].find(x => (x.getAttribute('onclick') || '').includes('mPresentar'));
-  if (pres) pres.before(b); else $('barra').appendChild(b);
-  const r = document.createElement('button'); r.id = 'pestanaVideo'; r.title = 'Estudio de video'; r.innerHTML = '<span>🎬</span>Video'; r.onclick = abrirEstudioVideo;
-  $('pestanas').appendChild(r);
-})();

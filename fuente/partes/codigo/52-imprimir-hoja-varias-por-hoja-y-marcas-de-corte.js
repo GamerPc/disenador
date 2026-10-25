@@ -47,6 +47,7 @@ function marcasDeCorte(pdf, r){
 ['iPapel', 'iAcomodo', 'iAncho', 'iCopias', 'iMargen', 'iMarcas', 'ePaginas'].forEach(id => { $(id).addEventListener('change', infoImpresion); $(id).addEventListener('input', infoImpresion); });
 $('iAcomodo').addEventListener('change', () => { if ($('iAcomodo').value === 'varias') $('iMarcas').checked = true; infoImpresion(); });
 async function crearPDFHojas(lista){
+  await cargarJsPDF();
   const { jsPDF } = window.jspdf, L = acomodoHojas(), copias = Math.max(1, Math.min(200, +$('iCopias').value || 1));
   const items = []; lista.forEach(it => { for (let k = 0; k < copias; k++) items.push(it); });
   const pdf = new jsPDF({ orientation:L.pw > L.ph ? 'landscape' : 'portrait', unit:'mm', format:[L.pw, L.ph], compress:true });

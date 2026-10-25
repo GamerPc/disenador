@@ -420,6 +420,7 @@ function marcasDeCorte(pdf, r){
 ['iPapel', 'iAcomodo', 'iAncho', 'iCopias', 'iMargen', 'iMarcas', 'ePaginas'].forEach(id => { $(id).addEventListener('change', infoImpresion); $(id).addEventListener('input', infoImpresion); });
 $('iAcomodo').addEventListener('change', () => { if ($('iAcomodo').value === 'varias') $('iMarcas').checked = true; infoImpresion(); });
 async function crearPDFHojas(lista){
+  await cargarJsPDF();
   const { jsPDF } = window.jspdf, L = acomodoHojas(), copias = Math.max(1, Math.min(200, +$('iCopias').value || 1));
   const items = []; lista.forEach(it => { for (let k = 0; k < copias; k++) items.push(it); });
   const pdf = new jsPDF({ orientation:L.pw > L.ph ? 'landscape' : 'portrait', unit:'mm', format:[L.pw, L.ph], compress:true });
@@ -619,9 +620,9 @@ function actualizarTemaMarca(){
     CATALOGO.splice(k < 0 ? CATALOGO.length : k, 0, it);
   }
   clearTimeout(actualizarTemaMarca._t);
-  actualizarTemaMarca._t = setTimeout(() => {
-    it.vista = vistaDe(it.tam, it.crear);
-    if (it.boton && it.vista) it.boton.querySelector('.mini').innerHTML = `<img src="${it.vista}" alt="">`;
+  actualizarTemaMarca._t = setTimeout(() => {   // la miniatura se vuelve a dibujar cuando su tarjeta se vea
+    it.vista = '';
+    if (it.boton){ it.boton.querySelector('.mini').textContent = 'Preparando…'; pedirVista(it, it.boton); }
   }, 400);
   renderCatalogo();
 }

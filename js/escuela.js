@@ -11,6 +11,8 @@
   const aFecha = s => /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(s + 'T12:00:00') : new Date(s);
   const fecha = s => s ? aFecha(s).toLocaleDateString('es-MX', { day:'numeric', month:'short', year:'numeric' }) : '';
   const fechaHora = s => s ? new Date(s).toLocaleString('es-MX', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
+  const hoyISO = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+  const sinReglas = e => /permission|insufficient/i.test((e && (e.code || e.message)) || '');
   const codigoNuevo = () => { const L = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let c = ''; for (let i = 0; i < 6; i++) c += L[Math.floor(Math.random() * L.length)]; return c; };
   const grupos = () => N.db.collection('grupos');
   const sinPermiso = () => ({ docs:[], size:0 });     // si aún no se publican las reglas nuevas de avisos/exámenes, la escuela sigue funcionando
@@ -53,11 +55,27 @@
   .pregEx label{display:flex;gap:8px;align-items:flex-start;padding:7px 9px;border-radius:8px;margin:3px 0;cursor:pointer;color:inherit;font-size:14px}.pregEx label:hover{background:rgba(25,200,255,.08)}
   .pregEx label.bien{background:rgba(34,197,94,.16);outline:1px solid #22c55e}.pregEx label.mal{background:rgba(244,63,94,.14);outline:1px solid #f43f5e}
   .opEx{display:flex;gap:6px;align-items:center;margin:4px 0}.opEx input[type=text]{flex:1;margin:0}.opEx input[type=radio]{width:auto}
-  .resEx{font:800 30px/1 Poppins,sans-serif;color:var(--neon,#19c8ff);margin:8px 0}.barraEst{height:8px;border-radius:4px;background:var(--panel,#10131b);overflow:hidden;margin-top:4px}.barraEst i{display:block;height:100%;background:#22c55e}`;
+  .resEx{font:800 30px/1 Poppins,sans-serif;color:var(--neon,#19c8ff);margin:8px 0}.barraEst{height:8px;border-radius:4px;background:var(--panel,#10131b);overflow:hidden;margin-top:4px}.barraEst i{display:block;height:100%;background:#22c55e}
+  .i-duda{background:#fef9c3;color:#854d0e}
+  .cal{margin:6px 0 10px}.calCab{display:flex;align-items:center;gap:8px;margin-bottom:8px}.calCab b{flex:1;text-align:center;font:700 16px Poppins,Inter,sans-serif}.calCab .pb{padding:4px 12px;min-height:0}
+  .calGrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}.calDia{min-height:64px;border:1px solid var(--borde,#2a3140);border-radius:8px;padding:3px;background:var(--panel2,#151821);font-size:11px;overflow:hidden;cursor:pointer;color:inherit;text-align:left;font-family:inherit;display:flex;flex-direction:column;gap:2px}
+  .calDia.fuera{opacity:.35}.calDia.hoy{border-color:var(--neon,#19c8ff);box-shadow:inset 0 0 0 1px var(--neon,#19c8ff)}.calDia.sel{background:rgba(25,200,255,.12)}.calDia .n{font-weight:700;font-size:12px}.calSem{font-size:11px;text-align:center;color:var(--suave,#9ca3af);padding:2px 0}
+  .calEv{display:block;border-radius:4px;padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10.5px;line-height:1.35}.ce-act{background:#dbeafe;color:#1e3a8a}.ce-ex{background:#ede9fe;color:#5b21b6}.ce-ev{background:#fef3c7;color:#92400e}
+  .calLeyenda{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;margin:6px 0}.calLeyenda span{display:inline-flex;align-items:center;gap:4px}.calLeyenda i{width:10px;height:10px;border-radius:3px;display:inline-block}
+  @media (max-width:560px){.calDia{min-height:46px}.calEv{font-size:0;height:6px;padding:0}.calDia .n{font-size:11px}}
+  .lista{display:flex;flex-direction:column;gap:6px;margin:8px 0}.filaLista{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--borde,#2a3140);border-radius:10px;background:var(--panel2,#151821);flex-wrap:wrap}
+  .filaLista .t{flex:1;min-width:140px}.estados{display:flex;gap:3px}.estados button{border:1px solid var(--borde,#2a3140);background:var(--panel,#10131b);color:inherit;border-radius:8px;padding:6px 10px;font:700 13px Inter,sans-serif;cursor:pointer;min-width:38px}
+  .estados button.on[data-v=P]{background:#16a34a;border-color:#16a34a;color:#fff}.estados button.on[data-v=F]{background:#dc2626;border-color:#dc2626;color:#fff}.estados button.on[data-v=R]{background:#d97706;border-color:#d97706;color:#fff}.estados button.on[data-v=J]{background:#2563eb;border-color:#2563eb;color:#fff}
+  .tablaAs{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0}.tablaAs th,.tablaAs td{padding:6px 8px;border-bottom:1px solid var(--borde,#2a3140);text-align:center}.tablaAs th:first-child,.tablaAs td:first-child{text-align:left}
+  .chipsDias{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}.chipsDias .pb{padding:4px 10px;min-height:0;font-size:12px}.chipsDias .pb.on{border-color:var(--neon,#19c8ff);color:var(--neon,#19c8ff)}
+  .hilo{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow:auto;padding:4px 2px;margin:6px 0}.msj{max-width:85%;border-radius:12px;padding:8px 11px;background:var(--panel2,#151821);border:1px solid var(--borde,#2a3140);white-space:pre-wrap;font-size:14px;align-self:flex-start}
+  .msj.mio{align-self:flex-end;background:rgba(25,200,255,.12);border-color:rgba(25,200,255,.45)}.msj b{display:block;font-size:12px;margin-bottom:2px}.msj small{display:block;color:var(--suave,#9ca3af);font-size:11px;margin-top:3px}
+  .miAsis{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;margin:8px 0}`;
   document.head.appendChild(st);
   const cuerpo = () => $e('escCuerpo');
   let pila = [];                           // para el botón «atrás»
   function ver(titulo, fn, sinPila){
+    if (ver.limpiar){ try { ver.limpiar(); } catch (e) {} ver.limpiar = null; }
     if (!sinPila && ver.actual) pila.push(ver.actual);
     ver.actual = [titulo, fn];
     $e('escTitulo').textContent = titulo; $e('escAtras').hidden = !pila.length;
@@ -82,9 +100,10 @@
       const d = await grupos().doc(g.id).get().catch(() => null);
       g.existe = !!(d && d.exists); g.archivado = !!(g.existe && d.data().archivado);
       if (g.rol === 'alumno' && g.existe && !g.archivado){ g.pend = await pendientesDe(g.id).catch(() => null); g.avisos = await avisosNuevos(g.id).catch(() => 0); }
+      if (g.rol === 'maestro' && g.existe && !g.archivado) g.dudas = await dudasSinResponder(g.id).catch(() => 0);
     }));
     const item = g => `<button class="escItem" data-g="${esc(g.id)}"><span class="t"><b>${esc(g.nombre)}</b><small>${g.rol === 'maestro' ? 'Código: ' + esc(g.codigo || '') : 'Maestro(a): ' + esc(g.maestroNombre || '')}</small></span>
-        ${g.avisos ? `<span class="insig i-nuevo">📢 ${g.avisos} aviso${g.avisos > 1 ? 's' : ''}</span>` : ''}${g.pend && g.pend.pronto ? `<span class="insig i-tarde">⏰ ${g.pend.pronto} vence${g.pend.pronto > 1 ? 'n' : ''} pronto</span>` : g.pend && g.pend.n ? `<span class="insig i-pend">${g.pend.n} pendiente${g.pend.n > 1 ? 's' : ''}</span>` : ''}
+        ${g.dudas ? `<span class="insig i-duda">💬 ${g.dudas} pregunta${g.dudas > 1 ? 's' : ''}</span>` : ''}${g.avisos ? `<span class="insig i-nuevo">📢 ${g.avisos} aviso${g.avisos > 1 ? 's' : ''}</span>` : ''}${g.pend && g.pend.pronto ? `<span class="insig i-tarde">⏰ ${g.pend.pronto} vence${g.pend.pronto > 1 ? 'n' : ''} pronto</span>` : g.pend && g.pend.n ? `<span class="insig i-pend">${g.pend.n} pendiente${g.pend.n > 1 ? 's' : ''}</span>` : ''}
         <span class="insig ${g.rol === 'maestro' ? 'i-maestro' : 'i-alumno'}">${g.rol === 'maestro' ? 'Maestro' : 'Alumno'}</span></button>`;
     const activos = mios.filter(g => g.existe && !g.archivado), archivados = mios.filter(g => g.existe && g.archivado);
     cuerpo().innerHTML = `<div class="grupoBtns"><button class="pb" id="escCrear">＋ Crear un grupo (soy maestro)</button><button class="pb" id="escUnirme">🔑 Unirme con un código</button></div>
@@ -143,14 +162,15 @@
     const lista = acts.docs.map(d => ({ id:d.id, ...d.data() })).sort((a, b) => (b.creada || '').localeCompare(a.creada || ''));
     const examenes = exs.docs.map(d => ({ id:d.id, ...d.data() })).sort((a, b) => (b.creado || '').localeCompare(a.creado || ''));
     const avisos = avs.docs.map(d => ({ id:d.id, ...d.data() })).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
-    await Promise.all(lista.map(async a => { a.entregas = (await gref.collection('actividades').doc(a.id).collection('entregas').get()).docs.length; }));
+    await Promise.all(lista.map(async a => { const r = gref.collection('actividades').doc(a.id);
+      [a.entregas, a.dudas] = await Promise.all([r.collection('entregas').get().then(x => x.docs.length), r.collection('dudas').where('pendienteMaestro', '==', true).get().then(x => x.size).catch(() => 0)]); }));
     await Promise.all(examenes.map(async x => { x.resp = (await gref.collection('examenes').doc(x.id).collection('respuestas').get()).docs.length; }));
     const enlace = location.origin + location.pathname + '?grupo=' + g.codigo;
     cuerpo().innerHTML = `<p class="hint" style="padding-top:0">Código para tus alumnos:</p><div class="codigoGrande">${esc(g.codigo)}</div>
       ${g.archivado ? '<p class="hint"><span class="insig i-pend">🗄 Grupo archivado</span> Los alumnos lo ven en «archivados» y ya no reciben actividades nuevas.</p>' : ''}
       <div class="grupoBtns"><button class="pb" id="escCopiar">🔗 Copiar enlace para unirse</button><button class="pb" id="escNuevaAct">＋ Nueva actividad con el diseño actual</button>
-        <button class="pb" id="escNuevoEx">📝 Nuevo examen</button><button class="pb" id="escCalif">⬇ Calificaciones (Excel)</button><button class="pb" id="escArchivar">${g.archivado ? '♻ Reactivar grupo' : '🗄 Archivar grupo'}</button></div>
-      <h4>Actividades</h4><div class="escLista">${lista.length ? lista.map(a => `<button class="escItem" data-a="${esc(a.id)}"><span class="t"><b>${esc(a.titulo)}</b><small>${a.limite ? 'Entrega: ' + fecha(a.limite) : 'Sin fecha límite'}</small></span><span class="insig i-cal">${a.entregas || 0} de ${miembros.size}</span></button>`).join('')
+        <button class="pb" id="escNuevoEx">📝 Nuevo examen</button><button class="pb" id="escCalendario">📅 Calendario</button><button class="pb" id="escLista">✅ Pase de lista</button><button class="pb" id="escCalif">⬇ Calificaciones (Excel)</button><button class="pb" id="escArchivar">${g.archivado ? '♻ Reactivar grupo' : '🗄 Archivar grupo'}</button></div>
+      <h4>Actividades</h4><div class="escLista">${lista.length ? lista.map(a => `<button class="escItem" data-a="${esc(a.id)}"><span class="t"><b>${esc(a.titulo)}</b><small>${a.limite ? 'Entrega: ' + fecha(a.limite) : 'Sin fecha límite'}</small></span>${a.dudas ? `<span class="insig i-duda">💬 ${a.dudas}</span>` : ''}<span class="insig i-cal">${a.entregas || 0} de ${miembros.size}</span></button>`).join('')
         : '<p class="hint">Aún no hay actividades. Abre o diseña la plantilla que usarán tus alumnos y pulsa «Nueva actividad».</p>'}</div>
       <h4>Exámenes</h4><div class="escLista">${examenes.length ? examenes.map(x => `<button class="escItem" data-x="${esc(x.id)}"><span class="t"><b>📝 ${esc(x.titulo)}</b><small>${x.preguntas.length} pregunta${x.preguntas.length > 1 ? 's' : ''}${x.limite ? ' · hasta ' + fecha(x.limite) : ''}</small></span><span class="insig i-cal">${x.resp || 0} de ${miembros.size}</span></button>`).join('')
         : '<p class="hint">Sin exámenes. Crea uno de opción múltiple: se califica solo.</p>'}</div>
@@ -159,6 +179,8 @@
       ${avisos.map(v => `<div class="avisoEsc2"><button class="pb" data-borrarav="${esc(v.id)}" title="Borrar aviso" aria-label="Borrar aviso">✕</button>${esc(v.texto)}<small>${fechaHora(v.fecha)}</small></div>`).join('')}
       <h4>Alumnos (${miembros.size})</h4>${miembros.size ? `<div class="alumnos">${miembros.docs.map(m => `<span class="alumno">${esc(m.data().nombre)}<small>${esc(m.data().correo || '')}</small><button class="pb" data-sacar="${esc(m.id)}" title="Sacar del grupo" aria-label="Sacar a ${esc(m.data().nombre)} del grupo">✕</button></span>`).join('')}</div>` : '<p class="hint" style="padding-top:0">Todavía no se une nadie.</p>'}`;
     $e('escCalif').onclick = () => descargarCalificaciones(gid, g, miembros, lista);
+    $e('escCalendario').onclick = () => ver('📅 Calendario · ' + g.nombre, () => calendario(gid, true));
+    $e('escLista').onclick = () => ver('✅ Pase de lista · ' + g.nombre, () => paseDeLista(gid));
     $e('escArchivar').onclick = async () => {
       const v = !g.archivado;
       if (v && !confirm('¿Archivar «' + g.nombre + '»? Se guarda todo; solo deja de aparecer entre los grupos activos.')) return;
@@ -221,7 +243,8 @@
   }
   async function actividadMaestro(gid, aid){
     const gref = grupos().doc(gid), aref = gref.collection('actividades').doc(aid);
-    const [a, ents, miembros] = await Promise.all([aref.get(), aref.collection('entregas').get(), gref.collection('miembros').get()]);
+    const [a, ents, miembros, dds] = await Promise.all([aref.get(), aref.collection('entregas').get(), gref.collection('miembros').get(), aref.collection('dudas').get().catch(sinPermiso)]);
+    const dudas = dds.docs.map(d => ({ id:d.id, ...d.data() })).sort((x, y) => (y.pendienteMaestro ? 1 : 0) - (x.pendienteMaestro ? 1 : 0) || (y.ultimo || '').localeCompare(x.ultimo || ''));
     const act = a.data(), lista = ents.docs.map(d => ({ id:d.id, ...d.data() })).sort((x, y) => (x.nombre || '').localeCompare(y.nombre || ''));
     const faltan = miembros.docs.filter(m => !lista.some(e => e.id === m.id)).map(m => m.data().nombre);
     cuerpo().innerHTML = `${act.instrucciones ? `<p class="hint" style="padding-top:0;white-space:pre-wrap">${esc(act.instrucciones)}</p>` : ''}
@@ -234,7 +257,10 @@
         <div class="fila"><button class="pb" data-corr title="Abre la entrega para marcar, encerrar y comentar encima">✏ Corregir</button><button class="pb" data-dev title="Pedir al alumno que la corrija y la vuelva a entregar">↩ Devolver</button></div>
         <div class="fila"><button class="pb" data-abrir>Abrir</button>${act.rubrica ? '' : `<input type="number" min="0" max="10" step="0.1" placeholder="Cal." value="${e.calificacion ?? ''}" aria-label="Calificación">`}<button class="pb" data-cal>Guardar</button></div>
         <textarea rows="2" placeholder="Comentario para el alumno" style="width:100%;margin-top:6px;box-sizing:border-box" aria-label="Comentario">${esc(e.comentario || '')}</textarea></div></div>`).join('')}</div>
-      ${faltan.length ? `<p class="hint">Sin entregar: ${faltan.map(esc).join(' · ')}</p>` : ''}`;
+      ${faltan.length ? `<p class="hint">Sin entregar: ${faltan.map(esc).join(' · ')}</p>` : ''}
+      <h4>💬 Preguntas de tus alumnos</h4>${dudas.length ? `<div class="escLista">${dudas.map(d => `<button class="escItem" data-duda="${esc(d.id)}"><span class="t"><b>${esc(d.nombre || 'Alumno')}</b><small>${esc(d.ultimoTexto || '')}</small><small>${fechaHora(d.ultimo)}</small></span>${d.pendienteMaestro ? '<span class="insig i-duda">Sin responder</span>' : '<span class="insig i-ok">Respondida</span>'}</button>`).join('')}</div>`
+        : '<p class="hint" style="padding-top:0">Nadie ha preguntado nada. Si un alumno tiene una duda sobre esta actividad, aquí la verás y podrás contestarle.</p>'}`;
+    cuerpo().querySelectorAll('[data-duda]').forEach(b => b.onclick = () => { const d = dudas.find(x => x.id === b.dataset.duda); ver('💬 ' + (d.nombre || 'Alumno') + ' · ' + act.titulo, () => { cuerpo().innerHTML = '<div id="escHilo"></div>'; hiloDudas($e('escHilo'), gid, aid, d.id, true, d.nombre || 'Alumno'); }); });
     $e('escVerPlantilla').onclick = () => abrirDeNube(aref, act.titulo + ' (plantilla)', null);
     $e('escBorrarAct').onclick = async () => {
       if (!confirm('¿Borrar la actividad «' + act.titulo + '» y todas sus entregas?')) return;
@@ -393,8 +419,11 @@
     const acts = (await gref.collection('actividades').get()).docs.map(d => ({ id:d.id, ...d.data() })).sort((a, b) => (b.creada || '').localeCompare(a.creada || ''));
     const exs = (await gref.collection('examenes').get().catch(sinPermiso)).docs.map(d => ({ id:d.id, ...d.data() })).sort((a, b) => (b.creado || '').localeCompare(a.creado || ''));
     const avisos = (await gref.collection('avisos').get().catch(sinPermiso)).docs.map(d => ({ id:d.id, ...d.data() })).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
-    const mias = {}, misResp = {};
-    await Promise.all(acts.map(async a => { const s = await gref.collection('actividades').doc(a.id).collection('entregas').doc(uid).get(); if (s.exists) mias[a.id] = s.data(); }));
+    const mias = {}, misResp = {}, respondidas = {};
+    await Promise.all(acts.map(async a => { const r = gref.collection('actividades').doc(a.id);
+      const [s, d] = await Promise.all([r.collection('entregas').doc(uid).get(), r.collection('dudas').doc(uid).get().catch(() => null)]);
+      if (s.exists) mias[a.id] = s.data(); if (d && d.exists && d.data().pendienteAlumno) respondidas[a.id] = true; }));
+    const asis = await gref.collection('asistenciaAlumno').doc(uid).get().catch(() => null), miAs = asis && asis.exists ? asis.data() : null;
     await Promise.all(exs.map(async x => { const s = await gref.collection('examenes').doc(x.id).collection('respuestas').doc(uid).get(); if (s.exists) misResp[x.id] = s.data(); }));
     const visto = leerVisto(gid);
     const estado = a => { const e = mias[a.id]; if (!e) return `<span class="insig ${a.limite && new Date() > new Date(a.limite + 'T23:59:59') ? 'i-tarde' : 'i-pend'}">${a.limite && new Date() > new Date(a.limite + 'T23:59:59') ? 'Vencida' : 'Pendiente'}</span>`;
@@ -402,13 +431,16 @@
       return e.calificacion != null ? `<span class="insig i-cal">Calificación: ${e.calificacion}</span>` : e.corregida ? '<span class="insig i-corr">✏ Con correcciones</span>' : '<span class="insig i-ok">Entregada</span>'; };
     const estadoEx = x => { const r = misResp[x.id]; if (!r) return `<span class="insig ${x.limite && new Date() > new Date(x.limite + 'T23:59:59') ? 'i-tarde' : 'i-pend'}">${x.limite && new Date() > new Date(x.limite + 'T23:59:59') ? 'Vencido' : 'Por responder'}</span>`;
       return r.calificacion != null ? `<span class="insig i-cal">Calificación: ${r.calificacion}</span>` : '<span class="insig i-ok">Respondido</span>'; };
-    cuerpo().innerHTML = `${avisos.slice(0, 5).map(v => `<div class="avisoEsc2${(v.fecha || '') > visto ? ' nuevo' : ''}">📢 ${esc(v.texto)}<small>${fechaHora(v.fecha)}${(v.fecha || '') > visto ? ' · nuevo' : ''}</small></div>`).join('')}
+    cuerpo().innerHTML = `<div class="grupoBtns"><button class="pb" id="escCalendario">📅 Calendario del grupo</button></div>
+      ${miAs && miAs.total ? `<div class="miAsis">✅ <b>Mi asistencia: ${pctAsis(miAs)}%</b><span class="insig i-ok">${miAs.P || 0} asistencia${miAs.P === 1 ? '' : 's'}</span>${miAs.R ? `<span class="insig i-pend">${miAs.R} retardo${miAs.R > 1 ? 's' : ''}</span>` : ''}${miAs.F ? `<span class="insig i-tarde">${miAs.F} falta${miAs.F > 1 ? 's' : ''}</span>` : ''}${miAs.J ? `<span class="insig i-cal">${miAs.J} justificada${miAs.J > 1 ? 's' : ''}</span>` : ''}</div>` : ''}
+      ${avisos.slice(0, 5).map(v => `<div class="avisoEsc2${(v.fecha || '') > visto ? ' nuevo' : ''}">📢 ${esc(v.texto)}<small>${fechaHora(v.fecha)}${(v.fecha || '') > visto ? ' · nuevo' : ''}</small></div>`).join('')}
       ${exs.length ? `<h4>Exámenes</h4><div class="escLista">${exs.map(x => `<button class="escItem" data-x="${esc(x.id)}"><span class="t"><b>📝 ${esc(x.titulo)}</b><small>${x.preguntas.length} pregunta${x.preguntas.length > 1 ? 's' : ''}${x.limite ? ' · hasta ' + fecha(x.limite) : ''}</small></span>${estadoEx(x)}</button>`).join('')}</div><h4>Actividades</h4>` : ''}
-      <div class="escLista">${acts.length ? acts.map(a => `<button class="escItem" data-a="${esc(a.id)}">${a.mini ? `<img src="${a.mini}" alt="" style="width:64px;height:48px;object-fit:contain;background:#fff;border-radius:6px">` : ''}<span class="t"><b>${esc(a.titulo)}</b><small>${a.limite ? 'Entrega: ' + fecha(a.limite) : 'Sin fecha límite'}</small></span>${estado(a)}</button>`).join('')
+      <div class="escLista">${acts.length ? acts.map(a => `<button class="escItem" data-a="${esc(a.id)}">${a.mini ? `<img src="${a.mini}" alt="" style="width:64px;height:48px;object-fit:contain;background:#fff;border-radius:6px">` : ''}<span class="t"><b>${esc(a.titulo)}</b><small>${a.limite ? 'Entrega: ' + fecha(a.limite) : 'Sin fecha límite'}</small></span>${respondidas[a.id] ? '<span class="insig i-duda">💬 Te respondió</span>' : ''}${estado(a)}</button>`).join('')
       : '<p class="hint">Tu maestro todavía no publica actividades.</p>'}</div>`;
     cuerpo().querySelectorAll('[data-a]').forEach(b => b.onclick = () => { const a = acts.find(x => x.id === b.dataset.a); ver(a.titulo, () => actividadAlumno(gid, a.id)); });
     cuerpo().querySelectorAll('[data-x]').forEach(b => b.onclick = () => { const x = exs.find(y => y.id === b.dataset.x); ver('📝 ' + x.titulo, () => examenAlumno(gid, x.id)); });
     if (avisos.length) guardarVisto(gid, avisos[0].fecha);
+    $e('escCalendario').onclick = () => ver('📅 Calendario', () => calendario(gid, false));
   }
   async function actividadAlumno(gid, aid){
     const gref = grupos().doc(gid), aref = gref.collection('actividades').doc(aid), uid = N.usuario.uid;
@@ -421,7 +453,9 @@
       ${ent && ent.devuelta ? `<div class="devueltaMsg">↩ <b>Tu maestro te la devolvió para que la corrijas.</b>${ent.devueltaMsg ? '\n' + esc(ent.devueltaMsg) : ''}</div>` : ''}
       ${ent ? `<div class="escItem" style="cursor:default"><span class="t"><b>✓ Entregaste el ${fechaHora(ent.fecha)}</b>${ent.calificacion != null ? `<small>Calificación: <b>${ent.calificacion}${act.rubrica ? ' / ' + maxRub(act) : ''}</b></small>` : '<small>Tu maestro aún no califica.</small>'}${act.rubrica && ent.rubrica ? `<small>${act.rubrica.map((k, i) => esc(k.c) + ': ' + (ent.rubrica[i] ?? '—') + '/' + k.p).join(' · ')}</small>` : ''}${ent.comentario ? `<small>Comentario: ${esc(ent.comentario)}</small>` : ''}</span></div>` : ''}
       <div class="grupoBtns" style="margin-top:10px">${ent && ent.corregida ? '<button class="btnP" id="escVerCorr">👁 Ver las correcciones de mi maestro</button>' : ''}<button class="${ent && ent.corregida ? 'pb' : 'btnP'}" id="escEmpezar">${ent ? '✏ Abrir mi entrega para corregirla' : '✏ Empezar la actividad'}</button></div>
-      ${ent && ent.corregida ? '<p class="hint">Las marcas de tu maestro aparecen encima de tu trabajo. Corrige y vuelve a entregar; antes de entregar te preguntamos si quieres quitar las marcas.</p>' : ''}`;
+      ${ent && ent.corregida ? '<p class="hint">Las marcas de tu maestro aparecen encima de tu trabajo. Corrige y vuelve a entregar; antes de entregar te preguntamos si quieres quitar las marcas.</p>' : ''}
+      <h4>💬 ¿Tienes una duda? Pregúntale a tu maestro</h4><div id="escHilo"></div>`;
+    hiloDudas($e('escHilo'), gid, aid, uid, false);
     const ctx = { gid, aid, titulo:act.titulo, grupo:g.data().nombre, limite:act.limite };
     $e('escEmpezar').onclick = () => ent ? abrirDeNube(aref.collection('entregas').doc(uid), act.titulo, ctx) : abrirDeNube(aref, act.titulo, ctx);
     if ($e('escVerCorr')) $e('escVerCorr').onclick = () => abrirDeNube(aref.collection('entregas').doc(uid).collection('correccion').doc('ultima'), act.titulo + ' (con correcciones)', ctx);
@@ -443,16 +477,21 @@
   // ---------- banda de la actividad y entrega ----------
   const banda = document.createElement('div'); banda.id = 'bandaActividad'; banda.hidden = true; banda.setAttribute('role', 'status');
   banda.innerHTML = '<span id="bandaTxt"></span><span id="bandaHerr" hidden><button class="pb" data-h="marcador" title="Marcador rojo (dibuja encima)" aria-label="Marcador rojo">🖊</button><button class="pb" data-h="circulo" title="Encerrar en un círculo" aria-label="Círculo">⭕</button><button class="pb" data-h="nota" title="Nota o comentario" aria-label="Nota">💬</button><button class="pb" data-h="bien" title="Palomita: está bien" aria-label="Bien">✔</button><button class="pb" data-h="mal" title="Tache: revisar" aria-label="Revisar">✘</button></span>'
-    + '<button class="btnP" id="bEntregar">📤 Entregar</button><button class="btnP" id="bGuardarCorr" hidden>💾 Guardar corrección</button><button class="pb" id="bQuitarMarcas" hidden title="Quita las marcas que dejó tu maestro">🧹 Quitar marcas</button><button class="pb" id="bSalirAct" title="Dejar de trabajar en la actividad" aria-label="Dejar la actividad">✕</button>';
+    + '<button class="pb" id="bPreguntar" title="Pregúntale a tu maestro sobre esta actividad">💬 Preguntar</button><button class="btnP" id="bEntregar">📤 Entregar</button><button class="btnP" id="bGuardarCorr" hidden>💾 Guardar corrección</button><button class="pb" id="bQuitarMarcas" hidden title="Quita las marcas que dejó tu maestro">🧹 Quitar marcas</button><button class="pb" id="bSalirAct" title="Dejar de trabajar en la actividad" aria-label="Dejar la actividad">✕</button>';
   (document.getElementById('area') || document.body).appendChild(banda);
   function pintarBanda(){
     const a = window.ACTIVIDAD_ACTUAL, c = window.CORRECCION; banda.hidden = !a && !c;
     banda.classList.toggle('corr', !!c);
-    $e('bandaHerr').hidden = !c; $e('bGuardarCorr').hidden = !c; $e('bEntregar').hidden = !a;
+    $e('bandaHerr').hidden = !c; $e('bGuardarCorr').hidden = !c; $e('bEntregar').hidden = !a; $e('bPreguntar').hidden = !a || !!c;
     $e('bQuitarMarcas').hidden = !(a && hayMarcas());
     if (c) $e('bandaTxt').textContent = '✏ Corrigiendo a ' + c.nombre;
     else if (a) $e('bandaTxt').textContent = '🎓 ' + a.titulo + (a.limite ? ' · entrega: ' + fecha(a.limite) : '');
   }
+  $e('bPreguntar').onclick = () => {
+    const a = window.ACTIVIDAD_ACTUAL; if (!a || !N.usuario) return;
+    abrirModal('mEscuela'); pila = []; ver.actual = null;
+    ver('💬 ' + a.titulo, () => { cuerpo().innerHTML = '<p class="hint" style="padding-top:0">Solo tu maestro ve estos mensajes. Tu trabajo sigue abierto detrás de esta ventana.</p><div id="escHilo"></div>'; hiloDudas($e('escHilo'), a.gid, a.aid, N.usuario.uid, false); });
+  };
   $e('bSalirAct').onclick = () => { if (window.CORRECCION && !confirm('¿Dejar de corregir? Lo que no guardaste con «Guardar corrección» se queda solo aquí.')) return; window.ACTIVIDAD_ACTUAL = null; terminarCorreccion(); pintarBanda(); };
   // ---------- correcciones del maestro sobre la entrega ----------
   window.CORRECCION = null;
@@ -555,6 +594,163 @@
       if (pronto && !revisarPendientes.avisado){ revisarPendientes.avisado = true; toast('⏰ Tienes ' + pronto + ' actividad' + (pronto > 1 ? 'es' : '') + ' de la escuela que vence' + (pronto > 1 ? 'n' : '') + ' pronto. Ábrelas en 🎓 Escuela.'); }
     } catch (e) {}
   }
+
+  // ---------- 💬 preguntas del alumno dentro de una actividad (solo las ven él y su maestro) ----------
+  // actividades/{a}/dudas/{alumno}: resumen (quién debe contestar) · …/mensajes/{m}: cada mensaje
+  async function dudasSinResponder(gid){
+    const acts = (await grupos().doc(gid).collection('actividades').get()).docs;
+    const n = await Promise.all(acts.map(a => a.ref.collection('dudas').where('pendienteMaestro', '==', true).get().then(x => x.size).catch(() => 0)));
+    return n.reduce((s, x) => s + x, 0);
+  }
+  function hiloDudas(cont, gid, aid, uid, soyMaestro, nombreAlumno){
+    const dref = grupos().doc(gid).collection('actividades').doc(aid).collection('dudas').doc(uid), mref = dref.collection('mensajes'), yo = soyMaestro ? 'maestro' : 'alumno';
+    cont.innerHTML = `<div class="hilo" role="log" aria-live="polite"><p class="hint">Cargando…</p></div>
+      <div class="escForm"><textarea rows="2" maxlength="2000" aria-label="Mensaje" placeholder="${soyMaestro ? 'Responde a ' + esc(nombreAlumno || 'tu alumno') + '…' : 'Escribe tu pregunta (solo tu maestro la verá)…'}"></textarea>
+      <button class="btnP" style="margin-top:6px">💬 Enviar</button></div>`;
+    const caja = cont.querySelector('.hilo'), txt = cont.querySelector('textarea'), btn = cont.querySelector('button');
+    const pintar = docs => {
+      const ms = docs.map(d => d.data()).sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
+      caja.innerHTML = ms.length ? ms.map(m => `<div class="msj${m.de === yo ? ' mio' : ''}"><b>${m.de === yo ? 'Tú' : esc(m.nombre || (m.de === 'maestro' ? 'Maestro(a)' : 'Alumno'))}</b>${esc(m.texto)}<small>${fechaHora(m.fecha)}</small></div>`).join('')
+        : `<p class="hint">${soyMaestro ? 'Todavía no hay mensajes.' : 'Si algo de la actividad no te queda claro, escríbele aquí a tu maestro. Cuando te conteste, lo verás en 🎓 Escuela.'}</p>`;
+      caja.scrollTop = caja.scrollHeight;
+    };
+    // el alumno ya vio la respuesta: deja de salir «💬 Te respondió» (al maestro le sigue saliendo «sin responder» hasta que conteste)
+    if (!soyMaestro) dref.get().then(d => { if (d.exists && d.data().pendienteAlumno) dref.update({ pendienteAlumno:false }).catch(() => {}); }).catch(() => {});
+    const fallo = e => { caja.innerHTML = `<p class="hint">${sinReglas(e) ? 'Las preguntas todavía no están activadas: quien administra el Diseñador debe publicar las reglas nuevas de Firebase.' : 'No se pudieron cargar los mensajes: ' + esc(e.message || e)}</p>`; };
+    try { ver.limpiar = mref.onSnapshot(s => pintar(s.docs), fallo); } catch (e) { fallo(e); }
+    btn.onclick = async () => {
+      const texto = txt.value.trim(); if (!texto) return toast(soyMaestro ? 'Escribe tu respuesta' : 'Escribe tu pregunta');
+      btn.disabled = true;
+      try {
+        const u = N.usuario, ahora = N.ahora(), nombre = u.displayName || u.email || (soyMaestro ? 'Maestro(a)' : 'Alumno');
+        await mref.doc().set({ de:yo, nombre, texto, fecha:ahora });
+        await dref.set({ nombre:soyMaestro ? (nombreAlumno || 'Alumno') : nombre, ultimo:ahora, ultimoTexto:texto.slice(0, 140), ultimoDe:yo, pendienteMaestro:!soyMaestro, pendienteAlumno:soyMaestro });
+        txt.value = ''; toast(soyMaestro ? '💬 Respuesta enviada' : '💬 Pregunta enviada a tu maestro');
+      } catch (e) { toast(sinReglas(e) ? 'Las preguntas todavía no están activadas (faltan las reglas nuevas de Firebase).' : 'No se pudo enviar: ' + e.message); }
+      finally { btn.disabled = false; }
+    };
+  }
+
+  // ---------- 📅 calendario del grupo: actividades, exámenes y fechas que pone el maestro ----------
+  async function calendario(gid, soyMaestro, mesInicial){
+    const gref = grupos().doc(gid), uid = N.usuario.uid;
+    const [acts, exs, evs] = await Promise.all([gref.collection('actividades').get(), gref.collection('examenes').get().catch(sinPermiso), gref.collection('eventos').get().catch(sinPermiso)]);
+    const items = [
+      ...acts.docs.map(d => ({ id:d.id, tipo:'act', titulo:d.data().titulo, fecha:d.data().limite })),
+      ...exs.docs.map(d => ({ id:d.id, tipo:'ex', titulo:d.data().titulo, fecha:d.data().limite })),
+      ...evs.docs.map(d => ({ id:d.id, tipo:'ev', titulo:d.data().titulo, fecha:d.data().fecha, nota:d.data().nota || '' }))].filter(x => x.fecha && /^\d{4}-\d{2}-\d{2}$/.test(x.fecha)).sort((a, b) => a.fecha.localeCompare(b.fecha));
+    const hoy = hoyISO();
+    let mes = mesInicial || hoy.slice(0, 7), sel = null;
+    const ETQ = { act:'📄 Entrega', ex:'📝 Examen', ev:'📌' };
+    const pintar = () => {
+      const [y, m] = mes.split('-').map(Number), primero = new Date(y, m - 1, 1), dias = new Date(y, m, 0).getDate(), corr = (primero.getDay() + 6) % 7;
+      const celdas = [];
+      for (let i = 0; i < 42; i++){
+        const d = new Date(y, m - 1, 1 - corr + i), iso = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        if (i >= 35 && d.getMonth() !== m - 1) break;
+        const del = items.filter(x => x.fecha === iso);
+        celdas.push(`<button class="calDia${d.getMonth() !== m - 1 ? ' fuera' : ''}${iso === hoy ? ' hoy' : ''}${iso === sel ? ' sel' : ''}" data-dia="${iso}" aria-label="${d.toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'long' })}${del.length ? ': ' + del.length + ' pendiente' + (del.length > 1 ? 's' : '') : ''}"><span class="n">${d.getDate()}</span>${del.slice(0, 3).map(x => `<span class="calEv ce-${x.tipo}">${esc(x.titulo)}</span>`).join('')}${del.length > 3 ? `<span class="calEv">+${del.length - 3}</span>` : ''}</button>`);
+      }
+      const delMes = items.filter(x => x.fecha.startsWith(mes)), delDia = sel ? items.filter(x => x.fecha === sel) : null;
+      const fila = x => `<div class="filaLista"><span class="t"><b>${ETQ[x.tipo]} ${esc(x.titulo)}</b><small class="hint" style="padding:0;display:block">${fecha(x.fecha)}${x.nota ? ' · ' + esc(x.nota) : ''}</small></span>${x.tipo !== 'ev' ? `<button class="pb" data-ir="${x.tipo}:${esc(x.id)}">Abrir</button>` : soyMaestro ? `<button class="pb" data-borrarev="${esc(x.id)}" aria-label="Borrar fecha">✕</button>` : ''}</div>`;
+      cuerpo().innerHTML = `<div class="cal"><div class="calCab"><button class="pb" id="calAnt" aria-label="Mes anterior">‹</button><b>${(t => t[0].toUpperCase() + t.slice(1))(primero.toLocaleDateString('es-MX', { month:'long', year:'numeric' }))}</b><button class="pb" id="calHoy">Hoy</button><button class="pb" id="calSig" aria-label="Mes siguiente">›</button></div>
+        <div class="calGrid">${['L', 'M', 'M', 'J', 'V', 'S', 'D'].map(x => `<div class="calSem">${x}</div>`).join('')}${celdas.join('')}</div>
+        <div class="calLeyenda"><span><i class="ce-act"></i>Entregas</span><span><i class="ce-ex"></i>Exámenes</span><span><i class="ce-ev"></i>Fechas del grupo</span></div></div>
+        <h4>${sel ? fecha(sel) : 'En este mes'}</h4><div class="lista">${(delDia || delMes).map(fila).join('') || `<p class="hint" style="padding-top:0">${sel ? 'Nada para este día.' : 'Nada programado este mes.'}</p>`}</div>
+        ${soyMaestro ? `<h4>📌 Agregar una fecha para el grupo</h4><div class="escForm"><p class="hint" style="padding-top:0">Exposiciones, días sin clase, salidas, entrega de material… Tus alumnos la verán en su calendario.</p>
+          <div style="display:flex;gap:6px;flex-wrap:wrap"><input id="evFecha" type="date" value="${sel || hoy}" style="width:auto"><input id="evTit" class="buscador" maxlength="100" placeholder="Ej. Exposición por equipos" style="flex:1;min-width:160px;margin:0"></div>
+          <input id="evNota" class="buscador" maxlength="200" placeholder="Nota (opcional)" style="margin-top:6px"><button class="pb" id="evOk" style="margin-top:6px">📌 Agregar</button></div>` : ''}
+        <p class="hint" style="margin-top:12px"><button class="pb" id="calIcs">📥 Pasar a mi calendario (Google, Outlook, celular)</button></p>`;
+      $e('calAnt').onclick = () => { const d = new Date(y, m - 2, 1); mes = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); sel = null; pintar(); };
+      $e('calSig').onclick = () => { const d = new Date(y, m, 1); mes = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); sel = null; pintar(); };
+      $e('calHoy').onclick = () => { mes = hoy.slice(0, 7); sel = hoy; pintar(); };
+      cuerpo().querySelectorAll('[data-dia]').forEach(b => b.onclick = () => { sel = sel === b.dataset.dia ? null : b.dataset.dia; if (sel && !sel.startsWith(mes)) mes = sel.slice(0, 7); pintar(); });
+      cuerpo().querySelectorAll('[data-ir]').forEach(b => b.onclick = () => {
+        const [t, id] = b.dataset.ir.split(':'), x = items.find(i => i.id === id && i.tipo === t);
+        if (t === 'act') ver(x.titulo, () => soyMaestro ? actividadMaestro(gid, id) : actividadAlumno(gid, id));
+        else ver('📝 ' + x.titulo, () => soyMaestro ? examenMaestro(gid, id) : examenAlumno(gid, id));
+      });
+      cuerpo().querySelectorAll('[data-borrarev]').forEach(b => b.onclick = async () => {
+        if (!confirm('¿Borrar esta fecha del calendario?')) return;
+        try { await gref.collection('eventos').doc(b.dataset.borrarev).delete(); const k = items.findIndex(i => i.tipo === 'ev' && i.id === b.dataset.borrarev); if (k >= 0) items.splice(k, 1); pintar(); } catch (e) { toast('No se pudo: ' + e.message); }
+      });
+      if ($e('evOk')) $e('evOk').onclick = async () => {
+        const f = $e('evFecha').value, titulo = $e('evTit').value.trim(), nota = $e('evNota').value.trim();
+        if (!f) return toast('Elige la fecha'); if (!titulo) return toast('Escribe qué pasa ese día');
+        try { const r = gref.collection('eventos').doc(); await r.set({ titulo, fecha:f, nota, creado:N.ahora() });
+          items.push({ id:r.id, tipo:'ev', titulo, fecha:f, nota }); items.sort((a, b) => a.fecha.localeCompare(b.fecha)); mes = f.slice(0, 7); sel = f; pintar(); toast('📌 Fecha agregada al calendario del grupo'); }
+        catch (e) { toast(sinReglas(e) ? 'Para agregar fechas, publica las reglas nuevas de Firebase.' : 'No se pudo: ' + e.message); }
+      };
+      $e('calIcs').onclick = () => {
+        if (!items.length) return toast('Todavía no hay fechas en el calendario');
+        const t = s => String(s || '').replace(/[\;,]/g, m => '\\' + m).replace(/\n/g, '\\n');
+        const sig = iso => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10).replace(/-/g, ''); };
+        const sello = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+        const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Disenador Apik-Desing//Escuela//ES', 'CALSCALE:GREGORIAN',
+          ...items.flatMap(x => ['BEGIN:VEVENT', 'UID:' + x.tipo + '-' + x.id + '@disenador', 'DTSTAMP:' + sello, 'DTSTART;VALUE=DATE:' + x.fecha.replace(/-/g, ''), 'DTEND;VALUE=DATE:' + sig(x.fecha),
+            'SUMMARY:' + t((x.tipo === 'act' ? 'Entrega: ' : x.tipo === 'ex' ? 'Examen: ' : '') + x.titulo), ...(x.nota ? ['DESCRIPTION:' + t(x.nota)] : []), 'END:VEVENT']), 'END:VCALENDAR'].join('\r\n');
+        bajarBlob(new Blob([ics], { type:'text/calendar;charset=utf-8' }), 'Calendario del grupo.ics');
+        toast('📥 Ábrelo y se agrega a tu calendario (Google Calendar, Outlook o el del celular).');
+      };
+    };
+    pintar();
+  }
+
+  // ---------- ✅ pase de lista ----------
+  // asistencia/{AAAA-MM-DD}: lo que marcó el maestro ese día (solo él la ve)
+  // asistenciaAlumno/{alumno}: el resumen de cada alumno (lo ven él y su maestro)
+  const ESTADOS_AS = { P:'Presente', R:'Retardo', F:'Falta', J:'Justificada' };
+  const pctAsis = r => { const base = (r.total || 0) - (r.J || 0); return base > 0 ? Math.round(((r.P || 0) + (r.R || 0)) / base * 100) : 100; };
+  function resumenAsistencia(dias){
+    const r = {};
+    dias.forEach(d => Object.entries(d.estados || {}).forEach(([u, v]) => { const x = r[u] = r[u] || { P:0, R:0, F:0, J:0, total:0, registros:{} }; if (!ESTADOS_AS[v]) return; x[v]++; x.total++; x.registros[d.fecha] = v; }));
+    return r;
+  }
+  async function paseDeLista(gid, diaInicial){
+    const gref = grupos().doc(gid);
+    const [miembros, as] = await Promise.all([gref.collection('miembros').get(), gref.collection('asistencia').get().catch(e => { if (sinReglas(e)) return null; throw e; })]);
+    if (!as){ cuerpo().innerHTML = '<p class="hint" style="padding-top:0">El pase de lista todavía no está activado: quien administra el Diseñador debe publicar las reglas nuevas de Firebase (archivo firestore.rules).</p>'; return; }
+    const alumnos = miembros.docs.map(m => ({ id:m.id, nombre:m.data().nombre })).sort((a, b) => a.nombre.localeCompare(b.nombre));
+    const dias = as.docs.map(d => d.data()).filter(d => d.fecha).sort((a, b) => b.fecha.localeCompare(a.fecha));
+    let dia = diaInicial || hoyISO();
+    if (!alumnos.length){ cuerpo().innerHTML = '<p class="hint" style="padding-top:0">Todavía no hay alumnos en el grupo. Comparte el código para que se unan.</p>'; return; }
+    const pintar = () => {
+      const previo = dias.find(d => d.fecha === dia), est = { ...((previo && previo.estados) || {}) };
+      const res = resumenAsistencia(dias);
+      cuerpo().innerHTML = `<div class="escForm" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label for="asDia" style="margin:0">Día</label><input id="asDia" type="date" value="${dia}" style="width:auto">
+          <button class="pb" id="asTodos">✔ Todos presentes</button><span class="hint" style="padding:0">${previo ? '✓ Ya pasaste lista este día; puedes cambiarla.' : 'Toca el estado de cada alumno.'}</span></div>
+        <div class="lista">${alumnos.map(a => `<div class="filaLista" data-u="${esc(a.id)}"><span class="t"><b>${esc(a.nombre)}</b></span><span class="estados" role="radiogroup" aria-label="Asistencia de ${esc(a.nombre)}">${Object.entries(ESTADOS_AS).map(([k, v]) => `<button data-v="${k}" class="${est[a.id] === k ? 'on' : ''}" role="radio" aria-checked="${est[a.id] === k}" title="${v}">${k}</button>`).join('')}</span></div>`).join('')}</div>
+        <p class="hint" style="padding-top:0">P = presente · R = retardo · F = falta · J = justificada (no cuenta en contra).</p>
+        <button class="btnP" id="asGuardar">💾 Guardar el pase de lista</button>
+        ${dias.length ? `<h4>Días registrados (${dias.length})</h4><div class="chipsDias">${dias.map(d => `<button class="pb${d.fecha === dia ? ' on' : ''}" data-dia="${d.fecha}">${fecha(d.fecha)}</button>`).join('')}</div>
+        <h4>Resumen</h4><div style="overflow:auto"><table class="tablaAs"><thead><tr><th>Alumno</th><th>P</th><th>R</th><th>F</th><th>J</th><th>% asistencia</th></tr></thead><tbody>${alumnos.map(a => { const r = res[a.id] || { P:0, R:0, F:0, J:0, total:0 }; const pc = pctAsis(r);
+          return `<tr><td>${esc(a.nombre)}</td><td>${r.P}</td><td>${r.R}</td><td>${r.F}</td><td>${r.J}</td><td><b style="color:${pc >= 80 ? '#22c55e' : pc >= 60 ? '#f59e0b' : '#ef4444'}">${r.total ? pc + '%' : '—'}</b></td></tr>`; }).join('')}</tbody></table></div>
+        <p class="hint">% asistencia = (presentes + retardos) ÷ (días − justificadas). También sale en «⬇ Calificaciones (Excel)».</p>` : ''}`;
+      cuerpo().querySelectorAll('.filaLista').forEach(f => f.querySelectorAll('[data-v]').forEach(b => b.onclick = () => {
+        est[f.dataset.u] = b.dataset.v; f.querySelectorAll('[data-v]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', x === b); }); }));
+      $e('asTodos').onclick = () => cuerpo().querySelectorAll('.filaLista').forEach(f => { const b = f.querySelector('[data-v=P]'); if (!est[f.dataset.u] || est[f.dataset.u] === 'F') b.click(); });
+      $e('asDia').onchange = e => { if (e.target.value){ dia = e.target.value; pintar(); } };
+      cuerpo().querySelectorAll('[data-dia]').forEach(b => b.onclick = () => { dia = b.dataset.dia; pintar(); });
+      $e('asGuardar').onclick = async () => {
+        const sin = alumnos.filter(a => !est[a.id]);
+        if (sin.length && !confirm(`Faltan ${sin.length} alumno${sin.length > 1 ? 's' : ''} por marcar (${sin.slice(0, 3).map(a => a.nombre).join(', ')}${sin.length > 3 ? '…' : ''}). ¿Guardar así?`)) return;
+        cargando(true);
+        try {
+          const estados = {}; alumnos.forEach(a => { if (est[a.id]) estados[a.id] = est[a.id]; });
+          Object.keys(est).forEach(u => { if (!estados[u] && est[u]) estados[u] = est[u]; });     // alumnos que salieron del grupo
+          const nombres = {}; alumnos.forEach(a => { if (estados[a.id]) nombres[a.id] = a.nombre; });
+          const doc = { fecha:dia, estados, nombres, actualizada:N.ahora() };
+          await gref.collection('asistencia').doc(dia).set(doc);
+          const k = dias.findIndex(d => d.fecha === dia); if (k >= 0) dias[k] = doc; else { dias.push(doc); dias.sort((a, b) => b.fecha.localeCompare(a.fecha)); }
+          // el resumen de cada alumno (para que vea su asistencia)
+          const r = resumenAsistencia(dias);
+          await Promise.all(Object.keys(r).map(u => gref.collection('asistenciaAlumno').doc(u).set({ P:r[u].P, R:r[u].R, F:r[u].F, J:r[u].J, total:r[u].total, registros:r[u].registros, actualizada:N.ahora() })));
+          toast('✅ Lista guardada: ' + fecha(dia)); pintar();
+        } catch (e) { toast(sinReglas(e) ? 'Para pasar lista, publica las reglas nuevas de Firebase.' : 'No se pudo guardar: ' + e.message); } finally { cargando(false); }
+      };
+    };
+    pintar();
+  }
   // ---------- calificaciones en Excel (archivo CSV que Excel y Google Sheets abren) ----------
   async function descargarCalificaciones(gid, g, miembros, actividades){
     cargando(true);
@@ -562,6 +758,7 @@
       const gref = grupos().doc(gid), acts = actividades.slice().sort((a, b) => (a.creada || '').localeCompare(b.creada || ''));
       const alumnos = new Map(miembros.docs.map(m => [m.id, { nombre:m.data().nombre, correo:m.data().correo || '' }]));
       const notas = {};
+      (await gref.collection('asistencia').get().catch(sinPermiso)).docs.forEach(d => Object.keys(d.data().estados || {}).forEach(u => { if (!alumnos.has(u)) alumnos.set(u, { nombre:((d.data().nombres || {})[u] || 'Alumno') + ' (salió del grupo)', correo:'' }); }));
       for (const a of acts){
         const es = await gref.collection('actividades').doc(a.id).collection('entregas').get();
         es.docs.forEach(d => { const e = d.data(); if (!alumnos.has(d.id)) alumnos.set(d.id, { nombre:e.nombre + ' (salió del grupo)', correo:e.correo || '' }); (notas[d.id] = notas[d.id] || {})[a.id] = e; });
@@ -576,11 +773,16 @@
       const cols = [...acts.map(a => ({ id:a.id, nom:a.titulo + (a.rubrica ? ' (/' + maxRub(a) + ')' : ' (/10)'), max:a.rubrica ? maxRub(a) || 10 : 10, falta:'Sin entregar', hecho:'Entregada' })),
         ...exs.map(x => ({ id:'ex_' + x.id, nom:'Examen: ' + x.titulo + ' (/10)', max:10, falta:'Sin responder', hecho:'Respondido' }))];
       const celda = v => { const t = String(v ?? ''); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
-      const filas = [['Alumno', 'Correo', ...cols.map(c => c.nom), 'Promedio (0-10)']];
+      // asistencia (si el maestro pasa lista)
+      const dias = (await gref.collection('asistencia').get().catch(sinPermiso)).docs.map(d => d.data());
+      const asis = resumenAsistencia(dias);
+      const colAs = dias.length ? ['Asistencias', 'Retardos', 'Faltas', 'Justificadas', '% asistencia'] : [];
+      const filas = [['Alumno', 'Correo', ...cols.map(c => c.nom), 'Promedio (0-10)', ...colAs]];
       [...alumnos.entries()].sort((a, b) => a[1].nombre.localeCompare(b[1].nombre)).forEach(([uid, al]) => {
         const vals = cols.map(c => { const e = (notas[uid] || {})[c.id]; return !e ? c.falta : e.calificacion == null ? c.hecho : e.calificacion; });
         const sobre10 = cols.map((c, i) => typeof vals[i] === 'number' ? vals[i] * 10 / c.max : null).filter(v => v != null);
-        filas.push([al.nombre, al.correo, ...vals, sobre10.length ? (sobre10.reduce((s, v) => s + v, 0) / sobre10.length).toFixed(1) : '']);
+        const r = asis[uid] || { P:0, R:0, F:0, J:0, total:0 };
+        filas.push([al.nombre, al.correo, ...vals, sobre10.length ? (sobre10.reduce((s, v) => s + v, 0) / sobre10.length).toFixed(1) : '', ...(dias.length ? [r.P, r.R, r.F, r.J, r.total ? pctAsis(r) : ''] : [])]);
       });
       const csv = '\ufeff' + filas.map(f => f.map(celda).join(',')).join('\r\n');
       bajarBlob(new Blob([csv], { type:'text/csv;charset=utf-8' }), 'Calificaciones - ' + g.nombre.replace(/[\\/:*?"<>|]/g, '') + '.csv');

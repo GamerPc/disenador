@@ -16,12 +16,14 @@ document.querySelectorAll('#pestanas button[data-tab]').forEach(b => b.onclick =
 });
 
 (async function iniciar(){
-  try { await Promise.all(FUENTES.filter(f => !['Arial','Georgia','Times New Roman','Courier New','Verdana'].includes(f)).flatMap(f => [document.fonts.load(`400 40px "${f}"`), document.fonts.load(`700 40px "${f}"`)])); } catch(e){}
-  setTimeout(generarVistas, 300);
-  cargarMisPlantillas();
-  if (await abrirCompartidoSiHay()) return;
   let borrador = null;
   try { borrador = localStorage.getItem('disenador_borrador'); } catch(e){}
+  // solo se esperan las letras que usa tu último diseño (las demás se bajan cuando se usan): así abre más rápido
+  const usadas = new Set(['Inter']);
+  if (borrador) for (const m of borrador.matchAll(/fontFamily\\*":\\*"([^"\\]+)/g)) usadas.add(m[1].replace(/^'|'$/g, ''));
+  try { await Promise.race([Promise.all([...usadas].filter(f => FUENTES.includes(f) && !['Arial','Georgia','Times New Roman','Courier New','Verdana'].includes(f)).flatMap(f => [document.fonts.load(`400 40px "${f}"`), document.fonts.load(`700 40px "${f}"`)])), new Promise(r => setTimeout(r, 4000))]); } catch(e){}
+  cargarMisPlantillas();
+  if (await abrirCompartidoSiHay()) return;
   if (borrador){
     try { $('nombreDiseno').value = localStorage.getItem('disenador_nombre') || 'Mi diseño'; } catch(e){}
     cargarJSON(borrador, true, () => toast('Se recuperó tu último diseño'));

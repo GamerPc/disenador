@@ -161,9 +161,9 @@ function actualizarTemaMarca(){
     CATALOGO.splice(k < 0 ? CATALOGO.length : k, 0, it);
   }
   clearTimeout(actualizarTemaMarca._t);
-  actualizarTemaMarca._t = setTimeout(() => {
-    it.vista = vistaDe(it.tam, it.crear);
-    if (it.boton && it.vista) it.boton.querySelector('.mini').innerHTML = `<img src="${it.vista}" alt="">`;
+  actualizarTemaMarca._t = setTimeout(() => {   // la miniatura se vuelve a dibujar cuando su tarjeta se vea
+    it.vista = '';
+    if (it.boton){ it.boton.querySelector('.mini').textContent = 'Preparando…'; pedirVista(it, it.boton); }
   }, 400);
   renderCatalogo();
 }

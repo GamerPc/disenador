@@ -242,3 +242,11 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - Aviso simplificado junto a cada «Entrar con Google» (nube, escuela y equipo), nota al unirse a un grupo y al crear uno, y enlaces en Ayuda, inicio y guías.
 - Guías actualizadas (`guia.html` y PDF): corregir, devolver, avisos, exámenes y la nueva guía «🎬 Videos para clase» (`guia-videos.pdf`), con capturas nuevas.
 - Arreglos: la barra de corrección ya no se parte en dos líneas; en la calificación del alumno el comentario ya no se pega a la rúbrica.
+
+## v58: abre más rápido, calendario, pase de lista y preguntas en la actividad
+- **Carga más rápida**: el estudio de video vive aparte (`js/video.js`) y se baja solo cuando alguien lo abre (o al acercar el mouse al botón); la librería de PDF (jsPDF) se baja la primera vez que se exporta o imprime en PDF; las letras de Google ya no detienen la página; al abrir solo se esperan las fuentes del último diseño; y las miniaturas de plantillas se dibujan cuando su tarjeta se ve en pantalla (antes se dibujaban todas al abrir y trababan el celular). En un celular lento la app queda lista ~1 s antes y deja de trabarse los primeros segundos.
+- **📅 Calendario del grupo** (maestro y alumno): entregas, exámenes y fechas que agrega el maestro (`grupos/{g}/eventos`), por mes, con «📥 Pasar a mi calendario» (archivo `.ics` para Google Calendar, Outlook o el celular).
+- **✅ Pase de lista**: P / R / F / J por alumno y por día (`asistencia/{AAAA-MM-DD}`, solo el maestro) y el resumen de cada alumno (`asistenciaAlumno/{alumno}`, lo ve él). Resumen con % de asistencia y columnas nuevas en el Excel de calificaciones.
+- **💬 Preguntas en la actividad**: el alumno pregunta desde la actividad o con «💬 Preguntar» mientras la hace; el maestro ve «💬 N» en la actividad y en sus grupos y contesta. Solo los ven el alumno y su maestro (`actividades/{a}/dudas/{alumno}/mensajes`).
+- **Reglas de Firestore nuevas**: `eventos`, `asistencia`, `asistenciaAlumno` y `dudas` → hay que volver a publicar `firestore.rules`. Sin ellas, la escuela sigue funcionando y estas tres funciones avisan que faltan las reglas.
+- Aviso de privacidad y guías actualizados.

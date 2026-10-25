@@ -42,6 +42,18 @@ service cloud.firestore {
           allow read: if esMaestro() || esMiembro();
           allow write: if esMaestro();
         }
+        // preguntas del alumno sobre la actividad: solo las ven él y el maestro
+        match /dudas/{u} {
+          allow read: if esMaestro() || (request.auth != null && request.auth.uid == u);
+          allow write: if esMaestro() || (request.auth != null && request.auth.uid == u && esMiembro());
+          match /mensajes/{m} {
+            allow read: if esMaestro() || (request.auth != null && request.auth.uid == u);
+            allow create: if request.resource.data.texto is string && request.resource.data.texto.size() <= 2000
+              && ((esMaestro() && request.resource.data.de == 'maestro')
+                || (request.auth != null && request.auth.uid == u && esMiembro() && request.resource.data.de == 'alumno'));
+            allow delete: if esMaestro();
+          }
+        }
         match /entregas/{u} {
           allow read: if esMaestro() || (request.auth != null && request.auth.uid == u);
           // el alumno entrega (y vuelve a entregar) sin poder cambiarse la calificación; el maestro califica
@@ -83,6 +95,19 @@ service cloud.firestore {
             && !('calificacion' in request.resource.data) && !('aciertos' in request.resource.data);
           allow update, delete: if esMaestro();
         }
+      }
+      // calendario: fechas que agrega el maestro (exposiciones, días sin clase…)
+      match /eventos/{v} {
+        allow read: if esMaestro() || esMiembro();
+        allow write: if esMaestro();
+      }
+      // pase de lista: el día completo solo lo ve el maestro; cada alumno ve solo su resumen
+      match /asistencia/{f} {
+        allow read, write: if esMaestro();
+      }
+      match /asistenciaAlumno/{u} {
+        allow read: if esMaestro() || (request.auth != null && request.auth.uid == u);
+        allow write: if esMaestro();
       }
       // respuestas correctas: solo el maestro; el alumno, después de contestar y si el maestro eligió mostrar resultados
       match /claves/{x} {

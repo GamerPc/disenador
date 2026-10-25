@@ -243,11 +243,3 @@ async function usarPlantillaEV(pl){
 
 /* ---------- acceso directo desde el panel de Plantillas del diseño ---------- */
 async function abrirPlantillasDeVideo(){ await abrirEstudioVideo(); tabEV('plantillas'); }
-(function(){
-  const panel = $('tPlantillas'); if (!panel) return;
-  const b = document.createElement('button'); b.id = 'bPlantillasVideo'; b.className = 'tarjetaVideoPl';
-  b.innerHTML = '<span>🎬</span><b>Plantillas de video</b><small>Reels, TikTok, Instagram y YouTube · con transiciones</small>';
-  b.onclick = abrirPlantillasDeVideo;
-  const guardar = panel.querySelector('[onclick="guardarComoPlantilla()"]');
-  if (guardar) guardar.before(b); else panel.prepend(b);
-})();

@@ -2,7 +2,7 @@
 #   - apps-script/  → para Google Apps Script (guarda en Google Drive)
 #   - index.html + js/  → versión web para GitHub Pages u otro hosting (guarda en el navegador)
 # Uso:  python3 fuente/construir.py
-import re, glob, os, json, shutil
+import re, glob, os, json, shutil, hashlib
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/'
 FUENTE = RAIZ + 'fuente/'
 base = RAIZ + 'apps-script/'
@@ -145,7 +145,15 @@ w = w[:mw.start()] + '<script src="config.js"></script>\n<script src="js/almacen
 w = w.replace('<head>', '<head>\n<link rel="manifest" href="manifest.webmanifest">\n<meta name="theme-color" content="#05070d">\n<link rel="icon" type="image/png" href="icons/favicon.png">\n<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">\n<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-title" content="Diseñador">\n<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">', 1)
 w = w.replace('<script src="js/app.js"></script>', '<script src="js/app.js"></script>\n<script src="js/nube.js"></script>\n<script src="js/escuela.js"></script>\n<script src="js/equipo.js"></script>\n<script src="js/pwa.js"></script>', 1)
 open(RAIZ + 'index.html', 'w', encoding='utf-8').write(textosWeb(w))
-open(RAIZ + 'js/app.js', 'w', encoding='utf-8').write(textosWeb(js))
+# el estudio de video va aparte (js/video.js): se baja solo cuando alguien lo abre (ver «BOTONES DEL ESTUDIO DE VIDEO»)
+CAB = '\n/* =========================================================\n   '
+iv, fv = js.index(CAB + 'ESTUDIO DE VIDEO\n'), js.index(CAB + 'PLANTILLAS «NEÓN')
+assert js.count(CAB + 'ESTUDIO DE VIDEO\n') == 1 and iv < fv
+jsVideo, jsWeb = js[iv:fv], js[:iv] + js[fv:]
+open(RAIZ + 'js/video.js', 'w', encoding='utf-8').write('/* Estudio de video del Diseñador: se carga desde js/app.js cuando se abre */' + textosWeb(jsVideo))
+assert jsWeb.count("'js/video.js'") == 1
+jsWeb = jsWeb.replace("'js/video.js'", "'js/video.js?v=%s'" % hashlib.sha1(open(RAIZ + 'js/video.js', 'rb').read()).hexdigest()[:8])
+open(RAIZ + 'js/app.js', 'w', encoding='utf-8').write(textosWeb(jsWeb))
 shutil.copy(FUENTE + 'almacen-local.js', RAIZ + 'js/almacen-local.js')
 for f in ('pwa.js', 'nube.js', 'escuela.js', 'equipo.js'): shutil.copy(FUENTE + f, RAIZ + 'js/' + f)
 import hashlib
@@ -156,7 +164,7 @@ for x in ('config.js', 'js/almacen-local.js', 'js/app.js', 'js/nube.js', 'js/esc
     assert idx.count(f'src="{x}"') == 1, x
     idx = idx.replace(f'src="{x}"', f'src="{x}?v={huellaDe(x)}"')
 open(RAIZ + 'index.html', 'w', encoding='utf-8').write(idx)
-huella = hashlib.sha1(b''.join(open(RAIZ + x, 'rb').read() for x in ('index.html', 'config.js', 'js/app.js', 'js/almacen-local.js', 'js/pwa.js', 'js/nube.js', 'js/escuela.js', 'js/equipo.js'))).hexdigest()[:10]
+huella = hashlib.sha1(b''.join(open(RAIZ + x, 'rb').read() for x in ('index.html', 'config.js', 'js/app.js', 'js/video.js', 'js/almacen-local.js', 'js/pwa.js', 'js/nube.js', 'js/escuela.js', 'js/equipo.js'))).hexdigest()[:10]
 open(RAIZ + 'sw.js', 'w', encoding='utf-8').write(open(FUENTE + 'sw.plantilla.js', encoding='utf-8').read().replace('__VERSION__', huella))
 print('Service worker versión', huella)
-print('Web: index.html', len(w.encode('utf-8')), 'bytes; js/app.js', len(js.encode('utf-8')), 'bytes')
+print('Web: index.html', len(w.encode('utf-8')), 'bytes; js/app.js', len(jsWeb.encode('utf-8')), 'bytes; js/video.js', len(jsVideo.encode('utf-8')), 'bytes')

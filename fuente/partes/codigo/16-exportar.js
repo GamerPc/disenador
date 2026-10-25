@@ -28,7 +28,21 @@ function renderPagina(json, fmt, escala, transp){
     });
   });
 }
+// la librería de PDF (jsPDF) se baja solo la primera vez que alguien exporta o imprime en PDF
+const URL_JSPDF = ['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js'];
+let cargaJsPDF = null;
+function cargarJsPDF(){
+  if (window.jspdf) return Promise.resolve();
+  if (!cargaJsPDF) cargaJsPDF = (async () => {
+    for (const u of URL_JSPDF){
+      try { await new Promise((ok, mal) => { const s = document.createElement('script'); s.src = u; s.onload = ok; s.onerror = mal; document.head.appendChild(s); }); if (window.jspdf) return; } catch (e){}
+    }
+    cargaJsPDF = null; throw new Error('No se pudo cargar la herramienta de PDF. Revisa tu internet e intenta otra vez.');
+  })();
+  return cargaJsPDF;
+}
 async function crearPDF(lista, escala){
+  await cargarJsPDF();
   if ($('iPapel') && $('iPapel').value !== 'diseno') return crearPDFHojas(lista);
   const { jsPDF } = window.jspdf;
   const dpi = Math.max(W, H) >= 2000 ? 300 : 96;          // carta/A4 a 300 dpi salen a su tamaño real

@@ -19,6 +19,44 @@ function vistaDe(tam, crear){
   }
   return url;
 }
+// Las miniaturas se dibujan solo cuando su tarjeta se ve en pantalla (antes se hacían todas al abrir y trababan el celular)
+let fuentesVistas = null;
+function fuentesParaVistas(){   // las letras de las plantillas se bajan la primera vez que hace falta una miniatura
+  if (!fuentesVistas) fuentesVistas = Promise.race([
+    Promise.all(FUENTES.filter(f => !['Arial','Georgia','Times New Roman','Courier New','Verdana'].includes(f)).flatMap(f => [document.fonts.load(`400 40px "${f}"`), document.fonts.load(`700 40px "${f}"`)])).catch(() => {}),
+    new Promise(r => setTimeout(r, 6000))]);
+  return fuentesVistas;
+}
+const colaVistas = [];
+let haciendoVistas = false;
+const pausaVista = () => new Promise(r => ('requestIdleCallback' in window) ? requestIdleCallback(() => r(), { timeout:400 }) : setTimeout(r, 30));
+async function hacerVistas(){
+  if (haciendoVistas) return; haciendoVistas = true;
+  try {
+    await fuentesParaVistas();
+    while (colaVistas.length){
+      const it = colaVistas.shift();
+      if (it.vista || !it.crear) continue;
+      await pausaVista();
+      it.vista = vistaDe(it.tam, it.crear);
+      if (it.boton && it.vista) it.boton.querySelector('.mini').innerHTML = `<img src="${it.vista}" alt="">`;
+    }
+  } finally { haciendoVistas = false; }
+}
+const vigiaVistas = ('IntersectionObserver' in window) ? new IntersectionObserver(ents => {
+  ents.forEach(e => {
+    if (!e.isIntersecting) return;
+    vigiaVistas.unobserve(e.target);
+    const it = e.target.__it; if (it && !it.vista && it.crear && !colaVistas.includes(it)) colaVistas.push(it);
+  });
+  hacerVistas();
+}, { rootMargin:'300px 0px' }) : null;
+function pedirVista(it, b){
+  if (it.vista || !it.crear) return;
+  if (vigiaVistas){ b.__it = it; vigiaVistas.observe(b); }
+  else { colaVistas.push(it); hacerVistas(); }
+}
+function generarVistas(){ hacerVistas(); }
 const CATALOGO = [];
 ORGANIZADORES.forEach(o => CATALOGO.push({ nombre:o.nombre, cat:o.cat, tam:o.tam, crear:o.crear, usar:() => usarOrganizador(o) }));
 DIAGRAMAS.forEach((d, i) => CATALOGO.push({ nombre:d.nombre, cat: d.nombre.startsWith('Mapa') ? CAT_MAPAS : CAT_PROC, tam:d.tam, crear:d.crear,
@@ -66,6 +104,7 @@ function renderCatalogo(){
       b.onmouseleave = () => { $('vistaGrande').style.display = 'none'; };
       it.boton = b;
       grid.appendChild(b);
+      pedirVista(it, b);
     });
     cont.appendChild(grid);
   });
@@ -80,12 +119,4 @@ function renderCatalogo(){
 $('buscarPlantilla').addEventListener('input', renderCatalogo);
 renderCatalogo();
 // Genera las miniaturas poco a poco para no trabar la app
-async function generarVistas(){
-  for (const it of CATALOGO){
-    if (it.vista || !it.crear) continue;
-    await new Promise(r => setTimeout(r, 25));
-    it.vista = vistaDe(it.tam, it.crear);
-    if (it.boton && it.vista) it.boton.querySelector('.mini').innerHTML = `<img src="${it.vista}" alt="">`;
-  }
-}
 
