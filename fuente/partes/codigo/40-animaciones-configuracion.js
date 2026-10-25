@@ -2,7 +2,8 @@
    ANIMACIONES (configuración)
    ========================================================= */
 const TIPOS_ANIM = [['ninguna','Sin animación'],['aparecer','Aparecer'],['arriba','Deslizar hacia arriba'],['abajo','Deslizar hacia abajo'],
-  ['izquierda','Entrar por la izquierda'],['derecha','Entrar por la derecha'],['zoom','Acercar'],['rebote','Rebotar'],['girar','Girar'],['escribir','Escribir (texto)']];
+  ['izquierda','Entrar por la izquierda'],['derecha','Entrar por la derecha'],['zoom','Acercar'],['rebote','Rebotar'],['girar','Girar'],['escribir','Escribir (texto)'],
+  ['caer','Caer y rebotar'],['voltear','Voltear'],['diagonal','Entrar en diagonal'],['encoger','Encoger (de grande a normal)']];
 $('aTipo').innerHTML = TIPOS_ANIM.map(([v, n]) => `<option value="${v}">${n}</option>`).join('');
 function objetivosAnim(){
   const lst = [];

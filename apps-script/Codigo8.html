@@ -57,7 +57,7 @@ function estadoEn(d, t){
     if (t >= it.t0 + it.largo){ mostrarFinal(it); return; }
     const p = (t - it.t0) / it.largo;
     if (it.a.tipo === 'escribir' && typeof f.text === 'string' && f.text.length){ o.set({ text:f.text.slice(0, Math.round(p * f.text.length)), opacity:f.opacity }); return; }
-    const ease = it.a.tipo === 'rebote' ? fabric.util.ease.easeOutBack : fabric.util.ease.easeOutCubic;
+    const ease = easeAnim(it.a.tipo);
     const e = ease(p * it.largo, 0, 1, it.largo);
     ['left','top','scaleX','scaleY','angle'].forEach(k => o.set(k, i0[k] + (f[k] - i0[k]) * e));
     o.set('opacity', Math.max(0, Math.min(1, i0.opacity + (f.opacity - i0.opacity) * Math.min(1, e * 1.4))));

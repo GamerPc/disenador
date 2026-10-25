@@ -107,6 +107,8 @@ function prepararPasos(sc){
   }));
   return pasos;
 }
+// la forma de moverse de cada animación
+const easeAnim = tipo => tipo === 'rebote' ? fabric.util.ease.easeOutBack : tipo === 'caer' ? fabric.util.ease.easeOutBounce : fabric.util.ease.easeOutCubic;
 function estadoInicial(it){
   const { o, a, fin:f } = it, dx = W * 0.18, dy = H * 0.18;
   const base = { opacity:0 };
@@ -119,6 +121,10 @@ function estadoInicial(it){
     case 'rebote':    Object.assign(base, { scaleX:f.scaleX * 0.05, scaleY:f.scaleY * 0.05 }); break;
     case 'girar':     Object.assign(base, { angle:f.angle - 200, scaleX:f.scaleX * 0.2, scaleY:f.scaleY * 0.2 }); break;
     case 'escribir':  if (typeof f.text === 'string' && f.text.length){ o.set({ text:'', opacity:f.opacity }); return; } break;
+    case 'caer':      Object.assign(base, { top:f.top - H * 0.6, opacity:f.opacity }); break;
+    case 'voltear':   Object.assign(base, { scaleX:f.scaleX * 0.02 }); break;
+    case 'diagonal':  Object.assign(base, { left:f.left - dx, top:f.top + dy }); break;
+    case 'encoger':   Object.assign(base, { scaleX:f.scaleX * 1.9, scaleY:f.scaleY * 1.9 }); break;
   }
   o.set(base);
 }
@@ -133,7 +139,7 @@ function animarItem(d, it){
     return;
   }
   const ini = { left:o.left, top:o.top, opacity:o.opacity, scaleX:o.scaleX, scaleY:o.scaleY, angle:o.angle };
-  const ease = a.tipo === 'rebote' ? fabric.util.ease.easeOutBack : fabric.util.ease.easeOutCubic;
+  const ease = easeAnim(a.tipo);
   fabric.util.animate({ startValue:0, endValue:1, duration:dur, easing:ease,
     onChange: t => {
       ['left','top','scaleX','scaleY','angle'].forEach(k => o.set(k, ini[k] + (f[k] - ini[k]) * t));

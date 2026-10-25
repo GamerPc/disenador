@@ -56,7 +56,40 @@ service cloud.firestore {
             allow read: if esMaestro() || (request.auth != null && request.auth.uid == u);
             allow write: if request.auth != null && request.auth.uid == u && esMiembro();
           }
+          // corrección del maestro encima de la entrega (el alumno solo la puede ver)
+          match /correccion/{c} {
+            allow read: if esMaestro() || (request.auth != null && request.auth.uid == u);
+            allow write: if esMaestro();
+            match /partes/{p} {
+              allow read: if esMaestro() || (request.auth != null && request.auth.uid == u);
+              allow write: if esMaestro();
+            }
+          }
         }
+      }
+      // avisos del maestro para todo el grupo
+      match /avisos/{v} {
+        allow read: if esMaestro() || esMiembro();
+        allow write: if esMaestro();
+      }
+      // exámenes de opción múltiple: las preguntas las ven todos los del grupo; las respuestas correctas van aparte
+      match /examenes/{x} {
+        allow read: if esMaestro() || esMiembro();
+        allow write: if esMaestro();
+        match /respuestas/{u} {
+          allow read: if esMaestro() || (request.auth != null && request.auth.uid == u);
+          // el alumno contesta una sola vez y no puede ponerse calificación; el maestro la guarda
+          allow create: if request.auth != null && request.auth.uid == u && esMiembro()
+            && !('calificacion' in request.resource.data) && !('aciertos' in request.resource.data);
+          allow update, delete: if esMaestro();
+        }
+      }
+      // respuestas correctas: solo el maestro; el alumno, después de contestar y si el maestro eligió mostrar resultados
+      match /claves/{x} {
+        allow read: if esMaestro() || (request.auth != null
+          && exists(/databases/$(database)/documents/grupos/$(g)/examenes/$(x)/respuestas/$(request.auth.uid))
+          && get(/databases/$(database)/documents/grupos/$(g)/examenes/$(x)).data.mostrarResultados == true);
+        allow write: if esMaestro();
       }
     }
 

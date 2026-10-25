@@ -251,7 +251,7 @@ function cajaDe(o){
   const r = o.getBoundingRect(true, true), pad = Math.ceil((o.shadow ? (o.shadow.blur || 0) + Math.max(Math.abs(o.shadow.offsetX || 0), Math.abs(o.shadow.offsetY || 0)) : 0) + (o.strokeWidth || 0) + 2);
   return { left:Math.floor(r.left - pad), top:Math.floor(r.top - pad), width:Math.ceil(r.width + 2 * pad), height:Math.ceil(r.height + 2 * pad) };
 }
-const ANIM_CSS = { arriba:'arriba', abajo:'abajo', izquierda:'izquierda', derecha:'derecha', zoom:'zoom', rebote:'rebote', girar:'girar', aparecer:'aparecer', escribir:'aparecer' };
+const ANIM_CSS = { arriba:'arriba', abajo:'abajo', izquierda:'izquierda', derecha:'derecha', zoom:'zoom', rebote:'rebote', girar:'girar', aparecer:'aparecer', escribir:'aparecer', caer:'abajo', voltear:'zoom', diagonal:'izquierda', encoger:'aparecer' };
 async function paginaAHTML(json, num, ctx){
   const sc = new fabric.StaticCanvas(document.createElement('canvas'), { width:W, height:H, enableRetinaScaling:false, renderOnAddRemove:false });
   const j = JSON.parse(JSON.stringify(json || PAGINA_VACIA()));

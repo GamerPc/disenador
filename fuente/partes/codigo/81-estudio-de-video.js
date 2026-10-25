@@ -229,12 +229,26 @@ function componerTransEV(x, tipo, p, A, B, W, H){
   }
   x.restore();
 }
+// acercamientos (zoom) dentro del clip: c.zooms = [{ ini, dur, x, y, k }] (tiempos del clip, punto 0-1, nivel)
+function zoomEnEV(c, t){
+  for (const z of c.zooms || []){
+    if (t < z.ini || t > z.ini + z.dur) continue;
+    const e = suaveEV(Math.max(0, Math.min(1, (t - z.ini) / 0.5, (z.ini + z.dur - t) / 0.5)));
+    const k = 1 + (z.k - 1) * e, lim = 0.5 / k;
+    return { k, x:Math.max(lim, Math.min(1 - lim, 0.5 + (z.x - 0.5) * e)), y:Math.max(lim, Math.min(1 - lim, 0.5 + (z.y - 0.5) * e)) };
+  }
+  return null;
+}
 function pintarClipEV(x, c, local, W0, H0, vivo){
   const L = largoClip(c);
   x.save();
   if (c.fundido) x.globalAlpha = Math.max(0, Math.min(1, local / 0.5, (L - local) / 0.5));
   const tm = c.ini + local * (c.vel || 1), f = fuenteEV(c.blob, tm, vivo);
-  if (f){ const zk = c.zoomLento ? 1 + 0.12 * (local / L) : 1; dibujarMedioEV(x, f.el, f.w, f.h, W0, H0, c.ajuste, zk); }
+  if (f){
+    const zk = c.zoomLento ? 1 + 0.12 * (local / L) : 1, zf = zoomEnEV(c, local);
+    x.save(); if (zf){ x.translate(W0 / 2, H0 / 2); x.scale(zf.k, zf.k); x.translate(-W0 * zf.x, -H0 * zf.y); }
+    dibujarMedioEV(x, f.el, f.w, f.h, W0, H0, c.ajuste, zk); x.restore();
+  }
   // burbuja de la cámara
   if (c.cam && c.cam.visible !== false){
     const fc = fuenteEV(c.cam.blob, Math.max(0, tm - (c.cam.desfase || 0)), vivo);
@@ -619,7 +633,7 @@ function pintarLineaEV(){
     const L = largoClip(c), m = EV.medios[c.blob] || {}, x = 90 + acc * EV.pps; acc += L;
     const sel = EV.sel && EV.sel.tipo === 'clip' && EV.sel.id === c.id;
     return `<div class="clipEv${sel ? ' sel' : ''}${c.tipo === 'imagen' ? ' img' : ''}" data-id="${c.id}" data-i="${i}" style="left:${x}px;width:${Math.max(6, L * EV.pps - 2)}px;background-image:url('${m.thumb || ''}')" title="${esc(c.nombre)} · ${fmtT(L)}">
-      <span class="asaEv izq" data-asa="izq"></span><b>${c.cam ? '📷 ' : ''}${esc(c.nombre)}</b><small>${fmtT(L)}${c.vel !== 1 ? ' · ' + c.vel + '×' : ''}${c.mute ? ' · 🔇' : ''}</small><span class="asaEv der" data-asa="der"></span></div>`;
+      ${(c.zooms || []).map(z => `<i class="zoomEv" style="left:${z.ini * EV.pps}px;width:${Math.max(4, z.dur * EV.pps)}px" title="Acercamiento ${z.k}×"></i>`).join('')}<span class="asaEv izq" data-asa="izq"></span><b>${c.cam ? '📷 ' : ''}${(c.zooms || []).length ? '🔍 ' : ''}${esc(c.nombre)}</b><small>${fmtT(L)}${c.vel !== 1 ? ' · ' + c.vel + '×' : ''}${c.mute ? ' · 🔇' : ''}</small><span class="asaEv der" data-asa="der"></span></div>`;
   }).join('');
   // rombos de transición entre clips
   acc = 0;
@@ -707,6 +721,14 @@ function pintarInspectorEV(){
       <label class="fila"><span>Ajuste</span><select data-c="ajuste"><option value="cubrir"${c.ajuste === 'cubrir' ? ' selected' : ''}>Llenar toda la pantalla</option><option value="encajar"${c.ajuste === 'encajar' ? ' selected' : ''}>Que se vea completo</option></select></label>
       <label class="filaCheck"><input type="checkbox" data-c="fundido"${c.fundido ? ' checked' : ''}> Aparecer y desaparecer desde negro</label>
       ${idx > 0 ? `<label class="fila"><span>Transición al entrar</span><select data-c="trans">${Object.entries(TRANS_EV).map(([k, n]) => `<option value="${k}"${(c.trans && c.trans.tipo || 'ninguna') === k ? ' selected' : ''}>${n}</option>`).join('')}</select></label>` : ''}
+      <h4>🔍 Acercamientos</h4>
+      <p class="hint" style="margin-top:0">Acércate a una parte (por ejemplo, donde das clic) durante unos segundos.</p>
+      ${(c.zooms || []).map((z, j) => `<div class="evZoomItem" data-z="${j}">
+        <label class="fila"><span>Empieza</span><input type="number" step="0.1" min="0" data-zk="ini" value="${z.ini.toFixed(1)}"> s</label>
+        <label class="fila"><span>Dura</span><input type="number" step="0.1" min="0.6" data-zk="dur" value="${z.dur.toFixed(1)}"> s</label>
+        <label class="fila"><span>Cuánto</span><input type="range" min="1.2" max="4" step="0.1" data-zk="k" value="${z.k}"><b>${z.k}×</b></label>
+        <div class="filaPop"><button class="pb" data-zpunto>🎯 Elegir el punto en el video</button><button class="pb" data-zver>▶ Ver</button><button class="pb peligro" data-zquitar aria-label="Quitar acercamiento">🗑</button></div></div>`).join('')}
+      <button class="bigbtn" id="evInsZoom">🔍 Acercar aquí (en la línea roja)</button>
       ${c.cam ? `<h4>📷 Burbuja de la cámara</h4>
         <label class="filaCheck"><input type="checkbox" data-cam="visible"${c.cam.visible !== false ? ' checked' : ''}> Mostrar</label>
         <label class="fila"><span>Tamaño</span><input type="range" min="0.12" max="0.6" step="0.01" data-cam="tam" value="${c.cam.tam}"></label>
@@ -735,6 +757,21 @@ function pintarInspectorEV(){
     box.querySelectorAll('[data-esq]').forEach(b => b.onclick = () => { const [x, y] = b.dataset.esq.split(',').map(Number); c.cam.x = x; c.cam.y = y; cuadroEV(); guardarProyectoEV(); });
     $('evInsDividir').onclick = dividirEV; $('evInsBorrar').onclick = borrarSelEV;
     $('evInsReemplazar').onclick = () => abrirReemplazoEV(c);
+    $('evInsZoom').onclick = () => {
+      const ini0 = Math.max(0, EV.t - inicioClipEV(c.id)), L = largoClip(c), dur = Math.min(3, Math.max(0.8, L - ini0));
+      if (L - ini0 < 0.8) return toast('Mueve la línea roja un poco antes del final del clip');
+      (c.zooms = c.zooms || []).push({ ini:+ini0.toFixed(2), dur:+dur.toFixed(2), x:0.5, y:0.5, k:2 });
+      guardarProyectoEV(); pintarLineaEV(); pintarInspectorEV(); elegirPuntoZoomEV(c, c.zooms.length - 1);
+    };
+    box.querySelectorAll('.evZoomItem').forEach(div => {
+      const j = +div.dataset.z, z = c.zooms[j];
+      div.querySelectorAll('[data-zk]').forEach(inp => { const k = inp.dataset.zk;
+        const ap = () => { const v = +inp.value; if (k === 'k'){ z.k = v; inp.nextElementSibling.textContent = v + '×'; } else if (k === 'ini') z.ini = Math.max(0, Math.min(largoClip(c) - 0.3, v || 0)); else z.dur = Math.max(0.6, v || 1); pintarLineaEV(); verEnEV(inicioClipEV(c.id) + z.ini + Math.min(z.dur / 2, 0.8)); };
+        inp.oninput = ap; inp.onchange = () => { ap(); guardarProyectoEV(); }; });
+      div.querySelector('[data-zpunto]').onclick = () => elegirPuntoZoomEV(c, j);
+      div.querySelector('[data-zver]').onclick = () => { const b = inicioClipEV(c.id) + z.ini; reproducirEV(false); verEnEV(Math.max(0, b - 0.5)); EV.pararEn = b + z.dur + 0.5; const fin = EV.pararEn; reproducirEV(true); EV.pararEn = fin; };
+      div.querySelector('[data-zquitar]').onclick = () => { c.zooms.splice(j, 1); guardarProyectoEV(); pintarLineaEV(); pintarInspectorEV(); verEnEV(EV.t); };
+    });
     $('evInsDup').onclick = () => { const i = EV.p.clips.indexOf(c), n = JSON.parse(JSON.stringify(c)); n.id = nid(); EV.p.clips.splice(i + 1, 0, n); EV.sel = { tipo:'clip', id:n.id }; guardarProyectoEV(); pintarTodoEV(); };
     const mover = d => { const i = EV.p.clips.indexOf(c), j = i + d; if (j < 0 || j >= EV.p.clips.length) return; EV.p.clips.splice(i, 1); EV.p.clips.splice(j, 0, c); guardarProyectoEV(); pintarTodoEV(); };
     $('evInsIzq').onclick = () => mover(-1); $('evInsDer').onclick = () => mover(1);
@@ -805,6 +842,8 @@ function dividirEV(){
   const r = clipEnEV(EV.t); if (!r) return toast('Pon la línea roja sobre un clip');
   const c = r.c; if (r.local < 0.1 || largoClip(c) - r.local < 0.1) return toast('Mueve la línea roja un poco más adentro del clip');
   const corte = c.ini + r.local * (c.vel || 1), n = JSON.parse(JSON.stringify(c)); n.id = nid(); n.ini = corte; c.fin = corte;
+  if (c.zooms){ n.zooms = c.zooms.map(z => ({ ...z, ini:z.ini - r.local })).filter(z => z.ini + z.dur > 0.2).map(z => z.ini < 0 ? { ...z, dur:z.dur + z.ini, ini:0 } : z); c.zooms = c.zooms.filter(z => z.ini < r.local - 0.2).map(z => ({ ...z, dur:Math.min(z.dur, r.local - z.ini) })); }
+  n.trans = null;   // al partir un clip, el corte nuevo no lleva transición
   EV.p.clips.splice(r.i + 1, 0, n); EV.sel = { tipo:'clip', id:n.id };
   guardarProyectoEV(); pintarTodoEV(); toast('✂ Clip dividido');
 }
@@ -914,6 +953,26 @@ function reemplazarConMedioEV(c, id, m){
   if (m.tipo === 'video' && m.dur > largo + 0.5) toast('🎞 Se usan los primeros ' + fmtT(largo).replace(/\.0$/, '') + ' s del video. Jala la orilla del clip para usar más.');
   EV.sel = { tipo:'clip', id:c.id }; guardarProyectoEV(); pintarTodoEV(); verEnEV(inicioClipEV(c.id) + 0.05);
 }
+
+/* ---------- elegir el punto del acercamiento tocando la vista previa ---------- */
+function elegirPuntoZoomEV(c, j){
+  EV.eligiendoZoom = { c, j }; $('evLienzo').style.cursor = 'crosshair'; $('evLienzo').classList.add('eligiendo');
+  const z = c.zooms[j]; reproducirEV(false); verEnEV(inicioClipEV(c.id) + z.ini + 0.01);
+  toast('🎯 Toca en el video el lugar al que quieres acercarte');
+}
+(function(){
+  const cv = $('evLienzo');
+  cv.addEventListener('pointerdown', e => {
+    const el = EV.eligiendoZoom; if (!el) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    const b = cv.getBoundingClientRect(), z = el.c.zooms[el.j];
+    if (z){ z.x = Math.max(0, Math.min(1, (e.clientX - b.left) / b.width)); z.y = Math.max(0, Math.min(1, (e.clientY - b.top) / b.height)); }
+    EV.eligiendoZoom = null; cv.style.cursor = ''; cv.classList.remove('eligiendo');
+    guardarProyectoEV(); pintarInspectorEV();
+    if (z) verEnEV(inicioClipEV(el.c.id) + z.ini + Math.min(z.dur / 2, 1));
+    toast('🔍 Listo. Toca «▶ Ver» para mirarlo en movimiento.');
+  }, true);
+})();
 
 /* ---------- grabar ---------- */
 const tiposGrabacion = ['video/mp4;codecs=avc1.42E01F,mp4a.40.2', 'video/mp4;codecs=avc1,mp4a.40.2', 'video/mp4;codecs=avc1,opus', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/mp4', 'video/webm'];   // MP4 con H.264 primero (WhatsApp, Windows, celulares)

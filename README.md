@@ -225,3 +225,13 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 ## v55: arreglos en celular
 - El botón 🎬 Video del riel/barra de abajo abría un panel vacío y daba el error «Cannot read properties of null (reading 'classList')»: las pestañas solo toman botones con `data-tab`.
 - Barra de arriba en celulares angostos (o con letra grande): «Video» también pasa al menú «⋯» y, si aún no cabe, el nombre del diseño se achica; «Exportar» siempre se ve.
+
+## v56: herramientas para el salón, zoom en video, animaciones y más plantillas
+- **Corregir sobre la entrega** (`escuela.js`): el maestro toca «✏ Corregir», la entrega se abre con una barra de marcador rojo, círculo, nota, palomita y tache (y cualquier herramienta normal); todo lo que agrega queda marcado como corrección (`esCorreccion`). «💾 Guardar corrección» la guarda en `entregas/{alumno}/correccion/ultima`; el alumno la abre con «👁 Ver las correcciones», puede quitar las marcas y volver a entregar.
+- **Devolver**: el maestro devuelve una entrega con un mensaje; regresa a los pendientes del alumno («↩ Corrígela») hasta que la vuelve a entregar («✓ La corrigió»).
+- **Avisos al grupo**: el maestro publica avisos; el alumno los ve al entrar al grupo y como insignia «📢 nuevo» en sus grupos.
+- **Exámenes de opción múltiple**: preguntas con 2 a 6 opciones, fecha límite y opción de mostrar el resultado al terminar. Las respuestas correctas viven aparte (`claves/{examen}`); el alumno contesta una sola vez y la calificación (sobre 10) la calcula y guarda el maestro. Estadística por pregunta y columna en el Excel de calificaciones.
+- **Reglas de Firestore nuevas**: `correccion`, `avisos`, `examenes/respuestas` y `claves` (hay que volver a publicar `firestore.rules`). Si aún no se publican, la escuela sigue funcionando sin avisos ni exámenes.
+- **Video**: acercamientos dentro de un clip (`c.zooms`): «🔍 Acercar aquí», elegir el punto tocando el video, cuánto y cuánto dura; entra y sale suave; se reparten al dividir el clip.
+- **Animaciones nuevas**: caer y rebotar, voltear, entrar en diagonal y encoger (presentación, video y página web).
+- `86-plantillas-ciencias-mate-y-carteles.js`: «🔬 Ciencias y mate» (método científico, reporte de laboratorio, la célula, ciclo del agua, datos y gráfica, ficha de elemento, formulario, problema paso a paso, plano cartesiano, fracciones) y «📣 Carteles escolares» (feria de ciencias, kermés, convocatoria, concurso de ofrendas, aviso a padres, torneo, graduación, semana de la lectura).
