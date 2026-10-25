@@ -44,7 +44,7 @@
   }
   async function unirse(eid){
     await N.listo;
-    if (!N.usuario){ abrirModal('mEquipo'); pintarModal(`<p class="hint" style="padding-top:0">Te invitaron a editar un diseño en equipo. Entra con tu cuenta de Google para entrar.</p><button class="bigbtn" id="eqEntrar" style="text-align:center;font-weight:700">Entrar con Google</button>`);
+    if (!N.usuario){ abrirModal('mEquipo'); pintarModal(`<p class="hint" style="padding-top:0">Te invitaron a editar un diseño en equipo. Entra con tu cuenta de Google para entrar.</p><button class="bigbtn" id="eqEntrar" style="text-align:center;font-weight:700">Entrar con Google</button>${window.legalEntrar ? legalEntrar() : ''}`);
       $e('eqEntrar').onclick = async () => { await N.entrar(); if (await esperarUsuario()){ cerrarModal('mEquipo'); unirse(eid); } }; return; }
     cargando(true);
     try {
@@ -283,7 +283,7 @@
   function abrirEquipo(){
     abrirModal('mEquipo');
     if (S) return mostrarInvitacion();
-    if (!N.usuario){ pintarModal(`<p class="hint" style="padding-top:0">Invita a tus compañeros a editar este diseño contigo al mismo tiempo, y dejen comentarios sobre el diseño.</p><button class="bigbtn" id="eqEntrar" style="text-align:center;font-weight:700">Entrar con Google</button>`);
+    if (!N.usuario){ pintarModal(`<p class="hint" style="padding-top:0">Invita a tus compañeros a editar este diseño contigo al mismo tiempo, y dejen comentarios sobre el diseño.</p><button class="bigbtn" id="eqEntrar" style="text-align:center;font-weight:700">Entrar con Google</button>${window.legalEntrar ? legalEntrar() : ''}`);
       $e('eqEntrar').onclick = async () => { await N.entrar(); if (await esperarUsuario()) abrirEquipo(); }; return; }
     pintarModal(`<p class="hint" style="padding-top:0">Se creará un enlace. Quien lo abra (con su cuenta de Google) podrá <b>editar este diseño contigo al mismo tiempo</b> y dejar comentarios. Verán quién está conectado y qué está editando cada quien.</p>
       <button class="btnP" id="eqEmpezar">👥 Empezar a trabajar en equipo</button>

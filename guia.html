@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Guías del modo escuela · Diseñador Apik-Desing</title>
-<meta name="description" content="Guía paso a paso para maestros y alumnos: crear grupos, dejar actividades, entregar y calificar con rúbrica en el Diseñador gratis Apik-Desing.">
+<title>Guías para maestros y alumnos · Diseñador Apik-Desing</title>
+<meta name="description" content="Guía paso a paso para maestros y alumnos: grupos, actividades, entregas, rúbricas, correcciones, avisos, exámenes y videos en el Diseñador gratis Apik-Desing.">
 <link rel="icon" href="icons/icono-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@700;800&display=swap" rel="stylesheet">
@@ -84,7 +84,8 @@
     .consejos{break-inside:avoid}
     .problemas h3{break-after:avoid}
     a{color:inherit;text-decoration:none}
-    body.solo-maestros #alumnos,body.solo-alumnos #maestros{display:none}
+    body.solo-maestros #alumnos,body.solo-maestros #videos,body.solo-alumnos #maestros,body.solo-alumnos #videos,body.solo-videos #maestros,body.solo-videos #alumnos{display:none}
+    body[class*="solo-"] .guia{break-before:auto}
   }
 </style>
 </head>
@@ -92,9 +93,9 @@
 <header class="arriba">
   <div class="dentro">
     <a class="marca" href="./"><img src="icons/icono-192.png" alt=""><span>Diseñador<small>APIK-DESING</small></span></a>
-    <h1>Guías del modo escuela</h1>
-    <p>Paso a paso para dejar actividades, entregarlas y calificarlas dentro del Diseñador. Es gratis, funciona en computadora y en celular, y no hay que instalar nada.</p>
-    <nav class="pestanas"><a class="prim" href="#maestros">👩‍🏫 Guía para maestros</a><a href="#alumnos">🎒 Guía para alumnos</a><a href="./">Abrir el Diseñador →</a></nav>
+    <h1>Guías para maestros y alumnos</h1>
+    <p>Paso a paso para dejar actividades, exámenes y avisos, entregarlos, corregirlos y calificarlos dentro del Diseñador, y para hacer videos para tus clases. Es gratis, funciona en computadora y en celular, y no hay que instalar nada.</p>
+    <nav class="pestanas"><a class="prim" href="#maestros">👩‍🏫 Guía para maestros</a><a href="#alumnos">🎒 Guía para alumnos</a><a href="#videos">🎬 Videos para clase</a><a href="./">Abrir el Diseñador →</a></nav>
   </div>
 </header>
 
@@ -104,8 +105,8 @@
   <div class="cabGuia">
     <div>
       <span class="etq">Para maestros</span>
-      <h2>Deja actividades y califícalas en un solo lugar</h2>
-      <p>Tú creas un grupo y publicas actividades con una plantilla. Tus alumnos la llenan en el Diseñador y te la entregan ahí mismo. Tú calificas con rúbrica y ellos ven su calificación y tu comentario.</p>
+      <h2>Deja actividades y exámenes, corrige y califica en un solo lugar</h2>
+      <p>Tú creas un grupo y publicas actividades con una plantilla, avisos y exámenes de opción múltiple. Tus alumnos entregan ahí mismo; tú calificas con rúbrica, corriges encima de su trabajo o se lo devuelves, y ellos ven todo en su actividad.</p>
       <ul class="necesitas"><li>💻 Computadora o celular con internet</li><li>🔑 Una cuenta de Google (Gmail o la de tu escuela)</li><li>⏱ 10 minutos la primera vez</li></ul>
     </div>
     <div class="qr">
@@ -115,7 +116,7 @@
   <div class="paso"><div class="num">1</div><div>
     <h3>Entra con tu cuenta de Google</h3>
     <p>Abre <a href="https://gamerpc.github.io/disenador/">gamerpc.github.io/disenador</a>, toca el botón <b class="boton">🎓 Escuela</b> de arriba y luego <b class="boton">Entrar con Google</b>. Si no ves el botón, búscalo en <b class="boton">⋯ Más</b>.</p>
-  </div><figure><img class="chica" src="img/guia/m0_entrar.jpg" alt="Ventana Mi escuela con el botón Entrar con Google" loading="lazy"></figure></div>
+  </div><figure><img class="chica" src="img/guia/m0_entrar.jpg" alt="Ventana Mi escuela con el botón Entrar con Google y el aviso de privacidad" loading="lazy"></figure></div>
 
   <div class="paso"><div class="num">2</div><div>
     <h3>Crea tu grupo y comparte el código</h3>
@@ -142,9 +143,35 @@
   </div><figure><img class="chica" src="img/guia/m6_calificar.jpg" alt="Tarjeta de entrega con la rúbrica y el comentario" loading="lazy"></figure></div>
 
   <div class="paso"><div class="num">6</div><div>
+    <h3>Corrige encima del trabajo</h3>
+    <p>En la tarjeta del alumno toca <b class="boton">✏ Corregir</b>. Su trabajo se abre con una barra roja arriba:</p>
+    <ul><li><b class="boton">🖊</b> marcador para dibujar encima, <b class="boton">⭕</b> para encerrar, <b class="boton">💬</b> para escribir una nota, <b class="boton">✔</b> y <b class="boton">✘</b> para marcar lo que está bien o hay que revisar.</li>
+      <li>También puedes usar cualquier otra herramienta del Diseñador: todo lo que agregues queda marcado como corrección.</li>
+      <li>Al terminar toca <b class="boton naranja">💾 Guardar corrección</b>. El alumno la verá en su actividad.</li></ul>
+  </div><figure><img src="img/guia/m7_corregir.jpg" alt="Trabajo del alumno con un círculo rojo, una nota y una palomita, y la barra de corrección" loading="lazy"><figcaption>El trabajo del alumno no se modifica: tu corrección se guarda aparte.</figcaption></figure></div>
+
+  <div class="paso"><div class="num">7</div><div>
+    <h3>Devuélvela si la tiene que corregir</h3>
+    <p>Toca <b class="boton">↩ Devolver</b> y escribe qué le falta. La actividad vuelve a sus pendientes con tu mensaje. Cuando la entregue de nuevo, la tarjeta muestra <b>«✓ La corrigió»</b>.</p>
+  </div><figure><img class="chica" src="img/guia/m11_devuelta.jpg" alt="Tarjeta de entrega con las etiquetas Devuelta y Con correcciones" loading="lazy"></figure></div>
+
+  <div class="paso"><div class="num">8</div><div>
+    <h3>Manda avisos al grupo</h3>
+    <p>En tu grupo, baja a <b>📢 Avisos para el grupo</b>, escribe el aviso (un cambio de fecha, material que deben llevar, un recordatorio) y toca <b class="boton">📢 Publicar aviso</b>. Tus alumnos lo ven al entrar, marcado como <b>nuevo</b>. La <b>✕</b> lo borra.</p>
+  </div><figure><img class="chica" src="img/guia/m8_avisos.jpg" alt="Sección de avisos del grupo con un aviso publicado" loading="lazy"></figure></div>
+
+  <div class="paso"><div class="num">9</div><div>
+    <h3>Haz exámenes que se califican solos</h3>
+    <p>Toca <b class="boton">📝 Nuevo examen</b>. Escribe cada pregunta con sus opciones (de 2 a 6) y marca con el círculo la correcta. Puedes poner fecha límite y elegir si el alumno ve su calificación y las respuestas correctas al terminar.</p>
+    <ul><li>Cada alumno lo contesta <b>una sola vez</b> y la calificación (sobre 10) se calcula sola.</li>
+      <li>Al abrir el examen ves quién respondió, su calificación, el promedio y qué tanto acertó el grupo en cada pregunta: así sabes qué tema repasar.</li>
+      <li>Las respuestas correctas están protegidas: los alumnos no pueden verlas antes de contestar.</li></ul>
+  </div><figure><img class="chica" src="img/guia/m9_examen.jpg" alt="Formulario para crear un examen de opción múltiple" loading="lazy"><img class="chica" src="img/guia/m10_resultados.jpg" alt="Resultados del examen con calificaciones y aciertos por pregunta" loading="lazy" style="margin-top:10px"></figure></div>
+
+  <div class="paso"><div class="num">10</div><div>
     <h3>Descarga calificaciones y cierra el semestre</h3>
     <ul>
-      <li><b class="boton">⬇ Calificaciones (Excel)</b> baja una hoja con cada alumno, su calificación por actividad y su promedio sobre 10.</li>
+      <li><b class="boton">⬇ Calificaciones (Excel)</b> baja una hoja con cada alumno, su calificación por actividad y por examen, y su promedio sobre 10.</li>
       <li>Junto a cada alumno hay una <b>✕</b> para sacarlo del grupo si se equivocó de grupo o se dio de baja.</li>
       <li>Al terminar el semestre, toca <b class="boton">🗄 Archivar grupo</b>. Se guarda aparte con todo su historial y lo puedes reactivar cuando quieras.</li>
     </ul>
@@ -154,6 +181,7 @@
     <h3>💡 Consejos</h3>
     <ul>
       <li>Antes de usarlo con todo el grupo, haz una prueba con uno o dos alumnos.</li>
+      <li>Si tus alumnos son menores de edad, verifica que tu escuela cuente con la autorización de sus madres, padres o tutores para usar herramientas en línea. Consulta el <a href="privacidad.html">Aviso de privacidad</a>.</li>
       <li>Si vas a proyectar en el salón, usa el <b>modo claro</b> (botón ☀ arriba): se ve mucho mejor en el proyector.</li>
       <li>Las fotos que suban tus alumnos se aligeran solas al guardarse en la nube, sin que se vean diferentes.</li>
       <li>Si la nube gratuita llega a su límite del día, el Diseñador lo avisa y nadie pierde su trabajo: se puede descargar con <b class="boton">⬇ Exportar</b> o volver a intentar al día siguiente.</li>
@@ -168,7 +196,7 @@
     <div>
       <span class="etq">Para alumnos</span>
       <h2>Haz y entrega tus actividades</h2>
-      <p>Tu maestro te da un código. Con él entras a su grupo, abres la actividad, la llenas en el Diseñador y la entregas con un botón. Después ves tu calificación y los comentarios.</p>
+      <p>Tu maestro te da un código. Con él entras a su grupo, ves sus avisos, haces las actividades y los exámenes y los entregas con un botón. Después ves tu calificación, los comentarios y las correcciones.</p>
       <ul class="necesitas"><li>💻 Computadora o 📱 celular con internet</li><li>🔑 Una cuenta de Google</li><li>🔢 El código de tu grupo</li></ul>
     </div>
     <div class="qr">
@@ -179,12 +207,14 @@
     <h3>Entra y únete a tu grupo</h3>
     <p>Abre <a href="https://gamerpc.github.io/disenador/">gamerpc.github.io/disenador</a> (o escanea el código QR) y toca <b class="boton">🎓 Escuela</b> → <b class="boton">Entrar con Google</b>.</p>
     <p>Luego toca <b class="boton">🔑 Unirme con un código</b> y escribe el código que te dio tu maestro. Si te mandó un enlace, al abrirlo te une solo.</p>
+    <p>Tu maestro verá tu nombre, tu correo y tu foto de Google. Si eres menor de edad, úsalo con permiso de tu mamá, papá o tutor.</p>
   </div><figure><img class="chica" src="img/guia/a1_unirme.jpg" alt="Unirme a un grupo con el código" loading="lazy"></figure></div>
 
   <div class="paso"><div class="num">2</div><div>
-    <h3>Mira tus actividades pendientes</h3>
-    <p>En <b class="boton">🎓 Escuela</b> aparecen tus grupos. Si tienes algo por entregar, el botón muestra un número rojo, y te avisa con <b>⏰ vence pronto</b> cuando la fecha está cerca.</p>
-  </div><figure><img class="chica" src="img/guia/a2_inicio.jpg" alt="Lista de grupos con aviso de actividad que vence pronto" loading="lazy"></figure></div>
+    <h3>Mira tus avisos y pendientes</h3>
+    <p>En <b class="boton">🎓 Escuela</b> aparecen tus grupos. Si tienes algo por entregar, el botón muestra un número rojo, y te avisa con <b>⏰ vence pronto</b> cuando la fecha está cerca. Si tu maestro publicó un aviso, verás <b>📢 nuevo</b>.</p>
+    <p>Al abrir tu grupo ves arriba los avisos, después los exámenes y luego las actividades, cada uno con su estado.</p>
+  </div><figure><img class="chica" src="img/guia/a10_grupo.jpg" alt="Grupo del alumno con un aviso, un examen por responder y una actividad pendiente" loading="lazy"></figure></div>
 
   <div class="paso"><div class="num">3</div><div>
     <h3>Abre la actividad y empieza</h3>
@@ -208,9 +238,17 @@
   </div><figure><img class="chica" src="img/guia/a6_entregar.jpg" alt="Barra con el botón Entregar" loading="lazy"></figure></div>
 
   <div class="paso"><div class="num">6</div><div>
-    <h3>Revisa tu calificación</h3>
+    <h3>Revisa tu calificación y las correcciones</h3>
     <p>Cuando tu maestro califique, abre la actividad y verás los puntos de cada criterio, el total y su comentario.</p>
-  </div><figure><img class="chica" src="img/guia/a5_calificacion.jpg" alt="Calificación con desglose de la rúbrica y comentario del maestro" loading="lazy"></figure></div>
+    <ul><li>Si tu maestro marcó tu trabajo, toca <b class="boton naranja">👁 Ver las correcciones de mi maestro</b>: se abre tu trabajo con sus marcas encima.</li>
+      <li>Si te la <b>devolvió</b>, verás su mensaje y la actividad vuelve a tus pendientes como <b>«↩ Corrígela»</b>. Corrige y vuelve a tocar <b class="boton naranja">📤 Entregar</b>; antes te preguntamos si quieres quitar las marcas de tu maestro.</li></ul>
+  </div><figure><img class="chica" src="img/guia/a7_devuelta.jpg" alt="Actividad devuelta con el mensaje del maestro, la calificación y el botón para ver correcciones" loading="lazy"><img src="img/guia/a11_correcciones.jpg" alt="Trabajo del alumno con las marcas del maestro y el botón Quitar marcas" loading="lazy" style="margin-top:10px"></figure></div>
+
+  <div class="paso"><div class="num">7</div><div>
+    <h3>Contesta tus exámenes</h3>
+    <p>Abre el examen en tu grupo, elige una respuesta en cada pregunta y toca <b class="boton naranja">📨 Enviar mis respuestas</b>. <b>Solo se puede enviar una vez</b>, así que revisa antes.</p>
+    <p>Si tu maestro lo permitió, al terminar ves tu calificación y cuáles eran las respuestas correctas (en verde) y cuáles fallaste (en rojo).</p>
+  </div><figure><img class="chica" src="img/guia/a8_examen.jpg" alt="Examen de opción múltiple listo para enviar" loading="lazy"><img class="chica" src="img/guia/a9_resultado.jpg" alt="Resultado del examen: 5 de 10 con respuestas correctas e incorrectas marcadas" loading="lazy" style="margin-top:10px"></figure></div>
 
   <div class="problemas">
     <h3>🛟 Si algo no sale</h3>
@@ -218,12 +256,51 @@
     <details><summary>Dice «Ya no formas parte de este grupo»</summary><p>Tu maestro te sacó del grupo, quizá por error. Pídele el código y vuelve a unirte.</p></details>
     <details><summary>No veo el botón 🎓 Escuela</summary><p>En pantallas chicas está dentro de <b>⋯ Más</b>, arriba a la derecha.</p></details>
     <details><summary>Dice que no hay conexión o que la nube llegó a su límite</summary><p>Tu trabajo no se pierde: sigue abierto. Revisa tu internet y vuelve a tocar Entregar. Si sigue igual, descárgalo con ⬇ Exportar y avísale a tu maestro.</p></details>
+    <details><summary>Ya envié el examen y me equivoqué</summary><p>El examen solo se puede enviar una vez. Habla con tu maestro: él puede borrarlo y volver a publicarlo si lo considera.</p></details>
+    <details><summary>No veo las marcas de mi maestro</summary><p>Toca <b>👁 Ver las correcciones de mi maestro</b> (no «Abrir mi entrega»). Si no aparece el botón, tu maestro todavía no guarda su corrección.</p></details>
     <details><summary>En el celular se ve muy pequeño</summary><p>Usa los dedos para acercar el lienzo. Para trabajos grandes es más cómodo usar una computadora.</p></details>
   </div>
   <div class="accGuia"><a class="imprimir" href="guia-alumnos.pdf" download>⬇ Descargar en PDF</a><button class="imprimir" onclick="imprimir('alumnos')">🖨 Imprimir solo esta guía</button></div>
 </section>
 
-<p class="pie">Diseñador · Apik-Desing es gratis. <a href="./">Abrir el Diseñador</a> · <a href="inicio.html">Conoce todo lo que puede hacer</a></p>
+<!-- ====================== VIDEOS ====================== -->
+<section class="guia" id="videos">
+  <div class="cabGuia">
+    <div>
+      <span class="etq">Para maestros y alumnos</span>
+      <h2>Haz videos para tus clases</h2>
+      <p>Graba tu pantalla y tu cámara, usa la cámara del teléfono si tu compu no tiene, edita y descarga tu video en MP4, todo dentro del Diseñador. Sirve para exposiciones, tutoriales, clases grabadas y reels.</p>
+      <ul class="necesitas"><li>💻 Computadora con Chrome o Edge</li><li>🎤 Micrófono (el de la compu o el del teléfono)</li><li>📱 Opcional: tu teléfono como cámara</li></ul>
+    </div>
+  </div>
+
+  <div class="paso"><div class="num">1</div><div>
+    <h3>Abre el estudio de video</h3>
+    <p>Toca <b class="boton">🎬 Video</b> (arriba o en la barra de la izquierda). Puedes empezar con una <b class="boton">✨ Plantilla</b> para reels, TikTok, YouTube o una exposición de clase, o grabar desde cero.</p>
+  </div><figure><img src="img/guia/v3_plantillas.jpg" alt="Estudio de video con las plantillas para reels, TikTok y YouTube" loading="lazy"></figure></div>
+
+  <div class="paso"><div class="num">2</div><div>
+    <h3>Graba tu pantalla y tu cámara</h3>
+    <p>En <b class="boton">🎥 Grabar</b> elige <b>Pantalla</b>, <b>Cámara</b>, <b>Pantalla + cámara</b> (apareces en una burbuja) o <b>Mi presentación + cámara</b>. Para grabar el sonido de la compu, al compartir activa <b>«Compartir audio del sistema»</b>.</p>
+    <p>¿Tu compu no tiene cámara? Toca <b class="boton">📱 Usar la cámara de mi teléfono</b> y escanea el código: el teléfono graba con toda su calidad y manda el video a tu compu al terminar. Funciona mejor con los dos en la misma red Wi-Fi.</p>
+  </div><figure><img class="chica" src="img/guia/v1_telefono.jpg" alt="Código QR para usar el teléfono como cámara" loading="lazy"></figure></div>
+
+  <div class="paso"><div class="num">3</div><div>
+    <h3>Edítalo</h3>
+    <ul><li>En la línea de tiempo: recorta jalando las orillas, divide con la tecla <b>S</b> y cambia el orden arrastrando.</li>
+      <li>Agrega textos animados, música, las páginas de tu diseño y <b class="boton">🔀 Transiciones</b> entre partes.</li>
+      <li>En <b class="boton">✎ Editar</b>, <b class="boton">🔍 Acercar aquí</b> hace zoom a una parte de tu pantalla durante unos segundos.</li></ul>
+  </div><figure><img src="img/guia/v2_editar.jpg" alt="Grabación de una clase con la burbuja de la cámara y un subtítulo" loading="lazy"></figure></div>
+
+  <div class="paso"><div class="num">4</div><div>
+    <h3>Descárgalo y compártelo</h3>
+    <p>Toca <b class="boton naranja">⬇ Exportar video</b>: se crea en tiempo real (no cambies de pestaña) y se descarga en MP4. Para entregarlo en una actividad, súbelo a Drive o YouTube y pega el enlace o un código QR en tu diseño.</p>
+    <p>Tus grabaciones se guardan solo en tu navegador, no en internet.</p>
+  </div></div>
+  <div class="accGuia"><a class="imprimir" href="guia-videos.pdf" download>⬇ Descargar en PDF</a><button class="imprimir" onclick="imprimir('videos')">🖨 Imprimir solo esta guía</button></div>
+</section>
+
+<p class="pie">Diseñador · Apik-Desing es gratis. <a href="./">Abrir el Diseñador</a> · <a href="inicio.html">Conoce todo lo que puede hacer</a> · <a href="privacidad.html">Aviso de privacidad</a> · <a href="terminos.html">Términos de uso</a></p>
 </main>
 <script>
   function imprimir(cual){

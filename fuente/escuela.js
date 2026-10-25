@@ -43,7 +43,7 @@
   .rub label span{color:var(--suave,#9ca3af);margin-left:auto;white-space:nowrap;flex:none}.rub input{width:56px}.totRub{font-size:13px;margin-top:2px}
   #bEscuela.avisoEsc{position:relative}#bEscuela.avisoEsc::after{content:attr(data-n);position:absolute;top:2px;right:2px;min-width:16px;height:16px;border-radius:8px;background:#ef4444;color:#fff;font:700 10px/16px Inter,sans-serif;text-align:center;padding:0 3px}
   #bandaActividad span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#bandaActividad .btnP{padding:7px 14px;white-space:nowrap}#bandaActividad[hidden]{display:none}
-  #bandaActividad{flex-wrap:wrap;justify-content:center;border-radius:18px}#bandaActividad.corr{border-color:#f43f5e}#bandaHerr{display:flex;gap:4px}#bandaHerr[hidden],#bandaActividad [hidden]{display:none}
+  #bandaActividad{flex-wrap:nowrap;justify-content:center;border-radius:18px}@media (max-width:760px){#bandaActividad{flex-wrap:wrap}}.escItem .t small{display:block}#bandaActividad .pb{white-space:nowrap}#bandaActividad.corr{border-color:#f43f5e}#bandaHerr{display:flex;gap:4px}#bandaHerr[hidden],#bandaActividad [hidden]{display:none}
   #bandaHerr .pb{padding:6px 9px;min-height:0;font-size:15px}#bandaHerr .pb.on{background:#f43f5e;color:#fff;border-color:#f43f5e}
   .i-dev{background:#ffe4e6;color:#9f1239}.i-corr{background:#fae8ff;color:#86198f}.i-nuevo{background:#e0f2fe;color:#075985}
   .avisoEsc2{border:1px solid var(--borde,#2a3140);border-left:4px solid #0ea5e9;border-radius:10px;padding:10px 12px;margin:8px 0;background:var(--panel2,#151821);white-space:pre-wrap;font-size:14px}
@@ -68,7 +68,7 @@
   async function abrirEscuela(){
     abrirModal('mEscuela'); pila = []; ver.actual = null;
     if (!N.usuario){ ver('🎓 Mi escuela', () => { cuerpo().innerHTML = `<p class="hint" style="padding-top:0">Con el modo escuela, el maestro deja actividades con una plantilla y los alumnos las hacen y entregan aquí mismo.</p>
-      <p class="hint">Para usarlo, entra con tu cuenta de Google.</p><button class="bigbtn" id="escEntrar" style="text-align:center;font-weight:700">Entrar con Google</button>`;
+      <p class="hint">Para usarlo, entra con tu cuenta de Google.</p><button class="bigbtn" id="escEntrar" style="text-align:center;font-weight:700">Entrar con Google</button>${window.legalEntrar ? legalEntrar() : ''}`;
       $e('escEntrar').onclick = async () => { await N.entrar(); if (await esperarUsuario()) abrirEscuela(); }; }); return; }
     ver('🎓 Mi escuela', inicio);
   }
@@ -99,7 +99,8 @@
   }
   function formGrupo(){
     cuerpo().innerHTML = `<div class="escForm"><label for="escNomGrupo">Nombre del grupo</label><input id="escNomGrupo" class="buscador" placeholder="Ej. Derecho Penal · 6A · 2026-2" maxlength="80">
-      <p class="hint">Al crearlo te damos un código de 6 letras para que tus alumnos se unan.</p><button class="btnP" id="escCrearOk">Crear grupo</button></div>`;
+      <p class="hint">Al crearlo te damos un código de 6 letras para que tus alumnos se unan.</p>
+      <p class="hint">Si tus alumnos son menores de edad, verifica que tu escuela cuente con la autorización de sus madres, padres o tutores para usar herramientas en línea.</p><button class="btnP" id="escCrearOk">Crear grupo</button></div>`;
     $e('escNomGrupo').focus();
     $e('escCrearOk').onclick = async () => {
       const nombre = $e('escNomGrupo').value.trim(); if (!nombre) return toast('Escribe el nombre del grupo');
@@ -116,6 +117,7 @@
   }
   function formUnirme(codigoInicial){
     cuerpo().innerHTML = `<div class="escForm"><label for="escCodigo">Código del grupo</label><input id="escCodigo" class="buscador" placeholder="Ej. K7P2QX" maxlength="6" style="text-transform:uppercase;letter-spacing:.2em;font-weight:700" value="${esc(codigoInicial || '')}">
+      <p class="hint">Al unirte, tu maestro verá tu nombre, tu correo y tu foto de Google, tus entregas y tus respuestas. <a href="https://gamerpc.github.io/disenador/privacidad.html#menores" target="_blank" rel="noopener">Aviso de privacidad</a>.</p>
       <button class="btnP" id="escUnirOk" style="margin-top:10px">Unirme</button></div>`;
     $e('escCodigo').focus();
     $e('escUnirOk').onclick = async () => {
@@ -373,7 +375,7 @@
     let clave = null;
     if (ex.mostrarResultados){ const c = await grupos().doc(gid).collection('claves').doc(xid).get().catch(() => null); if (c && c.exists) clave = c.data().resp; }
     const c = clave ? calificar(mia.resp || [], clave) : null;
-    cuerpo().innerHTML = `<p class="hint" style="padding-top:0">Enviaste tus respuestas el ${fechaHora(mia.fecha)}.</p>
+    cuerpo().innerHTML = `<p class="hint" style="padding-top:0">Enviaste tus respuestas el ${fechaHora(mia.fecha)}</p>
       ${c ? `<div class="resEx">${c.cal} / 10</div><p class="hint" style="padding-top:0">${c.b} de ${c.t} correctas</p>` : mia.calificacion != null ? `<div class="resEx">${mia.calificacion} / 10</div>` : '<p class="hint">Tu maestro te dará tu calificación.</p>'}
       ${ex.preguntas.map((q, i) => `<div class="pregEx"><b>${i + 1}. ${esc(q.p)}</b>${q.ops.map((o, j) => { const elegida = (mia.resp || [])[i] === j, cls = clave ? (j === clave[i] ? 'bien' : elegida ? 'mal' : '') : '';
         return `<label class="${cls}"><input type="radio" disabled ${elegida ? 'checked' : ''} style="width:auto"> ${esc(o)}${clave && j === clave[i] ? ' ✓' : ''}</label>`; }).join('')}</div>`).join('')}`;
@@ -593,7 +595,7 @@
   const codigoURL = new URLSearchParams(location.search).get('grupo');
   if (codigoURL) N.listo.then(() => setTimeout(() => {
     abrirModal('mEscuela'); pila = [];
-    if (!N.usuario) { ver('Unirme a un grupo', () => { cuerpo().innerHTML = `<p class="hint" style="padding-top:0">Te invitaron a un grupo (código <b>${esc(codigoURL)}</b>). Entra con tu cuenta de Google para unirte.</p><button class="bigbtn" id="escEntrar2" style="text-align:center;font-weight:700">Entrar con Google</button>`;
+    if (!N.usuario) { ver('Unirme a un grupo', () => { cuerpo().innerHTML = `<p class="hint" style="padding-top:0">Te invitaron a un grupo (código <b>${esc(codigoURL)}</b>). Entra con tu cuenta de Google para unirte.</p><button class="bigbtn" id="escEntrar2" style="text-align:center;font-weight:700">Entrar con Google</button>${window.legalEntrar ? legalEntrar() : ''}`;
       $e('escEntrar2').onclick = async () => { await N.entrar(); if (await esperarUsuario()) ver('Unirme a un grupo', () => formUnirme(codigoURL), true); }; }); }
     else ver('Unirme a un grupo', () => formUnirme(codigoURL));
   }, 1200));

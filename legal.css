@@ -1,0 +1,36 @@
+/* Estilos compartidos del Aviso de privacidad y los Términos de uso */
+:root{--tinta:#141a26;--suave:#566072;--borde:#dfe4ec;--fondo:#f4f6fa;--azul:#0679b0;--azulClaro:#e7f3fa;--panel:#fff;--aviso:#fff7e6;--avisoBorde:#f5c46b}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--fondo);color:var(--tinta);font:16px/1.65 Inter,system-ui,sans-serif}
+a{color:var(--azul)}
+.arriba{background:#090b10;color:#fff;padding:24px 16px 64px}
+.arriba .dentro,.contenido{max-width:860px;margin:0 auto}
+.marca{display:inline-flex;align-items:center;gap:10px;font:800 15px Poppins,sans-serif;letter-spacing:.04em;text-decoration:none;color:#fff}
+.marca img{width:36px;height:36px;border-radius:50%}
+.marca small{display:block;font:600 9px Inter,sans-serif;letter-spacing:.3em;color:#19c8ff}
+h1{font:800 clamp(28px,5vw,42px)/1.15 Poppins,sans-serif;margin:24px 0 8px}
+.arriba p{color:#b8c1d1;margin:0;max-width:640px}
+.enlaces{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.enlaces a{padding:9px 16px;border-radius:12px;background:#1b2030;color:#fff;text-decoration:none;font-weight:600;border:1px solid #2b3245;font-size:14px}
+.enlaces a.on{background:linear-gradient(135deg,#ff4b2b,#ff7a2b);border-color:transparent}
+.contenido{padding:0 16px 60px;margin-top:-40px}
+.hoja{background:var(--panel);border:1px solid var(--borde);border-radius:20px;padding:clamp(20px,4vw,44px);box-shadow:0 10px 30px rgba(20,30,50,.06)}
+.resumen{background:var(--azulClaro);border-radius:14px;padding:16px 20px;margin:0 0 26px}
+.resumen h2{margin-top:0 !important;font-size:19px !important}
+.resumen ul{margin:6px 0 0;padding-left:20px}
+h2{font:800 21px/1.3 Poppins,sans-serif;margin:34px 0 8px;scroll-margin-top:16px}
+h3{font-size:17px;margin:20px 0 4px}
+p{margin:8px 0}
+ul,ol{margin:6px 0 10px;padding-left:22px}
+li{margin:4px 0}
+table{width:100%;border-collapse:collapse;margin:10px 0;font-size:14.5px}
+th,td{border:1px solid var(--borde);padding:9px 11px;text-align:left;vertical-align:top}
+th{background:var(--fondo);font-weight:700}
+.tablaCaja{overflow-x:auto}
+.dato{font-weight:700}
+.dato.falta{background:var(--aviso);border:1px dashed var(--avisoBorde);border-radius:6px;padding:0 6px;font-weight:600}
+.pie{color:var(--suave);font-size:14px;margin-top:32px;border-top:1px solid var(--borde);padding-top:16px}
+.indice{columns:2;column-gap:28px;font-size:15px;margin:0 0 10px;padding-left:20px}
+@media (max-width:600px){ .indice{columns:1} th,td{padding:7px 8px} }
+@media print{ .arriba{background:#fff;color:#000;padding:0} .arriba p{color:#333} .enlaces{display:none} .contenido{margin:0} .hoja{border:0;box-shadow:none;padding:0} }

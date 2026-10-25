@@ -17,6 +17,17 @@ window.APIK_CONFIG = {
     appId: '1:152552696779:web:f8e166b9e9b4ea4e57244e'
   },
   // firebase: { apiKey: 'AIza...', authDomain: 'tu-proyecto.firebaseapp.com', projectId: 'tu-proyecto', appId: '1:...:web:...' },
+  /* DATOS LEGALES: aparecen en el Aviso de privacidad y en los Términos de uso (privacidad.html y terminos.html).
+     - responsable: quien decide sobre los datos (persona física o, si registras la empresa, su razón social)
+     - correo: correo para dudas y solicitudes de privacidad (derechos ARCO). Crea uno solo para la app y escríbelo aquí.
+     - domicilio: dónde se te puede notificar. Mientras no tengas oficina, la ciudad; después una oficina virtual o apartado postal. */
+  legal: {
+    responsable: 'Brenda Paola Cisneros Álvarez',
+    marca: 'Diseñador · Apik-Desing',
+    correo: '',
+    domicilio: 'Ciudad de México, México',
+    actualizado: '25 de octubre de 2026'
+  },
   mensajeDonacion: 'Este diseñador es gratuito. Si te sirve para tus tareas, exposiciones o tu negocio, puedes apoyarnos con una donación para seguir agregando funciones y pagar el servidor.',
   donaciones: [
     { nombre: 'Mercado Pago', icono: '💳', detalle: 'Tarjeta, OXXO o saldo de Mercado Pago', url: 'https://link.mercadopago.com.mx/apikdesing' },

@@ -219,11 +219,13 @@
   const st = document.createElement('style');
   st.textContent = '#bNube.conectado{color:#19c8ff}#nubeCuerpo .fila2{display:flex;gap:10px;align-items:center;margin:8px 0}#nubeCuerpo img{width:40px;height:40px;border-radius:50%}#nubeCuerpo .bigbtn{margin:6px 0}.conNube .soloWeb{display:none!important}';
   document.head.appendChild(st);
+  // aviso de privacidad simplificado junto a cada botón «Entrar con Google»
+  window.legalEntrar = () => `<p class="hint legalEntrar" style="font-size:11.5px;margin:4px 0 0">Al entrar, tu nombre, correo y foto de Google se usan para guardar tus diseños y, si los usas, para el modo escuela y el trabajo en equipo. Consulta el <a href="https://gamerpc.github.io/disenador/privacidad.html" target="_blank" rel="noopener">Aviso de privacidad</a> y los <a href="https://gamerpc.github.io/disenador/terminos.html" target="_blank" rel="noopener">Términos de uso</a>.</p>`;
   function pintarCuenta(){
     const c = document.getElementById('nubeCuerpo');
     if (!usuario){
       c.innerHTML = `<p class="hint" style="padding-top:0">Entra con tu cuenta de Google para guardar tus diseños, plantillas y kit de marca en la nube. Así los abres en cualquier computadora o celular y puedes compartirlos con un enlace.</p>
-        <button class="bigbtn" id="nubeEntrar" style="text-align:center;font-weight:700">Entrar con Google</button>
+        <button class="bigbtn" id="nubeEntrar" style="text-align:center;font-weight:700">Entrar con Google</button>${legalEntrar()}
         <p class="hint" style="font-size:11.5px">Si no entras, todo se sigue guardando en este navegador, como siempre.</p>`;
       document.getElementById('nubeEntrar').onclick = entrar;
       return;
