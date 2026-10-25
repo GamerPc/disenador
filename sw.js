@@ -1,6 +1,6 @@
 /* Service worker del Diseñador: permite instalarlo y abrirlo aunque falle el internet.
    VERSION la pone construir.py; cuando cambia, el navegador baja la versión nueva. */
-const VERSION = '71ae639ddf';
+const VERSION = '3f05a2715f';
 const CACHE = 'disenador-' + VERSION;
 const BASE = ['./', 'index.html', 'config.js', 'js/app.js', 'js/video.js', 'js/almacen-local.js', 'js/pwa.js', 'js/nube.js', 'js/escuela.js', 'js/equipo.js', 'manifest.webmanifest',
   'icons/icono-192.png', 'icons/icono-512.png', 'icons/apple-touch-icon.png', 'icons/favicon.png'];
@@ -41,4 +41,15 @@ self.addEventListener('fetch', e => {
     e.respondWith(caches.match(r).then(x => x || fetch(r).then(res => { if (res.ok || res.type === 'opaque'){ const copia = res.clone(); caches.open(CACHE).then(c => c.put(r, copia)); } return res; })));
   }
   // lo demás (la nube, Google) va directo a internet
+});
+// Al tocar una notificación de la escuela: abre (o trae al frente) el Diseñador y muestra el aviso
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const aviso = e.notification.data && e.notification.data.aviso;
+  e.waitUntil((async () => {
+    const abiertas = await self.clients.matchAll({ type:'window', includeUncontrolled:true });
+    const c = abiertas.find(x => new URL(x.url).pathname.replace(/index\.html$/, '') === new URL(self.registration.scope).pathname) || abiertas[0];
+    if (c){ await c.focus(); c.postMessage({ abrirAviso:aviso || true }); return; }
+    await self.clients.openWindow('./?aviso=' + encodeURIComponent(aviso || ''));
+  })());
 });

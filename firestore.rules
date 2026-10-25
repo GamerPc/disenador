@@ -23,13 +23,19 @@ service cloud.firestore {
     // MODO ESCUELA: el maestro crea el grupo y las actividades; los alumnos se unen con el código y entregan
     match /grupos/{g} {
       function grupo() { return get(/databases/$(database)/documents/grupos/$(g)).data; }
-      function esMaestro() { return request.auth != null && grupo().maestro == request.auth.uid; }
+      // maestro = el titular o un maestro auxiliar que el titular aprobó
+      function esMaestro() { return request.auth != null && (grupo().maestro == request.auth.uid || request.auth.uid in grupo().get('auxiliares', [])); }
       function esMiembro() { return request.auth != null && exists(/databases/$(database)/documents/grupos/$(g)/miembros/$(request.auth.uid)); }
 
       allow read: if request.auth != null;      // para poder buscar el grupo por su código
       allow create: if request.auth != null && request.resource.data.maestro == request.auth.uid;
       allow update, delete: if request.auth != null && resource.data.maestro == request.auth.uid;
 
+      // solicitudes para ser maestro auxiliar: las hace cada quien; el titular las aprueba (agrega el uid a «auxiliares»)
+      match /auxSolicitudes/{u} {
+        allow read, delete: if request.auth != null && (request.auth.uid == u || grupo().maestro == request.auth.uid);
+        allow create: if request.auth != null && request.auth.uid == u;
+      }
       match /miembros/{u} {
         allow read: if esMaestro() || (request.auth != null && request.auth.uid == u);
         allow create, update: if request.auth != null && request.auth.uid == u;
@@ -67,6 +73,7 @@ service cloud.firestore {
           match /partes/{p} {
             allow read: if esMaestro() || (request.auth != null && request.auth.uid == u);
             allow write: if request.auth != null && request.auth.uid == u && esMiembro();
+            allow delete: if esMaestro();      // «liberar espacio» después de descargar el respaldo
           }
           // corrección del maestro encima de la entrega (el alumno solo la puede ver)
           match /correccion/{c} {
@@ -92,8 +99,14 @@ service cloud.firestore {
           allow read: if esMaestro() || (request.auth != null && request.auth.uid == u);
           // el alumno contesta una sola vez y no puede ponerse calificación; el maestro la guarda
           allow create: if request.auth != null && request.auth.uid == u && esMiembro()
-            && !('calificacion' in request.resource.data) && !('aciertos' in request.resource.data);
+            && !('calificacion' in request.resource.data) && !('aciertos' in request.resource.data) && !('abiertas' in request.resource.data);
           allow update, delete: if esMaestro();
+        }
+        // a qué hora empezó cada alumno (exámenes con tiempo): se escribe una sola vez
+        match /inicios/{u} {
+          allow read: if esMaestro() || (request.auth != null && request.auth.uid == u);
+          allow create: if request.auth != null && request.auth.uid == u && esMiembro();
+          allow delete: if esMaestro();
         }
       }
       // calendario: fechas que agrega el maestro (exposiciones, días sin clase…)
@@ -116,6 +129,20 @@ service cloud.firestore {
           && get(/databases/$(database)/documents/grupos/$(g)/examenes/$(x)).data.mostrarResultados == true);
         allow write: if esMaestro();
       }
+    }
+
+    // NOTIFICACIONES: cada quien lee y borra su buzón; los demás solo pueden dejarle avisos si comparten un grupo
+    match /buzon/{u}/n/{id} {
+      function g() { return get(/databases/$(database)/documents/grupos/$(request.resource.data.grupo)).data; }
+      function maestroDe(x, gr) { return x == gr.maestro || x in gr.get('auxiliares', []); }
+      function miembroDe(x) { return exists(/databases/$(database)/documents/grupos/$(request.resource.data.grupo)/miembros/$(x)); }
+      function pideAux(x) { return exists(/databases/$(database)/documents/grupos/$(request.resource.data.grupo)/auxSolicitudes/$(x)); }
+      allow read, update, delete: if request.auth != null && request.auth.uid == u;
+      allow create: if request.auth != null && request.resource.data.de == request.auth.uid && request.resource.data.leida == false
+        && request.resource.data.texto is string && request.resource.data.texto.size() <= 300 && request.resource.data.grupo is string
+        && ((maestroDe(request.auth.uid, g()) && (miembroDe(u) || maestroDe(u, g())))
+          || (miembroDe(request.auth.uid) && maestroDe(u, g()))
+          || (pideAux(request.auth.uid) && u == g().maestro));
     }
 
     // TELÉFONO COMO CÁMARA: la compu y el teléfono se encuentran con un código largo al azar (solo intercambian datos de conexión;

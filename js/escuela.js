@@ -16,6 +16,48 @@
   const codigoNuevo = () => { const L = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let c = ''; for (let i = 0; i < 6; i++) c += L[Math.floor(Math.random() * L.length)]; return c; };
   const grupos = () => N.db.collection('grupos');
   const sinPermiso = () => ({ docs:[], size:0 });     // si aún no se publican las reglas nuevas de avisos/exámenes, la escuela sigue funcionando
+  const maestrosDe = g => [g.maestro, ...(g.auxiliares || [])].filter(Boolean);       // titular y auxiliares
+  const esTitular = g => !!(g && N.usuario && g.maestro === N.usuario.uid);
+  // ---------- 🔔 notificaciones: cada quien tiene su buzón (buzon/{uid}/n) y los demás le dejan avisos ----------
+  const buzon = uid => N.db.collection('buzon').doc(uid).collection('n');
+  const cacheGrupo = {};
+  const datosGrupo = async gid => cacheGrupo[gid] || (cacheGrupo[gid] = (await grupos().doc(gid).get()).data());
+  function avisarA(uids, d){
+    const yo = N.usuario && N.usuario.uid; if (!yo) return Promise.resolve();
+    const datos = { ...d, texto:String(d.texto || '').slice(0, 280), de:yo, deNombre:N.usuario.displayName || '', fecha:N.ahora(), leida:false };
+    return Promise.all([...new Set(uids)].filter(u => u && u !== yo).map(u => buzon(u).doc().set(datos).catch(() => {})));
+  }
+  async function avisarAlGrupo(gid, d){       // a todos los alumnos (y a los otros maestros)
+    try { const g = await datosGrupo(gid), m = await miembrosDe(gid);
+      await avisarA([...m.docs.map(x => x.id)], { ...d, grupo:gid, grupoNombre:g.nombre, para:'alumno' });
+      await avisarA(maestrosDe(g), { ...d, grupo:gid, grupoNombre:g.nombre, para:'maestro' }); } catch (e) {}
+  }
+  async function avisarAMaestros(gid, d){
+    try { const g = await datosGrupo(gid); await avisarA(maestrosDe(g), { ...d, grupo:gid, grupoNombre:g.nombre, para:'maestro' }); } catch (e) {}
+  }
+  async function avisarAlAlumno(gid, uid, d){
+    try { const g = await datosGrupo(gid); await avisarA([uid], { ...d, grupo:gid, grupoNombre:g.nombre, para:'alumno' }); } catch (e) {}
+  }
+  // ---------- ahorrar lecturas de la nube (el plan gratis de Firebase da 50,000 al día para todos) ----------
+  // lo que ya se leyó hace poco se reutiliza; «persistir» lo guarda también en este navegador
+  const MEMO = {};
+  async function memo(clave, ttl, fn, persistir){
+    clave = (N.usuario ? N.usuario.uid : '') + ':' + clave;
+    let m = MEMO[clave];
+    if (!m && persistir) try { m = JSON.parse(localStorage.getItem('memo_' + clave) || 'null'); } catch (e) {}
+    if (m && Date.now() - m.t < ttl) return m.v;
+    const v = await fn(); MEMO[clave] = { t:Date.now(), v };
+    if (persistir) try { localStorage.setItem('memo_' + clave, JSON.stringify(MEMO[clave])); } catch (e) {}
+    return v;
+  }
+  function olvidar(pref){
+    pref = (N.usuario ? N.usuario.uid : '') + ':' + pref;
+    Object.keys(MEMO).forEach(k => { if (k.startsWith(pref)) delete MEMO[k]; });
+    try { Object.keys(localStorage).forEach(k => { if (k.startsWith('memo_' + pref)) localStorage.removeItem(k); }); } catch (e) {}
+  }
+  const MIN = 60000;
+  // la lista de alumnos: en el grupo y el pase de lista siempre fresca (alguien se pudo acabar de unir); dentro de una actividad se reutiliza 1 min
+  const miembrosDe = (gid, fresca) => { if (fresca) olvidar('miembros:' + gid); return memo('miembros:' + gid, MIN, () => grupos().doc(gid).collection('miembros').get()); };
   const misGrupos = () => N.db.collection('usuarios').doc(N.usuario.uid).collection('grupos');
   const miniatura = () => { try { canvas.discardActiveObject(); canvas.renderAll(); return canvas.toDataURL({ format:'jpeg', quality:0.6, multiplier:(360 / Math.max(W, H)) / zoom }); } catch (e) { return ''; } };
   window.ACTIVIDAD_ACTUAL = null;     // { gid, aid, titulo, grupo, limite }
@@ -34,7 +76,7 @@
   .codigoGrande{font:800 34px/1 'Poppins',monospace;letter-spacing:.18em;color:var(--neon,#19c8ff);margin:6px 0}
   .gridEntregas{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin:10px 0}
   .entrega{border:1px solid var(--borde,#2a3140);border-radius:12px;overflow:hidden;background:var(--panel2,#151821)}.entrega img{width:100%;aspect-ratio:4/3;object-fit:contain;background:#fff;display:block}
-  .entrega .pie{padding:8px 10px;font-size:13px}.entrega .pie b{display:block}.entrega .fila{display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap}.entrega .fila .pb{padding:6px 10px}.entrega input{width:64px;min-width:0;background:var(--panel,#10131b);color:inherit;border:1px solid var(--borde,#2a3140);border-radius:8px;padding:6px 8px}
+  .entrega .sinMini{aspect-ratio:4/3;display:grid;place-items:center;font-size:40px;background:var(--panel,#10131b)}.entrega .pie{padding:8px 10px;font-size:13px}.entrega .pie b{display:block}.entrega .fila{display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap}.entrega .fila .pb{padding:6px 10px}.entrega input{width:64px;min-width:0;background:var(--panel,#10131b);color:inherit;border:1px solid var(--borde,#2a3140);border-radius:8px;padding:6px 8px}
   .entrega textarea,.escForm textarea{background:var(--panel,#10131b);color:inherit;border:1px solid var(--borde,#2a3140);border-radius:8px;padding:8px;font:13px/1.4 Inter,sans-serif;resize:vertical}
   .escForm label{display:block;font-size:13px;margin:10px 0 4px;color:var(--suave,#9ca3af)}.escForm input,.escForm textarea{width:100%;box-sizing:border-box}
   #bandaActividad{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:10px;background:#0b1220;color:#e8f6ff;border:1px solid #19c8ff;border-radius:999px;padding:6px 8px 6px 16px;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,.35);max-width:calc(100% - 20px)}
@@ -43,7 +85,7 @@
   .filaRub{display:flex;gap:6px;margin:4px 0}.filaRub input[type=number]{width:80px}.filaRub .buscador{flex:1;margin:0}
   .rub{display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:12.5px}.rub label{display:flex;align-items:center;gap:6px;justify-content:space-between;margin:0;color:inherit}
   .rub label span{color:var(--suave,#9ca3af);margin-left:auto;white-space:nowrap;flex:none}.rub input{width:56px}.totRub{font-size:13px;margin-top:2px}
-  #bEscuela.avisoEsc{position:relative}#bEscuela.avisoEsc::after{content:attr(data-n);position:absolute;top:2px;right:2px;min-width:16px;height:16px;border-radius:8px;background:#ef4444;color:#fff;font:700 10px/16px Inter,sans-serif;text-align:center;padding:0 3px}
+  #bAvisos[hidden]{display:none}#bEscuela.avisoEsc,#bAvisos.avisoEsc{position:relative}#bAvisos.avisoEsc::after,#bEscuela.avisoEsc::after{content:attr(data-n);position:absolute;top:2px;right:2px;min-width:16px;height:16px;border-radius:8px;background:#ef4444;color:#fff;font:700 10px/16px Inter,sans-serif;text-align:center;padding:0 3px}
   #bandaActividad span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#bandaActividad .btnP{padding:7px 14px;white-space:nowrap}#bandaActividad[hidden]{display:none}
   #bandaActividad{flex-wrap:nowrap;justify-content:center;border-radius:18px}@media (max-width:760px){#bandaActividad{flex-wrap:wrap}}.escItem .t small{display:block}#bandaActividad .pb{white-space:nowrap}#bandaActividad.corr{border-color:#f43f5e}#bandaHerr{display:flex;gap:4px}#bandaHerr[hidden],#bandaActividad [hidden]{display:none}
   #bandaHerr .pb{padding:6px 9px;min-height:0;font-size:15px}#bandaHerr .pb.on{background:#f43f5e;color:#fff;border-color:#f43f5e}
@@ -56,6 +98,13 @@
   .pregEx label.bien{background:rgba(34,197,94,.16);outline:1px solid #22c55e}.pregEx label.mal{background:rgba(244,63,94,.14);outline:1px solid #f43f5e}
   .opEx{display:flex;gap:6px;align-items:center;margin:4px 0}.opEx input[type=text]{flex:1;margin:0}.opEx input[type=radio]{width:auto}
   .resEx{font:800 30px/1 Poppins,sans-serif;color:var(--neon,#19c8ff);margin:8px 0}.barraEst{height:8px;border-radius:4px;background:var(--panel,#10131b);overflow:hidden;margin-top:4px}.barraEst i{display:block;height:100%;background:#22c55e}
+  .filaPreg{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin:6px 0}.filaPreg label{display:flex;flex-direction:column;gap:4px;margin:0}.filaPreg select{background:var(--panel,#10131b);color:inherit;border:1px solid var(--borde,#2a3140);border-radius:8px;padding:7px}
+  .escForm label.chk{display:flex;gap:8px;align-items:center;color:inherit;margin-top:10px}.escForm label.chk input{width:auto}
+  .imgPreg{margin:6px 0}.imgPreg img,.imgEx{display:block;max-width:100%;max-height:320px;border-radius:8px;margin:6px 0;background:#fff}
+  .respTxt{white-space:pre-wrap;background:var(--panel,#10131b);border:1px solid var(--borde,#2a3140);border-radius:8px;padding:8px 10px;margin:6px 0;font-size:14px}
+  .respEx{border-radius:12px}.respEx>summary{list-style:none}.respEx>summary::-webkit-details-marker{display:none}.respEx[open]>summary{border-bottom-left-radius:0;border-bottom-right-radius:0}.revAb{border:1px solid var(--borde,#2a3140);border-top:0;border-radius:0 0 12px 12px;padding:4px 12px 12px}
+  .relojEx{position:sticky;top:0;z-index:2;background:#0b1220;color:#e8f6ff;border:1px solid #19c8ff;border-radius:999px;padding:6px 14px;font:700 14px Inter,sans-serif;width:max-content;margin:0 0 8px auto}.relojEx.poco{border-color:#ef4444;color:#fecaca;background:#450a0a}
+  .relojIntro{display:flex;flex-direction:column;gap:4px;border:1px solid var(--borde,#2a3140);border-left:4px solid #19c8ff;border-radius:10px;padding:12px 14px;margin:10px 0;font-size:14px}.relojIntro b{font-size:17px}
   .i-duda{background:#fef9c3;color:#854d0e}
   .cal{margin:6px 0 10px}.calCab{display:flex;align-items:center;gap:8px;margin-bottom:8px}.calCab b{flex:1;text-align:center;font:700 16px Poppins,Inter,sans-serif}.calCab .pb{padding:4px 12px;min-height:0}
   .calGrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}.calDia{min-height:64px;border:1px solid var(--borde,#2a3140);border-radius:8px;padding:3px;background:var(--panel2,#151821);font-size:11px;overflow:hidden;cursor:pointer;color:inherit;text-align:left;font-family:inherit;display:flex;flex-direction:column;gap:2px}
@@ -70,7 +119,8 @@
   .chipsDias{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}.chipsDias .pb{padding:4px 10px;min-height:0;font-size:12px}.chipsDias .pb.on{border-color:var(--neon,#19c8ff);color:var(--neon,#19c8ff)}
   .hilo{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow:auto;padding:4px 2px;margin:6px 0}.msj{max-width:85%;border-radius:12px;padding:8px 11px;background:var(--panel2,#151821);border:1px solid var(--borde,#2a3140);white-space:pre-wrap;font-size:14px;align-self:flex-start}
   .msj.mio{align-self:flex-end;background:rgba(25,200,255,.12);border-color:rgba(25,200,255,.45)}.msj b{display:block;font-size:12px;margin-bottom:2px}.msj small{display:block;color:var(--suave,#9ca3af);font-size:11px;margin-top:3px}
-  .miAsis{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;margin:8px 0}`;
+  .miAsis{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;margin:8px 0}
+  .miFinal{display:flex;gap:14px;align-items:center;flex-wrap:wrap;border:1px solid var(--borde,#2a3140);border-radius:12px;padding:10px 14px;margin:8px 0;background:var(--panel2,#151821);font-size:13px}.miFinal div{display:flex;flex-direction:column}.miFinal div b{font:800 28px/1 Poppins,sans-serif;color:var(--neon,#19c8ff)}.miFinal small{color:var(--suave,#9ca3af)}.miFinal span{flex:1;min-width:200px}`;
   document.head.appendChild(st);
   const cuerpo = () => $e('escCuerpo');
   let pila = [];                           // para el botón «atrás»
@@ -104,7 +154,7 @@
     }));
     const item = g => `<button class="escItem" data-g="${esc(g.id)}"><span class="t"><b>${esc(g.nombre)}</b><small>${g.rol === 'maestro' ? 'Código: ' + esc(g.codigo || '') : 'Maestro(a): ' + esc(g.maestroNombre || '')}</small></span>
         ${g.dudas ? `<span class="insig i-duda">💬 ${g.dudas} pregunta${g.dudas > 1 ? 's' : ''}</span>` : ''}${g.avisos ? `<span class="insig i-nuevo">📢 ${g.avisos} aviso${g.avisos > 1 ? 's' : ''}</span>` : ''}${g.pend && g.pend.pronto ? `<span class="insig i-tarde">⏰ ${g.pend.pronto} vence${g.pend.pronto > 1 ? 'n' : ''} pronto</span>` : g.pend && g.pend.n ? `<span class="insig i-pend">${g.pend.n} pendiente${g.pend.n > 1 ? 's' : ''}</span>` : ''}
-        <span class="insig ${g.rol === 'maestro' ? 'i-maestro' : 'i-alumno'}">${g.rol === 'maestro' ? 'Maestro' : 'Alumno'}</span></button>`;
+        <span class="insig ${g.rol === 'maestro' ? 'i-maestro' : 'i-alumno'}">${g.rol === 'maestro' ? (g.aux ? 'Auxiliar' : 'Maestro') : 'Alumno'}</span></button>`;
     const activos = mios.filter(g => g.existe && !g.archivado), archivados = mios.filter(g => g.existe && g.archivado);
     cuerpo().innerHTML = `<div class="grupoBtns"><button class="pb" id="escCrear">＋ Crear un grupo (soy maestro)</button><button class="pb" id="escUnirme">🔑 Unirme con un código</button></div>
       <div class="escLista">${activos.length ? activos.map(item).join('')
@@ -137,8 +187,11 @@
   function formUnirme(codigoInicial){
     cuerpo().innerHTML = `<div class="escForm"><label for="escCodigo">Código del grupo</label><input id="escCodigo" class="buscador" placeholder="Ej. K7P2QX" maxlength="6" style="text-transform:uppercase;letter-spacing:.2em;font-weight:700" value="${esc(codigoInicial || '')}">
       <p class="hint">Al unirte, tu maestro verá tu nombre, tu correo y tu foto de Google, tus entregas y tus respuestas. <a href="https://gamerpc.github.io/disenador/privacidad.html#menores" target="_blank" rel="noopener">Aviso de privacidad</a>.</p>
+      <label style="display:flex;gap:8px;align-items:center;color:inherit"><input type="checkbox" id="escComoAux" style="width:auto"> Soy maestro(a) auxiliar o adjunto de este grupo</label>
+      <p class="hint" id="escAuxNota" hidden style="padding-top:0">El maestro titular recibe tu solicitud y te aprueba. Después podrás publicar, calificar, corregir y pasar lista en el grupo.</p>
       <button class="btnP" id="escUnirOk" style="margin-top:10px">Unirme</button></div>`;
     $e('escCodigo').focus();
+    $e('escComoAux').onchange = e => { $e('escAuxNota').hidden = !e.target.checked; };
     $e('escUnirOk').onclick = async () => {
       const codigo = $e('escCodigo').value.trim().toUpperCase(); if (codigo.length !== 6) return toast('El código tiene 6 letras o números');
       cargando(true);
@@ -147,6 +200,13 @@
         if (!d) throw new Error('No encontré un grupo con ese código. Revísalo con tu maestro.');
         const g = d.data(), u = N.usuario, ahora = N.ahora();
         if (g.maestro === u.uid) throw new Error('Tú eres el maestro de este grupo');
+        if ($e('escComoAux').checked){
+          await grupos().doc(d.id).collection('auxSolicitudes').doc(u.uid).set({ nombre:u.displayName || u.email || 'Maestro(a)', correo:u.email || '', fecha:ahora });
+          await misGrupos().doc(d.id).set({ nombre:g.nombre, codigo:g.codigo, rol:'maestro', aux:true, maestroNombre:g.maestroNombre || '', unido:ahora });
+          avisarA([g.maestro], { tipo:'aux', grupo:d.id, grupoNombre:g.nombre, texto:(u.displayName || 'Alguien') + ' pidió ser maestro(a) auxiliar de «' + g.nombre + '»' });
+          toast('Solicitud enviada. Cuando el maestro titular te apruebe, verás el grupo completo.');
+          pila = [['🎓 Mi escuela', inicio]]; ver(g.nombre, () => grupoMaestro(d.id), true); $e('escAtras').hidden = false; return;
+        }
         await grupos().doc(d.id).collection('miembros').doc(u.uid).set({ nombre:u.displayName || u.email || 'Alumno', correo:u.email || '', foto:u.photoURL || '', unido:ahora });
         await misGrupos().doc(d.id).set({ nombre:g.nombre, rol:'alumno', maestroNombre:g.maestroNombre || '', unido:ahora });
         toast('¡Listo! Ya estás en «' + g.nombre + '».');
@@ -157,19 +217,39 @@
 
   // ---------- maestro ----------
   async function grupoMaestro(gid){
-    const gref = grupos().doc(gid), g = (await gref.get()).data();
-    const [miembros, acts, exs, avs] = await Promise.all([gref.collection('miembros').get(), gref.collection('actividades').get(), gref.collection('examenes').get().catch(sinPermiso), gref.collection('avisos').get().catch(sinPermiso)]);
+    const gref = grupos().doc(gid), g = (await gref.get()).data(), titular = esTitular(g);
+    if (!titular && !(g.auxiliares || []).includes(N.usuario.uid)){
+      const sol = await gref.collection('auxSolicitudes').doc(N.usuario.uid).get().catch(() => null);
+      cuerpo().innerHTML = sol && sol.exists ? `<p class="hint" style="padding-top:0">⏳ Pediste ser maestro(a) auxiliar de este grupo. En cuanto ${esc(g.maestroNombre || 'el maestro titular')} te apruebe, aquí verás todo.</p><button class="pb" id="escCancelarAux">Cancelar mi solicitud</button>`
+        : '<p class="hint" style="padding-top:0">Ya no eres maestro(a) auxiliar de este grupo.</p><button class="pb" id="escCancelarAux">Quitarlo de mi lista</button>';
+      $e('escCancelarAux').onclick = async () => { await gref.collection('auxSolicitudes').doc(N.usuario.uid).delete().catch(() => {}); await misGrupos().doc(gid).delete().catch(() => {}); $e('escAtras').click(); };
+      return;
+    }
+    const [miembros, acts, exs, avs, sols] = await Promise.all([miembrosDe(gid, true), gref.collection('actividades').get(), gref.collection('examenes').get().catch(sinPermiso), gref.collection('avisos').get().catch(sinPermiso), titular ? gref.collection('auxSolicitudes').get().catch(sinPermiso) : sinPermiso()]);
+    const solicitudes = sols.docs.map(d => ({ id:d.id, ...d.data() }));
     const lista = acts.docs.map(d => ({ id:d.id, ...d.data() })).sort((a, b) => (b.creada || '').localeCompare(a.creada || ''));
     const examenes = exs.docs.map(d => ({ id:d.id, ...d.data() })).sort((a, b) => (b.creado || '').localeCompare(a.creado || ''));
     const avisos = avs.docs.map(d => ({ id:d.id, ...d.data() })).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+    // cuántos entregaron: de lo que ya cerró se guarda el conteo en la propia actividad (así no se vuelve a leer cada vez)
+    const cerrado = o => vencida(o.limite) && o.conteo && (o.conteo.fecha || '') > o.limite + 'T23:59:59';
+    const contar = async (o, col, tipo) => {
+      if (cerrado(o)) return o.conteo;
+      const c = await memo('cnt:' + gid + ':' + o.id, 3 * MIN, async () => { const docs = (await col.get()).docs; return { n:docs.length, kb:docs.reduce((t, d) => t + (d.data().tamKB || 0), 0), fecha:N.ahora() }; });
+      if (vencida(o.limite)) gref.collection(tipo).doc(o.id).update({ conteo:c }).catch(() => {});
+      return c;
+    };
     await Promise.all(lista.map(async a => { const r = gref.collection('actividades').doc(a.id);
-      [a.entregas, a.dudas] = await Promise.all([r.collection('entregas').get().then(x => x.docs.length), r.collection('dudas').where('pendienteMaestro', '==', true).get().then(x => x.size).catch(() => 0)]); }));
-    await Promise.all(examenes.map(async x => { x.resp = (await gref.collection('examenes').doc(x.id).collection('respuestas').get()).docs.length; }));
+      const [c, du] = await Promise.all([contar(a, r.collection('entregas'), 'actividades'), memo('dudas:' + gid + ':' + a.id, 2 * MIN, () => r.collection('dudas').where('pendienteMaestro', '==', true).get().then(x => x.size).catch(() => 0))]);
+      a.entregas = c.n; a.kb = c.kb || 0; a.dudas = du; }));
+    await Promise.all(examenes.map(async x => { x.resp = (await contar(x, gref.collection('examenes').doc(x.id).collection('respuestas'), 'examenes')).n; }));
+    const mbNube = lista.reduce((t, a) => t + (a.kb || 0), 0) / 1024;
     const enlace = location.origin + location.pathname + '?grupo=' + g.codigo;
     cuerpo().innerHTML = `<p class="hint" style="padding-top:0">Código para tus alumnos:</p><div class="codigoGrande">${esc(g.codigo)}</div>
       ${g.archivado ? '<p class="hint"><span class="insig i-pend">🗄 Grupo archivado</span> Los alumnos lo ven en «archivados» y ya no reciben actividades nuevas.</p>' : ''}
       <div class="grupoBtns"><button class="pb" id="escCopiar">🔗 Copiar enlace para unirse</button><button class="pb" id="escNuevaAct">＋ Nueva actividad con el diseño actual</button>
-        <button class="pb" id="escNuevoEx">📝 Nuevo examen</button><button class="pb" id="escCalendario">📅 Calendario</button><button class="pb" id="escLista">✅ Pase de lista</button><button class="pb" id="escCalif">⬇ Calificaciones (Excel)</button><button class="pb" id="escArchivar">${g.archivado ? '♻ Reactivar grupo' : '🗄 Archivar grupo'}</button></div>
+        <button class="pb" id="escNuevoEx">📝 Nuevo examen</button><button class="pb" id="escCalendario">📅 Calendario</button><button class="pb" id="escLista">✅ Pase de lista</button>${titular ? `<button class="pb" id="escPond">⚖ Ponderación${g.ponderacion ? ' ✓' : ''}</button>` : ''}<button class="pb" id="escCalif">⬇ Calificaciones (Excel)</button><button class="pb" id="escRespaldo">📦 Respaldo</button>${titular ? `<button class="pb" id="escArchivar">${g.archivado ? '♻ Reactivar grupo' : '🗄 Archivar grupo'}</button>` : ''}</div>
+      ${mbNube >= 1 ? `<p class="hint" style="padding-top:0">☁ Los trabajos de este grupo ocupan unos <b>${mbNube.toFixed(0)} MB</b> en la nube${mbNube > 150 ? ' · al cerrar el semestre descarga el <b>📦 Respaldo</b> y libera espacio' : ''}.</p>` : ''}
+      ${titular ? '' : `<p class="hint" style="padding-top:0"><span class="insig i-maestro">Auxiliar</span> Maestro(a) titular: ${esc(g.maestroNombre || '')}</p>`}
       <h4>Actividades</h4><div class="escLista">${lista.length ? lista.map(a => `<button class="escItem" data-a="${esc(a.id)}"><span class="t"><b>${esc(a.titulo)}</b><small>${a.limite ? 'Entrega: ' + fecha(a.limite) : 'Sin fecha límite'}</small></span>${a.dudas ? `<span class="insig i-duda">💬 ${a.dudas}</span>` : ''}<span class="insig i-cal">${a.entregas || 0} de ${miembros.size}</span></button>`).join('')
         : '<p class="hint">Aún no hay actividades. Abre o diseña la plantilla que usarán tus alumnos y pulsa «Nueva actividad».</p>'}</div>
       <h4>Exámenes</h4><div class="escLista">${examenes.length ? examenes.map(x => `<button class="escItem" data-x="${esc(x.id)}"><span class="t"><b>📝 ${esc(x.titulo)}</b><small>${x.preguntas.length} pregunta${x.preguntas.length > 1 ? 's' : ''}${x.limite ? ' · hasta ' + fecha(x.limite) : ''}</small></span><span class="insig i-cal">${x.resp || 0} de ${miembros.size}</span></button>`).join('')
@@ -177,20 +257,39 @@
       <h4>📢 Avisos para el grupo</h4>
       <div class="escForm"><textarea id="escAvisoTxt" rows="2" maxlength="1500" placeholder="Escribe un aviso: cambio de fecha, material para la clase, recordatorios…"></textarea><button class="pb" id="escAvisoOk" style="margin-top:6px">📢 Publicar aviso</button></div>
       ${avisos.map(v => `<div class="avisoEsc2"><button class="pb" data-borrarav="${esc(v.id)}" title="Borrar aviso" aria-label="Borrar aviso">✕</button>${esc(v.texto)}<small>${fechaHora(v.fecha)}</small></div>`).join('')}
+      ${titular ? `<h4>👥 Maestros auxiliares</h4><div class="escLista">${(g.auxiliares || []).map(u => `<div class="escItem" style="cursor:default"><span class="t"><b>${esc((g.auxNombres || {})[u] || 'Maestro(a)')}</b><small>Puede publicar, calificar, corregir y pasar lista</small></span><button class="pb" data-quitaraux="${esc(u)}">Quitar</button></div>`).join('')}
+        ${solicitudes.map(x => `<div class="escItem" style="cursor:default"><span class="t"><b>${esc(x.nombre)}</b><small>${esc(x.correo || '')} · pidió ser auxiliar</small></span><button class="btnP" data-aprobaraux="${esc(x.id)}">Aprobar</button><button class="pb" data-rechazaraux="${esc(x.id)}">Rechazar</button></div>`).join('')}
+        ${!(g.auxiliares || []).length && !solicitudes.length ? '<p class="hint" style="padding-top:0">¿Das la materia con alguien más? Comparte el código: al unirse marca «Soy maestro(a) auxiliar» y aquí lo apruebas.</p>' : ''}</div>` : ''}
       <h4>Alumnos (${miembros.size})</h4>${miembros.size ? `<div class="alumnos">${miembros.docs.map(m => `<span class="alumno">${esc(m.data().nombre)}<small>${esc(m.data().correo || '')}</small><button class="pb" data-sacar="${esc(m.id)}" title="Sacar del grupo" aria-label="Sacar a ${esc(m.data().nombre)} del grupo">✕</button></span>`).join('')}</div>` : '<p class="hint" style="padding-top:0">Todavía no se une nadie.</p>'}`;
     $e('escCalif').onclick = () => descargarCalificaciones(gid, g, miembros, lista);
+    $e('escRespaldo').onclick = () => ver('📦 Respaldo · ' + g.nombre, () => panelRespaldo(gid, g, miembros, lista));
+    if ($e('escPond')) $e('escPond').onclick = () => ver('⚖ Ponderación · ' + g.nombre, () => formPonderacion(gid, g));
     $e('escCalendario').onclick = () => ver('📅 Calendario · ' + g.nombre, () => calendario(gid, true));
     $e('escLista').onclick = () => ver('✅ Pase de lista · ' + g.nombre, () => paseDeLista(gid));
-    $e('escArchivar').onclick = async () => {
+    if ($e('escArchivar')) $e('escArchivar').onclick = async () => {
       const v = !g.archivado;
       if (v && !confirm('¿Archivar «' + g.nombre + '»? Se guarda todo; solo deja de aparecer entre los grupos activos.')) return;
       try { await gref.update({ archivado:v }); await misGrupos().doc(gid).update({ archivado:v }).catch(() => {}); toast(v ? 'Grupo archivado' : 'Grupo reactivado'); ver(g.nombre, () => grupoMaestro(gid), true); }
       catch (e) { toast('No se pudo: ' + e.message); }
     };
+    const recargar = () => ver(g.nombre, () => grupoMaestro(gid), true);
+    cuerpo().querySelectorAll('[data-aprobaraux]').forEach(b => b.onclick = async () => {
+      const x = solicitudes.find(y => y.id === b.dataset.aprobaraux);
+      try { await gref.update({ auxiliares:[...new Set([...(g.auxiliares || []), x.id])], auxNombres:{ ...(g.auxNombres || {}), [x.id]:x.nombre } });
+        await gref.collection('auxSolicitudes').doc(x.id).delete().catch(() => {});
+        avisarA([x.id], { tipo:'aux', grupo:gid, grupoNombre:g.nombre, texto:'Ya eres maestro(a) auxiliar de «' + g.nombre + '»' });
+        toast('👥 ' + x.nombre + ' ya es maestro(a) auxiliar'); recargar(); } catch (e) { toast('No se pudo: ' + e.message); }
+    });
+    cuerpo().querySelectorAll('[data-rechazaraux]').forEach(b => b.onclick = async () => { try { await gref.collection('auxSolicitudes').doc(b.dataset.rechazaraux).delete(); recargar(); } catch (e) { toast('No se pudo: ' + e.message); } });
+    cuerpo().querySelectorAll('[data-quitaraux]').forEach(b => b.onclick = async () => {
+      const u = b.dataset.quitaraux; if (!confirm('¿Quitar a ' + ((g.auxNombres || {})[u] || 'este maestro') + ' como auxiliar?')) return;
+      const nombres = { ...(g.auxNombres || {}) }; delete nombres[u];
+      try { await gref.update({ auxiliares:(g.auxiliares || []).filter(x => x !== u), auxNombres:nombres }); recargar(); } catch (e) { toast('No se pudo: ' + e.message); }
+    });
     cuerpo().querySelectorAll('[data-sacar]').forEach(b => b.onclick = async () => {
       const m = miembros.docs.find(x => x.id === b.dataset.sacar);
       if (!confirm('¿Sacar a ' + m.data().nombre + ' del grupo? Sus entregas se conservan.')) return;
-      try { await gref.collection('miembros').doc(m.id).delete(); toast(m.data().nombre + ' ya no está en el grupo'); ver(g.nombre, () => grupoMaestro(gid), true); }
+      try { await gref.collection('miembros').doc(m.id).delete(); olvidar('miembros:'); toast(m.data().nombre + ' ya no está en el grupo'); ver(g.nombre, () => grupoMaestro(gid), true); }
       catch (e) { toast('No se pudo: ' + e.message); }
     });
     $e('escCopiar').onclick = () => { (navigator.clipboard ? navigator.clipboard.writeText(enlace) : Promise.reject()).then(() => toast('Enlace copiado: ' + enlace), () => prompt('Copia este enlace:', enlace)); };
@@ -199,7 +298,7 @@
     cuerpo().querySelectorAll('[data-x]').forEach(b => b.onclick = () => { const x = examenes.find(y => y.id === b.dataset.x); ver('📝 ' + x.titulo, () => examenMaestro(gid, x.id)); });
     $e('escAvisoOk').onclick = async () => {
       const texto = $e('escAvisoTxt').value.trim(); if (!texto) return toast('Escribe el aviso');
-      try { await gref.collection('avisos').doc().set({ texto, fecha:N.ahora(), autor:N.usuario.displayName || '' }); toast('📢 Aviso publicado: tus alumnos lo verán al entrar'); ver(g.nombre, () => grupoMaestro(gid), true); }
+      olvidar('dudas'); try { await gref.collection('avisos').doc().set({ texto, fecha:N.ahora(), autor:N.usuario.displayName || '' }); avisarAlGrupo(gid, { tipo:'aviso', texto:'📢 ' + texto }); toast('📢 Aviso publicado: tus alumnos lo verán al entrar'); ver(g.nombre, () => grupoMaestro(gid), true); }
       catch (e) { toast('No se pudo publicar: ' + e.message); }
     };
     cuerpo().querySelectorAll('[data-borrarav]').forEach(b => b.onclick = async () => {
@@ -236,6 +335,7 @@
         const ref = grupos().doc(gid).collection('actividades').doc();
         const rubrica = $e('escUsaRub').checked ? [...document.querySelectorAll('#escRubFilas .filaRub')].map(f => ({ c:f.children[0].value.trim(), p:+f.children[1].value || 0 })).filter(x => x.c && x.p > 0) : null;
         await N.escribirGrande(ref, { titulo, instrucciones:$e('escInst').value.trim(), limite:$e('escLim').value || '', creada:N.ahora(), mini:miniatura(), w:W, h:H, rubrica:rubrica && rubrica.length ? rubrica : null }, serializar(), true);
+        avisarAlGrupo(gid, { tipo:'actividad', act:ref.id, texto:'📄 Nueva actividad: ' + titulo + ($e('escLim').value ? ' (entrega: ' + fecha($e('escLim').value) + ')' : '') });
         toast('Actividad publicada. Tus alumnos ya la ven en «Mi escuela».');
         $e('escAtras').click();
       } catch (e) { toast('No se pudo publicar: ' + e.message); } finally { cargando(false); }
@@ -243,19 +343,20 @@
   }
   async function actividadMaestro(gid, aid){
     const gref = grupos().doc(gid), aref = gref.collection('actividades').doc(aid);
-    const [a, ents, miembros, dds] = await Promise.all([aref.get(), aref.collection('entregas').get(), gref.collection('miembros').get(), aref.collection('dudas').get().catch(sinPermiso)]);
+    const [a, ents, miembros, dds] = await Promise.all([aref.get(), aref.collection('entregas').get(), miembrosDe(gid), aref.collection('dudas').get().catch(sinPermiso)]);
     const dudas = dds.docs.map(d => ({ id:d.id, ...d.data() })).sort((x, y) => (y.pendienteMaestro ? 1 : 0) - (x.pendienteMaestro ? 1 : 0) || (y.ultimo || '').localeCompare(x.ultimo || ''));
     const act = a.data(), lista = ents.docs.map(d => ({ id:d.id, ...d.data() })).sort((x, y) => (x.nombre || '').localeCompare(y.nombre || ''));
+    if (vencida(act.limite)) aref.update({ conteo:{ n:ents.docs.length, kb:ents.docs.reduce((t, d) => t + (d.data().tamKB || 0), 0), fecha:N.ahora() } }).catch(() => {});   // el grupo usa este conteo sin volver a leer
     const faltan = miembros.docs.filter(m => !lista.some(e => e.id === m.id)).map(m => m.data().nombre);
     cuerpo().innerHTML = `${act.instrucciones ? `<p class="hint" style="padding-top:0;white-space:pre-wrap">${esc(act.instrucciones)}</p>` : ''}
       <p class="hint">${act.limite ? 'Fecha límite: <b>' + fecha(act.limite) + '</b> · ' : ''}${lista.length} entrega${lista.length === 1 ? '' : 's'}</p>
       <div class="grupoBtns"><button class="pb" id="escVerPlantilla">👁 Abrir la plantilla</button><button class="pb peligro" id="escBorrarAct">🗑 Borrar actividad</button></div>
-      <div class="gridEntregas">${lista.map(e => `<div class="entrega" data-e="${esc(e.id)}"><img alt="" src="${e.mini || ''}"><div class="pie"><b>${esc(e.nombre)}</b>
+      <div class="gridEntregas">${lista.map(e => `<div class="entrega" data-e="${esc(e.id)}">${e.mini ? `<img alt="" src="${e.mini}">` : '<div class="sinMini">📦</div>'}<div class="pie"><b>${esc(e.nombre)}</b>
         <small class="hint" style="padding:0">${fechaHora(e.fecha)}${act.limite && e.fecha > act.limite + 'T23:59:59' ? ' · <span class="insig i-tarde">Tarde</span>' : ''}</small>
         <div class="fila" style="margin-top:4px">${e.devuelta ? '<span class="insig i-dev">↩ Devuelta</span>' : e.devueltaFecha && e.fecha > e.devueltaFecha ? '<span class="insig i-ok">✓ La corrigió</span>' : ''}${e.corregida ? '<span class="insig i-corr">✏ Con correcciones</span>' : ''}</div>
         ${act.rubrica ? `<div class="rub">${act.rubrica.map((k, i) => `<label>${esc(k.c)} <span>/ ${k.p}</span><input type="number" min="0" max="${k.p}" step="0.5" data-k="${i}" value="${e.rubrica && e.rubrica[i] != null ? e.rubrica[i] : ''}"></label>`).join('')}<b class="totRub">Total: ${e.calificacion ?? '—'} / ${maxRub(act)}</b></div>` : ''}
-        <div class="fila"><button class="pb" data-corr title="Abre la entrega para marcar, encerrar y comentar encima">✏ Corregir</button><button class="pb" data-dev title="Pedir al alumno que la corrija y la vuelva a entregar">↩ Devolver</button></div>
-        <div class="fila"><button class="pb" data-abrir>Abrir</button>${act.rubrica ? '' : `<input type="number" min="0" max="10" step="0.1" placeholder="Cal." value="${e.calificacion ?? ''}" aria-label="Calificación">`}<button class="pb" data-cal>Guardar</button></div>
+        ${e.ligero ? '<div class="fila"><span class="insig i-cal">📦 El trabajo está en el respaldo</span></div>' : ''}<div class="fila"${e.ligero ? ' style="display:none"' : ''}><button class="pb" data-corr title="Abre la entrega para marcar, encerrar y comentar encima">✏ Corregir</button><button class="pb" data-dev title="Pedir al alumno que la corrija y la vuelva a entregar">↩ Devolver</button></div>
+        <div class="fila"><button class="pb" data-abrir${e.ligero ? ' style="display:none"' : ''}>Abrir</button>${act.rubrica ? '' : `<input type="number" min="0" max="10" step="0.1" placeholder="Cal." value="${e.calificacion ?? ''}" aria-label="Calificación">`}<button class="pb" data-cal>Guardar</button></div>
         <textarea rows="2" placeholder="Comentario para el alumno" style="width:100%;margin-top:6px;box-sizing:border-box" aria-label="Comentario">${esc(e.comentario || '')}</textarea></div></div>`).join('')}</div>
       ${faltan.length ? `<p class="hint">Sin entregar: ${faltan.map(esc).join(' · ')}</p>` : ''}
       <h4>💬 Preguntas de tus alumnos</h4>${dudas.length ? `<div class="escLista">${dudas.map(d => `<button class="escItem" data-duda="${esc(d.id)}"><span class="t"><b>${esc(d.nombre || 'Alumno')}</b><small>${esc(d.ultimoTexto || '')}</small><small>${fechaHora(d.ultimo)}</small></span>${d.pendienteMaestro ? '<span class="insig i-duda">Sin responder</span>' : '<span class="insig i-ok">Respondida</span>'}</button>`).join('')}</div>`
@@ -275,7 +376,7 @@
       div.querySelector('[data-dev]').onclick = async () => {
         const msg = prompt('¿Qué debe corregir ' + e.nombre + '? (le llega este mensaje y la actividad vuelve a sus pendientes)', e.devueltaMsg || '');
         if (msg === null) return;
-        try { await eref.update({ devuelta:true, devueltaMsg:msg.trim(), devueltaFecha:N.ahora() }); toast('↩ Devuelta a ' + e.nombre); ver(act.titulo, () => actividadMaestro(gid, aid), true); }
+        try { await eref.update({ devuelta:true, devueltaMsg:msg.trim(), devueltaFecha:N.ahora() }); avisarAlAlumno(gid, e.id, { tipo:'devuelta', act:aid, texto:'↩ Tu maestro te devolvió «' + act.titulo + '» para corregirla' }); toast('↩ Devuelta a ' + e.nombre); ver(act.titulo, () => actividadMaestro(gid, aid), true); }
         catch (er) { toast('No se pudo devolver: ' + er.message); }
       };
       const ins = [...div.querySelectorAll('[data-k]')];
@@ -285,7 +386,7 @@
         let cal, rub = null;
         if (act.rubrica){ rub = ins.map(i => i.value === '' ? null : Math.max(0, Math.min(+i.max, +i.value))); cal = sumar(); }
         else { const v = div.querySelector('.fila input').value; cal = v === '' ? null : Math.max(0, Math.min(10, +v)); }
-        try { await eref.update({ calificacion:cal, rubrica:rub, comentario:div.querySelector('textarea').value.trim(), calificada:N.ahora() }); e.calificacion = cal; e.rubrica = rub; toast('Calificación guardada para ' + e.nombre); }
+        try { await eref.update({ calificacion:cal, rubrica:rub, comentario:div.querySelector('textarea').value.trim(), calificada:N.ahora() }); if (cal != null && cal !== e.calificacion) avisarAlAlumno(gid, e.id, { tipo:'calificacion', act:aid, texto:'✅ Ya tienes calificación en «' + act.titulo + '»: ' + cal }); e.calificacion = cal; e.rubrica = rub; toast('Calificación guardada para ' + e.nombre); }
         catch (er) { toast('No se pudo guardar: ' + er.message); }
       };
     });
@@ -299,24 +400,54 @@
     return (await grupos().doc(gid).collection('avisos').get()).docs.filter(d => (d.data().fecha || '') > visto).length;
   }
 
-  // ---------- exámenes de opción múltiple ----------
-  // examenes/{x}: preguntas sin respuestas · claves/{x}: respuestas correctas (solo el maestro; el alumno al terminar si así se eligió)
-  // examenes/{x}/respuestas/{alumno}: lo que contestó (no se puede cambiar) · la calificación la guarda el maestro
-  const calificar = (resp, clave) => { const t = clave.length, b = clave.reduce((s, c, i) => s + (resp[i] === c ? 1 : 0), 0); return { b, t, cal:Math.round(b / Math.max(1, t) * 100) / 10 }; };
+  // ---------- exámenes ----------
+  // examenes/{x}: preguntas (sin respuestas) · claves/{x}: respuestas correctas (solo el maestro; el alumno al terminar si así se eligió)
+  // examenes/{x}/respuestas/{alumno}: lo que contestó (no se puede cambiar) · la calificación y los puntos de las abiertas los pone el maestro
+  // examenes/{x}/inicios/{alumno}: a qué hora empezó (para el tiempo límite)
+  // tipos de pregunta: 'opcion' (clave = número de la opción) o 'abierta' (el alumno escribe; el maestro le pone puntos)
+  const ptsDe = q => +q.pts > 0 ? +q.pts : 1;
+  const esAbierta = q => q.tipo === 'abierta';
+  function calExamen(ex, r, clave){
+    let total = 0, got = 0, b = 0, t = 0, pend = 0; const ab = (r && r.abiertas) || {}, resp = (r && r.resp) || [];
+    ex.preguntas.forEach((q, i) => { const p = ptsDe(q); total += p;
+      if (esAbierta(q)){ if (ab[i] == null || ab[i] === '') pend++; else got += Math.max(0, Math.min(p, +ab[i])); }
+      else { t++; if (clave && resp[i] === clave[i]){ b++; got += p; } } });
+    return { b, t, pts:Math.round(got * 100) / 100, total, pend, cal:Math.round(got / Math.max(1, total) * 100) / 10 };
+  }
+  // orden al azar, pero siempre el mismo para cada alumno (si recarga la página no cambia)
+  function azar(sem){ let h = 1779033703 ^ sem.length; for (let i = 0; i < sem.length; i++){ h = Math.imul(h ^ sem.charCodeAt(i), 3432918353); h = h << 13 | h >>> 19; }
+    return () => { h = Math.imul(h ^ h >>> 16, 2246822507); h = Math.imul(h ^ h >>> 13, 3266489909); return ((h ^= h >>> 16) >>> 0) / 4294967296; }; }
+  const barajar = (n, rnd) => { const a = [...Array(n).keys()]; for (let i = n - 1; i > 0; i--){ const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  function imagenChica(file){
+    return new Promise((ok, mal) => { const im = new Image();
+      im.onload = () => { const k = Math.min(1, 900 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+        const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height);
+        let q = 0.8, u = c.toDataURL('image/jpeg', q); while (u.length > 150000 && q > 0.35){ q -= 0.1; u = c.toDataURL('image/jpeg', q); }
+        URL.revokeObjectURL(im.src); ok(u); };
+      im.onerror = () => mal(new Error('No se pudo leer la imagen')); im.src = URL.createObjectURL(file); });
+  }
   function formExamen(gid){
     cuerpo().innerHTML = `<div class="escForm"><label for="exTit">Título</label><input id="exTit" class="buscador" maxlength="100" placeholder="Ej. Examen parcial · Unidad 2">
       <label for="exInst">Instrucciones (opcional)</label><textarea id="exInst" rows="2" maxlength="1000" placeholder="Ej. Elige la respuesta correcta. Tienes una sola oportunidad."></textarea>
-      <label for="exLim">Fecha límite (opcional)</label><input id="exLim" type="date">
-      <label style="display:flex;gap:8px;align-items:center;color:inherit;margin-top:12px"><input type="checkbox" id="exMostrar" checked style="width:auto"> Al terminar, el alumno ve su calificación y las respuestas correctas</label>
-      <div id="exPregs"></div><button class="pb" id="exMas">＋ Agregar pregunta</button>
-      <p class="hint">Marca con el círculo la respuesta correcta de cada pregunta. La calificación es sobre 10.</p>
+      <div class="filaPreg"><label>Fecha límite (opcional)<input id="exLim" type="date"></label><label>⏱ Tiempo para contestar<span style="display:flex;gap:6px;align-items:center"><input id="exTiempo" type="number" min="0" max="300" step="5" value="0" style="width:80px"> minutos (0 = sin límite)</span></label></div>
+      <label class="chk"><input type="checkbox" id="exMostrar" checked> Al terminar, el alumno ve su calificación y las respuestas correctas</label>
+      <label class="chk"><input type="checkbox" id="exMezclar"> 🔀 Cambiar el orden de las preguntas y de las opciones para cada alumno</label>
+      <div id="exPregs"></div><div class="grupoBtns"><button class="pb" id="exMas">＋ Pregunta de opción múltiple</button><button class="pb" id="exMasAb">＋ Pregunta abierta</button></div>
+      <p class="hint">En opción múltiple marca con el círculo la respuesta correcta; esas se califican solas. Las abiertas las calificas tú al revisar. Cada pregunta vale los puntos que pongas y la calificación es sobre 10.</p>
       <button class="btnP" id="exOk">Publicar examen</button></div>`;
     const caja = $e('exPregs');
-    const pregunta = (txt = '', ops = ['', '', '', ''], ok = 0) => {
-      const d = document.createElement('div'); d.className = 'pregEx';
+    const renumerar = () => [...caja.children].forEach((x, i) => x.querySelector('.nP').textContent = i + 1);
+    const pregunta = (txt = '', ops = ['', '', '', ''], ok = 0, tipo = 'opcion') => {
+      const d = document.createElement('div'); d.className = 'pregEx'; d.dataset.img = '';
       const n = caja.children.length + 1, nom = 'exok' + Math.random().toString(36).slice(2, 7);
-      d.innerHTML = `<b>Pregunta <span class="nP">${n}</span> <button class="pb" data-q style="float:right;padding:2px 8px;min-height:0" aria-label="Quitar pregunta">✕</button></b><textarea rows="2" maxlength="600" placeholder="Escribe la pregunta" style="width:100%;box-sizing:border-box">${esc(txt)}</textarea><div class="ops"></div><button class="pb" data-mas style="margin-top:4px">＋ Opción</button>`;
-      const opsDiv = d.querySelector('.ops');
+      d.innerHTML = `<b>Pregunta <span class="nP">${n}</span> <button class="pb" data-q style="float:right;padding:2px 8px;min-height:0" aria-label="Quitar pregunta">✕</button></b>
+        <div class="filaPreg"><select data-tipo aria-label="Tipo de pregunta"><option value="opcion">Opción múltiple</option><option value="abierta">Respuesta abierta (la calificas tú)</option></select>
+          <label style="flex-direction:row;align-items:center;gap:6px">Puntos <input type="number" data-pts min="0.5" max="100" step="0.5" value="1" style="width:70px"></label>
+          <button class="pb" data-img>🖼 Imagen</button><input type="file" accept="image/*" hidden></div>
+        <textarea rows="2" maxlength="600" placeholder="Escribe la pregunta" style="width:100%;box-sizing:border-box">${esc(txt)}</textarea>
+        <div class="imgPreg" hidden><img alt=""><button class="pb" data-quitarimg>✕ Quitar imagen</button></div>
+        <div class="ops"></div><button class="pb" data-mas style="margin-top:4px">＋ Opción</button><p class="hint notaAb" hidden style="padding:4px 0 0">El alumno escribe su respuesta. Tú le pones los puntos al revisar el examen.</p>`;
+      const opsDiv = d.querySelector('.ops'), sel = d.querySelector('[data-tipo]'), file = d.querySelector('input[type=file]');
       const opcion = (t, marcada) => {
         if (opsDiv.children.length >= 6) return toast('Máximo 6 opciones');
         const o = document.createElement('div'); o.className = 'opEx';
@@ -325,53 +456,92 @@
         opsDiv.appendChild(o);
       };
       ops.forEach((t, i) => opcion(t, i === ok));
+      const ponerTipo = v => { sel.value = v; const ab = v === 'abierta'; opsDiv.hidden = ab; d.querySelector('[data-mas]').hidden = ab; d.querySelector('.notaAb').hidden = !ab; };
+      sel.onchange = () => ponerTipo(sel.value); ponerTipo(tipo);
       d.querySelector('[data-mas]').onclick = () => opcion('', false);
-      d.querySelector('[data-q]').onclick = () => { d.remove(); [...caja.children].forEach((x, i) => x.querySelector('.nP').textContent = i + 1); };
+      d.querySelector('[data-q]').onclick = () => { d.remove(); renumerar(); };
+      d.querySelector('[data-img]').onclick = () => file.click();
+      file.onchange = async () => { const f = file.files[0]; file.value = ''; if (!f) return;
+        try { const u = await imagenChica(f); d.dataset.img = u; d.querySelector('.imgPreg img').src = u; d.querySelector('.imgPreg').hidden = false; } catch (e) { toast(e.message); } };
+      d.querySelector('[data-quitarimg]').onclick = () => { d.dataset.img = ''; d.querySelector('.imgPreg').hidden = true; };
       caja.appendChild(d);
     };
     pregunta(); pregunta('', ['Verdadero', 'Falso'], 0);
     $e('exMas').onclick = () => pregunta();
+    $e('exMasAb').onclick = () => pregunta('', ['', ''], 0, 'abierta');
     $e('exTit').focus();
     $e('exOk').onclick = async () => {
       const titulo = $e('exTit').value.trim(); if (!titulo) return toast('Escribe el título del examen');
       const preguntas = [], clave = [];
       for (const [i, d] of [...caja.children].entries()){
-        const p = d.querySelector('textarea').value.trim(), filas = [...d.querySelectorAll('.opEx')];
+        const p = d.querySelector('textarea').value.trim(), tipo = d.querySelector('[data-tipo]').value, pts = Math.max(0.5, +d.querySelector('[data-pts]').value || 1);
+        if (!p && !d.dataset.img) return toast('Falta escribir la pregunta ' + (i + 1));
+        const q = { p, tipo, pts }; if (d.dataset.img) q.img = d.dataset.img;
+        if (tipo === 'abierta'){ q.ops = []; preguntas.push(q); clave.push(null); continue; }
+        const filas = [...d.querySelectorAll('.opEx')];
         const ops = filas.map(f => f.querySelector('input[type=text]').value.trim()), ok = filas.findIndex(f => f.querySelector('input[type=radio]').checked);
-        if (!p) return toast('Falta escribir la pregunta ' + (i + 1));
         if (ops.some(o => !o)) return toast('Hay una opción vacía en la pregunta ' + (i + 1));
         if (ok < 0) return toast('Marca la respuesta correcta de la pregunta ' + (i + 1));
-        preguntas.push({ p, ops }); clave.push(ok);
+        q.ops = ops; preguntas.push(q); clave.push(ok);
       }
       if (!preguntas.length) return toast('Agrega al menos una pregunta');
+      if (JSON.stringify(preguntas).length > 900000) return toast('El examen pesa demasiado por las imágenes. Quita alguna o usa imágenes más sencillas.');
       cargando(true);
       try {
         const gref = grupos().doc(gid), ref = gref.collection('examenes').doc();
         await gref.collection('claves').doc(ref.id).set({ resp:clave });
-        await ref.set({ titulo, instrucciones:$e('exInst').value.trim(), limite:$e('exLim').value || '', mostrarResultados:$e('exMostrar').checked, preguntas, creado:N.ahora() });
+        await ref.set({ titulo, instrucciones:$e('exInst').value.trim(), limite:$e('exLim').value || '', mostrarResultados:$e('exMostrar').checked,
+          tiempo:Math.max(0, Math.min(300, Math.round(+$e('exTiempo').value || 0))), mezclar:$e('exMezclar').checked, preguntas, creado:N.ahora() });
+        avisarAlGrupo(gid, { tipo:'examen', ex:ref.id, texto:'📝 Nuevo examen: ' + titulo });
         toast('📝 Examen publicado: tus alumnos ya lo ven en «Mi escuela».'); $e('escAtras').click();
       } catch (e) { toast('No se pudo publicar: ' + e.message); } finally { cargando(false); }
     };
   }
+  const minutos = (a, b) => (new Date(b) - new Date(a)) / 60000;
   async function examenMaestro(gid, xid){
     const gref = grupos().doc(gid), xref = gref.collection('examenes').doc(xid);
-    const [x, cl, rs, miembros] = await Promise.all([xref.get(), gref.collection('claves').doc(xid).get(), xref.collection('respuestas').get(), gref.collection('miembros').get()]);
+    const [x, cl, rs, miembros] = await Promise.all([xref.get(), gref.collection('claves').doc(xid).get(), xref.collection('respuestas').get(), miembrosDe(gid)]);
     const ex = x.data(), clave = cl.exists ? cl.data().resp : [], lista = rs.docs.map(d => ({ id:d.id, ...d.data() })).sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
-    // la calificación se calcula aquí y se guarda (el alumno no puede escribirla)
-    for (const r of lista){ const c = calificar(r.resp || [], clave); r.c = c; if (r.calificacion !== c.cal) await xref.collection('respuestas').doc(r.id).update({ calificacion:c.cal, aciertos:c.b }).catch(() => {}); }
+    const abiertas = ex.preguntas.map((q, i) => esAbierta(q) ? i : -1).filter(i => i >= 0);
+    if (vencida(ex.limite)) xref.update({ conteo:{ n:lista.length, fecha:N.ahora() } }).catch(() => {});
+    // la calificación se calcula aquí y se guarda (el alumno no puede escribirla); con abiertas sin revisar queda pendiente
+    for (const r of lista){ const c = calExamen(ex, r, clave); r.c = c; const cal = c.pend ? null : c.cal;
+      if ((r.calificacion ?? null) !== cal || r.aciertos !== c.b) await xref.collection('respuestas').doc(r.id).update({ calificacion:cal, aciertos:c.b }).catch(() => {}); }
     const faltan = miembros.docs.filter(m => !lista.some(r => r.id === m.id)).map(m => m.data().nombre);
-    const prom = lista.length ? (lista.reduce((s, r) => s + r.c.cal, 0) / lista.length).toFixed(1) : '—';
+    const listas = lista.filter(r => !r.c.pend), prom = listas.length ? (listas.reduce((s, r) => s + r.c.cal, 0) / listas.length).toFixed(1) : '—';
+    const porRevisar = lista.filter(r => r.c.pend).length;
+    const tarde = r => ex.tiempo && r.inicio && minutos(r.inicio, r.fecha) > ex.tiempo + 1;
     cuerpo().innerHTML = `${ex.instrucciones ? `<p class="hint" style="padding-top:0;white-space:pre-wrap">${esc(ex.instrucciones)}</p>` : ''}
-      <p class="hint">${ex.limite ? 'Hasta el <b>' + fecha(ex.limite) + '</b> · ' : ''}${lista.length} respuesta${lista.length === 1 ? '' : 's'} · Promedio: <b>${prom}</b></p>
+      <p class="hint">${ex.limite ? 'Hasta el <b>' + fecha(ex.limite) + '</b> · ' : ''}${ex.tiempo ? '⏱ ' + ex.tiempo + ' min · ' : ''}${ex.mezclar ? '🔀 orden al azar · ' : ''}${lista.length} respuesta${lista.length === 1 ? '' : 's'} · Promedio: <b>${prom}</b>${porRevisar ? ` · <span class="insig i-pend">✏ ${porRevisar} por revisar</span>` : ''}</p>
       <div class="grupoBtns"><button class="pb peligro" id="exBorrar">🗑 Borrar examen</button></div>
-      <h4>Calificaciones</h4><div class="escLista">${lista.map(r => `<div class="escItem" style="cursor:default"><span class="t"><b>${esc(r.nombre)}</b><small>${fechaHora(r.fecha)} · ${r.c.b} de ${r.c.t} correctas</small></span><span class="insig i-cal">${r.c.cal}</span></div>`).join('') || '<p class="hint">Nadie ha respondido todavía.</p>'}</div>
+      <h4>Calificaciones</h4><div class="escLista">${lista.map(r => `<details class="respEx" data-r="${esc(r.id)}"${r.c.pend && abiertas.length ? ' open' : ''}><summary class="escItem"><span class="t"><b>${esc(r.nombre)}</b><small>${fechaHora(r.fecha)}${r.inicio ? ' · tardó ' + Math.max(1, Math.round(minutos(r.inicio, r.fecha))) + ' min' : ''}${r.c.t ? ' · ' + r.c.b + ' de ' + r.c.t + ' correctas' : ''}${tarde(r) ? ' · <span class="insig i-tarde">fuera de tiempo</span>' : ''}</small></span>${r.c.pend ? `<span class="insig i-pend">✏ Por revisar (${r.c.pend})</span>` : `<span class="insig i-cal">${r.c.cal}</span>`}</summary>
+        ${abiertas.length ? `<div class="revAb">${abiertas.map(i => `<div class="pregEx"><b>${i + 1}. ${esc(ex.preguntas[i].p)}</b><div class="respTxt">${esc((r.resp || [])[i] || '') || '<i>(sin respuesta)</i>'}</div>
+          <label style="flex-direction:row;align-items:center;gap:6px;cursor:default">Puntos <input type="number" min="0" max="${ptsDe(ex.preguntas[i])}" step="0.5" data-ab="${i}" value="${(r.abiertas || {})[i] ?? ''}" style="width:70px"> / ${ptsDe(ex.preguntas[i])}</label></div>`).join('')}
+          <button class="btnP" data-guardarab>💾 Guardar puntos</button></div>` : '<p class="hint" style="padding:6px 12px">Solo tiene preguntas de opción múltiple: se calificó sola.</p>'}</details>`).join('') || '<p class="hint">Nadie ha respondido todavía.</p>'}</div>
       ${faltan.length ? `<p class="hint">Sin responder: ${faltan.map(esc).join(' · ')}</p>` : ''}
-      <h4>Cómo le fue al grupo en cada pregunta</h4>${ex.preguntas.map((q, i) => { const bien = lista.filter(r => (r.resp || [])[i] === clave[i]).length, pc = lista.length ? Math.round(bien / lista.length * 100) : 0;
+      <h4>Cómo le fue al grupo en cada pregunta</h4>${ex.preguntas.map((q, i) => {
+        if (esAbierta(q)){ const cal = lista.filter(r => (r.abiertas || {})[i] != null), pc = cal.length ? Math.round(cal.reduce((s, r) => s + +r.abiertas[i], 0) / cal.length / ptsDe(q) * 100) : 0;
+          return `<div class="pregEx"><b>${i + 1}. ${esc(q.p)}</b><small class="hint" style="padding:0">Abierta · ${cal.length ? 'promedio ' + pc + '% de los puntos' : 'sin revisar'}</small><div class="barraEst"><i style="width:${pc}%;background:${pc >= 70 ? '#22c55e' : pc >= 40 ? '#f59e0b' : '#ef4444'}"></i></div></div>`; }
+        const bien = lista.filter(r => (r.resp || [])[i] === clave[i]).length, pc = lista.length ? Math.round(bien / lista.length * 100) : 0;
         return `<div class="pregEx"><b>${i + 1}. ${esc(q.p)}</b><small class="hint" style="padding:0">Correcta: ${esc(q.ops[clave[i]] || '')} · ${pc}% acertó</small><div class="barraEst"><i style="width:${pc}%;background:${pc >= 70 ? '#22c55e' : pc >= 40 ? '#f59e0b' : '#ef4444'}"></i></div></div>`; }).join('')}`;
+    cuerpo().querySelectorAll('.respEx').forEach(det => {
+      const btn = det.querySelector('[data-guardarab]'); if (!btn) return;
+      btn.onclick = async () => {
+        const r = lista.find(y => y.id === det.dataset.r), ab = {};
+        det.querySelectorAll('[data-ab]').forEach(inp => { if (inp.value !== '') ab[inp.dataset.ab] = Math.max(0, Math.min(+inp.max, +inp.value)); });
+        const c = calExamen(ex, { ...r, abiertas:ab }, clave);
+        try { await xref.collection('respuestas').doc(r.id).update({ abiertas:ab, calificacion:c.pend ? null : c.cal, aciertos:c.b });
+          if (!c.pend) avisarAlAlumno(gid, r.id, { tipo:'calificacion', ex:xid, texto:'✅ Ya tienes calificación en «' + ex.titulo + '»: ' + c.cal });
+          toast(c.pend ? 'Puntos guardados. Faltan ' + c.pend + ' por revisar.' : '✅ ' + r.nombre + ': ' + c.cal + ' / 10'); ver('📝 ' + ex.titulo, () => examenMaestro(gid, xid), true); }
+        catch (e) { toast('No se pudo guardar: ' + e.message); }
+      };
+    });
     $e('exBorrar').onclick = async () => {
       if (!confirm('¿Borrar el examen «' + ex.titulo + '» y todas sus respuestas?')) return;
       cargando(true);
-      try { for (const r of rs.docs) await xref.collection('respuestas').doc(r.id).delete(); await gref.collection('claves').doc(xid).delete(); await xref.delete(); toast('Examen borrado'); $e('escAtras').click(); }
+      try { for (const r of rs.docs) await xref.collection('respuestas').doc(r.id).delete();
+        for (const d of (await xref.collection('inicios').get().catch(sinPermiso)).docs) await xref.collection('inicios').doc(d.id).delete().catch(() => {});
+        await gref.collection('claves').doc(xid).delete(); await xref.delete(); toast('Examen borrado'); $e('escAtras').click(); }
       catch (e) { toast('No se pudo borrar: ' + e.message); } finally { cargando(false); }
     };
   }
@@ -379,31 +549,73 @@
     const gref = grupos().doc(gid), xref = gref.collection('examenes').doc(xid), uid = N.usuario.uid;
     const [x, r] = await Promise.all([xref.get(), xref.collection('respuestas').doc(uid).get()]);
     const ex = x.data(), mia = r.exists ? r.data() : null;
-    const vencido = ex.limite && new Date() > new Date(ex.limite + 'T23:59:59');
     if (mia) return resultadoAlumno(gid, xid, ex, mia);
-    if (vencido){ cuerpo().innerHTML = '<p class="hint" style="padding-top:0">Este examen ya cerró (fecha límite: ' + fecha(ex.limite) + ').</p>'; return; }
-    cuerpo().innerHTML = `${ex.instrucciones ? `<p style="white-space:pre-wrap;margin-top:0">${esc(ex.instrucciones)}</p>` : ''}<p class="hint">${ex.preguntas.length} preguntas${ex.limite ? ' · hasta el ' + fecha(ex.limite) : ''} · Solo puedes enviarlo una vez.</p>
-      ${ex.preguntas.map((q, i) => `<div class="pregEx"><b>${i + 1}. ${esc(q.p)}</b>${q.ops.map((o, j) => `<label><input type="radio" name="exr${i}" value="${j}" style="width:auto"> ${esc(o)}</label>`).join('')}</div>`).join('')}
-      <button class="btnP" id="exEnviar">📨 Enviar mis respuestas</button>`;
-    $e('exEnviar').onclick = async () => {
-      const resp = ex.preguntas.map((q, i) => { const m = cuerpo().querySelector(`input[name="exr${i}"]:checked`); return m ? +m.value : -1; });
-      const sin = resp.filter(v => v < 0).length;
-      if (!confirm(sin ? `Te faltan ${sin} pregunta${sin > 1 ? 's' : ''} sin contestar. ¿Enviar así? Ya no podrás cambiarlas.` : '¿Enviar tus respuestas? Ya no podrás cambiarlas.')) return;
-      cargando(true);
-      try {
-        const u = N.usuario, datos = { resp, fecha:N.ahora(), nombre:u.displayName || u.email || 'Alumno', correo:u.email || '' };
-        await xref.collection('respuestas').doc(uid).set(datos);
-        toast('📨 ¡Enviado!'); revisarPendientes(); await resultadoAlumno(gid, xid, ex, datos);
-      } catch (e) { toast('No se pudo enviar: ' + e.message); } finally { cargando(false); }
-    };
+    if (vencida(ex.limite)){ cuerpo().innerHTML = '<p class="hint" style="padding-top:0">Este examen ya cerró (fecha límite: ' + fecha(ex.limite) + ').</p>'; return; }
+    let inicio = null;
+    if (ex.tiempo){
+      const ini = await xref.collection('inicios').doc(uid).get().catch(() => null);
+      if (ini && ini.exists) inicio = ini.data().fecha;
+      else {
+        cuerpo().innerHTML = `${ex.instrucciones ? `<p style="white-space:pre-wrap;margin-top:0">${esc(ex.instrucciones)}</p>` : ''}
+          <div class="relojIntro"><b>⏱ Tienes ${ex.tiempo} minutos</b><span>${ex.preguntas.length} preguntas. El tiempo empieza a correr en cuanto toques «Empezar» y sigue corriendo aunque cierres la página. Al terminar el tiempo se envía solo lo que hayas contestado.</span></div>
+          <button class="btnP" id="exEmpezar">▶ Empezar el examen</button>`;
+        $e('exEmpezar').onclick = async () => {
+          try { inicio = N.ahora(); await xref.collection('inicios').doc(uid).set({ fecha:inicio }); } catch (e) { if (!sinReglas(e)) return toast('No se pudo empezar: ' + e.message); }
+          pintarExamen();
+        };
+        return;
+      }
+    }
+    pintarExamen();
+    function pintarExamen(){
+      const n = ex.preguntas.length, orden = ex.mezclar ? barajar(n, azar(uid + xid)) : [...Array(n).keys()];
+      const BORR = 'exb_' + xid, borr = (() => { try { return JSON.parse(localStorage.getItem(BORR) || '{}'); } catch (e) { return {}; } })();
+      cuerpo().innerHTML = `${ex.tiempo ? '<div class="relojEx" id="exReloj" role="timer" aria-live="off"></div>' : ''}${ex.instrucciones ? `<p style="white-space:pre-wrap;margin-top:0">${esc(ex.instrucciones)}</p>` : ''}<p class="hint">${n} preguntas${ex.limite ? ' · hasta el ' + fecha(ex.limite) : ''} · Solo puedes enviarlo una vez.</p>
+        ${orden.map((i, k) => { const q = ex.preguntas[i];
+          const ops = esAbierta(q) ? [] : (ex.mezclar ? barajar(q.ops.length, azar(uid + xid + ':' + i)) : q.ops.map((_, j) => j));
+          return `<div class="pregEx"><b>${k + 1}. ${esc(q.p)}${ptsDe(q) !== 1 ? ` <small class="hint" style="padding:0">(${ptsDe(q)} pts)</small>` : ''}</b>${q.img ? `<img class="imgEx" src="${q.img}" alt="Imagen de la pregunta ${k + 1}">` : ''}
+            ${esAbierta(q) ? `<textarea data-abierta="${i}" rows="4" maxlength="3000" placeholder="Escribe tu respuesta" style="width:100%;box-sizing:border-box">${esc(borr[i] || '')}</textarea>`
+              : ops.map(j => `<label><input type="radio" name="exr${i}" value="${j}" style="width:auto" ${borr[i] === j ? 'checked' : ''}> ${esc(q.ops[j])}</label>`).join('')}</div>`; }).join('')}
+        <button class="btnP" id="exEnviar">📨 Enviar mis respuestas</button>`;
+      const guardarBorr = () => { const b = {}; ex.preguntas.forEach((q, i) => { if (esAbierta(q)){ const t = cuerpo().querySelector(`[data-abierta="${i}"]`); if (t && t.value) b[i] = t.value; } else { const m = cuerpo().querySelector(`input[name="exr${i}"]:checked`); if (m) b[i] = +m.value; } });
+        try { localStorage.setItem(BORR, JSON.stringify(b)); } catch (e) {} };
+      cuerpo().addEventListener('input', guardarBorr); cuerpo().addEventListener('change', guardarBorr);
+      let enviando = false, reloj = null;
+      const enviar = async solo => {
+        if (enviando) return;
+        const resp = ex.preguntas.map((q, i) => esAbierta(q) ? ((cuerpo().querySelector(`[data-abierta="${i}"]`) || {}).value || '').trim().slice(0, 3000) : (m => m ? +m.value : -1)(cuerpo().querySelector(`input[name="exr${i}"]:checked`)));
+        const sin = resp.filter(v => v === -1 || v === '').length;
+        if (!solo && !confirm(sin ? `Te faltan ${sin} pregunta${sin > 1 ? 's' : ''} sin contestar. ¿Enviar así? Ya no podrás cambiarlas.` : '¿Enviar tus respuestas? Ya no podrás cambiarlas.')) return;
+        enviando = true; if (reloj) clearInterval(reloj); cargando(true);
+        try {
+          const u = N.usuario, datos = { resp, fecha:N.ahora(), nombre:u.displayName || u.email || 'Alumno', correo:u.email || '' }; if (inicio) datos.inicio = inicio;
+          await xref.collection('respuestas').doc(uid).set(datos);
+          try { localStorage.removeItem(BORR); } catch (e) {}
+          avisarAMaestros(gid, { tipo:'examenResp', ex:xid, texto:'📨 ' + datos.nombre + ' respondió «' + ex.titulo + '»' });
+          olvidar('pend:');
+          toast(solo ? '⏱ Se acabó el tiempo: tus respuestas se enviaron.' : '📨 ¡Enviado!'); revisarPendientes(); await resultadoAlumno(gid, xid, ex, datos);
+        } catch (e) { enviando = false; toast('No se pudo enviar: ' + e.message); } finally { cargando(false); }
+      };
+      $e('exEnviar').onclick = () => enviar(false);
+      if (ex.tiempo && inicio){
+        const fin = new Date(inicio).getTime() + ex.tiempo * 60000;
+        const tic = () => { const q = fin - Date.now(), el = $e('exReloj'); if (!el){ clearInterval(reloj); return; }
+          if (q <= 0){ el.textContent = '⏱ Tiempo terminado'; return enviar(true); }
+          const m = Math.floor(q / 60000), s = Math.floor(q % 60000 / 1000); el.textContent = '⏱ Te quedan ' + m + ':' + String(s).padStart(2, '0'); el.classList.toggle('poco', q < 120000); };
+        reloj = setInterval(tic, 1000); tic(); ver.limpiar = () => clearInterval(reloj);
+      }
+    }
   }
   async function resultadoAlumno(gid, xid, ex, mia){
     let clave = null;
     if (ex.mostrarResultados){ const c = await grupos().doc(gid).collection('claves').doc(xid).get().catch(() => null); if (c && c.exists) clave = c.data().resp; }
-    const c = clave ? calificar(mia.resp || [], clave) : null;
+    const c = clave ? calExamen(ex, mia, clave) : null, hayAb = ex.preguntas.some(esAbierta);
     cuerpo().innerHTML = `<p class="hint" style="padding-top:0">Enviaste tus respuestas el ${fechaHora(mia.fecha)}</p>
-      ${c ? `<div class="resEx">${c.cal} / 10</div><p class="hint" style="padding-top:0">${c.b} de ${c.t} correctas</p>` : mia.calificacion != null ? `<div class="resEx">${mia.calificacion} / 10</div>` : '<p class="hint">Tu maestro te dará tu calificación.</p>'}
-      ${ex.preguntas.map((q, i) => `<div class="pregEx"><b>${i + 1}. ${esc(q.p)}</b>${q.ops.map((o, j) => { const elegida = (mia.resp || [])[i] === j, cls = clave ? (j === clave[i] ? 'bien' : elegida ? 'mal' : '') : '';
+      ${mia.calificacion != null ? `<div class="resEx">${mia.calificacion} / 10</div>` : c && !c.pend ? `<div class="resEx">${c.cal} / 10</div>` : c ? `<p class="hint">Llevas ${c.pts} de ${c.total} puntos. Tu maestro está revisando ${c.pend} pregunta${c.pend > 1 ? 's' : ''} abierta${c.pend > 1 ? 's' : ''}.</p>` : '<p class="hint">Tu maestro te dará tu calificación.</p>'}
+      ${c && c.t ? `<p class="hint" style="padding-top:0">${c.b} de ${c.t} de opción múltiple correctas</p>` : ''}
+      ${ex.preguntas.map((q, i) => `<div class="pregEx"><b>${i + 1}. ${esc(q.p)}</b>${q.img ? `<img class="imgEx" src="${q.img}" alt="">` : ''}${esAbierta(q)
+        ? `<div class="respTxt">${esc((mia.resp || [])[i] || '') || '<i>(sin respuesta)</i>'}</div><small class="hint" style="padding:0">${(mia.abiertas || {})[i] != null ? 'Puntos: ' + mia.abiertas[i] + ' / ' + ptsDe(q) : hayAb ? 'Pendiente de revisar' : ''}</small>`
+        : q.ops.map((o, j) => { const elegida = (mia.resp || [])[i] === j, cls = clave ? (j === clave[i] ? 'bien' : elegida ? 'mal' : '') : '';
         return `<label class="${cls}"><input type="radio" disabled ${elegida ? 'checked' : ''} style="width:auto"> ${esc(o)}${clave && j === clave[i] ? ' ✓' : ''}</label>`; }).join('')}</div>`).join('')}`;
   }
 
@@ -419,11 +631,16 @@
     const acts = (await gref.collection('actividades').get()).docs.map(d => ({ id:d.id, ...d.data() })).sort((a, b) => (b.creada || '').localeCompare(a.creada || ''));
     const exs = (await gref.collection('examenes').get().catch(sinPermiso)).docs.map(d => ({ id:d.id, ...d.data() })).sort((a, b) => (b.creado || '').localeCompare(a.creado || ''));
     const avisos = (await gref.collection('avisos').get().catch(sinPermiso)).docs.map(d => ({ id:d.id, ...d.data() })).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
-    const mias = {}, misResp = {}, respondidas = {};
-    await Promise.all(acts.map(async a => { const r = gref.collection('actividades').doc(a.id);
-      const [s, d] = await Promise.all([r.collection('entregas').doc(uid).get(), r.collection('dudas').doc(uid).get().catch(() => null)]);
-      if (s.exists) mias[a.id] = s.data(); if (d && d.exists && d.data().pendienteAlumno) respondidas[a.id] = true; }));
+    const { mias, respondidas } = await memo('mias:' + gid + ':' + acts.map(a => a.id).join(','), 2 * MIN, async () => {
+      const mias = {}, respondidas = {};
+      await Promise.all(acts.map(async a => { const r = gref.collection('actividades').doc(a.id);
+        const [s, d] = await Promise.all([r.collection('entregas').doc(uid).get(), r.collection('dudas').doc(uid).get().catch(() => null)]);
+        if (s.exists) mias[a.id] = s.data(); if (d && d.exists && d.data().pendienteAlumno) respondidas[a.id] = true; }));
+      return { mias, respondidas }; });
+    const misResp = {};
     const asis = await gref.collection('asistenciaAlumno').doc(uid).get().catch(() => null), miAs = asis && asis.exists ? asis.data() : null;
+    const gd = (await gref.get()).data(), p = pondDe(gd);
+
     await Promise.all(exs.map(async x => { const s = await gref.collection('examenes').doc(x.id).collection('respuestas').doc(uid).get(); if (s.exists) misResp[x.id] = s.data(); }));
     const visto = leerVisto(gid);
     const estado = a => { const e = mias[a.id]; if (!e) return `<span class="insig ${a.limite && new Date() > new Date(a.limite + 'T23:59:59') ? 'i-tarde' : 'i-pend'}">${a.limite && new Date() > new Date(a.limite + 'T23:59:59') ? 'Vencida' : 'Pendiente'}</span>`;
@@ -431,7 +648,10 @@
       return e.calificacion != null ? `<span class="insig i-cal">Calificación: ${e.calificacion}</span>` : e.corregida ? '<span class="insig i-corr">✏ Con correcciones</span>' : '<span class="insig i-ok">Entregada</span>'; };
     const estadoEx = x => { const r = misResp[x.id]; if (!r) return `<span class="insig ${x.limite && new Date() > new Date(x.limite + 'T23:59:59') ? 'i-tarde' : 'i-pend'}">${x.limite && new Date() > new Date(x.limite + 'T23:59:59') ? 'Vencido' : 'Por responder'}</span>`;
       return r.calificacion != null ? `<span class="insig i-cal">Calificación: ${r.calificacion}</span>` : '<span class="insig i-ok">Respondido</span>'; };
+    let miFinal = null;
+    if (p && p.verAlumno) miFinal = calificacionFinal(p, { act:acts.map(a => notaAct(p, a, mias[a.id])).filter(v => v != null), ex:exs.map(x => notaEx(p, x, misResp[x.id] ? misResp[x.id].calificacion : null, !!misResp[x.id])).filter(v => v != null), asis:miAs && miAs.total ? pctAsis(miAs) : null });
     cuerpo().innerHTML = `<div class="grupoBtns"><button class="pb" id="escCalendario">📅 Calendario del grupo</button></div>
+      ${miFinal && miFinal.final != null ? `<div class="miFinal"><div><small>Tu calificación hasta ahora</small><b>${miFinal.final}</b></div><span>${[['act', '📄 Actividades'], ['ex', '📝 Exámenes'], ['asis', '✅ Asistencia']].filter(([k]) => p[k] > 0).map(([k, n]) => `${n}: <b>${miFinal[k] == null ? '—' : r1(miFinal[k])}</b> <small>(${p[k]}%)</small>`).join(' · ')}</span></div>` : ''}
       ${miAs && miAs.total ? `<div class="miAsis">✅ <b>Mi asistencia: ${pctAsis(miAs)}%</b><span class="insig i-ok">${miAs.P || 0} asistencia${miAs.P === 1 ? '' : 's'}</span>${miAs.R ? `<span class="insig i-pend">${miAs.R} retardo${miAs.R > 1 ? 's' : ''}</span>` : ''}${miAs.F ? `<span class="insig i-tarde">${miAs.F} falta${miAs.F > 1 ? 's' : ''}</span>` : ''}${miAs.J ? `<span class="insig i-cal">${miAs.J} justificada${miAs.J > 1 ? 's' : ''}</span>` : ''}</div>` : ''}
       ${avisos.slice(0, 5).map(v => `<div class="avisoEsc2${(v.fecha || '') > visto ? ' nuevo' : ''}">📢 ${esc(v.texto)}<small>${fechaHora(v.fecha)}${(v.fecha || '') > visto ? ' · nuevo' : ''}</small></div>`).join('')}
       ${exs.length ? `<h4>Exámenes</h4><div class="escLista">${exs.map(x => `<button class="escItem" data-x="${esc(x.id)}"><span class="t"><b>📝 ${esc(x.titulo)}</b><small>${x.preguntas.length} pregunta${x.preguntas.length > 1 ? 's' : ''}${x.limite ? ' · hasta ' + fecha(x.limite) : ''}</small></span>${estadoEx(x)}</button>`).join('')}</div><h4>Actividades</h4>` : ''}
@@ -452,12 +672,12 @@
       ${act.rubrica ? `<p class="hint"><b>Se califica con:</b> ${act.rubrica.map(k => esc(k.c) + ' (' + k.p + ')').join(' · ')}</p>` : ''}
       ${ent && ent.devuelta ? `<div class="devueltaMsg">↩ <b>Tu maestro te la devolvió para que la corrijas.</b>${ent.devueltaMsg ? '\n' + esc(ent.devueltaMsg) : ''}</div>` : ''}
       ${ent ? `<div class="escItem" style="cursor:default"><span class="t"><b>✓ Entregaste el ${fechaHora(ent.fecha)}</b>${ent.calificacion != null ? `<small>Calificación: <b>${ent.calificacion}${act.rubrica ? ' / ' + maxRub(act) : ''}</b></small>` : '<small>Tu maestro aún no califica.</small>'}${act.rubrica && ent.rubrica ? `<small>${act.rubrica.map((k, i) => esc(k.c) + ': ' + (ent.rubrica[i] ?? '—') + '/' + k.p).join(' · ')}</small>` : ''}${ent.comentario ? `<small>Comentario: ${esc(ent.comentario)}</small>` : ''}</span></div>` : ''}
-      <div class="grupoBtns" style="margin-top:10px">${ent && ent.corregida ? '<button class="btnP" id="escVerCorr">👁 Ver las correcciones de mi maestro</button>' : ''}<button class="${ent && ent.corregida ? 'pb' : 'btnP'}" id="escEmpezar">${ent ? '✏ Abrir mi entrega para corregirla' : '✏ Empezar la actividad'}</button></div>
+      <div class="grupoBtns" style="margin-top:10px">${ent && ent.corregida ? '<button class="btnP" id="escVerCorr">👁 Ver las correcciones de mi maestro</button>' : ''}<button class="${ent && ent.corregida ? 'pb' : 'btnP'}" id="escEmpezar">${ent && !ent.ligero ? '✏ Abrir mi entrega para corregirla' : '✏ Empezar la actividad'}</button></div>
       ${ent && ent.corregida ? '<p class="hint">Las marcas de tu maestro aparecen encima de tu trabajo. Corrige y vuelve a entregar; antes de entregar te preguntamos si quieres quitar las marcas.</p>' : ''}
       <h4>💬 ¿Tienes una duda? Pregúntale a tu maestro</h4><div id="escHilo"></div>`;
     hiloDudas($e('escHilo'), gid, aid, uid, false);
     const ctx = { gid, aid, titulo:act.titulo, grupo:g.data().nombre, limite:act.limite };
-    $e('escEmpezar').onclick = () => ent ? abrirDeNube(aref.collection('entregas').doc(uid), act.titulo, ctx) : abrirDeNube(aref, act.titulo, ctx);
+    $e('escEmpezar').onclick = () => ent && !ent.ligero ? abrirDeNube(aref.collection('entregas').doc(uid), act.titulo, ctx) : abrirDeNube(aref, act.titulo, ctx);
     if ($e('escVerCorr')) $e('escVerCorr').onclick = () => abrirDeNube(aref.collection('entregas').doc(uid).collection('correccion').doc('ultima'), act.titulo + ' (con correcciones)', ctx);
   }
   async function abrirDeNube(ref, nombre, ctxActividad){
@@ -540,6 +760,7 @@
       const eref = grupos().doc(c.gid).collection('actividades').doc(c.aid).collection('entregas').doc(c.uid);
       await N.escribirGrande(eref.collection('correccion').doc('ultima'), { fecha:N.ahora(), mini:miniatura(), maestro:N.usuario.displayName || '' }, serializar(), true);
       await eref.update({ corregida:N.ahora() });
+      avisarAlAlumno(c.gid, c.uid, { tipo:'correccion', act:c.aid, texto:'✏ Tu maestro dejó correcciones en «' + c.titulo + '»' });
       toast('💾 Corrección guardada: ' + c.nombre + ' ya puede verla en su actividad.');
     } catch (e) { toast('No se pudo guardar la corrección: ' + e.message); } finally { cargando(false); }
   };
@@ -559,12 +780,15 @@
       if (antes) ['calificacion', 'comentario', 'rubrica', 'calificada', 'corregida', 'devueltaMsg', 'devueltaFecha'].forEach(k => { if (k in antes) meta[k] = antes[k]; });
       meta.devuelta = false;
       await N.escribirGrande(eref, meta, serializar(), true);
+      avisarAMaestros(a.gid, { tipo:'entrega', act:a.aid, alumno:u.uid, texto:'📤 ' + meta.nombre + (antes ? ' volvió a entregar «' : ' entregó «') + a.titulo + '»' });
+      olvidar('mias:'); olvidar('pend:');
       toast('📤 ¡Entregado! Tu maestro ya puede verlo.'); revisarPendientes();
     } catch (e) { toast('No se pudo entregar: ' + e.message); } finally { cargando(false); }
   };
   // ---------- pendientes del alumno y aviso en el botón ----------
   const maxRub = a => (a.rubrica || []).reduce((s, k) => s + (k.p || 0), 0);
-  async function pendientesDe(gid){
+  function pendientesDe(gid, fresco){ if (fresco) olvidar('pend:'); return memo('pend:' + gid, 10 * MIN, () => pendientesDeNube(gid), true); }
+  async function pendientesDeNube(gid){
     const gref = grupos().doc(gid), uid = N.usuario.uid, hoy = new Date();
     const acts = (await gref.collection('actividades').get()).docs.map(d => ({ id:d.id, ...d.data() }));
     let n = 0, pronto = 0;
@@ -597,7 +821,8 @@
 
   // ---------- 💬 preguntas del alumno dentro de una actividad (solo las ven él y su maestro) ----------
   // actividades/{a}/dudas/{alumno}: resumen (quién debe contestar) · …/mensajes/{m}: cada mensaje
-  async function dudasSinResponder(gid){
+  function dudasSinResponder(gid){ return memo('dudasG:' + gid, 3 * MIN, () => dudasSinResponderNube(gid)); }
+  async function dudasSinResponderNube(gid){
     const acts = (await grupos().doc(gid).collection('actividades').get()).docs;
     const n = await Promise.all(acts.map(a => a.ref.collection('dudas').where('pendienteMaestro', '==', true).get().then(x => x.size).catch(() => 0)));
     return n.reduce((s, x) => s + x, 0);
@@ -623,8 +848,10 @@
       btn.disabled = true;
       try {
         const u = N.usuario, ahora = N.ahora(), nombre = u.displayName || u.email || (soyMaestro ? 'Maestro(a)' : 'Alumno');
-        await mref.doc().set({ de:yo, nombre, texto, fecha:ahora });
+        await mref.doc().set({ de:yo, nombre, texto, fecha:ahora }); olvidar(soyMaestro ? 'dudas' : 'mias:');
         await dref.set({ nombre:soyMaestro ? (nombreAlumno || 'Alumno') : nombre, ultimo:ahora, ultimoTexto:texto.slice(0, 140), ultimoDe:yo, pendienteMaestro:!soyMaestro, pendienteAlumno:soyMaestro });
+        if (soyMaestro) avisarAlAlumno(gid, uid, { tipo:'respuesta', act:aid, texto:'💬 Tu maestro te respondió: «' + texto.slice(0, 120) + '»' });
+        else avisarAMaestros(gid, { tipo:'duda', act:aid, alumno:uid, alumnoNombre:nombre, texto:'💬 ' + nombre + ' pregunta: «' + texto.slice(0, 120) + '»' });
         txt.value = ''; toast(soyMaestro ? '💬 Respuesta enviada' : '💬 Pregunta enviada a tu maestro');
       } catch (e) { toast(sinReglas(e) ? 'Las preguntas todavía no están activadas (faltan las reglas nuevas de Firebase).' : 'No se pudo enviar: ' + e.message); }
       finally { btn.disabled = false; }
@@ -696,6 +923,40 @@
     pintar();
   }
 
+  // ---------- ⚖ ponderación: cuánto vale cada parte en la calificación final ----------
+  const POND0 = { act:50, ex:30, asis:20, cero:true, verAlumno:true };
+  const pondDe = g => g && g.ponderacion ? { ...POND0, ...g.ponderacion } : null;
+  const vencida = lim => !!lim && new Date() > new Date(lim + 'T23:59:59');
+  const prom = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : null;
+  const r1 = v => v == null ? '' : Math.round(v * 10) / 10;
+  // partes: { act:[0-10…], ex:[0-10…], asis:% o null }
+  function calificacionFinal(p, partes){
+    const c = { act:prom(partes.act), ex:prom(partes.ex), asis:partes.asis == null ? null : partes.asis / 10 };
+    let w = 0, t = 0; ['act', 'ex', 'asis'].forEach(k => { if (c[k] != null && p[k] > 0){ w += p[k]; t += p[k] * c[k]; } });
+    return { ...c, final:w ? Math.round(t / w * 10) / 10 : null };
+  }
+  // cada actividad o examen se pasa a escala de 10; lo vencido sin entregar cuenta 0 si así lo eligió el maestro
+  const notaAct = (p, a, e) => e && e.calificacion != null ? e.calificacion * 10 / (a.rubrica ? maxRub(a) || 10 : 10) : (!e && p.cero && vencida(a.limite) ? 0 : null);
+  const notaEx = (p, x, cal, respondio) => cal != null ? cal : (!respondio && p.cero && vencida(x.limite) ? 0 : null);
+  function formPonderacion(gid, g){
+    const p = pondDe(g) || POND0;
+    cuerpo().innerHTML = `<div class="escForm"><p class="hint" style="padding-top:0">Elige cuánto vale cada parte. La calificación final es el promedio de cada parte (sobre 10) multiplicado por su porcentaje. Si una parte todavía no tiene calificaciones, no cuenta y las demás se reparten su peso.</p>
+      <div class="lista">${[['act', '📄 Actividades'], ['ex', '📝 Exámenes'], ['asis', '✅ Asistencia']].map(([k, n]) => `<div class="filaLista"><span class="t"><b>${n}</b></span><input type="number" min="0" max="100" step="5" data-p="${k}" value="${p[k]}" style="width:80px" aria-label="Porcentaje de ${n}"> %</div>`).join('')}</div>
+      <p class="hint" id="pondSuma" style="padding-top:0"></p>
+      <label style="display:flex;gap:8px;align-items:center;color:inherit"><input type="checkbox" id="pondCero" style="width:auto" ${p.cero ? 'checked' : ''}> Lo que ya venció y no se entregó cuenta como 0</label>
+      <label style="display:flex;gap:8px;align-items:center;color:inherit"><input type="checkbox" id="pondVer" style="width:auto" ${p.verAlumno ? 'checked' : ''}> Mis alumnos ven su calificación hasta ahora</label>
+      <div class="grupoBtns" style="margin-top:12px"><button class="btnP" id="pondOk">💾 Guardar</button>${g.ponderacion ? '<button class="pb" id="pondQuitar">Quitar ponderación (promedio simple)</button>' : ''}</div></div>`;
+    const ins = [...cuerpo().querySelectorAll('[data-p]')];
+    const suma = () => { const t = ins.reduce((s, i) => s + (+i.value || 0), 0); $e('pondSuma').innerHTML = t === 100 ? '✓ Suma 100%' : `<b style="color:#ef4444">Suma ${t}%: debe sumar 100%</b>`; return t; };
+    ins.forEach(i => i.oninput = suma); suma();
+    $e('pondOk').onclick = async () => {
+      if (suma() !== 100) return toast('Los porcentajes deben sumar 100%');
+      const nueva = { cero:$e('pondCero').checked, verAlumno:$e('pondVer').checked }; ins.forEach(i => { nueva[i.dataset.p] = Math.max(0, +i.value || 0); });
+      try { await grupos().doc(gid).update({ ponderacion:nueva }); delete cacheGrupo[gid]; toast('⚖ Ponderación guardada'); $e('escAtras').click(); } catch (e) { toast('No se pudo guardar: ' + e.message); }
+    };
+    if ($e('pondQuitar')) $e('pondQuitar').onclick = async () => { try { await grupos().doc(gid).update({ ponderacion:null }); delete cacheGrupo[gid]; toast('Se quitó la ponderación'); $e('escAtras').click(); } catch (e) { toast('No se pudo: ' + e.message); } };
+  }
+
   // ---------- ✅ pase de lista ----------
   // asistencia/{AAAA-MM-DD}: lo que marcó el maestro ese día (solo él la ve)
   // asistenciaAlumno/{alumno}: el resumen de cada alumno (lo ven él y su maestro)
@@ -708,7 +969,7 @@
   }
   async function paseDeLista(gid, diaInicial){
     const gref = grupos().doc(gid);
-    const [miembros, as] = await Promise.all([gref.collection('miembros').get(), gref.collection('asistencia').get().catch(e => { if (sinReglas(e)) return null; throw e; })]);
+    const [miembros, as] = await Promise.all([miembrosDe(gid, true), gref.collection('asistencia').get().catch(e => { if (sinReglas(e)) return null; throw e; })]);
     if (!as){ cuerpo().innerHTML = '<p class="hint" style="padding-top:0">El pase de lista todavía no está activado: quien administra el Diseñador debe publicar las reglas nuevas de Firebase (archivo firestore.rules).</p>'; return; }
     const alumnos = miembros.docs.map(m => ({ id:m.id, nombre:m.data().nombre })).sort((a, b) => a.nombre.localeCompare(b.nombre));
     const dias = as.docs.map(d => d.data()).filter(d => d.fecha).sort((a, b) => b.fecha.localeCompare(a.fecha));
@@ -755,6 +1016,13 @@
   async function descargarCalificaciones(gid, g, miembros, actividades){
     cargando(true);
     try {
+      const { csv } = await csvCalificaciones(gid, g, miembros, actividades);
+      bajarBlob(new Blob([csv], { type:'text/csv;charset=utf-8' }), 'Calificaciones - ' + g.nombre.replace(/[\\/:*?"<>|]/g, '') + '.csv');
+      toast('Calificaciones descargadas. Ábrelas con Excel o Google Sheets.');
+    } catch (e) { toast('No se pudieron descargar: ' + e.message); } finally { cargando(false); }
+  }
+  async function csvCalificaciones(gid, g, miembros, actividades){
+    {
       const gref = grupos().doc(gid), acts = actividades.slice().sort((a, b) => (a.creada || '').localeCompare(b.creada || ''));
       const alumnos = new Map(miembros.docs.map(m => [m.id, { nombre:m.data().nombre, correo:m.data().correo || '' }]));
       const notas = {};
@@ -768,38 +1036,228 @@
       for (const x of exs){
         const cl = await gref.collection('claves').doc(x.id).get(), clave = cl.exists ? cl.data().resp : [];
         (await gref.collection('examenes').doc(x.id).collection('respuestas').get()).docs.forEach(d => { const r = d.data(); if (!alumnos.has(d.id)) alumnos.set(d.id, { nombre:r.nombre + ' (salió del grupo)', correo:r.correo || '' });
-          (notas[d.id] = notas[d.id] || {})['ex_' + x.id] = { calificacion:calificar(r.resp || [], clave).cal }; });
+          (notas[d.id] = notas[d.id] || {})['ex_' + x.id] = (c => ({ calificacion:c.pend ? null : c.cal, pend:c.pend }))(calExamen(x, r, clave)); });
       }
       const cols = [...acts.map(a => ({ id:a.id, nom:a.titulo + (a.rubrica ? ' (/' + maxRub(a) + ')' : ' (/10)'), max:a.rubrica ? maxRub(a) || 10 : 10, falta:'Sin entregar', hecho:'Entregada' })),
-        ...exs.map(x => ({ id:'ex_' + x.id, nom:'Examen: ' + x.titulo + ' (/10)', max:10, falta:'Sin responder', hecho:'Respondido' }))];
+        ...exs.map(x => ({ id:'ex_' + x.id, nom:'Examen: ' + x.titulo + ' (/10)', max:10, falta:'Sin responder', hecho:'Por revisar' }))];
       const celda = v => { const t = String(v ?? ''); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
       // asistencia (si el maestro pasa lista)
       const dias = (await gref.collection('asistencia').get().catch(sinPermiso)).docs.map(d => d.data());
       const asis = resumenAsistencia(dias);
       const colAs = dias.length ? ['Asistencias', 'Retardos', 'Faltas', 'Justificadas', '% asistencia'] : [];
-      const filas = [['Alumno', 'Correo', ...cols.map(c => c.nom), 'Promedio (0-10)', ...colAs]];
+      const p = pondDe(g);
+      const colFin = p ? ['Prom. actividades (0-10)', 'Prom. exámenes (0-10)', 'Asistencia (0-10)', `Calificación final (${p.act}% act · ${p.ex}% ex · ${p.asis}% asist.)`] : ['Promedio (0-10)'];
+      const filas = [['Alumno', 'Correo', ...cols.map(c => c.nom), ...colFin, ...colAs]];
       [...alumnos.entries()].sort((a, b) => a[1].nombre.localeCompare(b[1].nombre)).forEach(([uid, al]) => {
         const vals = cols.map(c => { const e = (notas[uid] || {})[c.id]; return !e ? c.falta : e.calificacion == null ? c.hecho : e.calificacion; });
         const sobre10 = cols.map((c, i) => typeof vals[i] === 'number' ? vals[i] * 10 / c.max : null).filter(v => v != null);
         const r = asis[uid] || { P:0, R:0, F:0, J:0, total:0 };
-        filas.push([al.nombre, al.correo, ...vals, sobre10.length ? (sobre10.reduce((s, v) => s + v, 0) / sobre10.length).toFixed(1) : '', ...(dias.length ? [r.P, r.R, r.F, r.J, r.total ? pctAsis(r) : ''] : [])]);
+        let fin;
+        if (p){
+          const n = notas[uid] || {};
+          const f = calificacionFinal(p, { act:acts.map(a => notaAct(p, a, n[a.id])).filter(v => v != null), ex:exs.map(x => notaEx(p, x, n['ex_' + x.id] ? n['ex_' + x.id].calificacion : null, !!n['ex_' + x.id])).filter(v => v != null), asis:r.total ? pctAsis(r) : null });
+          fin = [r1(f.act), r1(f.ex), r1(f.asis), r1(f.final)];
+        } else fin = [sobre10.length ? (sobre10.reduce((s, v) => s + v, 0) / sobre10.length).toFixed(1) : ''];
+        filas.push([al.nombre, al.correo, ...vals, ...fin, ...(dias.length ? [r.P, r.R, r.F, r.J, r.total ? pctAsis(r) : ''] : [])]);
       });
       const csv = '\ufeff' + filas.map(f => f.map(celda).join(',')).join('\r\n');
-      bajarBlob(new Blob([csv], { type:'text/csv;charset=utf-8' }), 'Calificaciones - ' + g.nombre.replace(/[\\/:*?"<>|]/g, '') + '.csv');
-      toast('Calificaciones descargadas. Ábrelas con Excel o Google Sheets.');
-    } catch (e) { toast('No se pudieron descargar: ' + e.message); } finally { cargando(false); }
+      return { csv };
+    }
   }
+  // ---------- 📦 respaldo del grupo (.zip) y liberar espacio ----------
+  const URL_ZIP = ['https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js', 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js'];
+  async function cargarZip(){
+    if (window.JSZip) return;
+    for (const u of URL_ZIP){ try { await new Promise((ok, mal) => { const sc = document.createElement('script'); sc.src = u; sc.onload = ok; sc.onerror = mal; document.head.appendChild(sc); }); if (window.JSZip) return; } catch (e) {} }
+    throw new Error('No se pudo cargar la herramienta para hacer el .zip. Revisa tu internet e intenta otra vez.');
+  }
+  const nomArch = t => String(t || '').replace(/[\\/:*?"<>|\n\r\t]/g, '').replace(/\s+/g, ' ').trim().slice(0, 60) || 'sin nombre';
+  const celdaCSV = v => { const t = String(v ?? ''); return /[",\n\r]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+  const aCSV = filas => '﻿' + filas.map(f => f.map(celdaCSV).join(',')).join('\r\n');
+  function panelRespaldo(gid, g, miembros, actividades){
+    const titular = esTitular(g);
+    cuerpo().innerHTML = `<p class="hint" style="padding-top:0">Descarga todo el grupo en un solo archivo .zip para guardarlo en tu compu o en tu Drive:</p>
+      <ul class="hint" style="margin:0 0 8px;padding-left:20px;line-height:1.6"><li>Calificaciones y asistencia (se abren con Excel)</li><li>Cada actividad con su plantilla y el trabajo de cada alumno (se abren en el Diseñador con <b>Archivo → Abrir</b>)</li><li>Las correcciones, las preguntas de los alumnos, los exámenes con sus respuestas, los avisos y el calendario</li></ul>
+      <button class="btnP" id="resBajar">📦 Descargar respaldo (.zip)</button><p class="hint" id="resAvance" aria-live="polite"></p>
+      ${titular ? `<h4>🧹 Liberar espacio en la nube</h4><p class="hint" style="padding-top:0">Al cerrar el semestre, borra de la nube los trabajos de los alumnos de este grupo (lo que más espacio ocupa). Se quedan las calificaciones, comentarios, exámenes, asistencia y la plantilla de cada actividad. <b>Primero descarga el respaldo</b>: los trabajos solo quedarán en tu .zip.</p>
+        <button class="pb peligro" id="resLiberar" disabled>🧹 Borrar los trabajos de la nube</button>` : ''}`;
+    let respaldado = false;
+    $e('resBajar').onclick = async () => {
+      const btn = $e('resBajar'), av = t => { const el = $e('resAvance'); if (el) el.textContent = t; };
+      btn.disabled = true;
+      try {
+        const blob = await hacerRespaldo(gid, g, miembros, actividades, av);
+        bajarBlob(blob, 'Respaldo - ' + nomArch(g.nombre) + ' - ' + hoyISO() + '.zip');
+        av('✓ Listo: ' + (blob.size > 1048576 ? (blob.size / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(blob.size / 1024)) + ' KB') + '. Guárdalo en un lugar seguro.'); respaldado = true;
+        if ($e('resLiberar')) $e('resLiberar').disabled = false;
+      } catch (e) { av('⚠ ' + e.message); } finally { btn.disabled = false; }
+    };
+    if ($e('resLiberar')) $e('resLiberar').onclick = async () => {
+      if (!respaldado) return toast('Primero descarga el respaldo');
+      if (!confirm('¿Borrar de la nube los trabajos de los alumnos de «' + g.nombre + '»? Las calificaciones se conservan. Esto no se puede deshacer.')) return;
+      const av = t => { const el = $e('resAvance'); if (el) el.textContent = t; };
+      cargando(true);
+      try {
+        let n = 0, kb = 0; const gref = grupos().doc(gid);
+        for (const a of actividades){
+          const aref = gref.collection('actividades').doc(a.id);
+          for (const d of (await aref.collection('entregas').get()).docs){
+            const e = d.data(); if (e.ligero) continue;
+            const eref = aref.collection('entregas').doc(d.id);
+            for (let i = 0; i < (e.partes || 0); i++) await eref.collection('partes').doc(String(i)).delete().catch(() => {});
+            await N.borrarGrande(eref.collection('correccion').doc('ultima')).catch(() => {});
+            await eref.update({ partes:0, mini:'', tamKB:0, ligero:true, liberada:N.ahora() });
+            n++; kb += e.tamKB || 0; av('Borrando… ' + n + ' trabajos');
+          }
+        }
+        av('✓ Se liberaron ' + n + ' trabajos (' + (kb / 1024).toFixed(1) + ' MB).'); toast('🧹 Espacio liberado');
+      } catch (e) { av('⚠ No se pudo terminar: ' + e.message); } finally { cargando(false); }
+    };
+  }
+  async function hacerRespaldo(gid, g, miembros, actividades, av){
+    av('Preparando…'); await cargarZip();
+    const zip = new JSZip(), raiz = zip.folder('Respaldo - ' + nomArch(g.nombre)), gref = grupos().doc(gid);
+    raiz.file('LEEME.txt', ['Respaldo del grupo «' + g.nombre + '» (código ' + (g.codigo || '') + ')', 'Descargado el ' + new Date().toLocaleString('es-MX') + ' desde el Diseñador · Apik-Desing', '',
+      '· Calificaciones.csv y Asistencia.csv se abren con Excel o Google Sheets.',
+      '· Los archivos .apik.json son diseños: ábrelos en el Diseñador con Archivo → Abrir archivo.',
+      '· Cada carpeta de Actividades tiene la plantilla, el trabajo de cada alumno, las correcciones y las preguntas que hicieron.',
+      '· Exámenes: un .csv con las respuestas de cada alumno y un .txt con las preguntas y las respuestas correctas.', '',
+      'Este archivo tiene datos personales de tus alumnos: guárdalo en un lugar seguro y no lo compartas.'].join('\r\n'));
+    av('Calificaciones…');
+    raiz.file('Calificaciones.csv', (await csvCalificaciones(gid, g, miembros, actividades)).csv);
+    // asistencia: una columna por día
+    const dias = (await gref.collection('asistencia').get().catch(sinPermiso)).docs.map(d => d.data()).filter(d => d.fecha).sort((a, b) => a.fecha.localeCompare(b.fecha));
+    if (dias.length){
+      const nombres = new Map(miembros.docs.map(m => [m.id, m.data().nombre])); dias.forEach(d => Object.entries(d.nombres || {}).forEach(([u, n]) => { if (!nombres.has(u)) nombres.set(u, n); }));
+      const res = resumenAsistencia(dias);
+      raiz.file('Asistencia.csv', aCSV([['Alumno', ...dias.map(d => d.fecha), 'P', 'R', 'F', 'J', '% asistencia'],
+        ...[...nombres.entries()].sort((a, b) => a[1].localeCompare(b[1])).map(([u, n]) => { const r = res[u] || { P:0, R:0, F:0, J:0, total:0 }; return [n, ...dias.map(d => (d.estados || {})[u] || ''), r.P, r.R, r.F, r.J, r.total ? pctAsis(r) : '']; })]));
+    }
+    const [avs, evs] = await Promise.all([gref.collection('avisos').get().catch(sinPermiso), gref.collection('eventos').get().catch(sinPermiso)]);
+    if (avs.size) raiz.file('Avisos.txt', avs.docs.map(d => d.data()).sort((a, b) => (a.fecha || '').localeCompare(b.fecha || '')).map(v => fechaHora(v.fecha) + '\r\n' + v.texto).join('\r\n\r\n---\r\n\r\n'));
+    if (evs.size) raiz.file('Calendario.txt', evs.docs.map(d => d.data()).sort((a, b) => (a.fecha || '').localeCompare(b.fecha || '')).map(v => fecha(v.fecha) + ' · ' + v.titulo + (v.nota ? ' — ' + v.nota : '')).join('\r\n'));
+    // actividades
+    const acts = actividades.slice().sort((a, b) => (a.creada || '').localeCompare(b.creada || ''));
+    for (const [k, a] of acts.entries()){
+      const aref = gref.collection('actividades').doc(a.id), dir = raiz.folder('Actividades').folder(String(k + 1).padStart(2, '0') + ' ' + nomArch(a.titulo));
+      av('Actividad ' + (k + 1) + ' de ' + acts.length + ': ' + a.titulo);
+      dir.file('Instrucciones.txt', [a.titulo, a.limite ? 'Fecha límite: ' + fecha(a.limite) : 'Sin fecha límite', a.rubrica ? 'Rúbrica: ' + a.rubrica.map(r => r.c + ' (' + r.p + ')').join(' · ') : '', '', a.instrucciones || ''].join('\r\n'));
+      try { dir.file('Plantilla.apik.json', (await N.leerGrande(aref)).texto); } catch (e) {}
+      const usados = {};
+      const nombreUnico = n => { const b = nomArch(n); usados[b] = (usados[b] || 0) + 1; return usados[b] > 1 ? b + ' (' + usados[b] + ')' : b; };
+      for (const d of (await aref.collection('entregas').get()).docs){
+        const e = d.data(), nom = nombreUnico(e.nombre || 'Alumno'), eref = aref.collection('entregas').doc(d.id);
+        if (!e.ligero){ try { dir.folder('Entregas').file(nom + '.apik.json', (await N.leerGrande(eref)).texto); } catch (er) {} }
+        const b64 = /^data:image\/\w+;base64,(.*)$/.exec(e.mini || ''); if (b64) dir.folder('Entregas').file(nom + '.jpg', b64[1], { base64:true });
+        if (e.corregida && !e.ligero){ try { dir.folder('Correcciones').file(nom + '.apik.json', (await N.leerGrande(eref.collection('correccion').doc('ultima'))).texto); } catch (er) {} }
+      }
+      const dds = await aref.collection('dudas').get().catch(sinPermiso);
+      if (dds.size){
+        const txt = [];
+        for (const d of dds.docs){
+          const ms = (await aref.collection('dudas').doc(d.id).collection('mensajes').get().catch(sinPermiso)).docs.map(x => x.data()).sort((x, y) => (x.fecha || '').localeCompare(y.fecha || ''));
+          txt.push('== ' + (d.data().nombre || 'Alumno') + ' ==\r\n' + ms.map(m => fechaHora(m.fecha) + ' · ' + (m.nombre || m.de) + ': ' + m.texto).join('\r\n'));
+        }
+        dir.file('Preguntas de los alumnos.txt', txt.join('\r\n\r\n'));
+      }
+    }
+    // exámenes
+    const exs = (await gref.collection('examenes').get().catch(sinPermiso)).docs.map(d => ({ id:d.id, ...d.data() })).sort((a, b) => (a.creado || '').localeCompare(b.creado || ''));
+    for (const [k, x] of exs.entries()){
+      av('Examen ' + (k + 1) + ' de ' + exs.length + ': ' + x.titulo);
+      const cl = await gref.collection('claves').doc(x.id).get().catch(() => null), clave = cl && cl.exists ? cl.data().resp : [];
+      const rs = (await gref.collection('examenes').doc(x.id).collection('respuestas').get()).docs.map(d => d.data()).sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+      const base = String(k + 1).padStart(2, '0') + ' ' + nomArch(x.titulo), dir = raiz.folder('Exámenes');
+      dir.file(base + ' - preguntas.txt', x.preguntas.map((q, i) => (i + 1) + '. ' + q.p + ' (' + ptsDe(q) + ' pts)' + (esAbierta(q) ? '\r\n   [Respuesta abierta]' : '\r\n' + q.ops.map((o, j) => '   ' + (j === clave[i] ? '✓ ' : '  ') + o).join('\r\n'))).join('\r\n\r\n'));
+      dir.file(base + ' - respuestas.csv', aCSV([['Alumno', 'Correo', 'Empezó', 'Envió', ...x.preguntas.map((q, i) => 'P' + (i + 1)), 'Puntos', 'Calificación (0-10)'],
+        ...rs.map(r => { const c = calExamen(x, r, clave); return [r.nombre, r.correo || '', r.inicio ? fechaHora(r.inicio) : '', fechaHora(r.fecha),
+          ...x.preguntas.map((q, i) => esAbierta(q) ? ((r.resp || [])[i] || '') + ((r.abiertas || {})[i] != null ? ' [' + r.abiertas[i] + ' pts]' : ' [sin revisar]') : (q.ops[(r.resp || [])[i]] ?? '') + ((r.resp || [])[i] === clave[i] ? ' ✓' : '')),
+          c.pts + ' / ' + c.total, c.pend ? 'Por revisar' : c.cal]; })]));
+    }
+    av('Comprimiendo…');
+    return zip.generateAsync({ type:'blob', compression:'DEFLATE', compressionOptions:{ level:6 } }, m => av('Comprimiendo… ' + Math.round(m.percent) + '%'));
+  }
+
+
+  // ---------- 🔔 la campana: lo nuevo para ti ----------
+  const campana = document.createElement('button'); campana.className = 'tb'; campana.id = 'bAvisos'; campana.hidden = true; campana.title = 'Notificaciones de la escuela';
+  campana.innerHTML = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/></svg><span class="txtLargo"> Avisos</span>';
+  campana.onclick = () => abrirNotificaciones();
+  let sinLeer = [], quitarBuzon = null, primeraVez = true;
+  function pintarCampana(){ campana.classList.toggle('avisoEsc', sinLeer.length > 0); campana.dataset.n = sinLeer.length || ''; campana.title = sinLeer.length ? 'Tienes ' + sinLeer.length + ' notificación' + (sinLeer.length > 1 ? 'es' : '') + ' nueva' + (sinLeer.length > 1 ? 's' : '') : 'Notificaciones de la escuela'; }
+  async function avisoDelSistema(n){
+    try {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return false;
+      const op = { body:n.texto, tag:'esc-' + n.id, icon:'icons/icono-192.png', badge:'icons/icono-192.png', data:{ aviso:n.id } };
+      const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+      if (reg && reg.showNotification) await reg.showNotification(n.grupoNombre || 'Diseñador · Escuela', op);
+      else new Notification(n.grupoNombre || 'Diseñador · Escuela', op);
+      return true;
+    } catch (e) { return false; }
+  }
+  function escucharBuzon(){
+    if (quitarBuzon){ quitarBuzon(); quitarBuzon = null; } sinLeer = []; pintarCampana(); primeraVez = true;
+    campana.hidden = !N.usuario; if (!N.usuario) return;
+    try {
+      quitarBuzon = buzon(N.usuario.uid).where('leida', '==', false).onSnapshot(sn => {
+        sinLeer = sn.docs.map(d => ({ id:d.id, ...d.data() })).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+        pintarCampana();
+        if (!primeraVez && sn.docChanges) sn.docChanges().filter(c => c.type === 'added').forEach(async c => {
+          const n = { id:c.doc.id, ...c.doc.data() };
+          if (document.hidden || !document.hasFocus()){ if (await avisoDelSistema(n)) return; }
+          toast('🔔 ' + n.texto);
+        });
+        primeraVez = false;
+      }, () => { campana.hidden = true; });
+    } catch (e) {}
+  }
+  async function abrir(n){
+    buzon(N.usuario.uid).doc(n.id).update({ leida:true }).catch(() => {});
+    const g = n.grupo, maestro = n.para === 'maestro';
+    pila = [['🎓 Mi escuela', inicio]];
+    const nom = n.grupoNombre || 'Grupo';
+    if (maestro) pila.push([nom, () => grupoMaestro(g)]); else pila.push([nom, () => grupoAlumno(g)]);
+    if (n.tipo === 'duda' && n.act && n.alumno) return ver('💬 ' + (n.alumnoNombre || 'Alumno'), () => { cuerpo().innerHTML = '<div id="escHilo"></div>'; hiloDudas($e('escHilo'), g, n.act, n.alumno, true, n.alumnoNombre || 'Alumno'); }, true);
+    if (n.act) return ver(nom, () => maestro ? actividadMaestro(g, n.act) : actividadAlumno(g, n.act), true);
+    if (n.ex) return ver('📝 ' + nom, () => maestro ? examenMaestro(g, n.ex) : examenAlumno(g, n.ex), true);
+    pila.pop(); ver(nom, () => maestro ? grupoMaestro(g) : grupoAlumno(g), true);
+  }
+  async function panelNotificaciones(){
+    const todas = (await buzon(N.usuario.uid).get()).docs.map(d => ({ id:d.id, ...d.data() })).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+    // limpieza: lo leído de hace más de 30 días se borra solo
+    const viejo = new Date(Date.now() - 30 * 864e5).toISOString();
+    todas.filter(n => n.leida && (n.fecha || '') < viejo).forEach(n => buzon(N.usuario.uid).doc(n.id).delete().catch(() => {}));
+    const lista = todas.filter(n => !n.leida || (n.fecha || '') >= viejo).slice(0, 60);
+    const permiso = 'Notification' in window ? Notification.permission : 'no';
+    cuerpo().innerHTML = `<div class="grupoBtns">${lista.some(n => !n.leida) ? '<button class="pb" id="notLeidas">✓ Marcar todo como leído</button>' : ''}
+        ${permiso === 'default' ? '<button class="btnP" id="notPermiso">🔔 Avisarme también fuera de la app</button>' : ''}</div>
+      ${permiso === 'granted' ? '<p class="hint" style="padding-top:0">🔔 Este dispositivo te avisa aunque estés en otra pestaña o en otra app (con el Diseñador abierto o instalado).</p>' : permiso === 'denied' ? '<p class="hint" style="padding-top:0">Bloqueaste los avisos para esta página. Puedes permitirlos en el candado 🔒 junto a la dirección.</p>' : ''}
+      <div class="escLista">${lista.map(n => `<button class="escItem" data-not="${esc(n.id)}" style="${n.leida ? 'opacity:.7' : ''}"><span class="t"><b>${esc(n.texto)}</b><small>${esc(n.grupoNombre || '')} · ${fechaHora(n.fecha)}</small></span>${n.leida ? '' : '<span class="insig i-nuevo">Nueva</span>'}</button>`).join('') || '<p class="hint">No tienes notificaciones. Aquí te avisamos de actividades nuevas, entregas, calificaciones, preguntas y respuestas.</p>'}</div>`;
+    cuerpo().querySelectorAll('[data-not]').forEach(b => b.onclick = () => abrir(lista.find(n => n.id === b.dataset.not)));
+    if ($e('notLeidas')) $e('notLeidas').onclick = async () => { await Promise.all(lista.filter(n => !n.leida).map(n => buzon(N.usuario.uid).doc(n.id).update({ leida:true }).catch(() => {}))); ver('🔔 Notificaciones', panelNotificaciones, true); };
+    if ($e('notPermiso')) $e('notPermiso').onclick = async () => { try { const r = await Notification.requestPermission(); if (r === 'granted') toast('🔔 Listo: te avisaremos aunque estés en otra pestaña.'); } catch (e) {} ver('🔔 Notificaciones', panelNotificaciones, true); };
+  }
+  function abrirNotificaciones(){
+    if (!N.usuario) return abrirEscuela();
+    abrirModal('mEscuela'); pila = []; ver.actual = null; ver('🔔 Notificaciones', panelNotificaciones);
+  }
+  window.abrirNotificaciones = abrirNotificaciones;
+  if (navigator.serviceWorker) navigator.serviceWorker.addEventListener('message', e => { if (e.data && e.data.abrirAviso){ const n = sinLeer.find(x => x.id === e.data.abrirAviso); if (n && N.usuario){ abrirModal('mEscuela'); abrir(n); } else abrirNotificaciones(); } });
   // ---------- botón de la barra y enlace ?grupo=CÓDIGO ----------
   const b = document.createElement('button'); b.className = 'tb'; b.id = 'bEscuela'; b.title = 'Mi escuela: grupos, actividades y entregas';
   b.innerHTML = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9l10-5 10 5-10 5zM6 11v5c3 2.5 9 2.5 12 0v-5M22 9v6"/></svg><span class="txtLargo"> Escuela</span>';
   b.onclick = abrirEscuela;
   const ref = document.querySelector('#barra .tb.donar'); if (ref) ref.before(b); else { const barra = $e('barra'); barra && barra.appendChild(b); }
+  b.after(campana);
   const codigoURL = new URLSearchParams(location.search).get('grupo');
+  if (new URLSearchParams(location.search).has('aviso')) N.listo.then(() => setTimeout(() => { if (N.usuario) abrirNotificaciones(); }, 1500), () => {});
   if (codigoURL) N.listo.then(() => setTimeout(() => {
     abrirModal('mEscuela'); pila = [];
     if (!N.usuario) { ver('Unirme a un grupo', () => { cuerpo().innerHTML = `<p class="hint" style="padding-top:0">Te invitaron a un grupo (código <b>${esc(codigoURL)}</b>). Entra con tu cuenta de Google para unirte.</p><button class="bigbtn" id="escEntrar2" style="text-align:center;font-weight:700">Entrar con Google</button>${window.legalEntrar ? legalEntrar() : ''}`;
       $e('escEntrar2').onclick = async () => { await N.entrar(); if (await esperarUsuario()) ver('Unirme a un grupo', () => formUnirme(codigoURL), true); }; }); }
     else ver('Unirme a un grupo', () => formUnirme(codigoURL));
   }, 1200));
+  window.addEventListener('nube-usuario', escucharBuzon);
+  N.listo.then(escucharBuzon, () => {});
   window.addEventListener('nube-usuario', () => { if (!N.usuario){ window.ACTIVIDAD_ACTUAL = null; pintarBanda(); marcarBoton(0); } else setTimeout(revisarPendientes, 1500); });
 })();

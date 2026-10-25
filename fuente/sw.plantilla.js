@@ -42,3 +42,14 @@ self.addEventListener('fetch', e => {
   }
   // lo demás (la nube, Google) va directo a internet
 });
+// Al tocar una notificación de la escuela: abre (o trae al frente) el Diseñador y muestra el aviso
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const aviso = e.notification.data && e.notification.data.aviso;
+  e.waitUntil((async () => {
+    const abiertas = await self.clients.matchAll({ type:'window', includeUncontrolled:true });
+    const c = abiertas.find(x => new URL(x.url).pathname.replace(/index\.html$/, '') === new URL(self.registration.scope).pathname) || abiertas[0];
+    if (c){ await c.focus(); c.postMessage({ abrirAviso:aviso || true }); return; }
+    await self.clients.openWindow('./?aviso=' + encodeURIComponent(aviso || ''));
+  })());
+});
