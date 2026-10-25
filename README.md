@@ -238,7 +238,7 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 
 ## v57: aviso de privacidad, términos de uso y guías al día
 - `privacidad.html` (aviso integral conforme a la LFPDPPP publicada en el DOF el 20 de marzo de 2025: responsable, datos por función, finalidades, menores de edad, encargados, conservación, cómo limitar el uso, derechos ARCO con plazos de 20 y 15 días, almacenamiento en el navegador, seguridad, cambios y autoridad) y `terminos.html`.
-- Los datos del responsable viven en `config.js` → `legal` (responsable, marca, correo, domicilio, fecha) y se llenan solos con `legal.js`. **Falta escribir el correo de contacto.**
+- Los datos del responsable viven en `config.js` → `legal` (responsable, marca, correo, domicilio, fecha) y se llenan solos con `legal.js`. Correo de contacto: apik.desing@gmail.com.
 - Aviso simplificado junto a cada «Entrar con Google» (nube, escuela y equipo), nota al unirse a un grupo y al crear uno, y enlaces en Ayuda, inicio y guías.
 - Guías actualizadas (`guia.html` y PDF): corregir, devolver, avisos, exámenes y la nueva guía «🎬 Videos para clase» (`guia-videos.pdf`), con capturas nuevas.
 - Arreglos: la barra de corrección ya no se parte en dos líneas; en la calificación del alumno el comentario ya no se pega a la rúbrica.
