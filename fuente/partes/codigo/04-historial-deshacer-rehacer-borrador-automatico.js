@@ -5,7 +5,7 @@ let notaPagina = '';   // notas del presentador de la página actual
 function jsonPagina(){ const j = canvas.toJSON(EXTRA); if (notaPagina) j.notas = notaPagina; return j; }
 function serializar(){
   paginas[actual] = jsonPagina();
-  return JSON.stringify({ v:2, w:W, h:H, p:paginas, i:actual, pres:presConfig });
+  return JSON.stringify({ v:2, w:W, h:H, p:paginas, i:actual, pres:presConfig, ...(medidaReal ? { med:medidaReal } : {}) });
 }
 
 function guardarEstado(){
@@ -31,6 +31,7 @@ function cargarJSON(txt, conHistorial, alTerminar){
   restaurando = true;
   W = d.w; H = d.h; $('tamTxt').textContent = W + ' × ' + H;
   if (d.pres) presConfig = { ...presConfig, ...d.pres };
+  medidaReal = d.med || null;
   if (d.p){ paginas = d.p; actual = Math.min(d.i || 0, paginas.length - 1); }
   else { paginas = [d.c]; actual = 0; }
   miniaturas = [];

@@ -84,7 +84,7 @@
     .consejos{break-inside:avoid}
     .problemas h3{break-after:avoid}
     a{color:inherit;text-decoration:none}
-    body.solo-maestros #alumnos,body.solo-maestros #videos,body.solo-alumnos #maestros,body.solo-alumnos #videos,body.solo-videos #maestros,body.solo-videos #alumnos{display:none}
+    body.solo-maestros #alumnos,body.solo-maestros #videos,body.solo-maestros #imprenta,body.solo-alumnos #maestros,body.solo-alumnos #videos,body.solo-alumnos #imprenta,body.solo-videos #maestros,body.solo-videos #alumnos,body.solo-videos #imprenta,body.solo-imprenta #maestros,body.solo-imprenta #alumnos,body.solo-imprenta #videos{display:none}
     body[class*="solo-"] .guia{break-before:auto}
   }
 </style>
@@ -95,7 +95,7 @@
     <a class="marca" href="./"><img src="icons/icono-192.png" alt=""><span>Diseñador<small>APIK-DESING</small></span></a>
     <h1>Guías para maestros y alumnos</h1>
     <p>Paso a paso para dejar actividades, exámenes y avisos, entregarlos, corregirlos y calificarlos dentro del Diseñador, y para hacer videos para tus clases. Es gratis, funciona en computadora y en celular, y no hay que instalar nada.</p>
-    <nav class="pestanas"><a class="prim" href="#maestros">👩‍🏫 Guía para maestros</a><a href="#alumnos">🎒 Guía para alumnos</a><a href="#videos">🎬 Videos para clase</a><a href="./">Abrir el Diseñador →</a></nav>
+    <nav class="pestanas"><a class="prim" href="#maestros">👩‍🏫 Guía para maestros</a><a href="#alumnos">🎒 Guía para alumnos</a><a href="#videos">🎬 Videos para clase</a><a href="#imprenta">🖨 Lonas y sublimación</a><a href="./">Abrir el Diseñador →</a></nav>
   </div>
 </header>
 
@@ -360,6 +360,47 @@
   </div></div>
   <div class="accGuia"><a class="imprimir" href="guia-videos.pdf" download>⬇ Descargar en PDF</a><button class="imprimir" onclick="imprimir('videos')">🖨 Imprimir solo esta guía</button></div>
 </section>
+
+<section class="guia" id="imprenta">
+  <div class="cabGuia">
+    <div>
+      <span class="etq">Para negocios, eventos y talleres</span>
+      <h2>Diseña lonas y productos para sublimar</h2>
+      <p>Haz lonas, pendones, roll-ups, tazas, termos, playeras y más a su medida real, y entrega a la imprenta el archivo que pide: PDF, TIFF, PSD de Photoshop, EPS para Corel o PNG para sublimación.</p>
+      <ul class="necesitas"><li>💻 Computadora (para lonas grandes)</li><li>📏 La medida que te pide la imprenta o tu prensa</li><li>🖼 Fotos de buena calidad</li></ul>
+    </div>
+  </div>
+
+  <div class="paso"><div class="num">1</div><div>
+    <h3>Elige la medida real</h3>
+    <p>Toca el tamaño del diseño (arriba, junto a Guardar). Abre <b>🖨 Lonas, pendones y gran formato</b> o <b>☕ Sublimación</b> y elige una medida, o escribe la tuya en centímetros, metros o pulgadas.</p>
+    <p>Arriba verás la medida real (por ejemplo, <b>3 × 1 m</b>) en lugar de los píxeles.</p>
+  </div><figure><img class="chica" src="img/guia/i1_medidas.jpg" alt="Medidas de lonas, pendones y roll-ups" loading="lazy"></figure></div>
+
+  <div class="paso"><div class="num">2</div><div>
+    <h3>Empieza con una plantilla</h3>
+    <p>En <b>Plantillas</b> toca <b>🖨 Lonas y sublimación</b>: gran apertura, promoción, cumpleaños, graduación, se vende, menú, kermés, roll-up, pendón, backdrop, taza, termo, playera, mouse pad, cojín y gorra. Ya vienen a su medida: cambia textos, colores y fotos.</p>
+    <ul><li>En lonas deja libres 3 a 5 cm en las orillas: ahí van los ojillos o el dobladillo.</li>
+      <li>En tazas el asa queda en las orillas: pon lo importante en el centro de cada mitad.</li></ul>
+  </div><figure><img src="img/guia/i2_plantilla.jpg" alt="Plantilla de lona de 3 por 1 metro abierta en el editor" loading="lazy"></figure></div>
+
+  <div class="paso"><div class="num">3</div><div>
+    <h3>Exporta para la imprenta</h3>
+    <p>Toca <b class="boton naranja">Exportar</b> y en Formato elige <b>🖨 Para imprenta</b>. Escoge el archivo, la resolución (100 dpi para lona, 300 dpi para sublimación) y, si hace falta, sangrado y marcas de corte.</p>
+    <ul><li><b>PDF</b>: lo acepta cualquier imprenta, Corel, Illustrator y los programas de lona.</li>
+      <li><b>TIFF</b>: para imprentas de lona (Flexi, Onyx, Caldera, Maintop) y Photoshop.</li>
+      <li><b>PSD</b>: Photoshop. <b>EPS</b>: CorelDRAW e Illustrator.</li>
+      <li><b>PNG o JPG con dpi</b>: sublimación, DTF y vinil; el PNG puede ir con fondo transparente.</li></ul>
+  </div><figure><img class="chica" src="img/guia/i3_exportar.jpg" alt="Opciones para exportar a imprenta" loading="lazy"></figure></div>
+
+  <div class="paso"><div class="num">4</div><div>
+    <h3>Para sublimar: en espejo y en RGB</h3>
+    <p>Marca <b>Espejo</b> si tu impresora no voltea la imagen sola, y deja el color en <b>RGB</b>: la tinta de sublimación trabaja así. Con <b class="boton">Vista previa</b> ves cómo saldrá y por dónde se corta.</p>
+    <p>¿Te mandaron un PSD, TIFF, PDF o AI? En <b>Imágenes → Subir</b> lo agregas como imagen a tu diseño.</p>
+  </div><figure><img class="chica" src="img/guia/i4_taza_espejo.jpg" alt="Vista previa de una taza en espejo con la línea de corte" loading="lazy"></figure></div>
+  <div class="accGuia"><a class="imprimir" href="guia-imprenta.pdf" download>⬇ Descargar en PDF</a><button class="imprimir" onclick="imprimir('imprenta')">🖨 Imprimir solo esta guía</button></div>
+</section>
+
 
 <p class="pie">Diseñador · Apik-Desing es gratis. <a href="./">Abrir el Diseñador</a> · <a href="inicio.html">Conoce todo lo que puede hacer</a> · <a href="privacidad.html">Aviso de privacidad</a> · <a href="terminos.html">Términos de uso</a></p>
 </main>

@@ -1,0 +1,679 @@
+/* =========================================================
+   LONAS, SUBLIMACIÓN E IMPRENTA
+   - Medidas reales (cm o metros): el diseño recuerda cuántos px son 1 cm (medidaReal.pxcm).
+   - Medidas listas: lonas, pendones, roll-up, backdrop, tazas, termos, playeras, mouse pad, cojín…
+   - Plantillas de lonas y de sublimación.
+   - Exportar «🖨 Para imprenta»: PDF, TIFF, PSD (Photoshop), EPS, JPG y PNG a la medida real y a los dpi que pida
+     la imprenta, con sangrado, marcas de corte, espejo (sublimación / transfer) y CMYK aproximado.
+     Se dibuja por tiras: así salen lonas de varios metros sin que el navegador se quede sin memoria.
+   ========================================================= */
+const CM_PULG = 2.54;
+const pxcmPara = (wcm, hcm) => Math.min(300 / CM_PULG, 4000 / Math.max(wcm, hcm));   // 300 dpi en lo chico; en lonas el lienzo no pasa de 4000 px
+function cmDelDiseno(){
+  if (medidaReal && medidaReal.pxcm > 0) return { w:W / medidaReal.pxcm, h:H / medidaReal.pxcm, real:true };
+  const dpi = Math.max(W, H) >= 2000 ? 300 : 96;
+  return { w:W / dpi * CM_PULG, h:H / dpi * CM_PULG, real:false };
+}
+const fmtMedida = (w, h) => (w >= 100 || h >= 100) ? `${Math.round(w) / 100} × ${Math.round(h) / 100} m` : `${Math.round(w * 10) / 10} × ${Math.round(h * 10) / 10} cm`;
+function pintarMedida(){
+  const t = $('tamTxt'); if (!t) return;
+  if (medidaReal && medidaReal.pxcm > 0){ const c = cmDelDiseno(); t.textContent = fmtMedida(c.w, c.h); t.title = W + ' × ' + H + ' px en el lienzo'; }
+  else { t.textContent = W + ' × ' + H; t.title = ''; }
+}
+// el tamaño en px cambia → el texto de la barra se actualiza (si es medida real, se respeta la escala)
+{ const fijarAntes = fijarTamano; fijarTamano = function(w, h){ fijarAntes(w, h); pintarMedida(); }; }
+// elegir un tamaño en px o una plantilla normal quita la medida real
+{ const aplicarAntes = aplicarTamano; aplicarTamano = function(w, h){ medidaReal = null; aplicarAntes(w, h); pintarMedida(); guardarEstado(); }; }
+{ const usarAntes = usarOrganizador; usarOrganizador = function(p){ if (!p.medidaCm) medidaReal = null; usarAntes(p); pintarMedida(); }; }
+{ const cargarAntes = cargarJSON; cargarJSON = function(txt, conHist, fin){ return cargarAntes(txt, conHist, (...a) => { pintarMedida(); if (fin) fin(...a); }); }; }
+
+function aplicarTamanoFisico(wcm, hcm, tipo){
+  if (!(wcm >= 1 && hcm >= 1) || wcm > 5000 || hcm > 5000) return toast('Usa medidas entre 1 cm y 50 m');
+  const pxcm = pxcmPara(wcm, hcm), w = Math.max(50, Math.round(wcm * pxcm)), h = Math.max(50, Math.round(hcm * pxcm));
+  cerrarModal('mTamano');
+  if ($('tAcomodar').checked) redimensionarTodo(w, h); else cambiarTamano(w, h);
+  medidaReal = { pxcm:w / wcm, tipo:tipo || (Math.max(wcm, hcm) >= 60 ? 'lona' : 'impresion') };
+  pintarMedida(); guardarEstado();
+  toast('📏 Diseño de ' + fmtMedida(wcm, hcm) + '. Al exportar elige «🖨 Para imprenta» para que salga a la medida real.');
+}
+
+// ---------- medidas listas ----------
+const MEDIDAS_LONA = [
+  ['Lona 1 × 1 m', 100, 100], ['Lona 1.5 × 1 m', 150, 100], ['Lona 2 × 1 m', 200, 100], ['Lona 3 × 1 m', 300, 100], ['Lona 3 × 1.5 m', 300, 150],
+  ['Lona 3 × 2 m', 300, 200], ['Lona 4 × 2 m', 400, 200], ['Lona 5 × 2 m', 500, 200], ['Lona 6 × 3 m (espectacular chico)', 600, 300],
+  ['Pendón 60 × 90 cm', 60, 90], ['Pendón 90 × 120 cm', 90, 120], ['Roll-up / araña 80 × 200 cm', 80, 200], ['Roll-up 85 × 200 cm', 85, 200],
+  ['X-banner 60 × 160 cm', 60, 160], ['Backdrop / photocall 2.4 × 2.4 m', 240, 240], ['Mampara 3 × 2.4 m', 300, 240], ['Vinil para auto 60 × 20 cm', 60, 20]
+];
+const MEDIDAS_SUB = [
+  ['Taza 11 oz', 20, 9.5], ['Taza 15 oz', 22.5, 10], ['Taza infantil / mágica 9 oz', 19, 8], ['Termo 20 oz (skinny)', 23.5, 21], ['Termo 30 oz', 26, 23],
+  ['Playera: frente o espalda', 28, 35], ['Playera: escudo del pecho', 10, 10], ['Mouse pad', 23, 19], ['Cojín 40 × 40 cm', 40, 40],
+  ['Gorra (frente)', 10, 6], ['Rompecabezas carta', 19, 25], ['Plato de 20 cm', 20, 20], ['Azulejo 15 × 15 cm', 15, 15], ['Llavero 5 × 5 cm', 5, 5],
+  ['Bolsa ecológica', 30, 35], ['Placa de aluminio 20 × 30 cm', 20, 30]
+];
+(function(){
+  const lista = $('listaTamanos'); if (!lista) return;
+  const caja = document.createElement('div'); caja.id = 'medidasImp';
+  const btn = ([n, w, h], tipo) => `<button class="bigbtn" data-cm="${w},${h},${tipo}">${esc(n)} <span style="float:right;color:#6b7280">${fmtMedida(w, h)}</span></button>`;
+  caja.innerHTML = `<details><summary>🖨 Lonas, pendones y gran formato</summary><div class="gridMedidas">${MEDIDAS_LONA.map(m => btn(m, 'lona')).join('')}</div></details>
+    <details><summary>☕ Sublimación: tazas, termos, playeras…</summary><p class="hint" style="padding:0 0 4px;font-size:11.5px">Medidas aproximadas: confírmalas con tu proveedor o con la plantilla de tu prensa.</p><div class="gridMedidas">${MEDIDAS_SUB.map(m => btn(m, 'sublimacion')).join('')}</div></details>
+    <h4 style="font-size:12px;color:#6b7280">📏 Medida real (cm, metros o pulgadas)</h4>
+    <div class="fila"><input type="number" id="tamCmW" value="200" min="0.1" step="0.1" aria-label="Ancho"> × <input type="number" id="tamCmH" value="100" min="0.1" step="0.1" aria-label="Alto">
+      <select id="tamUnidad" aria-label="Unidad"><option value="cm">cm</option><option value="m">m</option><option value="in">pulgadas</option></select>
+      <button class="pb" id="tamCmOk">Aplicar</button></div>
+    <h4 style="font-size:12px;color:#6b7280">📱 Redes, pantalla y papel</h4>`;
+  lista.before(caja);
+  caja.querySelectorAll('[data-cm]').forEach(b => b.onclick = () => { const [w, h, t] = b.dataset.cm.split(','); aplicarTamanoFisico(+w, +h, t); });
+  $('tamCmOk').onclick = () => { const k = { cm:1, m:100, in:CM_PULG }[$('tamUnidad').value]; aplicarTamanoFisico(+$('tamCmW').value * k, +$('tamCmH').value * k); };
+})();
+
+// ---------- plantillas ----------
+const CAT_IMP = 'Lonas y sublimación';
+// medidas relativas: x/y en fracción del ancho/alto; s = fracción del lado corto (para letras y adornos)
+const fx = f => f * W, fy = f => f * H, fs = f => f * Math.min(W, H);
+function ESTALLIDO(cx, cy, r1, r2, n, fill, o = {}){
+  let d = ''; for (let i = 0; i < n * 2; i++){ const a = i / (n * 2) * Math.PI * 2 - Math.PI / 2, r = i % 2 ? r2 : r1; d += (i ? 'L' : 'M') + (cx + Math.cos(a) * r) + ' ' + (cy + Math.sin(a) * r); }
+  return FIG(d + 'Z', fill, { nombre:o.nombre || 'Estallido' });
+}
+function GLOBO(cx, cy, r, col){
+  N_P(`M${cx} ${cy + r * 1.25}Q${cx - r * 0.4} ${cy + r * 2} ${cx + r * 0.1} ${cy + r * 2.8}`, { stroke:'#94a3b8', sw:Math.max(2, r * 0.04), nombre:'Hilo del globo' });
+  const g = new fabric.Ellipse({ left:cx, top:cy, rx:r, ry:r * 1.2, originX:'center', originY:'center', fill:col, esDeco:true, name:'Globo', id:nuevoId() }); canvas.add(g);
+  FIG(`M${cx - r * 0.12} ${cy + r * 1.18}L${cx + r * 0.12} ${cy + r * 1.18}L${cx} ${cy + r * 1.32}Z`, col, { nombre:'Nudo' });
+  CIRC(cx - r * 0.35, cy - r * 0.45, r * 0.16, 'rgba(255,255,255,.45)', { nombre:'Brillo' });
+  return g;
+}
+function CONFETI(n, cols, zona = [0, 0, 1, 1], tam = 0.012){
+  let sem = 7; const rnd = () => (sem = (sem * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < n; i++){
+    const x = fx(zona[0] + rnd() * (zona[2] - zona[0])), y = fy(zona[1] + rnd() * (zona[3] - zona[1])), c = cols[i % cols.length], t = fs(tam) * (0.6 + rnd());
+    if (i % 3) RECT(x, y, t, t * 2.2, c, { ang:rnd() * 180, nombre:'Confeti' }); else CIRC(x, y, t * 0.7, c, { nombre:'Confeti' });
+  }
+}
+// barra de datos: ícono + texto (teléfono, dirección, redes)
+function DATO(icono, texto, x, y, col, tam, ancho){
+  ICONO(icono, x, y, tam, col);
+  return TL(texto, x + tam * 0.8, y, { f:'Poppins', s:tam * 0.62, b:'600', c:col, w:ancho || fx(0.42) });
+}
+const PLANTILLAS_IMP = [
+  { nombre:'Lona 3 × 1 m · Gran apertura', cm:[300, 100], crear(){
+    DEGRADADO('#b91c1c', '#7f1d1d');
+    ESTALLIDO(fx(0.16), fy(0.5), fs(0.62), fs(0.48), 18, '#facc15', { nombre:'Estallido' });
+    T('GRAN\nAPERTURA', fx(0.16), fy(0.5), { f:'Bebas Neue', s:fs(0.2), c:'#7f1d1d', w:fs(0.8), lh:0.9 });
+    T('Nombre de tu negocio', fx(0.6), fy(0.2), { f:'Montserrat', s:fs(0.13), b:'900', c:'#ffffff', w:fx(0.62) });
+    T('¡Te esperamos con promociones de inauguración!', fx(0.6), fy(0.46), { f:'Poppins', s:fs(0.075), b:'600', c:'#fde68a', w:fx(0.62) });
+    RECT(fx(0.33), fy(0.6), fx(0.54), fy(0.17), '#facc15', { r:fs(0.04), nombre:'Franja de fecha' });
+    T('SÁBADO 15 DE NOVIEMBRE · 10:00 AM', fx(0.6), fy(0.685), { f:'Montserrat', s:fs(0.075), b:'800', c:'#7f1d1d', w:fx(0.52) });
+    DATO('Ubicación', 'Av. Principal #123, Col. Centro', fx(0.36), fy(0.88), '#ffffff', fs(0.085));
+    DATO('Diálogo', 'WhatsApp 55 1234 5678', fx(0.7), fy(0.88), '#ffffff', fs(0.085));
+    CONFETI(40, ['#facc15', '#ffffff', '#fb923c', '#fde68a'], [0.3, 0.02, 0.99, 0.2]);
+  }},
+  { nombre:'Lona 2 × 1 m · Promoción y descuento', cm:[200, 100], crear(){
+    FONDO('#facc15');
+    RECT(0, fy(0.78), W, fy(0.22), '#111827', { nombre:'Franja inferior' });
+    ESTALLIDO(fx(0.27), fy(0.42), fs(0.42), fs(0.33), 16, '#dc2626');
+    T('50%', fx(0.27), fy(0.37), { f:'Bebas Neue', s:fs(0.3), c:'#ffffff', w:fs(0.6) });
+    T('DE DESCUENTO', fx(0.27), fy(0.58), { f:'Montserrat', s:fs(0.06), b:'900', c:'#ffffff', w:fs(0.6) });
+    T('PROMOCIÓN', fx(0.7), fy(0.2), { f:'Bebas Neue', s:fs(0.2), c:'#111827', w:fx(0.55), cs:60 });
+    T('En toda la tienda · Solo este fin de semana', fx(0.7), fy(0.41), { f:'Poppins', s:fs(0.07), b:'700', c:'#111827', w:fx(0.5) });
+    T('*Aplican restricciones', fx(0.7), fy(0.56), { f:'Poppins', s:fs(0.04), c:'#374151', w:fx(0.5) });
+    DATO('Ubicación', 'Calle, número y colonia', fx(0.05), fy(0.89), '#facc15', fs(0.08));
+    DATO('Diálogo', '55 1234 5678', fx(0.6), fy(0.89), '#facc15', fs(0.08));
+  }},
+  { nombre:'Lona 1.5 × 1 m · Feliz cumpleaños', cm:[150, 100], crear(){
+    DEGRADADO('#fdf2f8', '#e0f2fe');
+    [[0.08, 0.2, '#f472b6'], [0.17, 0.14, '#60a5fa'], [0.88, 0.17, '#facc15'], [0.95, 0.27, '#a78bfa']].forEach(([x, y, c]) => GLOBO(fx(x), fy(y), fs(0.08), c));
+    T('¡Feliz', fx(0.5), fy(0.14), { f:'Pacifico', s:fs(0.13), c:'#db2777', w:fx(0.6) });
+    T('CUMPLEAÑOS!', fx(0.5), fy(0.29), { f:'Montserrat', s:fs(0.12), b:'900', c:'#1d4ed8', w:fx(0.8), cs:40 });
+    MARCO('circulo', fx(0.5), fy(0.6), fs(0.42), fs(0.42));
+    T('Sofía · 7 años', fx(0.5), fy(0.89), { f:'Fredoka', s:fs(0.09), b:'700', c:'#7c3aed', w:fx(0.8) });
+    CONFETI(25, ['#f472b6', '#60a5fa', '#facc15', '#34d399', '#a78bfa'], [0.02, 0.42, 0.28, 0.98]); CONFETI(25, ['#a78bfa', '#34d399', '#facc15', '#60a5fa', '#f472b6'], [0.72, 0.42, 0.98, 0.98]);
+  }},
+  { nombre:'Lona 3 × 2 m · Graduación', cm:[300, 200], crear(){
+    DEGRADADO('#0b1b3f', '#1e3a8a');
+    RECT(fx(0.03), fy(0.04), fx(0.94), fy(0.92), null, { stroke:'#facc15', sw:fs(0.008), nombre:'Marco dorado' });
+    ICONO('Birrete', fx(0.5), fy(0.14), fs(0.14), '#facc15');
+    T('¡FELICIDADES, GRADUADOS!', fx(0.5), fy(0.27), { f:'Montserrat', s:fs(0.068), b:'900', c:'#ffffff', w:fx(0.9), cs:40 });
+    T('Generación 2023 – 2026', fx(0.5), fy(0.37), { f:'Playfair Display', s:fs(0.06), it:true, c:'#fde68a', w:fx(0.8) });
+    [0.2, 0.4, 0.6, 0.8].forEach(x => MARCO('arco', fx(x), fy(0.62), fx(0.15), fy(0.32)));
+    T('Nombre de la escuela · Ciudad', fx(0.5), fy(0.88), { f:'Poppins', s:fs(0.045), b:'600', c:'#bfdbfe', w:fx(0.9) });
+    CONFETI(30, ['#facc15', '#fde68a', '#ffffff'], [0.05, 0.05, 0.95, 0.2], 0.008);
+  }},
+  { nombre:'Lona 1 × 1 m · Se vende / se renta', cm:[100, 100], crear(){
+    FONDO('#facc15');
+    RECT(0, 0, W, fy(0.48), '#dc2626', { nombre:'Banda roja' });
+    T('SE VENDE', fx(0.5), fy(0.2), { f:'Bebas Neue', s:fs(0.26), c:'#ffffff', w:fx(0.95) });
+    T('o se renta', fx(0.5), fy(0.38), { f:'Pacifico', s:fs(0.08), c:'#fde68a', w:fx(0.9) });
+    T('Casa · Terreno · Local', fx(0.5), fy(0.57), { f:'Montserrat', s:fs(0.06), b:'800', c:'#111827', w:fx(0.9) });
+    T('INFORMES', fx(0.5), fy(0.69), { f:'Montserrat', s:fs(0.055), b:'700', c:'#7f1d1d', w:fx(0.9), cs:200 });
+    T('55 1234 5678', fx(0.5), fy(0.82), { f:'Bebas Neue', s:fs(0.17), c:'#111827', w:fx(0.95) });
+    T('Trato directo · No intermediarios', fx(0.5), fy(0.94), { f:'Poppins', s:fs(0.035), c:'#374151', w:fx(0.9) });
+  }},
+  { nombre:'Lona 2 × 1 m · Menú y precios', cm:[200, 100], crear(){
+    FONDO('#1c1917');
+    RECT(0, 0, fx(0.36), H, '#ea580c', { nombre:'Columna' });
+    T('TAQUERÍA', fx(0.18), fy(0.2), { f:'Bebas Neue', s:fs(0.13), c:'#1c1917', w:fx(0.33), cs:60 });
+    T('El Güero', fx(0.18), fy(0.38), { f:'Pacifico', s:fs(0.13), c:'#ffffff', w:fx(0.34) });
+    MARCO('redondo', fx(0.18), fy(0.7), fx(0.27), fy(0.4));
+    T('MENÚ', fx(0.68), fy(0.1), { f:'Bebas Neue', s:fs(0.12), c:'#fb923c', w:fx(0.6), cs:100 });
+    [['Tacos al pastor', '$18'], ['Tacos de suadero', '$18'], ['Gringas', '$45'], ['Quesadillas', '$35'], ['Agua fresca 1 L', '$30']].forEach(([n, p], i) => {
+      const y = fy(0.27 + i * 0.13);
+      TL(n, fx(0.42), y, { f:'Poppins', s:fs(0.065), b:'600', c:'#ffffff', w:fx(0.38) });
+      T(p, fx(0.9), y, { f:'Bebas Neue', s:fs(0.09), c:'#fb923c', w:fx(0.12) });
+      LINEA(fx(0.42), y + fs(0.05), fx(0.95), y + fs(0.05), '#44403c', fs(0.004));
+    });
+  }},
+  { nombre:'Lona 4 × 2 m · Kermés o evento escolar', cm:[400, 200], crear(){
+    FONDO('#fff7ed');
+    PAPEL_PICADO(fy(0.02), ['#ec4899', '#f97316', '#22c55e', '#3b82f6', '#a855f7', '#eab308'], W, 12);
+    T('GRAN KERMÉS', fx(0.5), fy(0.36), { f:'Bebas Neue', s:fs(0.2), c:'#be185d', w:fx(0.9), cs:60 });
+    T('Juegos · Antojitos · Música · Rifa', fx(0.5), fy(0.52), { f:'Poppins', s:fs(0.065), b:'700', c:'#9a3412', w:fx(0.9) });
+    RECT(fx(0.25), fy(0.62), fx(0.5), fy(0.14), '#be185d', { r:fs(0.04), nombre:'Fecha' });
+    T('Viernes 21 de noviembre · 9:00 a 14:00 h', fx(0.5), fy(0.69), { f:'Montserrat', s:fs(0.05), b:'800', c:'#ffffff', w:fx(0.48) });
+    T('Nombre de la escuela', fx(0.5), fy(0.85), { f:'Montserrat', s:fs(0.055), b:'800', c:'#1f2937', w:fx(0.9) });
+    T('¡Te esperamos con toda tu familia!', fx(0.5), fy(0.93), { f:'Poppins', s:fs(0.04), c:'#57534e', w:fx(0.9) });
+  }},
+  { nombre:'Roll-up 80 × 200 cm · Empresa o servicio', cm:[80, 200], crear(){
+    FONDO('#ffffff');
+    FIG(`M0 0H${W}V${fy(0.42)}Q${fx(0.5)} ${fy(0.5)} 0 ${fy(0.42)}Z`, null, { grad:['#0f766e', '#0e7490'], gradAng:0, nombre:'Encabezado' });
+    MARCO('circulo', fx(0.5), fy(0.1), fx(0.36), fx(0.36));
+    T('Nombre de la empresa', fx(0.5), fy(0.23), { f:'Montserrat', s:fx(0.09), b:'900', c:'#ffffff', w:fx(0.9) });
+    T('Lo que hacemos en una frase corta', fx(0.5), fy(0.31), { f:'Poppins', s:fx(0.05), c:'#ccfbf1', w:fx(0.85) });
+    ['Servicio número uno', 'Servicio número dos', 'Servicio número tres', 'Servicio número cuatro'].forEach((t, i) => {
+      const y = fy(0.53 + i * 0.07); CIRC(fx(0.14), y, fx(0.035), '#0f766e'); N_ICO('check', fx(0.14), y, fx(0.05), '#ffffff', { sw:2.5 });
+      TL(t, fx(0.22), y, { f:'Poppins', s:fx(0.055), b:'600', c:'#134e4a', w:fx(0.7) });
+    });
+    MARCO('redondo', fx(0.5), fy(0.84), fx(0.8), fy(0.13));
+    RECT(0, fy(0.93), W, fy(0.07), '#0f766e', { nombre:'Pie' });
+    T('www.tusitio.com · 55 1234 5678', fx(0.5), fy(0.965), { f:'Poppins', s:fx(0.045), b:'600', c:'#ffffff', w:fx(0.95) });
+  }},
+  { nombre:'Pendón 60 × 90 cm · Aviso o evento', cm:[60, 90], crear(){
+    DEGRADADO('#4c1d95', '#7c3aed');
+    ICONO('Megáfono', fx(0.5), fy(0.16), fx(0.26), '#fde68a');
+    T('¡AVISO!', fx(0.5), fy(0.33), { f:'Bebas Neue', s:fx(0.2), c:'#ffffff', w:fx(0.9), cs:60 });
+    T('Escribe aquí el aviso o el nombre del evento', fx(0.5), fy(0.5), { f:'Montserrat', s:fx(0.075), b:'800', c:'#ede9fe', w:fx(0.85) });
+    DATO('Calendario', 'Fecha del evento', fx(0.14), fy(0.68), '#fde68a', fx(0.08), fx(0.75));
+    DATO('Reloj', 'Hora', fx(0.14), fy(0.76), '#fde68a', fx(0.08), fx(0.75));
+    DATO('Ubicación', 'Lugar', fx(0.14), fy(0.84), '#fde68a', fx(0.08), fx(0.75));
+  }},
+  { nombre:'Backdrop 2.4 × 2.4 m · Photocall con logos', cm:[240, 240], crear(){
+    FONDO('#ffffff');
+    const n = 5, paso = W / n;
+    for (let f = 0; f < n; f++) for (let c = 0; c < n; c++){
+      const x = paso * (c + 0.5) + (f % 2 ? paso / 2 : 0), y = paso * (f + 0.5);
+      if (x > W) continue;
+      T((f + c) % 2 ? 'TU LOGO' : 'Tu marca', x, y, { f:(f + c) % 2 ? 'Bebas Neue' : 'Pacifico', s:fs(0.05), c:(f + c) % 2 ? '#7c3aed' : '#db2777', w:paso * 0.9 });
+    }
+    RECT(fx(0.2), fy(0.42), fx(0.6), fy(0.16), '#111827', { r:fs(0.02), nombre:'Franja central' });
+    T('NOMBRE DEL EVENTO 2026', fx(0.5), fy(0.5), { f:'Montserrat', s:fs(0.05), b:'900', c:'#ffffff', w:fx(0.58), cs:60 });
+  }},
+  { nombre:'Taza 11 oz · Para la mejor maestra', cm:[20, 9.5], tipo:'sublimacion', crear(){
+    FONDO('#ffffff');
+    // el asa queda en las orillas: el diseño principal va al centro de cada mitad
+    [0.25, 0.75].forEach((x, i) => {
+      CIRC(fx(x), fy(0.5), fs(0.38), i ? '#fce7f3' : '#e0f2fe', { nombre:'Círculo' });
+      if (i){ T('Gracias por\nenseñarme', fx(x), fy(0.5), { f:'Pacifico', s:fs(0.12), c:'#be185d', w:fx(0.4), lh:1.15 }); }
+      else { ICONO('Manzana', fx(x), fy(0.33), fs(0.22), '#ef4444'); T('LA MEJOR\nMAESTRA', fx(x), fy(0.66), { f:'Montserrat', s:fs(0.12), b:'900', c:'#1d4ed8', w:fx(0.4), lh:1 }); }
+    });
+    [[0.08, 0.2], [0.42, 0.84], [0.58, 0.18], [0.92, 0.8]].forEach(([x, y]) => ICONO('Corazón', fx(x), fy(y), fs(0.08), '#f472b6'));
+  }},
+  { nombre:'Termo 20 oz · Nombre y flores', cm:[23.5, 21], tipo:'sublimacion', crear(){
+    DEGRADADO('#ecfccb', '#fef9c3');
+    for (let i = 0; i < 14; i++){ const x = fx((i * 0.137) % 1), y = fy(((i * 0.29) % 1)); DECO('flor', x, y, fs(0.12 + (i % 3) * 0.03), { c:['#f472b6', '#fb923c', '#a78bfa', '#facc15'][i % 4], op:0.85 }); }
+    RECT(fx(0.12), fy(0.36), fx(0.76), fy(0.28), 'rgba(255,255,255,.88)', { r:fs(0.06), nombre:'Recuadro del nombre' });
+    T('Valeria', fx(0.5), fy(0.47), { f:'Pacifico', s:fs(0.16), c:'#be185d', w:fx(0.72) });
+    T('mantente hidratada', fx(0.5), fy(0.58), { f:'Poppins', s:fs(0.05), b:'600', c:'#4d7c0f', w:fx(0.7), cs:150 });
+  }},
+  { nombre:'Playera · Frente con frase', cm:[28, 35], tipo:'sublimacion', crear(){
+    FONDO('#ffffff');
+    ESTALLIDO(fx(0.5), fy(0.42), fx(0.46), fx(0.38), 14, '#facc15');
+    CIRC(fx(0.5), fy(0.42), fx(0.33), '#111827', { nombre:'Círculo' });
+    T('TEAM', fx(0.5), fy(0.35), { f:'Bebas Neue', s:fx(0.16), c:'#facc15', w:fx(0.6), cs:200 });
+    T('Nombre', fx(0.5), fy(0.47), { f:'Pacifico', s:fx(0.11), c:'#ffffff', w:fx(0.6) });
+    T('GENERACIÓN 2026', fx(0.5), fy(0.78), { f:'Montserrat', s:fx(0.065), b:'900', c:'#111827', w:fx(0.9), cs:120 });
+  }},
+  { nombre:'Mouse pad · Foto y nombre', cm:[23, 19], tipo:'sublimacion', crear(){
+    DEGRADADO('#1e1b4b', '#312e81');
+    MARCO('redondo', fx(0.36), fy(0.5), fx(0.58), fy(0.82));
+    T('Tu nombre', fx(0.83), fy(0.4), { f:'Pacifico', s:fs(0.1), c:'#ffffff', w:fx(0.3), ang:-90 });
+    T('2026', fx(0.83), fy(0.75), { f:'Bebas Neue', s:fs(0.12), c:'#a5b4fc', w:fx(0.3) });
+  }},
+  { nombre:'Cojín 40 × 40 · Foto con mensaje', cm:[40, 40], tipo:'sublimacion', crear(){
+    FONDO('#fff1f2');
+    MARCO('corazon', fx(0.5), fy(0.45), fx(0.7), fy(0.62));
+    T('Te quiero, mamá', fx(0.5), fy(0.86), { f:'Pacifico', s:fs(0.09), c:'#be123c', w:fx(0.9) });
+    [[0.1, 0.1], [0.9, 0.12], [0.08, 0.9], [0.92, 0.88]].forEach(([x, y]) => ICONO('Corazón', fx(x), fy(y), fs(0.07), '#fb7185'));
+  }},
+  { nombre:'Gorra · Logo del frente', cm:[10, 6], tipo:'sublimacion', crear(){
+    FONDO('#ffffff');
+    RECT(fx(0.06), fy(0.12), fx(0.88), fy(0.76), '#0f172a', { r:fs(0.2), nombre:'Placa' });
+    T('TU MARCA', fx(0.5), fy(0.44), { f:'Bebas Neue', s:fs(0.3), c:'#19c8ff', w:fx(0.85), cs:80 });
+    T('DESDE 2026', fx(0.5), fy(0.7), { f:'Montserrat', s:fs(0.1), b:'800', c:'#ffffff', w:fx(0.8), cs:300 });
+  }}
+];
+PLANTILLAS_IMP.forEach(p => {
+  const pxcm = pxcmPara(p.cm[0], p.cm[1]);
+  p.tam = [Math.round(p.cm[0] * pxcm), Math.round(p.cm[1] * pxcm)]; p.medidaCm = p.cm;
+});
+const FUENTES_IMP = ['Montserrat', 'Poppins', 'Bebas Neue', 'Pacifico', 'Playfair Display', 'Fredoka'];
+function usarPlantillaImp(p){
+  const fin = () => {
+    FUENTES_IMP.forEach(f => fabric.util.clearFabricFontCache(f));
+    usarOrganizador(p);
+    medidaReal = { pxcm:W / p.cm[0], tipo:p.tipo || 'lona' }; pintarMedida(); guardarEstado();
+    toast('📏 ' + fmtMedida(p.cm[0], p.cm[1]) + '. Para mandarlo a imprimir: Exportar → «🖨 Para imprenta».');
+  };
+  Promise.race([Promise.all(FUENTES_IMP.flatMap(f => ['400', '600', '700', '800', '900'].map(b => document.fonts.load(`${b} 40px "${f}"`).catch(() => null)))), new Promise(r => setTimeout(r, 2500))]).then(fin, fin);
+}
+PLANTILLAS_IMP.forEach(p => CATALOGO.push({ nombre:p.nombre, cat:CAT_IMP, tam:p.tam, crear:p.crear, usar:() => usarPlantillaImp(p) }));
+CATEGORIAS.splice(CATEGORIAS.indexOf(CAT_CART) + 1, 0, CAT_IMP);
+(function(){
+  const despues = [...document.querySelectorAll('#chipsCat .chip')].find(x => x.textContent.includes('Carteles'));
+  const c = document.createElement('button'); c.className = 'chip'; c.textContent = '🖨 Lonas y sublimación';
+  c.onclick = () => { catActiva = CAT_IMP; document.querySelectorAll('#chipsCat .chip').forEach(x => x.classList.toggle('on', x === c)); renderCatalogo(); };
+  if (despues) despues.after(c); else $('chipsCat').appendChild(c);
+})();
+
+// =========================================================
+// EXPORTAR PARA IMPRENTA
+// =========================================================
+const FMT_IMP = {
+  pdf:{ n:'PDF para imprenta', ext:'pdf', usa:'Cualquier imprenta, Illustrator, CorelDRAW, Photoshop, Acrobat y los RIP de lona (Flexi, Onyx, Caldera, Maintop)' },
+  tif:{ n:'TIFF', ext:'tif', usa:'Imprentas de lona y gran formato (RIP Flexi, Onyx, Caldera, Maintop), Photoshop' },
+  psd:{ n:'PSD de Photoshop', ext:'psd', usa:'Photoshop, GIMP, Photopea, Affinity Photo (una sola capa)' },
+  eps:{ n:'EPS', ext:'eps', usa:'CorelDRAW, Illustrator, imprentas que trabajan con Corel' },
+  jpg:{ n:'JPG con dpi', ext:'jpg', usa:'Lonas económicas, impresión por WhatsApp, Epson de sublimación con Photoshop/Corel' },
+  png:{ n:'PNG con dpi', ext:'png', usa:'Sublimación, DTF y vinil (con fondo transparente), Silhouette Studio, Cricut' }
+};
+const LIM_LADO = { jpg:16000, png:16000, psd:30000, tif:60000, pdf:60000, eps:60000 };
+const LIM_MP = { jpg:120, png:120, psd:200, tif:250, pdf:250, eps:200 };
+(function(){
+  const op = document.createElement('option'); op.value = 'imprenta'; op.textContent = '🖨 Para imprenta: lona, sublimación (PDF, TIFF, PSD, EPS…)';
+  const svg = $('eFormato').querySelector('option[value="svg"]') || $('eFormato').querySelector('option[value="pdf"]'); svg.after(op);
+  const d = document.createElement('div'); d.id = 'filaImprenta'; d.style.display = 'none';
+  d.innerHTML = `<div class="fila"><label>Archivo</label><select id="ipFmt">${Object.entries(FMT_IMP).map(([k, f]) => `<option value="${k}">${f.n} (.${f.ext})</option>`).join('')}</select></div>
+    <p class="hint" id="ipUsa" style="font-size:11.5px;padding-top:0"></p>
+    <div class="fila"><label>Medida real</label><input type="number" id="ipW" min="0.5" step="0.1" style="width:80px" aria-label="Ancho en cm"> × <input type="number" id="ipH" min="0.5" step="0.1" style="width:80px" aria-label="Alto en cm"><span class="hint">cm</span></div>
+    <div class="fila"><label>Resolución</label><select id="ipDpi"><option value="72">72 dpi (lona vista de lejos)</option><option value="100">100 dpi (lona, recomendado)</option><option value="150">150 dpi (lona de cerca, pendón)</option><option value="200">200 dpi</option><option value="300">300 dpi (sublimación, papel)</option></select></div>
+    <div class="fila"><label>Sangrado</label><input type="number" id="ipSang" min="0" max="50" step="0.5" value="0" style="width:70px"><span class="hint">mm por lado (lo que se corta; en sublimación 2–3 mm)</span></div>
+    <div class="fila" id="ipFilaMarcas"><label>Marcas de corte</label><input type="checkbox" id="ipMarcas"></div>
+    <div class="fila"><label>Espejo</label><input type="checkbox" id="ipEspejo"><span class="hint" style="font-size:11px">volteado: para sublimación y transfer (si tu impresora no lo voltea sola)</span></div>
+    <div class="fila" id="ipFilaColor"><label>Color</label><select id="ipColor"><option value="rgb">RGB (sublimación y la mayoría de las lonas)</option><option value="cmyk">CMYK aproximado (si la imprenta lo pide)</option></select></div>
+    <div class="fila" id="ipFilaTransp"><label>Fondo transparente</label><input type="checkbox" id="ipTransp"><span class="hint" style="font-size:11px">para DTF o vinil</span></div>
+    <p class="hint" id="ipInfo" style="font-size:12px;padding-top:0"></p>
+    <details class="ayudaImp"><summary>¿Qué archivo pide cada programa o imprenta?</summary><ul>
+      <li><b>CorelDRAW</b>: PDF, EPS o SVG (Archivo → Importar). El formato .cdr es cerrado: ningún programa fuera de Corel lo crea.</li>
+      <li><b>Illustrator</b>: PDF, EPS o SVG (Archivo → Abrir). El .ai también es de Adobe; el PDF se abre igual.</li>
+      <li><b>Photoshop</b>: PSD, TIFF, PDF, PNG o JPG; ya llevan la medida y los dpi.</li>
+      <li><b>Imprenta de lonas</b> (Flexi, Onyx, Caldera, Maintop): PDF o TIFF a 72–150 dpi a la medida real. Pregunta si quieren dobladillo u ojillos: deja 3–5 cm libres en las orillas.</li>
+      <li><b>Sublimación</b> (Epson o Sawgrass con tinta de sublimación): PNG o PSD a 300 dpi en <b>RGB</b>; voltéalo en espejo si tu impresora no lo hace. CMYK no sirve para sublimar.</li>
+      <li><b>DTF, vinil, Silhouette o Cricut</b>: PNG con fondo transparente a 300 dpi.</li>
+      <li><b>CMYK aproximado</b>: se convierte sin perfil de color, así que los colores pueden variar un poco. Si la imprenta tiene su perfil, mejor mándales RGB y que ellos lo conviertan.</li></ul></details>`;
+  $('filaImprimir').before(d);
+  const pinta = () => infoImprenta();
+  ['ipFmt', 'ipDpi', 'ipSang', 'ipMarcas', 'ipEspejo', 'ipColor', 'ipTransp'].forEach(id => { $(id).addEventListener('change', pinta); $(id).addEventListener('input', pinta); });
+  $('ipW').addEventListener('input', () => { const w = +$('ipW').value; if (w > 0) $('ipH').value = Math.round(w * H / W * 10) / 10; pinta(); });
+  $('ipH').addEventListener('input', () => { const h = +$('ipH').value; if (h > 0) $('ipW').value = Math.round(h * W / H * 10) / 10; pinta(); });
+  $('eFormato').addEventListener('change', () => {
+    const on = $('eFormato').value === 'imprenta';
+    d.style.display = on ? 'block' : 'none';
+    if (on){
+      $('eEscala').closest('.fila').style.display = 'none'; $('eTransp').closest('.fila').style.display = 'none'; $('filaImprimir').style.display = 'none';
+      prepararImprenta();
+    }
+  });
+})();
+// valores iniciales según el diseño
+function prepararImprenta(){
+  const c = cmDelDiseno(), lona = Math.max(c.w, c.h) >= 60 && (!medidaReal || medidaReal.tipo !== 'sublimacion');
+  $('ipW').value = Math.round(c.w * 10) / 10; $('ipH').value = Math.round(c.h * 10) / 10;
+  if (!prepararImprenta.hecho){
+    $('ipDpi').value = lona ? '100' : '300'; $('ipSang').value = lona ? '0' : (medidaReal && medidaReal.tipo === 'sublimacion' ? '2' : '3');
+    $('ipFmt').value = medidaReal && medidaReal.tipo === 'sublimacion' ? 'png' : 'pdf';
+  }
+  prepararImprenta.hecho = true;
+  infoImprenta();
+}
+// calcula la medida en px; si no cabe en el navegador, baja los dpi
+function medidasImprenta(){
+  const fmt = $('ipFmt').value, wcm = Math.max(0.5, +$('ipW').value || 1), hcm = Math.max(0.5, +$('ipH').value || 1), sang = Math.max(0, +$('ipSang').value || 0) / 10;
+  let dpi = +$('ipDpi').value;
+  const px = d => ({ Wt:Math.round((wcm + 2 * sang) / CM_PULG * d), Ht:Math.round((hcm + 2 * sang) / CM_PULG * d) });
+  let m = px(dpi), bajo = false;
+  while ((Math.max(m.Wt, m.Ht) > LIM_LADO[fmt] || m.Wt * m.Ht / 1e6 > LIM_MP[fmt]) && dpi > 20){ dpi = Math.floor(dpi * 0.95); m = px(dpi); bajo = true; }
+  return { fmt, wcm, hcm, sang, dpi, bajo, ...m, bx:Math.round(sang / CM_PULG * dpi), Tw:Math.round(wcm / CM_PULG * dpi), Th:Math.round(hcm / CM_PULG * dpi),
+    espejo:$('ipEspejo').checked, cmyk:$('ipColor').value === 'cmyk' && (fmt === 'tif' || fmt === 'psd'), transp:$('ipTransp').checked && fmt === 'png', marcas:$('ipMarcas').checked && fmt === 'pdf' };
+}
+function infoImprenta(){
+  const fmt = $('ipFmt').value, m = medidasImprenta();
+  $('ipUsa').textContent = 'Sirve para: ' + FMT_IMP[fmt].usa + '.';
+  $('ipFilaMarcas').style.display = fmt === 'pdf' ? 'flex' : 'none';
+  $('ipFilaColor').style.display = fmt === 'tif' || fmt === 'psd' ? 'flex' : 'none';
+  $('ipFilaTransp').style.display = fmt === 'png' ? 'flex' : 'none';
+  const mp = m.Wt * m.Ht / 1e6, c = cmDelDiseno();
+  const distinto = Math.abs(m.wcm / m.hcm - W / H) > 0.01;
+  $('ipInfo').innerHTML = `Saldrá de <b>${fmtMedida(m.wcm + 2 * m.sang, m.hcm + 2 * m.sang)}</b>${m.sang ? ' (con sangrado)' : ''} · ${m.Wt.toLocaleString('es-MX')} × ${m.Ht.toLocaleString('es-MX')} px (${mp.toFixed(mp < 10 ? 1 : 0)} MP) a <b>${m.dpi} dpi</b>.`
+    + (m.bajo ? `<br>⚠ A los dpi que elegiste el archivo sería demasiado grande para el navegador; se bajó a ${m.dpi} dpi${fmt === 'jpg' || fmt === 'png' ? '. En PDF o TIFF puede salir más grande.' : '.'}` : '')
+    + (c.real ? '' : '<br>💡 Este diseño no tiene medida real: elige en «Tamaño» una medida de lona o de sublimación, o escribe aquí los centímetros.')
+    + (distinto ? '<br>⚠ La medida no tiene la misma forma que el diseño: se va a deformar.' : '')
+    + (m.Tw / W > 6 ? '<br>Las fotos que subiste se verán bien si tienen buena resolución; las figuras y letras siempre salen nítidas.' : '');
+}
+
+// ---------- dibujar por tiras ----------
+function sinCache(o){ o.objectCaching = false; if (o._objects) o._objects.forEach(sinCache); if (o.clipPath) sinCache(o.clipPath); }
+// alTira(canvas2d, y0, alto) se llama por cada tira de arriba a abajo
+async function dibujarImprenta(json, m, alTira, altoTira){
+  const j = JSON.parse(JSON.stringify(json || PAGINA_VACIA()));
+  const fondoColor = typeof j.background === 'string' && j.background ? j.background : null;
+  const hayFondoObj = (j.objects || []).some(o => o.esFondo);
+  if (m.transp) j.background = null; else if (!j.background) j.background = '#ffffff';
+  const tira = Math.max(1, Math.min(m.Ht, altoTira || Math.max(128, Math.floor(16e6 / m.Wt / 128) * 128)));
+  const el = document.createElement('canvas');
+  const sc = new fabric.StaticCanvas(el, { width:m.Wt, height:tira, enableRetinaScaling:false, renderOnAddRemove:false });
+  await new Promise(ok => sc.loadFromJSON(j, ok));
+  sc.getObjects().forEach(sinCache);
+  sc.backgroundVpt = false; sc.skipOffscreen = false;   // en espejo la escala es negativa: sin esto fabric creería que todo está fuera          // el color de fondo llena también el sangrado
+  // con color liso: el diseño a la medida y el sangrado del mismo color; con foto o degradado de fondo: se amplía un poco para cubrir el sangrado
+  let kx = m.Tw / W, ky = m.Th / H, ox = m.bx, oy = m.bx;
+  if (m.bx && (hayFondoObj || !fondoColor)){ kx = ky = Math.max(m.Wt / W, m.Ht / H); ox = (m.Wt - W * kx) / 2; oy = (m.Ht - H * ky) / 2; }
+  try {
+    for (let y0 = 0; y0 < m.Ht; y0 += tira){
+      const h = Math.min(tira, m.Ht - y0);
+      if (h !== sc.getHeight()) sc.setDimensions({ width:m.Wt, height:h });
+      sc.setViewportTransform([m.espejo ? -kx : kx, 0, 0, ky, m.espejo ? m.Wt - ox : ox, oy - y0]);
+      sc.renderAll();
+      await alTira(sc.lowerCanvasEl, y0, h);
+      await new Promise(r => setTimeout(r, 0));
+    }
+  } finally { sc.dispose(); }
+}
+const progresoImp = t => { const e = $('eInfo'); if (e) e.textContent = t; };
+const aBlob = (cv, tipo, q) => new Promise(ok => cv.toBlob(ok, tipo, q));
+// ---------- utilidades de archivos ----------
+const TABLA_CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++){ let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b){ let c = 0xffffffff; for (let i = 0; i < b.length; i++) c = TABLA_CRC[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; }
+async function pngConDpi(blob, dpi){
+  const b = new Uint8Array(await blob.arrayBuffer()), ppm = Math.round(dpi / 0.0254);
+  const ch = new Uint8Array(21), v = new DataView(ch.buffer);
+  v.setUint32(0, 9); ch.set([112, 72, 89, 115], 4); v.setUint32(8, ppm); v.setUint32(12, ppm); ch[16] = 1; v.setUint32(17, crc32(ch.subarray(4, 17)));
+  return new Blob([b.subarray(0, 33), ch, b.subarray(33)], { type:'image/png' });   // va justo después de IHDR
+}
+async function jpgConDpi(blob, dpi){
+  const b = new Uint8Array(await blob.arrayBuffer());
+  if (b[2] === 0xff && b[3] === 0xe0 && String.fromCharCode(b[6], b[7], b[8], b[9]) === 'JFIF'){ b[13] = 1; b[14] = dpi >> 8; b[15] = dpi & 255; b[16] = dpi >> 8; b[17] = dpi & 255; return new Blob([b], { type:'image/jpeg' }); }
+  const app0 = new Uint8Array([0xff, 0xe0, 0, 16, 74, 70, 73, 70, 0, 1, 1, 1, dpi >> 8, dpi & 255, dpi >> 8, dpi & 255, 0, 0]);
+  return new Blob([b.subarray(0, 2), app0, b.subarray(2)], { type:'image/jpeg' });
+}
+// RGB (o RGBA) → bytes por canal; CMYK sin perfil: K = lo más oscuro, el resto se reparte
+function aCanales(d, n, cmyk, invertir){
+  const out = new Uint8Array(n * (cmyk ? 4 : 3));
+  for (let i = 0, o = 0; i < n; i++){
+    const a = d[i * 4 + 3] / 255, r = 255 - (255 - d[i * 4]) * a, g = 255 - (255 - d[i * 4 + 1]) * a, b = 255 - (255 - d[i * 4 + 2]) * a;   // lo transparente queda blanco
+    if (!cmyk){ out[o++] = r; out[o++] = g; out[o++] = b; continue; }
+    const c = 1 - r / 255, m = 1 - g / 255, y = 1 - b / 255, k = Math.min(c, m, y), q = k < 1 ? 1 - k : 1;
+    const v = [(c - k) / q, (m - k) / q, (y - k) / q, k];
+    for (let j = 0; j < 4; j++){ const x = Math.round(v[j] * 255); out[o++] = invertir ? 255 - x : x; }
+  }
+  return out;
+}
+async function comprimirZlib(bytes){
+  if (typeof CompressionStream === 'undefined') return null;
+  const cs = new CompressionStream('deflate'), w = cs.writable.getWriter(); w.write(bytes); w.close();
+  return new Uint8Array(await new Response(cs.readable).arrayBuffer());
+}
+function packBits(src){         // compresión RLE (PackBits) de Photoshop
+  const n = src.length, out = new Uint8Array(n + Math.ceil(n / 128) + 2); let o = 0, i = 0;
+  while (i < n){
+    let r = 1; while (i + r < n && r < 128 && src[i + r] === src[i]) r++;
+    if (r >= 2){ out[o++] = 257 - r; out[o++] = src[i]; i += r; continue; }
+    let l = 1; while (i + l < n && l < 128 && !(i + l + 1 < n && src[i + l] === src[i + l + 1])) l++;
+    out[o++] = l - 1; out.set(src.subarray(i, i + l), o); o += l; i += l;
+  }
+  return out.slice(0, o);
+}
+function ascii85(b){
+  let s = '', linea = 0;
+  for (let i = 0; i < b.length; i += 4){
+    const n = Math.min(4, b.length - i); let v = 0;
+    for (let k = 0; k < 4; k++) v = v * 256 + (k < n ? b[i + k] : 0);
+    if (v === 0 && n === 4){ s += 'z'; linea++; }
+    else { let t = ''; for (let k = 0; k < 5; k++){ t = String.fromCharCode(33 + v % 85) + t; v = Math.floor(v / 85); } s += t.slice(0, n + 1); linea += n + 1; }
+    if (linea >= 75){ s += '\n'; linea = 0; }
+  }
+  return s + '~>';
+}
+// ---------- cada formato ----------
+async function archivoImprenta(json, m){
+  const f = m.fmt;
+  if (f === 'jpg' || f === 'png'){
+    let blob;
+    await dibujarImprenta(json, m, async cv => { blob = await aBlob(cv, f === 'png' ? 'image/png' : 'image/jpeg', 0.93); }, m.Ht);
+    if (!blob) throw new Error('El navegador no pudo crear una imagen tan grande. Baja los dpi o usa PDF o TIFF.');
+    return f === 'png' ? pngConDpi(blob, m.dpi) : jpgConDpi(blob, m.dpi);
+  }
+  if (f === 'pdf'){
+    await cargarJsPDF();
+    const slug = m.marcas ? 12 : 0, mm = px => px / m.dpi * 25.4;
+    const pw = mm(m.Wt) + 2 * slug, ph = mm(m.Ht) + 2 * slug;
+    if (Math.max(pw, ph) > 5080) throw new Error('El PDF puede medir hasta 5 m por lado. Para más, usa TIFF o divide la lona en partes.');
+    const pdf = new jspdf.jsPDF({ orientation:pw > ph ? 'landscape' : 'portrait', unit:'mm', format:[pw, ph], compress:true });
+    await dibujarImprenta(json, m, async (cv, y0, h) => {
+      progresoImp('Armando el PDF… ' + Math.round((y0 + h) / m.Ht * 100) + '%');
+      pdf.addImage(cv.toDataURL('image/jpeg', 0.92), 'JPEG', slug, slug + mm(y0), mm(m.Wt), mm(h), undefined, 'FAST');
+    });
+    if (m.marcas){
+      const b = mm(m.bx), x0 = slug + b, y0 = slug + b, x1 = slug + mm(m.Wt) - b, y1 = slug + mm(m.Ht) - b, l = 8, sep = Math.max(2, b + 2);
+      pdf.setDrawColor(0); pdf.setLineWidth(0.25);
+      [[x0, y0, -1, -1], [x1, y0, 1, -1], [x0, y1, -1, 1], [x1, y1, 1, 1]].forEach(([x, y, dx, dy]) => {
+        pdf.line(x + dx * (sep - b), y, x + dx * (sep - b + l), y); pdf.line(x, y + dy * (sep - b), x, y + dy * (sep - b + l)); });
+      pdf.setFontSize(7); pdf.text(nombreArchivo() + ' · ' + fmtMedida(m.wcm, m.hcm) + ' · ' + m.dpi + ' dpi' + (m.sang ? ' · sangrado ' + (m.sang * 10) + ' mm' : '') + (m.espejo ? ' · ESPEJO' : ''), slug, slug - 4);
+    }
+    return pdf.output('blob');
+  }
+  if (f === 'eps'){
+    const pt = px => px / m.dpi * 72, Wp = pt(m.Wt), Hp = pt(m.Ht), partes = [];
+    partes.push(`%!PS-Adobe-3.0 EPSF-3.0\n%%Creator: Disenador Apik-Desing\n%%Title: ${nombreArchivo().normalize('NFD').replace(/[^\x20-\x7e]/g, '').replace(/[()\\]/g, '')}\n%%BoundingBox: 0 0 ${Math.ceil(Wp)} ${Math.ceil(Hp)}\n%%HiResBoundingBox: 0 0 ${Wp.toFixed(3)} ${Hp.toFixed(3)}\n%%LanguageLevel: 2\n%%Pages: 1\n%%EndComments\n%%Page: 1 1\n`);
+    await dibujarImprenta(json, m, async (cv, y0, h) => {
+      progresoImp('Armando el EPS… ' + Math.round((y0 + h) / m.Ht * 100) + '%');
+      const jpg = new Uint8Array(await (await aBlob(cv, 'image/jpeg', 0.92)).arrayBuffer());
+      partes.push(`gsave\n0 ${(Hp - pt(y0 + h)).toFixed(4)} translate ${Wp.toFixed(4)} ${pt(h).toFixed(4)} scale\n/DeviceRGB setcolorspace\n<< /ImageType 1 /Width ${m.Wt} /Height ${h} /BitsPerComponent 8 /Decode [0 1 0 1 0 1] /ImageMatrix [${m.Wt} 0 0 -${h} 0 ${h}] /DataSource currentfile /ASCII85Decode filter /DCTDecode filter >> image\n`, ascii85(jpg), '\ngrestore\n');
+    });
+    partes.push('showpage\n%%EOF\n');
+    return new Blob(partes, { type:'application/postscript' });
+  }
+  if (f === 'tif'){
+    const can = m.cmyk ? 4 : 3, FILAS = 128, tiras = [], cuentas = [];
+    let comprimido = typeof CompressionStream !== 'undefined';
+    await dibujarImprenta(json, m, async (cv, y0, h) => {
+      progresoImp('Armando el TIFF… ' + Math.round((y0 + h) / m.Ht * 100) + '%');
+      const ctx = cv.getContext('2d');
+      for (let r = 0; r < h; r += FILAS){
+        const hh = Math.min(FILAS, h - r), d = ctx.getImageData(0, r, m.Wt, hh).data;
+        let bytes = aCanales(d, m.Wt * hh, m.cmyk, false);
+        if (comprimido){ const z = await comprimirZlib(bytes); if (z) bytes = z; else comprimido = false; }
+        tiras.push(bytes); cuentas.push(bytes.length);
+      }
+    }, Math.max(FILAS, Math.floor(16e6 / m.Wt / FILAS) * FILAS));
+    // encabezado + tiras + directorio (IFD) al final
+    let pos = 8; const offs = cuentas.map(c => { const o = pos; pos += c; return o; });
+    if (pos % 2) pos++;
+    const n = tiras.length, extra = [];
+    const agregaExtra = bytes => { const o = pos; extra.push(bytes); pos += bytes.length; if (pos % 2){ extra.push(new Uint8Array(1)); pos++; } return o; };
+    const u32s = a => { const b = new Uint8Array(a.length * 4), v = new DataView(b.buffer); a.forEach((x, i) => v.setUint32(i * 4, x, true)); return b; };
+    const u16s = a => { const b = new Uint8Array(a.length * 2), v = new DataView(b.buffer); a.forEach((x, i) => v.setUint16(i * 2, x, true)); return b; };
+    const oBits = agregaExtra(u16s(Array(can).fill(8))), oOff = n > 1 ? agregaExtra(u32s(offs)) : offs[0], oCnt = n > 1 ? agregaExtra(u32s(cuentas)) : cuentas[0];
+    const oRes = agregaExtra(u32s([m.dpi, 1, m.dpi, 1]));
+    const ent = [[256, 4, 1, m.Wt], [257, 4, 1, m.Ht], [258, 3, can, oBits], [259, 3, 1, comprimido ? 8 : 1], [262, 3, 1, m.cmyk ? 5 : 2], [273, 4, n, oOff], [277, 3, 1, can],
+      [278, 4, 1, FILAS], [279, 4, n, oCnt], [282, 5, 1, oRes], [283, 5, 1, oRes + 8], [284, 3, 1, 1], [296, 3, 1, 2], ...(m.cmyk ? [[332, 3, 1, 1]] : [])];
+    const ifd = new Uint8Array(2 + ent.length * 12 + 4), v = new DataView(ifd.buffer); v.setUint16(0, ent.length, true);
+    ent.forEach(([tag, tipo, cnt, val], i) => { const o = 2 + i * 12; v.setUint16(o, tag, true); v.setUint16(o + 2, tipo, true); v.setUint32(o + 4, cnt, true);
+      if (tipo === 3 && cnt === 1) v.setUint16(o + 8, val, true); else v.setUint32(o + 8, val, true); });
+    const cab = new Uint8Array(8), cv8 = new DataView(cab.buffer); cab[0] = 73; cab[1] = 73; cv8.setUint16(2, 42, true); cv8.setUint32(4, pos, true);
+    const relleno = (8 + cuentas.reduce((a, b) => a + b, 0)) % 2 ? [new Uint8Array(1)] : [];
+    return new Blob([cab, ...tiras, ...relleno, ...extra, ifd], { type:'image/tiff' });
+  }
+  if (f === 'psd'){
+    const can = m.cmyk ? 4 : 3, filas = Array.from({ length:can }, () => []);
+    await dibujarImprenta(json, m, async (cv, y0, h) => {
+      progresoImp('Armando el PSD… ' + Math.round((y0 + h) / m.Ht * 100) + '%');
+      const ctx = cv.getContext('2d');
+      for (let r = 0; r < h; r += 64){
+        const hh = Math.min(64, h - r), px = aCanales(ctx.getImageData(0, r, m.Wt, hh).data, m.Wt * hh, m.cmyk, true);
+        for (let fila = 0; fila < hh; fila++) for (let c = 0; c < can; c++){
+          const linea = new Uint8Array(m.Wt); for (let x = 0; x < m.Wt; x++) linea[x] = px[(fila * m.Wt + x) * can + c];
+          filas[c].push(packBits(linea));
+        }
+      }
+    });
+    const cab = new Uint8Array(26), v = new DataView(cab.buffer);
+    cab.set([56, 66, 80, 83]); v.setUint16(4, 1); v.setUint16(12, can); v.setUint32(14, m.Ht); v.setUint32(18, m.Wt); v.setUint16(22, 8); v.setUint16(24, m.cmyk ? 4 : 3);
+    const res = new Uint8Array(4 + 28), rv = new DataView(res.buffer);           // resolución (dpi) para que Photoshop abra a la medida real
+    rv.setUint32(0, 28); res.set([56, 66, 73, 77], 4); rv.setUint16(8, 0x03ED); rv.setUint16(10, 0); rv.setUint32(12, 16);
+    rv.setUint32(16, m.dpi * 65536); rv.setUint16(20, 1); rv.setUint16(22, 2); rv.setUint32(24, m.dpi * 65536); rv.setUint16(28, 1); rv.setUint16(30, 2);
+    const cuentas = new Uint8Array(2 + can * m.Ht * 2), cvw = new DataView(cuentas.buffer); cvw.setUint16(0, 1);
+    let k = 2; for (let c = 0; c < can; c++) for (const fila of filas[c]){ cvw.setUint16(k, fila.length); k += 2; }
+    return new Blob([cab, new Uint8Array(4), res, new Uint8Array(4), cuentas, ...filas.flat()], { type:'image/vnd.adobe.photoshop' });
+  }
+  throw new Error('Formato desconocido');
+}
+FORMATO('imprenta').descargar = async function(){
+  canvas.discardActiveObject(); canvas.requestRenderAll();
+  const m = medidasImprenta(), lista = paginasAExportar();
+  cargando(true);
+  try {
+    for (const it of lista){          // un archivo por página (las imprentas lo prefieren así)
+      const b = await archivoImprenta(it.p, m), suf = lista.length > 1 ? '-' + (it.i + 1) : '';
+      bajarBlob(b, nombreArchivo() + suf + (m.espejo ? '-espejo' : '') + '.' + FMT_IMP[m.fmt].ext);
+      await new Promise(r => setTimeout(r, 500));
+    }
+    progresoImp('');
+    toast(`🖨 Listo: ${FMT_IMP[m.fmt].n} de ${fmtMedida(m.wcm, m.hcm)} a ${m.dpi} dpi${m.espejo ? ' en espejo' : ''}.`);
+  } catch (e) { console.error(e); progresoImp(''); toast('No se pudo crear el archivo: ' + e.message); }
+  finally { cargando(false); }
+};
+FORMATO('imprenta').vista = async function(){
+  const m0 = medidasImprenta(), lista = paginasAExportar(), k = 640 / Math.max(m0.Wt, m0.Ht);
+  const m = { ...m0, Wt:Math.round(m0.Wt * k), Ht:Math.round(m0.Ht * k), Tw:Math.round(m0.Tw * k), Th:Math.round(m0.Th * k), bx:Math.round(m0.bx * k) };
+  cargando(true);
+  try {
+    const imgs = [];
+    for (const it of lista.slice(0, 6)){
+      let url = '';
+      await dibujarImprenta(it.p, m, cv => {
+        const c = document.createElement('canvas'); c.width = m.Wt; c.height = m.Ht; const x = c.getContext('2d');
+        if (m.transp){ x.fillStyle = '#e5e7eb'; for (let i = 0; i < m.Wt; i += 16) for (let j = 0; j < m.Ht; j += 16) if ((i + j) / 16 % 2 === 0) x.fillRect(i, j, 16, 16); }
+        x.drawImage(cv, 0, 0);
+        if (m.bx){ x.strokeStyle = '#ef4444'; x.setLineDash([6, 4]); x.lineWidth = 1.5; x.strokeRect(m.bx, m.bx, m.Tw, m.Th); }
+        url = c.toDataURL('image/png');
+      }, m.Ht);
+      imgs.push(url);
+    }
+    $('vista').innerHTML = `<p class="hint">Así saldrá (${fmtMedida(m0.wcm, m0.hcm)}${m0.espejo ? ', en espejo' : ''}${m0.cmyk ? ', en CMYK aproximado: los colores pueden verse un poco distintos' : ''}).${m0.bx ? ' La línea roja es por donde se corta: lo de afuera es el sangrado.' : ''}</p>` + imgs.map(u => `<img src="${u}" style="margin-bottom:8px;box-shadow:0 1px 6px rgba(0,0,0,.2)">`).join('');
+  } finally { cargando(false); }
+};
+FORMATO('imprenta').drive = function(){ toast('Los archivos de imprenta suelen pesar mucho: usa «Descargar» y súbelos tú a Drive o mándalos a la imprenta.'); };
+
+// =========================================================
+// ABRIR ARCHIVOS DE OTROS PROGRAMAS COMO IMAGEN: PSD, TIFF, PDF, AI (compatible con PDF) y EPS con vista previa
+// =========================================================
+const URL_PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js', URL_PDFJS_W = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const URL_PAKO = 'https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js', URL_UTIF = 'https://cdn.jsdelivr.net/npm/utif@3.1.0/UTIF.js';
+const scriptUna = (() => { const hechos = {}; return u => hechos[u] || (hechos[u] = new Promise((ok, mal) => { const sc = document.createElement('script'); sc.src = u; sc.onload = ok; sc.onerror = () => { delete hechos[u]; mal(new Error('No se pudo cargar la herramienta para abrir el archivo. Revisa tu internet.')); }; document.head.appendChild(sc); })); })();
+const maxImagen = () => medidaReal ? 4000 : 2400;
+// en diseños con medida real (lonas) las fotos se guardan más grandes para que se impriman nítidas
+{ const reducirAntes = reducirImagen; reducirImagen = function(url, max, cb){ return reducirAntes(url, max === 2400 ? maxImagen() : max, cb); }; }
+function lienzoDeRGBA(rgba, w, h){
+  const k = Math.min(1, maxImagen() / Math.max(w, h)), c = document.createElement('canvas');
+  const t = document.createElement('canvas'); t.width = w; t.height = h; t.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(rgba.buffer, rgba.byteOffset, w * h * 4), w, h), 0, 0);
+  if (k === 1) return t;
+  c.width = Math.round(w * k); c.height = Math.round(h * k); const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(t, 0, 0, c.width, c.height); return c;
+}
+const aURL = (cv, transp) => cv.toDataURL(transp ? 'image/png' : 'image/jpeg', 0.92);
+// PSD: se usa la imagen combinada que Photoshop guarda dentro (todas las capas juntas)
+function leerPSD(buf){
+  const v = new DataView(buf), b = new Uint8Array(buf);
+  if (v.getUint32(0) !== 0x38425053) throw new Error('No parece un archivo PSD');
+  if (v.getUint16(4) !== 1) throw new Error('Este PSD es de formato grande (PSB). Guárdalo en Photoshop como PNG o JPG.');
+  const can = v.getUint16(12), h = v.getUint32(14), w = v.getUint32(18), prof = v.getUint16(22), modo = v.getUint16(24);
+  if (prof !== 8 && prof !== 16) throw new Error('Este PSD usa ' + prof + ' bits por color. Guárdalo en Photoshop en 8 bits o como PNG.');
+  if (![1, 3, 4].includes(modo)) throw new Error('Este PSD está en un modo de color que no se puede abrir aquí (usa RGB, CMYK o escala de grises).');
+  let p = 26; p += 4 + v.getUint32(p); p += 4 + v.getUint32(p); p += 4 + v.getUint32(p);
+  const comp = v.getUint16(p); p += 2;
+  const bpc = prof / 8, filaB = w * bpc, usar = modo === 1 ? 1 : modo === 3 ? Math.min(can, 4) : Math.min(can, 5);
+  const canales = [];
+  if (comp === 0){ for (let c = 0; c < can; c++){ canales.push(b.subarray(p, p + filaB * h)); p += filaB * h; } }
+  else if (comp === 1){
+    const cuentas = []; for (let i = 0; i < can * h; i++){ cuentas.push(v.getUint16(p)); p += 2; }
+    for (let c = 0; c < Math.min(can, usar); c++){
+      const out = new Uint8Array(filaB * h); let o = 0;
+      for (let y = 0; y < h; y++){
+        const fin = p + cuentas[c * h + y];
+        while (p < fin){ const n = b[p++]; if (n < 128){ out.set(b.subarray(p, p + n + 1), o); o += n + 1; p += n + 1; } else if (n > 128){ out.fill(b[p++], o, o + 257 - n); o += 257 - n; } }
+        o = (y + 1) * filaB;
+      }
+      canales.push(out);
+    }
+  } else throw new Error('Este PSD usa una compresión que no se puede leer aquí. Guárdalo como PNG o JPG.');
+  const rgba = new Uint8Array(w * h * 4), val = (ch, i) => ch[i * bpc];
+  const alfa = modo === 3 && can >= 4 ? canales[3] : modo === 4 && can >= 5 ? canales[4] : null;
+  for (let i = 0; i < w * h; i++){
+    let r, g, bl;
+    if (modo === 1){ r = g = bl = val(canales[0], i); }
+    else if (modo === 3){ r = val(canales[0], i); g = val(canales[1], i); bl = val(canales[2], i); }
+    else { const k = val(canales[3], i) / 255; r = val(canales[0], i) * k; g = val(canales[1], i) * k; bl = val(canales[2], i) * k; }   // CMYK de Photoshop va invertido
+    rgba[i * 4] = r; rgba[i * 4 + 1] = g; rgba[i * 4 + 2] = bl; rgba[i * 4 + 3] = alfa ? val(alfa, i) : 255;
+  }
+  return { rgba, w, h, transp:!!alfa };
+}
+async function leerTIFF(buf){
+  if (!window.pako) await scriptUna(URL_PAKO);
+  if (!window.UTIF) await scriptUna(URL_UTIF);
+  const ifds = UTIF.decode(buf); if (!ifds.length) throw new Error('El TIFF está vacío');
+  const pag = ifds.reduce((a, x) => (x.width * x.height > a.width * a.height ? x : a), ifds[0]);   // la imagen más grande (no la miniatura)
+  UTIF.decodeImage(buf, pag); const rgba = UTIF.toRGBA8(pag);
+  return { rgba, w:pag.width, h:pag.height, transp:false };
+}
+async function leerPDF(buf){
+  if (!window.pdfjsLib) await scriptUna(URL_PDFJS);
+  pdfjsLib.GlobalWorkerOptions.workerSrc = URL_PDFJS_W;
+  const doc = await pdfjsLib.getDocument({ data:new Uint8Array(buf) }).promise, urls = [];
+  for (let n = 1; n <= Math.min(doc.numPages, 10); n++){
+    const pg = await doc.getPage(n), v1 = pg.getViewport({ scale:1 }), k = maxImagen() / Math.max(v1.width, v1.height), vp = pg.getViewport({ scale:k });
+    const c = document.createElement('canvas'); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+    await pg.render({ canvasContext:c.getContext('2d'), viewport:vp, background:'rgba(0,0,0,0)' }).promise;
+    urls.push(c.toDataURL('image/png'));
+  }
+  if (doc.numPages > 10) toast('El PDF tiene ' + doc.numPages + ' páginas: se agregaron las primeras 10.');
+  return urls;
+}
+// EPS «para DOS» trae una vista previa en TIFF adentro
+async function leerEPS(buf){
+  const v = new DataView(buf);
+  if (v.getUint32(0) === 0xC5D0D3C6){ const off = v.getUint32(20, true), len = v.getUint32(24, true); if (off && len) return leerTIFF(buf.slice(off, off + len)); }
+  throw new Error('Este EPS no trae vista previa. Ábrelo en CorelDRAW o Illustrator y expórtalo como PDF o PNG para usarlo aquí.');
+}
+const EXT_OTRAS = ['psd', 'tif', 'tiff', 'pdf', 'ai', 'eps', 'cdr'];
+const extDe = f => ((f && f.name || '').split('.').pop() || '').toLowerCase();
+async function abrirArchivoOtro(file, cb){
+  const e = extDe(file);
+  if (e === 'cdr') return toast('El archivo .cdr solo lo abre CorelDRAW. En Corel usa Archivo → Exportar → PDF o PNG y súbelo aquí.');
+  cargando(true);
+  try {
+    const buf = await file.arrayBuffer();
+    if (e === 'pdf' || e === 'ai'){
+      let urls;
+      try { urls = await leerPDF(buf); } catch (er) { if (e === 'ai') throw new Error('Este .ai no se guardó «compatible con PDF». En Illustrator usa Guardar como → PDF, o exporta como PNG.'); throw er; }
+      urls.forEach(u => cb(u)); toast('📄 Se agregó como imagen' + (urls.length > 1 ? ' (una por página)' : '') + '. Para editar sus textos, ábrelo en el programa con el que se hizo.');
+      return;
+    }
+    const r = e === 'psd' ? leerPSD(buf) : e === 'eps' ? await leerEPS(buf) : await leerTIFF(buf);
+    cb(aURL(lienzoDeRGBA(r.rgba, r.w, r.h), r.transp));
+    toast(e === 'psd' ? '🖼 PSD agregado como imagen (con todas sus capas juntas).' : e === 'eps' ? '🖼 Se agregó la vista previa del EPS.' : '🖼 TIFF agregado.');
+  } catch (er) { console.error(er); toast('⚠ ' + er.message); }
+  finally { cargando(false); }
+}
+{ const leerAntes = leerArchivo; leerArchivo = function(file, cb){ if (file && (EXT_OTRAS.includes(extDe(file)) || /photoshop|tiff|pdf|postscript/.test(file.type || ''))) return abrirArchivoOtro(file, cb); return leerAntes(file, cb); }; }
+(function(){
+  const extra = '.psd,.tif,.tiff,.pdf,.ai,.eps,.cdr';
+  ['archivoImg', 'archivoFondo', 'archivoMarco'].forEach(id => { const i = $(id); if (i) i.accept = 'image/*,' + extra; });
+  const btn = document.querySelector('#tImagenes .bigbtn[onclick*="archivoImg"]');
+  if (btn){ const p = document.createElement('p'); p.className = 'hint'; p.style.cssText = 'font-size:11.5px;padding-top:0'; p.textContent = 'También: PSD de Photoshop, TIFF, PDF, AI (compatible con PDF) y EPS con vista previa. Se agregan como imagen.'; btn.after(p); }
+})();

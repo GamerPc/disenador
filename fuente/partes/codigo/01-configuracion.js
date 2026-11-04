@@ -34,6 +34,7 @@ let historial = [], hi = -1, restaurando = false;
 let portapapeles = null;
 let paginas = [null], actual = 0, miniaturas = [];
 let generandoVista = false;
+let medidaReal = null;   // { pxcm, tipo }: cuántos px del lienzo son 1 cm de la impresión (lonas, sublimación)
 let presConfig = { transicion:'desvanecer', avance:'manual', segundos:6 };   // mientras se dibujan las miniaturas de plantillas no se toca el diseño
 const PAGINA_VACIA = () => ({ version: fabric.version, objects: [], background: '#ffffff' });
 
