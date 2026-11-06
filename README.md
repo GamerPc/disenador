@@ -260,6 +260,9 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - **Menos lecturas de Firestore** (plan gratis: 50,000 lecturas/día, 20,000 escrituras/día, 1 GiB): lo leído hace poco se reutiliza unos minutos; las actividades y exámenes que ya cerraron guardan su conteo de entregas; los pendientes del alumno se guardan 10 min. En un grupo de 30 alumnos con 10 actividades: abrir el grupo de nuevo pasó de ~450 a ~16 lecturas, y abrir la app como alumno de ~28 a ~2. El grupo muestra cuánto espacio ocupan sus trabajos.
 - **Reglas nuevas**: `buzon`, `auxSolicitudes`, `inicios`, `esMaestro()` con auxiliares, borrar partes de entregas (maestro) y `abiertas` protegido → volver a publicar `firestore.rules`.
 
+## v61: cartel de logros con fotos
+- Plantilla «Logros de la escuela con fotos» en 📣 Carteles escolares (`88-cartel-de-logros-con-fotos.js`): encabezado con 3 lugares para logos, franja con escena escolar, título con píldora y seis recuadros de colores con pestaña, marcos para soltar fotos y texto. Los textos se ajustan solos para no partirse (`CABE`).
+
 ## v60: lonas, sublimación y archivos para imprenta
 - **Medida real** (`87-lonas-sublimacion-e-imprenta.js`): el diseño guarda `med:{pxcm}` (cuántos px del lienzo son 1 cm). En «Tamaño» hay medidas de lonas (1×1 a 6×3 m, pendones, roll-up, X-banner, backdrop, mampara, vinil) y de sublimación (tazas 11/15 oz, termos, playera, mouse pad, cojín, gorra, rompecabezas, plato, azulejo, llavero, bolsa, placa), y medida personalizada en cm, m o pulgadas. La barra muestra «3 × 1 m».
 - **16 plantillas** «🖨 Lonas y sublimación» (gran apertura, promoción, cumpleaños, graduación, se vende, menú, kermés, roll-up, pendón, backdrop, taza, termo, playera, mouse pad, cojín, gorra).
