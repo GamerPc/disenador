@@ -12174,6 +12174,7 @@ function listarHerramientasBuscables(){
   }).filter(Boolean);
   const agregar = (titulo, detalle, buscar, ejecutar) => items.push({ tipo:'acción', titulo, detalle, buscar:normalizarBusquedaHerramienta(titulo + ' ' + detalle + ' ' + buscar), ejecutar });
   agregar('Exportar o descargar', 'PNG, JPG, PDF, PowerPoint y video MP4', 'guardar imprimir bajar archivo', () => abrirModal('mExportar'));
+  agregar('Quitar fondo de una foto', 'Abre la herramienta para borrar el fondo de una imagen', 'quitar fondo fotos imagen transparente recortar', () => { const boton = document.querySelector('#pestanas [data-tab="tImagenes"]'); if (boton) boton.click(); });
   agregar('Presentar o proyectar', 'Muestra tus diapositivas en pantalla completa', 'exposición exposición diapositivas clase', () => abrirModal('mPresentar'));
   agregar('Buscar texto en el diseño', 'Encuentra y reemplaza palabras', 'buscar reemplazar texto', () => abrirBuscar());
   if (typeof abrirEscuela === 'function') agregar('Modo escuela', 'Grupos, tareas, actividades y entregas', 'maestro alumno clase escolar', () => abrirEscuela());
