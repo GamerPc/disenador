@@ -157,13 +157,17 @@ service cloud.firestore {
     // TRABAJO EN EQUIPO: quien tenga el enlace (y haya entrado con su cuenta) puede ver y editar
     match /equipos/{e} {
       function abierto() { let d = get(/databases/$(database)/documents/equipos/$(e)).data; return d.abierto == true || d.dueno == request.auth.uid; }
-      allow read: if request.auth != null;
+      // El enlace del equipo es el permiso de acceso: quien lo conoce puede leerlo mientras esté abierto.
+      // Un equipo cerrado solo lo puede leer su dueño.
+      allow read: if request.auth != null
+        && (resource.data.dueno == request.auth.uid || resource.data.abierto == true);
       allow create: if request.auth != null && request.resource.data.dueno == request.auth.uid;
       allow update: if request.auth != null && (resource.data.dueno == request.auth.uid
         || (resource.data.abierto == true && request.resource.data.dueno == resource.data.dueno && request.resource.data.abierto == true));
       allow delete: if request.auth != null && resource.data.dueno == request.auth.uid;
       match /{seccion}/{doc} {
-        allow read: if request.auth != null;
+        // También proteger comentarios, objetos y presencia cuando el dueño cierre el equipo.
+        allow read: if request.auth != null && abierto();
         allow write: if request.auth != null && abierto();
       }
     }
