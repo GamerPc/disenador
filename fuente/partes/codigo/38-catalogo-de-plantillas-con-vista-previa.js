@@ -69,14 +69,41 @@ const CAT_MIAS = 'Mis plantillas';
 const CATEGORIAS = [CAT_MIAS, CAT_PRES, CAT_DER, CAT_MAPAS, CAT_TABLAS, CAT_PROC, CAT_INFO, CAT_PORT];
 let catActiva = 'Todas';
 const sinAcentos = t => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const ALIAS_CATALOGO = {
+  'Presentaciones':'diapositiva diapositivas exposición exposicion exponer clase escolar',
+  'Actividades escolares':'tarea tareas actividad actividades ejercicio ejercicios escuela escolar alumno alumnos estudiante estudiantes maestro maestros cuestionario examen ficha',
+  'Derecho':'legal jurídico juridico abogacía abogacia abogado abogada juicio penal jurisprudencia',
+  'Mapas conceptuales y mentales':'mapa mapas mental mentales conceptual conceptuales lluvia ideas concepto conceptos',
+  'Tablas y cuadros':'tabla tablas cuadro cuadros comparar comparación comparacion comparativo comparativa',
+  'Procesos y análisis':'proceso procesos pasos procedimiento procedimientos análisis analisis flujo esquema',
+  'Infografías y fotos':'infografía infografia infografías infografias foto fotos imagen imágenes imagenes datos',
+  'Portadas, carteles y redes':'portada portadas tarea trabajo cartel carteles póster poster redes publicación publicacion',
+  'Logos y tarjetas':'logo logos tarjeta tarjetas negocio marca presentación presentacion',
+  'Negocio y redes':'negocio restaurante menú menu comida cafetería cafeteria venta tienda precio promoción promocion facebook instagram',
+  'Web, apps y sistemas':'web página páginaweb sitio sitios app apps aplicación aplicaciones sistema sistemas celular móvil movil',
+  'Neón y tecnología':'neón neon tecnología tecnologia futurista gaming gamer',
+  'Esquemas y líneas de tiempo':'esquema esquemas línea líneas tiempo cronología cronologia',
+  'Ciencias y matemáticas':'ciencia ciencias matemática matemáticas matematica matematicas biología biologia física fisica química quimica',
+  'Carteles escolares':'cartel carteles escuela escolar tarea tareas ciencias',
+  'Lonas y sublimación':'lona lonas sublimación sublimacion imprenta impresión impresion vinil'
+};
+const PALABRAS_PUENTE = new Set(['de','del','para','con','por','el','la','las','los','y','un','una','mis','mi','en']);
+function palabrasBusquedaCatalogo(consulta){
+  return [...new Set(sinAcentos(consulta.trim()).split(/\s+/).filter(p => p && !PALABRAS_PUENTE.has(p)))];
+}
+function coincideBusquedaCatalogo(it, palabras){
+  if (!palabras.length) return true;
+  const texto = sinAcentos([it.nombre, it.cat, ALIAS_CATALOGO[it.cat] || ''].join(' '));
+  return palabras.every(p => texto.includes(p));
+}
 function renderCatalogo(){
-  const q = sinAcentos($('buscarPlantilla').value.trim());
+  const palabras = palabrasBusquedaCatalogo($('buscarPlantilla').value);
   const cont = $('catalogo'); cont.innerHTML = '';
   CATEGORIAS.forEach(cat => {
     if (catActiva !== 'Todas' && catActiva !== cat) return;
-    const items = CATALOGO.filter(it => it.cat === cat && (!q || sinAcentos(it.nombre + ' ' + it.cat).includes(q)));
+    const items = CATALOGO.filter(it => it.cat === cat && coincideBusquedaCatalogo(it, palabras));
     if (!items.length){
-      if (cat === CAT_MIAS && !q && catActiva === CAT_MIAS) cont.innerHTML = '<p class="hint">Aún no tienes plantillas propias. Diseña algo y pulsa “Guardar esta página como mi plantilla”.</p>';
+      if (cat === CAT_MIAS && !palabras.length && catActiva === CAT_MIAS) cont.innerHTML = '<p class="hint">Aún no tienes plantillas propias. Diseña algo y pulsa “Guardar esta página como mi plantilla”.</p>';
       return;
     }
     const h4 = document.createElement('h4'); h4.textContent = cat; cont.appendChild(h4);
@@ -108,7 +135,7 @@ function renderCatalogo(){
     });
     cont.appendChild(grid);
   });
-  if (!cont.children.length) cont.innerHTML = '<p class="hint">No hay plantillas con ese nombre.</p>';
+  if (!cont.children.length) cont.innerHTML = '<p class="hint">No encontramos una plantilla con esas palabras. Prueba con “tarea”, “menú” o “mapa”, o elige “Todas”.</p>';
 }
 ['Todas', ...CATEGORIAS].forEach(cat => {
   const c = document.createElement('button'); c.className = 'chip' + (cat === 'Todas' ? ' on' : '');

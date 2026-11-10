@@ -582,14 +582,41 @@ const CAT_MIAS = 'Mis plantillas';
 const CATEGORIAS = [CAT_MIAS, CAT_PRES, CAT_DER, CAT_MAPAS, CAT_TABLAS, CAT_PROC, CAT_INFO, CAT_PORT];
 let catActiva = 'Todas';
 const sinAcentos = t => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const ALIAS_CATALOGO = {
+  'Presentaciones':'diapositiva diapositivas exposición exposicion exponer clase escolar',
+  'Actividades escolares':'tarea tareas actividad actividades ejercicio ejercicios escuela escolar alumno alumnos estudiante estudiantes maestro maestros cuestionario examen ficha',
+  'Derecho':'legal jurídico juridico abogacía abogacia abogado abogada juicio penal jurisprudencia',
+  'Mapas conceptuales y mentales':'mapa mapas mental mentales conceptual conceptuales lluvia ideas concepto conceptos',
+  'Tablas y cuadros':'tabla tablas cuadro cuadros comparar comparación comparacion comparativo comparativa',
+  'Procesos y análisis':'proceso procesos pasos procedimiento procedimientos análisis analisis flujo esquema',
+  'Infografías y fotos':'infografía infografia infografías infografias foto fotos imagen imágenes imagenes datos',
+  'Portadas, carteles y redes':'portada portadas tarea trabajo cartel carteles póster poster redes publicación publicacion',
+  'Logos y tarjetas':'logo logos tarjeta tarjetas negocio marca presentación presentacion',
+  'Negocio y redes':'negocio restaurante menú menu comida cafetería cafeteria venta tienda precio promoción promocion facebook instagram',
+  'Web, apps y sistemas':'web página páginaweb sitio sitios app apps aplicación aplicaciones sistema sistemas celular móvil movil',
+  'Neón y tecnología':'neón neon tecnología tecnologia futurista gaming gamer',
+  'Esquemas y líneas de tiempo':'esquema esquemas línea líneas tiempo cronología cronologia',
+  'Ciencias y matemáticas':'ciencia ciencias matemática matemáticas matematica matematicas biología biologia física fisica química quimica',
+  'Carteles escolares':'cartel carteles escuela escolar tarea tareas ciencias',
+  'Lonas y sublimación':'lona lonas sublimación sublimacion imprenta impresión impresion vinil'
+};
+const PALABRAS_PUENTE = new Set(['de','del','para','con','por','el','la','las','los','y','un','una','mis','mi','en']);
+function palabrasBusquedaCatalogo(consulta){
+  return [...new Set(sinAcentos(consulta.trim()).split(/\s+/).filter(p => p && !PALABRAS_PUENTE.has(p)))];
+}
+function coincideBusquedaCatalogo(it, palabras){
+  if (!palabras.length) return true;
+  const texto = sinAcentos([it.nombre, it.cat, ALIAS_CATALOGO[it.cat] || ''].join(' '));
+  return palabras.every(p => texto.includes(p));
+}
 function renderCatalogo(){
-  const q = sinAcentos($('buscarPlantilla').value.trim());
+  const palabras = palabrasBusquedaCatalogo($('buscarPlantilla').value);
   const cont = $('catalogo'); cont.innerHTML = '';
   CATEGORIAS.forEach(cat => {
     if (catActiva !== 'Todas' && catActiva !== cat) return;
-    const items = CATALOGO.filter(it => it.cat === cat && (!q || sinAcentos(it.nombre + ' ' + it.cat).includes(q)));
+    const items = CATALOGO.filter(it => it.cat === cat && coincideBusquedaCatalogo(it, palabras));
     if (!items.length){
-      if (cat === CAT_MIAS && !q && catActiva === CAT_MIAS) cont.innerHTML = '<p class="hint">Aún no tienes plantillas propias. Diseña algo y pulsa “Guardar esta página como mi plantilla”.</p>';
+      if (cat === CAT_MIAS && !palabras.length && catActiva === CAT_MIAS) cont.innerHTML = '<p class="hint">Aún no tienes plantillas propias. Diseña algo y pulsa “Guardar esta página como mi plantilla”.</p>';
       return;
     }
     const h4 = document.createElement('h4'); h4.textContent = cat; cont.appendChild(h4);
@@ -621,7 +648,7 @@ function renderCatalogo(){
     });
     cont.appendChild(grid);
   });
-  if (!cont.children.length) cont.innerHTML = '<p class="hint">No hay plantillas con ese nombre.</p>';
+  if (!cont.children.length) cont.innerHTML = '<p class="hint">No encontramos una plantilla con esas palabras. Prueba con “tarea”, “menú” o “mapa”, o elige “Todas”.</p>';
 }
 ['Todas', ...CATEGORIAS].forEach(cat => {
   const c = document.createElement('button'); c.className = 'chip' + (cat === 'Todas' ? ' on' : '');
@@ -680,85 +707,6 @@ function agregarMisPlantillas(lista){
 }
 async function cargarMisPlantillas(){
   try { const lista = await gs('listarPlantillas'); if (Array.isArray(lista)) agregarMisPlantillas(lista); } catch(e){}
-}
-
-/* =========================================================
-   ANIMACIONES (configuración)
-   ========================================================= */
-const TIPOS_ANIM = [['ninguna','Sin animación'],['aparecer','Aparecer'],['arriba','Deslizar hacia arriba'],['abajo','Deslizar hacia abajo'],
-  ['izquierda','Entrar por la izquierda'],['derecha','Entrar por la derecha'],['zoom','Acercar'],['rebote','Rebotar'],['girar','Girar'],['escribir','Escribir (texto)'],
-  ['caer','Caer y rebotar'],['voltear','Voltear'],['diagonal','Entrar en diagonal'],['encoger','Encoger (de grande a normal)']];
-$('aTipo').innerHTML = TIPOS_ANIM.map(([v, n]) => `<option value="${v}">${n}</option>`).join('');
-function objetivosAnim(){
-  const lst = [];
-  canvas.getActiveObjects().forEach(x => { const b = nodoBase(x); if (b && !b.esFondo && !lst.includes(b)) lst.push(b); });
-  return lst;
-}
-const ordenSiguiente = () => Math.max(0, ...canvas.getObjects().map(o => (o.anim && o.anim.orden) || 0)) + 1;
-function aplicarAnimacion(campos){
-  const lst = objetivosAnim(); if (!lst.length) return;
-  const existente = lst.find(o => o.anim);
-  const orden = existente ? existente.anim.orden : ordenSiguiente();
-  lst.forEach(o => {
-    if (campos.tipo === 'ninguna'){ o.anim = null; return; }
-    o.anim = { tipo:'arriba', inicio:'despues', duracion:700, retraso:0, orden, ...(o.anim || {}), ...campos };
-  });
-  actualizarPanelAnim(); guardarEstado();
-}
-function actualizarPanelAnim(){
-  const o = activo(); if (!o) return;
-  const b = nodoBase(o.type === 'activeSelection' ? (o.getObjects().find(x => !x.textoDe) || o.getObjects()[0]) : o);
-  const a = (b && b.anim) || null;
-  $('aTipo').value = a ? a.tipo : 'ninguna';
-  $('aDetalles').hidden = !a;
-  if (a){ $('aInicio').value = a.inicio; $('aDur').value = a.duracion; $('aRet').value = a.retraso; $('aOrden').value = a.orden; }
-}
-$('aTipo').addEventListener('change', e => aplicarAnimacion({ tipo:e.target.value }));
-$('aInicio').addEventListener('change', e => aplicarAnimacion({ inicio:e.target.value }));
-$('aDur').addEventListener('change', e => aplicarAnimacion({ duracion:+e.target.value }));
-$('aRet').addEventListener('change', e => aplicarAnimacion({ retraso:+e.target.value }));
-$('aOrden').addEventListener('change', e => aplicarAnimacion({ orden:Math.max(1, +e.target.value || 1) }));
-canvas.on('selection:created', actualizarPanelAnim);
-canvas.on('selection:updated', actualizarPanelAnim);
-
-const PRESETS_ANIM = {
-  dinamica:  { tipo:'arriba',   inicio:'despues', duracion:650 },
-  suave:     { tipo:'aparecer', inicio:'despues', duracion:600 },
-  divertida: { tipo:'rebote',   inicio:'despues', duracion:700 },
-  zoom:      { tipo:'zoom',     inicio:'despues', duracion:600 },
-  clic:      { tipo:'arriba',   inicio:'clic',    duracion:600 }
-};
-// Pone animación a todo lo de una lista de objetos, de arriba hacia abajo y de izquierda a derecha
-function animarObjetos(objs, preset){
-  const cand = objs.filter(o => !o.esFondo && !o.textoDe && o.type !== 'conector' && o.visible !== false);
-  const caja = o => o.getBoundingRect(true, true);
-  cand.sort((a, b) => { const ra = caja(a), rb = caja(b); return (Math.round(ra.top / 60) - Math.round(rb.top / 60)) || ((a.esDeco ? 1 : 0) - (b.esDeco ? 1 : 0)) || (ra.left - rb.left); });
-  const tablas = {};
-  let n = 0;
-  cand.forEach(o => {
-    if (o.tabla){                                  // las celdas de una tabla aparecen juntas
-      if (!tablas[o.tabla]) tablas[o.tabla] = ++n;
-      o.anim = { ...preset, retraso:0, orden:tablas[o.tabla], inicio: preset.inicio === 'clic' ? 'clic' : 'despues' };
-      return;
-    }
-    n++;
-    o.anim = { ...preset, retraso:0, orden:n, inicio: o.esDeco && n > 1 ? 'con' : preset.inicio };   // las decoraciones salen junto con lo anterior
-  });
-}
-function cambiarPaginas(todas, fn){
-  paginas[actual] = jsonPagina();
-  const indices = todas ? paginas.map((_, i) => i) : [actual];
-  return Promise.all(indices.map(i => i === actual ? Promise.resolve() : new Promise(ok => {
-    const sc = new fabric.StaticCanvas(document.createElement('canvas'), { width:W, height:H, renderOnAddRemove:false });
-    sc.loadFromJSON(paginas[i] || PAGINA_VACIA(), () => { fn(sc.getObjects()); const nt = paginas[i] && paginas[i].notas; paginas[i] = sc.toJSON(EXTRA); if (nt) paginas[i].notas = nt; sc.dispose(); ok(); });
-  }))).then(() => { fn(canvas.getObjects()); canvas.requestRenderAll(); guardarEstado(); actualizarPanelAnim(); });
-}
-function animarPaginas(todas){
-  const preset = PRESETS_ANIM[$('pEstiloAnim').value];
-  cambiarPaginas(todas, objs => animarObjetos(objs, preset)).then(() => toast(todas ? 'Se animaron todas las páginas' : 'Se animó esta página'));
-}
-function quitarAnimaciones(){
-  cambiarPaginas(true, objs => objs.forEach(o => { o.anim = null; })).then(() => toast('Se quitaron las animaciones'));
 }
 
 </script>
