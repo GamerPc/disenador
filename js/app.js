@@ -164,6 +164,12 @@ function cargando(v){ $('cargando').style.display = v ? 'flex' : 'none'; }
 function abrirModal(id){ $(id).classList.add('abierto'); }
 function cerrarModal(id){ $(id).classList.remove('abierto'); }
 document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('abierto'); }));
+// Relaciona las etiquetas visibles con su campo cuando una fila contiene un solo control.
+document.querySelectorAll('.fila').forEach(fila => {
+  const campos = [...fila.querySelectorAll('input[id],select[id],textarea[id]')].filter(c => c.closest('.fila') === fila);
+  const etiquetas = [...fila.children].filter(e => e.tagName === 'LABEL' && !e.querySelector('input,select,textarea'));
+  if (campos.length === 1 && etiquetas.length === 1 && !etiquetas[0].htmlFor) etiquetas[0].htmlFor = campos[0].id;
+});
 function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function aHex(c){
   if (!c || typeof c !== 'string') return '#000000';
@@ -4230,14 +4236,66 @@ const CAT_MIAS = 'Mis plantillas';
 const CATEGORIAS = [CAT_MIAS, CAT_PRES, CAT_DER, CAT_MAPAS, CAT_TABLAS, CAT_PROC, CAT_INFO, CAT_PORT];
 let catActiva = 'Todas';
 const sinAcentos = t => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const ALIAS_CATALOGO = {
+  'Presentaciones':'diapositiva diapositivas exposición exposicion exponer clase escolar',
+  'Actividades escolares':'tarea tareas actividad actividades ejercicio ejercicios escuela escolar alumno alumnos estudiante estudiantes maestro maestros cuestionario examen ficha',
+  'Derecho':'legal jurídico juridico abogacía abogacia abogado abogada juicio penal jurisprudencia',
+  'Mapas conceptuales y mentales':'mapa mapas mental mentales conceptual conceptuales lluvia ideas concepto conceptos',
+  'Tablas y cuadros':'tabla tablas cuadro cuadros comparar comparación comparacion comparativo comparativa',
+  'Procesos y análisis':'proceso procesos pasos procedimiento procedimientos análisis analisis flujo esquema',
+  'Infografías y fotos':'infografía infografia infografías infografias foto fotos imagen imágenes imagenes datos',
+  'Portadas, carteles y redes':'portada portadas tarea trabajo cartel carteles póster poster redes publicación publicacion',
+  'Logos y tarjetas':'logo logos tarjeta tarjetas negocio marca presentación presentacion',
+  'Negocio y redes':'negocio restaurante menú menu comida cafetería cafeteria venta tienda precio promoción promocion facebook instagram',
+  'Web, apps y sistemas':'web página páginaweb sitio sitios app apps aplicación aplicaciones sistema sistemas celular móvil movil',
+  'Neón y tecnología':'neón neon tecnología tecnologia futurista gaming gamer',
+  'Esquemas y líneas de tiempo':'esquema esquemas línea líneas tiempo cronología cronologia',
+  'Ciencias y matemáticas':'ciencia ciencias matemática matemáticas matematica matematicas biología biologia física fisica química quimica',
+  'Carteles escolares':'cartel carteles escuela escolar tarea tareas ciencias',
+  'Lonas y sublimación':'lona lonas sublimación sublimacion imprenta impresión impresion vinil'
+};
+const PALABRAS_PUENTE = new Set(['de','del','para','con','por','el','la','las','los','y','un','una','mis','mi','en']);
+function palabrasBusquedaCatalogo(consulta){
+  return [...new Set(sinAcentos(consulta.trim()).split(/\s+/).filter(p => p && !PALABRAS_PUENTE.has(p)))];
+}
+function coincideBusquedaCatalogo(it, palabras){
+  if (!palabras.length) return true;
+  const texto = sinAcentos([it.nombre, it.cat, ALIAS_CATALOGO[it.cat] || ''].join(' '));
+  return palabras.every(p => texto.includes(p));
+}
+function textoEstadoCatalogo(encontrados, consulta, categoria){
+  return consulta
+    ? `${encontrados} ${encontrados === 1 ? 'resultado' : 'resultados'} para “${consulta}”.`
+    : `${encontrados} diseños ${categoria === 'Todas' ? 'disponibles' : 'en esta categoría'}.`;
+}
+function mostrarCatalogoVacio(cont, consulta){
+  const caja = document.createElement('div'); caja.className = 'vacioCatalogo'; caja.setAttribute('role', 'status');
+  const mensaje = document.createElement('p'); mensaje.className = 'hint';
+  mensaje.textContent = consulta
+    ? `No encontramos diseños con “${consulta}”. Prueba con otras palabras o muestra todo el catálogo.`
+    : 'Esta categoría no tiene diseños disponibles. Puedes volver a ver todo el catálogo.';
+  caja.appendChild(mensaje);
+  const limpiar = document.createElement('button'); limpiar.className = 'bigbtn'; limpiar.type = 'button'; limpiar.textContent = 'Borrar búsqueda';
+  limpiar.onclick = () => { $('buscarPlantilla').value = ''; renderCatalogo(); $('buscarPlantilla').focus(); };
+  caja.appendChild(limpiar);
+  const todas = document.createElement('button'); todas.className = 'bigbtn'; todas.type = 'button'; todas.textContent = 'Ver todo el catálogo';
+  todas.onclick = () => {
+    $('buscarPlantilla').value = ''; catActiva = 'Todas';
+    document.querySelectorAll('#chipsCat .chip').forEach((x, i) => { const activa = i === 0; x.classList.toggle('on', activa); x.setAttribute('aria-pressed', activa ? 'true' : 'false'); });
+    renderCatalogo(); $('buscarPlantilla').focus();
+  };
+  caja.appendChild(todas); cont.appendChild(caja);
+}
 function renderCatalogo(){
-  const q = sinAcentos($('buscarPlantilla').value.trim());
+  const consulta = $('buscarPlantilla').value.trim(), palabras = palabrasBusquedaCatalogo(consulta);
   const cont = $('catalogo'); cont.innerHTML = '';
+  let encontrados = 0;
   CATEGORIAS.forEach(cat => {
     if (catActiva !== 'Todas' && catActiva !== cat) return;
-    const items = CATALOGO.filter(it => it.cat === cat && (!q || sinAcentos(it.nombre + ' ' + it.cat).includes(q)));
+    const items = CATALOGO.filter(it => it.cat === cat && coincideBusquedaCatalogo(it, palabras));
+    encontrados += items.length;
     if (!items.length){
-      if (cat === CAT_MIAS && !q && catActiva === CAT_MIAS) cont.innerHTML = '<p class="hint">Aún no tienes plantillas propias. Diseña algo y pulsa “Guardar esta página como mi plantilla”.</p>';
+      if (cat === CAT_MIAS && !palabras.length && catActiva === CAT_MIAS) cont.innerHTML = '<p class="hint">Aún no tienes plantillas propias. Diseña algo y pulsa “Guardar esta página como mi plantilla”.</p>';
       return;
     }
     const h4 = document.createElement('h4'); h4.textContent = cat; cont.appendChild(h4);
@@ -4269,13 +4327,24 @@ function renderCatalogo(){
     });
     cont.appendChild(grid);
   });
-  if (!cont.children.length) cont.innerHTML = '<p class="hint">No hay plantillas con ese nombre.</p>';
+  const estado = $('estadoCatalogo');
+  if (estado) estado.textContent = textoEstadoCatalogo(encontrados, consulta, catActiva);
+  if (!cont.children.length) mostrarCatalogoVacio(cont, $('buscarPlantilla').value.trim());
 }
 ['Todas', ...CATEGORIAS].forEach(cat => {
   const c = document.createElement('button'); c.className = 'chip' + (cat === 'Todas' ? ' on' : '');
+  c.setAttribute('aria-pressed', cat === 'Todas' ? 'true' : 'false');
   c.textContent = cat === CAT_MAPAS ? 'Mapas' : cat === CAT_TABLAS ? 'Tablas' : cat === CAT_PROC ? 'Procesos' : cat === CAT_PORT ? 'Portadas' : cat === CAT_INFO ? 'Infografías' : cat === CAT_MIAS ? '★ Mías' : cat === CAT_PRES ? '▶ Presentaciones' : cat === CAT_DER ? '⚖ Derecho' : cat;
-  c.onclick = () => { catActiva = cat; document.querySelectorAll('#chipsCat .chip').forEach(x => x.classList.toggle('on', x === c)); renderCatalogo(); };
+  c.onclick = () => { catActiva = cat; document.querySelectorAll('#chipsCat .chip').forEach(x => { const activa = x === c; x.classList.toggle('on', activa); x.setAttribute('aria-pressed', activa ? 'true' : 'false'); }); renderCatalogo(); };
   $('chipsCat').appendChild(c);
+});
+const chipsCat = $('chipsCat');
+function completarEstadoChips(){ chipsCat.querySelectorAll('.chip').forEach(b => { if (!b.hasAttribute('aria-pressed')) b.setAttribute('aria-pressed', b.classList.contains('on') ? 'true' : 'false'); }); }
+completarEstadoChips();
+new MutationObserver(completarEstadoChips).observe(chipsCat, { childList:true });
+chipsCat.addEventListener('click', e => {
+  const elegida = e.target.closest('.chip'); if (!elegida) return;
+  chipsCat.querySelectorAll('.chip').forEach(b => b.setAttribute('aria-pressed', b === elegida ? 'true' : 'false'));
 });
 $('buscarPlantilla').addEventListener('input', renderCatalogo);
 renderCatalogo();
@@ -5709,7 +5778,7 @@ let resultadosBusqueda = [], posBusqueda = -1;
 function expresionBusqueda(){
   const q = $('bTexto').value; if (!q) return null;
   const esc_ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp($('bPalabra').checked ? '(^|[^\\wÀ-ÿ])(' + esc_ + ')(?=$|[^\\wÀ-ÿ])' : '(' + esc_ + ')', $('bMayus').checked ? 'g' : 'gi');
+  return new RegExp($('bPalabra').checked ? '(^|[^\\wÀ-ÿ])(' + esc_ + ')(?=$|[^\\wÀ-ÿ])' : '(' + esc_ + ')', $('bBuscarMayus').checked ? 'g' : 'gi');
 }
 function textosDeJSON(lista, cb, ruta = []){
   (lista || []).forEach((o, i) => {
@@ -5770,7 +5839,7 @@ async function reemplazarTodo(){
   finally { cargando(false); }
 }
 $('bTexto').addEventListener('input', () => { clearTimeout(buscarTextos._t); buscarTextos._t = setTimeout(buscarTextos, 250); });
-['bMayus', 'bPalabra'].forEach(id => $(id).addEventListener('change', buscarTextos));
+['bBuscarMayus', 'bPalabra'].forEach(id => $(id).addEventListener('change', buscarTextos));
 $('bTexto').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); siguienteResultado(); } });
 function abrirBuscar(){ abrirModal('mBuscar'); setTimeout(() => { $('bTexto').focus(); $('bTexto').select(); buscarTextos(); }, 50); }
 
@@ -7841,7 +7910,7 @@ FORMATO('html').drive = async function(){
   const sel = $('eFormato'), op = document.createElement('option'); op.value = 'html'; op.textContent = '🌐 Página web (HTML con efectos y 3D)';
   sel.appendChild(op);
   const fila = document.createElement('div'); fila.className = 'fila'; fila.id = 'filaModoHTML'; fila.hidden = true;
-  fila.innerHTML = '<label>Páginas</label><select id="eModoHTML"><option value="auto">Automático</option><option value="scroll">Una debajo de otra (sitio web)</option><option value="pantallas">Una pantalla a la vez (prototipo de app)</option></select>';
+  fila.innerHTML = '<label for="eModoHTML">Páginas</label><select id="eModoHTML" aria-label="Cómo mostrar las páginas en el sitio web"><option value="auto">Automático</option><option value="scroll">Una debajo de otra (sitio web)</option><option value="pantallas">Una pantalla a la vez (prototipo de app)</option></select>';
   sel.closest('.fila').after(fila);
   const ver = () => { fila.hidden = sel.value !== 'html'; };
   sel.addEventListener('change', ver); ver();
@@ -8366,7 +8435,7 @@ function textoParaIA(){ const t = typeof textoUnico === 'function' ? textoUnico(
     <details style="margin:4px 0 10px"><summary class="hint" style="cursor:pointer">✍ Escribir algo nuevo a partir de una idea</summary>
       <div class="filaBusca" style="margin-top:6px"><input id="iaIdea" class="buscador" placeholder="Ej. invitación para la feria de ciencias del viernes"><button class="pb" id="iaEscribir">Escribir</button></div></details>
     <div id="iaResultado" hidden><label class="hint" style="display:block;padding:4px 0">Propuesta (puedes corregirla antes de usarla)</label>
-      <textarea id="iaSalida" rows="5" style="width:100%;box-sizing:border-box"></textarea><div id="iaOpciones" class="escLista" style="display:flex;flex-direction:column;gap:6px"></div>
+      <textarea id="iaSalida" rows="5" aria-label="Texto generado por el asistente de escritura" style="width:100%;box-sizing:border-box"></textarea><div id="iaOpciones" class="escLista" style="display:flex;flex-direction:column;gap:6px"></div>
       <div class="grupoBtns" style="margin-top:8px"><button class="btnP" id="iaUsar">✓ Reemplazar el texto</button><button class="pb" id="iaNuevo">＋ Agregar como texto nuevo</button><button class="pb" id="iaCopiar">Copiar</button></div></div>
     <details id="iaConfig" style="margin-top:12px"><summary class="hint" style="cursor:pointer">⚙ Usar mi propia clave de Google Gemini (si tu navegador no trae IA)</summary>
       <p class="hint" style="font-size:12px">Créala gratis en <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> y pégala aquí. Se guarda <b>solo en este navegador</b>; no la compartas ni la uses en computadoras públicas. El texto que mandes se procesa en los servidores de Google.</p>
@@ -8543,6 +8612,17 @@ function ponerTema(claro, guardar = true){
   ponerTema(t === 'claro', false);
 })();
 
+/* ---------- Lectura cómoda: preferencia persistente para toda la interfaz ---------- */
+function ponerLetrasGrandes(activo, guardar = true){
+  document.documentElement.classList.toggle('letraGrande', !!activo);
+  if (guardar) try { localStorage.setItem('disenador_letra_grande', activo ? '1' : ''); } catch (e) {}
+  const b = $('bLetrasGrandes'), t = $('txtLetrasGrandes');
+  if (b) b.setAttribute('aria-pressed', activo ? 'true' : 'false');
+  if (t) t.textContent = 'Letras grandes: ' + (activo ? 'activadas' : 'desactivadas');
+  if (guardar) toast(activo ? 'Letras grandes activadas' : 'Letras grandes desactivadas');
+}
+(function(){ ponerLetrasGrandes(document.documentElement.classList.contains('letraGrande'), false); })();
+
 /* ---------- Atajos de teclado nuevos ---------- */
 function hayModalAbierto(){ return !!document.querySelector('.modal.abierto') || (typeof pasoRec !== 'undefined' && pasoRec >= 0); }
 function alternarEstiloTexto(prop){
@@ -8560,7 +8640,8 @@ document.addEventListener('keydown', e => {
   if (hayModalAbierto()) return;
   const ctrl = e.ctrlKey || e.metaKey, k = (e.key || '').toLowerCase();
   let hecho = true;
-  if (ctrl && !e.altKey && (k === 'arrowup' || k === 'arrowdown') && o){ orden(k === 'arrowup' ? (e.shiftKey ? 'frente' : 'adelante') : (e.shiftKey ? 'fondo' : 'atras')); }
+  if (ctrl && !e.altKey && k === 'k'){ abrirBuscarHerramienta(); }
+  else if (ctrl && !e.altKey && (k === 'arrowup' || k === 'arrowdown') && o){ orden(k === 'arrowup' ? (e.shiftKey ? 'frente' : 'adelante') : (e.shiftKey ? 'fondo' : 'atras')); }
   else if (ctrl && !e.altKey && (e.code === 'BracketRight' || e.code === 'BracketLeft') && o){ orden(e.code === 'BracketRight' ? (e.shiftKey ? 'frente' : 'adelante') : (e.shiftKey ? 'fondo' : 'atras')); }
   else if (ctrl && !e.altKey && k === 'e'){ abrirModal('mExportar'); }
   else if (ctrl && e.shiftKey && k === 'l' && o){ bloquearSel(); }
@@ -8585,7 +8666,7 @@ const ATAJOS_BOTONES = [
   ['agruparToggle()', 'Ctrl+G'], ['copiarEstilo()', 'Ctrl+Alt+C'], ['pegarEstilo()', 'Ctrl+Alt+V'], ['bloquearSel()', 'Ctrl+Shift+L'],
   ["orden('frente')", 'Ctrl+Shift+↑'], ["orden('adelante')", 'Ctrl+↑'], ["orden('atras')", 'Ctrl+↓'], ["orden('fondo')", 'Ctrl+Shift+↓'],
   ["agregarTexto('cuerpo')", 'T'], ["agregarForma('rect')", 'R'], ["agregarForma('circulo')", 'O'], ["agregarForma('linea')", 'L'],
-  ['deshacer()', 'Ctrl+Z'], ['rehacer()', 'Ctrl+Y'], ['abrirBuscar()', 'Ctrl+F'], ["abrirModal('mAyuda')", '?']
+  ['deshacer()', 'Ctrl+Z'], ['rehacer()', 'Ctrl+Y'], ['abrirBuscar()', 'Ctrl+F'], ['abrirBuscarHerramienta()', 'Ctrl+K'], ["abrirModal('mAyuda')", '?']
 ];
 function marcarAtajos(raiz = document){
   ATAJOS_BOTONES.forEach(([f, a]) => raiz.querySelectorAll(`button[onclick="${f.replace(/"/g, '\\"')}"]`).forEach(b => {
@@ -8599,7 +8680,7 @@ marcarAtajos();
 alActualizarPanel(() => marcarAtajos($('props')));
 
 const GRUPOS_ATAJOS = [
-  ['Lo básico', [['Ctrl + Z', 'Deshacer'], ['Ctrl + Y', 'Rehacer'], ['Ctrl + S', 'Guardar'], ['Ctrl + E', 'Exportar / descargar'], ['Ctrl + F', 'Buscar y reemplazar texto'], ['?', 'Abrir esta ayuda'], ['Esc', 'Salir del modo actual / quitar selección'], ['Clic derecho', 'Menú: copiar, duplicar, eliminar, orden… (en celular, deja el dedo presionado)'], ['Shift + F10', 'Abrir ese menú con el teclado']]],
+  ['Lo básico', [['Ctrl + Z', 'Deshacer'], ['Ctrl + Y', 'Rehacer'], ['Ctrl + S', 'Guardar'], ['Ctrl + E', 'Exportar / descargar'], ['Ctrl + F', 'Buscar y reemplazar texto'], ['Ctrl + K', 'Buscar una herramienta'], ['?', 'Abrir esta ayuda'], ['Esc', 'Salir del modo actual / quitar selección'], ['Clic derecho', 'Menú: copiar, duplicar, eliminar, orden… (en celular, deja el dedo presionado)'], ['Shift + F10', 'Abrir ese menú con el teclado']]],
   ['Agregar', [['T', 'Un texto'], ['R', 'Un rectángulo'], ['O', 'Un círculo'], ['L', 'Una línea'], ['I', 'Una imagen de tu equipo'], ['C', 'Modo conector (unir formas)'], ['Tab', 'Una idea conectada (en mapas)']]],
   ['Editar lo seleccionado', [['Ctrl + C / Ctrl + V', 'Copiar y pegar'], ['Ctrl + D', 'Duplicar'], ['Supr', 'Eliminar'], ['Ctrl + A', 'Seleccionar todo'], ['Ctrl + G', 'Agrupar / desagrupar'], ['Ctrl + Shift + L', 'Bloquear / desbloquear'], ['Ctrl + Alt + C / V', 'Copiar y pegar solo el estilo'], ['Flechas', 'Mover 1 px (con Shift, 10 px)']]],
   ['Orden', [['Ctrl + ↑', 'Traer adelante'], ['Ctrl + ↓', 'Enviar atrás'], ['Ctrl + Shift + ↑', 'Traer al frente'], ['Ctrl + Shift + ↓', 'Enviar al fondo']]],
@@ -8635,7 +8716,7 @@ const PASOS_PP = [
   { id:'texto', t:'Cambia un texto', d:'Haz doble clic en un texto del lienzo y escribe lo que quieras.', foco:'texto' },
   { id:'color', t:'Cambia un color', d:'Con algo seleccionado, toca el color en la barra de arriba y elige otro.', foco:'#props' },
   { id:'mover', t:'Mueve o agranda algo', d:'Arrastra un elemento o jala una de sus esquinas.', foco:'objeto' },
-  { id:'agregar', t:'Agrega algo nuevo', d:'En Elementos, Formas, Texto o Imágenes, toca algo para ponerlo en tu diseño.', tab:'tElementos', foco:'#pestanas [data-tab="tElementos"]' },
+  { id:'agregar', t:'Agrega algo nuevo', d:'En Íconos, Formas, Texto o Imágenes, toca algo para ponerlo en tu diseño.', tab:'tElementos', foco:'#pestanas [data-tab="tElementos"]' },
   { id:'exportar', t:'Descarga tu diseño', d:'Toca ⬇ Exportar y elige PNG, PDF o PowerPoint.', foco:'#barra [onclick*="mExportar"], #menuMas [onclick*="mExportar"]' }
 ];
 let PP = { hechos:[], activo:false, mini:false };
@@ -10279,7 +10360,7 @@ agruparToggle = function(){
    En la versión web el estudio (grabar, editar, plantillas de video, cámara del teléfono)
    vive en js/video.js y se descarga hasta que alguien lo abre: así el Diseñador abre más rápido.
    ========================================================= */
-const URL_VIDEO_EV = 'js/video.js?v=bc0c4aba';
+const URL_VIDEO_EV = 'js/video.js?v=a582357d';
 let cargaVideoEV = null;
 function cargarEstudioVideo(){
   if (typeof abrirEstudioVideo === 'function') return Promise.resolve();
@@ -11592,15 +11673,15 @@ const LIM_MP = { jpg:120, png:120, psd:200, tif:250, pdf:250, eps:200 };
   const op = document.createElement('option'); op.value = 'imprenta'; op.textContent = '🖨 Para imprenta: lona, sublimación (PDF, TIFF, PSD, EPS…)';
   const svg = $('eFormato').querySelector('option[value="svg"]') || $('eFormato').querySelector('option[value="pdf"]'); svg.after(op);
   const d = document.createElement('div'); d.id = 'filaImprenta'; d.style.display = 'none';
-  d.innerHTML = `<div class="fila"><label>Archivo</label><select id="ipFmt">${Object.entries(FMT_IMP).map(([k, f]) => `<option value="${k}">${f.n} (.${f.ext})</option>`).join('')}</select></div>
+  d.innerHTML = `<div class="fila"><label for="ipFmt">Archivo</label><select id="ipFmt" aria-label="Formato del archivo para imprenta">${Object.entries(FMT_IMP).map(([k, f]) => `<option value="${k}">${f.n} (.${f.ext})</option>`).join('')}</select></div>
     <p class="hint" id="ipUsa" style="font-size:11.5px;padding-top:0"></p>
     <div class="fila"><label>Medida real</label><input type="number" id="ipW" min="0.5" step="0.1" style="width:80px" aria-label="Ancho en cm"> × <input type="number" id="ipH" min="0.5" step="0.1" style="width:80px" aria-label="Alto en cm"><span class="hint">cm</span></div>
-    <div class="fila"><label>Resolución</label><select id="ipDpi"><option value="72">72 dpi (lona vista de lejos)</option><option value="100">100 dpi (lona, recomendado)</option><option value="150">150 dpi (lona de cerca, pendón)</option><option value="200">200 dpi</option><option value="300">300 dpi (sublimación, papel)</option></select></div>
-    <div class="fila"><label>Sangrado</label><input type="number" id="ipSang" min="0" max="50" step="0.5" value="0" style="width:70px"><span class="hint">mm por lado (lo que se corta; en sublimación 2–3 mm)</span></div>
-    <div class="fila" id="ipFilaMarcas"><label>Marcas de corte</label><input type="checkbox" id="ipMarcas"></div>
-    <div class="fila"><label>Espejo</label><input type="checkbox" id="ipEspejo"><span class="hint" style="font-size:11px">volteado: para sublimación y transfer (si tu impresora no lo voltea sola)</span></div>
-    <div class="fila" id="ipFilaColor"><label>Color</label><select id="ipColor"><option value="rgb">RGB (sublimación y la mayoría de las lonas)</option><option value="cmyk">CMYK aproximado (si la imprenta lo pide)</option></select></div>
-    <div class="fila" id="ipFilaTransp"><label>Fondo transparente</label><input type="checkbox" id="ipTransp"><span class="hint" style="font-size:11px">para DTF o vinil</span></div>
+    <div class="fila"><label for="ipDpi">Resolución</label><select id="ipDpi" aria-label="Resolución de impresión en dpi"><option value="72">72 dpi (lona vista de lejos)</option><option value="100">100 dpi (lona, recomendado)</option><option value="150">150 dpi (lona de cerca, pendón)</option><option value="200">200 dpi</option><option value="300">300 dpi (sublimación, papel)</option></select></div>
+    <div class="fila"><label for="ipSang">Sangrado</label><input type="number" id="ipSang" aria-label="Sangrado por lado en milímetros" min="0" max="50" step="0.5" value="0" style="width:70px"><span class="hint">mm por lado (lo que se corta; en sublimación 2–3 mm)</span></div>
+    <div class="fila" id="ipFilaMarcas"><label for="ipMarcas">Marcas de corte</label><input type="checkbox" id="ipMarcas"></div>
+    <div class="fila"><label for="ipEspejo">Espejo</label><input type="checkbox" id="ipEspejo"><span class="hint" style="font-size:11px">volteado: para sublimación y transfer (si tu impresora no lo voltea sola)</span></div>
+    <div class="fila" id="ipFilaColor"><label for="ipColor">Color</label><select id="ipColor" aria-label="Perfil de color"><option value="rgb">RGB (sublimación y la mayoría de las lonas)</option><option value="cmyk">CMYK aproximado (si la imprenta lo pide)</option></select></div>
+    <div class="fila" id="ipFilaTransp"><label for="ipTransp">Fondo transparente</label><input type="checkbox" id="ipTransp"><span class="hint" style="font-size:11px">para DTF o vinil</span></div>
     <p class="hint" id="ipInfo" style="font-size:12px;padding-top:0"></p>
     <details class="ayudaImp"><summary>¿Qué archivo pide cada programa o imprenta?</summary><ul>
       <li><b>CorelDRAW</b>: PDF, EPS o SVG (Archivo → Importar). El formato .cdr es cerrado: ningún programa fuera de Corel lo crea.</li>
@@ -12071,6 +12152,107 @@ function crearCartelLogros(){
 CATALOGO.push({ nombre:'Logros de la escuela con fotos', cat:CAT_CART, tam:[1374, 2048], crear:crearCartelLogros,
   usar:() => usarPlantillaCC({ nombre:'Logros de la escuela con fotos', tam:[1374, 2048], crear:crearCartelLogros }) });
 if (!FUENTES_CC.includes('Oswald')) FUENTES_CC.push('Oswald');
+/* =========================================================
+   BÚSQUEDA RÁPIDA DE HERRAMIENTAS Y ACCIONES
+   ========================================================= */
+const ALIAS_HERRAMIENTAS = {
+  tPlantillas:'diseños tareas portadas carteles publicaciones redes presentaciones',
+  tTexto:'escribir título subtítulo letras tipografía fuente',
+  tFormas:'cuadros círculos líneas flechas figuras',
+  tElementos:'iconos íconos stickers qr código barras adornos',
+  tDibujar:'pluma dibujo a mano trazo firma',
+  tImagenes:'fotos imágenes quitar fondo recortar banco fotos libres',
+  tDiagramas:'mapa mental mapas mentales conceptos organigrama flujo cronología',
+  tFondo:'colores textura color fondo página',
+  tMarca:'logo marca colores identidad visual',
+  tWeb:'página sitio web app aplicación celular sistema interfaz'
+};
+const normalizarBusquedaHerramienta = texto => sinAcentos(String(texto || '')).replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
+const PUENTE_BUSQUEDA_HERRAMIENTA = new Set(['de','del','para','con','por','el','la','las','los','y','un','una','mi','en','hacer','haz','crear','crea','diseñar','diseña','quiero','necesito']);
+let focoAntesBuscarHerramienta = null;
+
+function listarHerramientasBuscables(){
+  const items = [...document.querySelectorAll('#pestanas button[data-tab]')].map(b => {
+    const panel = $(b.dataset.tab); if (!panel) return null;
+    const detalle = [...panel.querySelectorAll('h4,button')].map(x => (x.textContent || x.title || '').replace(/\s+/g, ' ').trim()).filter(Boolean);
+    return { tipo:'panel', id:b.dataset.tab, titulo:(b.getAttribute('aria-label') || b.textContent).replace(/\s+/g, ' ').trim(),
+      detalle, buscar:normalizarBusquedaHerramienta([b.title, b.getAttribute('aria-label'), panel.textContent, ALIAS_HERRAMIENTAS[b.dataset.tab] || ''].join(' ')), boton:b };
+  }).filter(Boolean);
+  const agregar = (titulo, detalle, buscar, ejecutar) => items.push({ tipo:'acción', titulo, detalle, buscar:normalizarBusquedaHerramienta(titulo + ' ' + detalle + ' ' + buscar), ejecutar });
+  agregar('Exportar o descargar', 'PNG, JPG, PDF, PowerPoint y video MP4', 'guardar imprimir bajar archivo', () => abrirModal('mExportar'));
+  agregar('Quitar fondo de una foto', 'Abre la herramienta para borrar el fondo de una imagen', 'quitar fondo fotos imagen transparente recortar', () => { const boton = document.querySelector('#pestanas [data-tab="tImagenes"]'); if (boton) boton.click(); });
+  agregar('Presentar o proyectar', 'Muestra tus diapositivas en pantalla completa', 'exposición exposición diapositivas clase', () => abrirModal('mPresentar'));
+  agregar('Buscar texto en el diseño', 'Encuentra y reemplaza palabras', 'buscar reemplazar texto', () => abrirBuscar());
+  if (typeof abrirEscuela === 'function') agregar('Modo escuela', 'Grupos, tareas, actividades y entregas', 'maestro alumno clase escolar', () => abrirEscuela());
+  if (typeof irAlEstudioEV === 'function') agregar('Estudio de video', 'Graba, edita y prepara videos', 'cámara grabar música reels mp4', () => irAlEstudioEV());
+  return items;
+}
+
+function cerrarBuscarHerramienta(devolverFoco = true){
+  cerrarModal('mHerramientas');
+  const foco = focoAntesBuscarHerramienta; focoAntesBuscarHerramienta = null;
+  if (devolverFoco && foco && foco.isConnected && foco.focus) foco.focus();
+}
+function abrirBuscarHerramienta(consulta = ''){
+  focoAntesBuscarHerramienta = document.activeElement;
+  abrirModal('mHerramientas');
+  const input = $('buscarHerramienta'); input.value = consulta; pintarResultadosHerramientas();
+  requestAnimationFrame(() => input.focus());
+}
+function ejecutarHerramientaBuscada(item){
+  cerrarBuscarHerramienta(false);
+  if (item.ejecutar){ item.ejecutar(); return; }
+  const app = $('app');
+  if (item.boton.classList.contains('activa')){
+    if (window.innerWidth <= 820 && typeof abrirLateral === 'function') abrirLateral(true);
+    else if (app.classList.contains('sinLateral') && typeof ponerLateral === 'function') ponerLateral(true);
+    return;
+  }
+  item.boton.click();
+}
+function pintarResultadosHerramientas(){
+  const consulta = normalizarBusquedaHerramienta($('buscarHerramienta').value);
+  const palabras = consulta.split(' ').filter(p => p && !PUENTE_BUSQUEDA_HERRAMIENTA.has(p));
+  const items = listarHerramientasBuscables().filter(x => !palabras.length || palabras.every(p => x.buscar.includes(p)))
+    .map((item, orden) => ({ item, orden, titulo:normalizarBusquedaHerramienta(item.titulo) }))
+    .sort((a, b) => {
+      const puntaje = x => palabras.reduce((n, p) => n + (x.titulo.includes(p) ? 2 : 0), 0);
+      return puntaje(b) - puntaje(a) || a.orden - b.orden;
+    }).map(x => x.item);
+  const lista = $('resultadoHerramientas'); lista.replaceChildren();
+  const visibles = items.slice(0, consulta ? 8 : 6);
+  if (!visibles.length){ const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'No encontramos esa herramienta. Prueba con “foto”, “mapa”, “video” o “descargar”.'; lista.appendChild(p); return; }
+  visibles.forEach(item => {
+    const relevantes = Array.isArray(item.detalle) ? item.detalle.filter(t => palabras.some(p => normalizarBusquedaHerramienta(t).includes(p))).slice(0, 2) : [];
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'bigbtn toolResultado';
+    const nombre = document.createElement('span'); nombre.textContent = item.titulo; b.appendChild(nombre);
+    const detalle = document.createElement('small');
+    detalle.textContent = Array.isArray(item.detalle)
+      ? relevantes.join(' · ') || item.detalle.slice(0, 3).join(' · ') || 'Abre esta herramienta'
+      : item.detalle || 'Abre esta herramienta';
+    b.appendChild(detalle); b.setAttribute('aria-label', item.titulo + (detalle.textContent ? ': ' + detalle.textContent : ''));
+    b.onclick = () => ejecutarHerramientaBuscada(item); lista.appendChild(b);
+  });
+}
+$('buscarHerramienta').addEventListener('input', pintarResultadosHerramientas);
+$('bBuscarHerramienta').onclick = () => abrirBuscarHerramienta();
+$('mHerramientas').addEventListener('click', e => { if (e.target === $('mHerramientas')) cerrarBuscarHerramienta(); });
+document.addEventListener('keydown', e => {
+  if (!$('mHerramientas').classList.contains('abierto')) return;
+  if (e.key === 'Escape'){ e.preventDefault(); cerrarBuscarHerramienta(); }
+  else if (e.key === 'Tab'){
+    const focables = [...$('mHerramientas').querySelectorAll('input:not([disabled]),button:not([disabled])')].filter(x => !x.closest('[hidden]'));
+    if (!focables.length) return;
+    const primero = focables[0], ultimo = focables[focables.length - 1];
+    if (e.shiftKey && (e.target === primero || !focables.includes(e.target))){ e.preventDefault(); ultimo.focus(); }
+    else if (!e.shiftKey && e.target === ultimo){ e.preventDefault(); primero.focus(); }
+  }
+  else if (e.key === 'ArrowDown' && e.target === $('buscarHerramienta')){
+    const primero = $('resultadoHerramientas').querySelector('button'); if (primero){ e.preventDefault(); primero.focus(); }
+  } else if (e.key === 'Enter' && e.target === $('buscarHerramienta')){
+    const primero = $('resultadoHerramientas').querySelector('button'); if (primero){ e.preventDefault(); primero.click(); }
+  }
+}, true);
 /* =========================================================
    PESTAÑAS E INICIO
    ========================================================= */

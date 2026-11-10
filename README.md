@@ -81,7 +81,7 @@ Sin esto, la versión web guarda los diseños **en el navegador** de cada person
 2. **Compilación → Authentication → Comenzar → Google → Habilitar** → elige tu correo de asistencia → **Guardar**.
 3. En **Authentication → Configuración → Dominios autorizados** agrega `gamerpc.github.io` (y tu dominio propio, si lo conectas).
 4. **Compilación → Firestore Database → Crear base de datos** → ubicación `nam5` o la más cercana → **modo de producción**.
-5. En **Firestore → Reglas**, borra lo que hay, pega el contenido del archivo **`firestore.rules`** de este repositorio y pulsa **Publicar**. Cada vez que este archivo cambie (por ejemplo, al agregar el modo escuela y el trabajo en equipo), vuelve a copiarlo y publicarlo.
+5. En **Firestore → Reglas**, borra lo que hay, pega el contenido del archivo **`firestore.rules`** de este repositorio y pulsa **Publicar**. Cada vez que este archivo cambie (por ejemplo, al agregar el modo escuela y el trabajo en equipo), vuelve a copiarlo y publicarlo. Cuando una versión cambie a invitaciones privadas, primero publica la app nueva y después sus reglas. Los grupos antiguos mostrarán al maestro el botón **«Renovar código para proteger el grupo»**; al usarlo, los códigos anteriores dejan de funcionar.
 6. **⚙ Configuración del proyecto → Tus apps → `</>` (Web)** → ponle un nombre → **Registrar app**. Copia los datos que aparecen en `firebaseConfig`.
 7. Abre **`config.js`** y cambia `firebase: null,` por tus datos, por ejemplo:
    ```js
@@ -150,6 +150,8 @@ Para que una parte nueva se conecte con lo que ya existe, sin tapar código de o
 `construir.py` también revisa que no haya funciones con el mismo nombre (una taparía a la otra), parte el código en archivos pequeños para Apps Script y pone una huella (`?v=…`) a cada archivo para que el navegador siempre cargue el más nuevo.
 
 Prueba rápida (necesita Python con Playwright): `python3 pruebas/humo.py` abre la app sin internet de por medio, revisa que no haya errores y que las plantillas y la exportación funcionen.
+
+Pruebas de reglas de Firestore (necesitan Node.js y Java 21 o posterior): desde `pruebas/firestore/`, ejecuta `npm install` y `npm test`. La suite usa el emulador local y no requiere conectarse a Firebase ni modificar una base real.
 
 ---
 
@@ -262,6 +264,12 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 
 ## v61: cartel de logros con fotos
 - Plantilla «Logros de la escuela con fotos» en 📣 Carteles escolares (`88-cartel-de-logros-con-fotos.js`): encabezado con 3 lugares para logos, franja con escena escolar, título con píldora y seis recuadros de colores con pestaña, marcos para soltar fotos y texto. Los textos se ajustan solos para no partirse (`CABE`).
+
+## v62: invitaciones privadas para escuela y equipos cerrados
+- Los grupos ya no se pueden listar ni leer sin pertenecer. Para unirse, la app consulta un código aleatorio de 12 caracteres, no una búsqueda pública de todos los grupos. Las reglas verifican ese código al crear la membresía o pedir acceso como auxiliar.
+- Los grupos anteriores conservan sus códigos hasta que el maestro titular elija **«Renovar código para proteger el grupo»**. Al renovarlo, el código anterior deja de servir y se debe compartir el nuevo.
+- Los datos internos de un equipo solo se leen mientras está abierto o por su dueño; cerrar el equipo también protege objetos, presencia y comentarios.
+- Para activar estas protecciones, actualiza la app y después publica `firestore.rules` en Firebase. La edición de reglas no se publica automáticamente desde GitHub.
 
 ## v60: lonas, sublimación y archivos para imprenta
 - **Medida real** (`87-lonas-sublimacion-e-imprenta.js`): el diseño guarda `med:{pxcm}` (cuántos px del lienzo son 1 cm). En «Tamaño» hay medidas de lonas (1×1 a 6×3 m, pendones, roll-up, X-banner, backdrop, mampara, vinil) y de sublimación (tazas 11/15 oz, termos, playera, mouse pad, cojín, gorra, rompecabezas, plato, azulejo, llavero, bolsa, placa), y medida personalizada en cm, m o pulgadas. La barra muestra «3 × 1 m».

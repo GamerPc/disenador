@@ -5,7 +5,7 @@
 <script>
 // Si algo falla al cargar, se muestra aquí en vez de dejar la pantalla en blanco
 window.__erroresCarga = []; window.__lineasError = [];
-window.__esperado = {"Codigo1": {"chars": 54481, "lineas": 993}, "Codigo2": {"chars": 49426, "lineas": 622}, "Codigo3": {"chars": 31574, "lineas": 574}, "Codigo4": {"chars": 39654, "lineas": 683}, "Codigo5": {"chars": 52568, "lineas": 793}, "Codigo6": {"chars": 52653, "lineas": 763}, "Codigo7": {"chars": 27168, "lineas": 435}, "Codigo8": {"chars": 8887, "lineas": 160}, "Codigo9": {"chars": 51517, "lineas": 884}, "Codigo10": {"chars": 48027, "lineas": 823}, "Codigo11": {"chars": 20286, "lineas": 289}, "Codigo12": {"chars": 35527, "lineas": 350}, "Codigo13": {"chars": 50599, "lineas": 627}, "Codigo14": {"chars": 45750, "lineas": 564}, "Codigo15": {"chars": 47020, "lineas": 656}, "Codigo16": {"chars": 27043, "lineas": 323}, "Codigo17": {"chars": 43676, "lineas": 537}, "Codigo18": {"chars": 18841, "lineas": 294}, "Codigo19": {"chars": 88408, "lineas": 1176}, "Codigo20": {"chars": 31771, "lineas": 400}, "Codigo21": {"chars": 33662, "lineas": 357}, "Codigo22": {"chars": 53292, "lineas": 635}, "Codigo23": {"chars": 53425, "lineas": 682}, "Codigo24": {"chars": 7011, "lineas": 94}, "Codigo25": {"chars": 1896, "lineas": 35}};
+window.__esperado = {"Codigo1": {"chars": 52748, "lineas": 969}, "Codigo2": {"chars": 51665, "lineas": 652}, "Codigo3": {"chars": 31574, "lineas": 574}, "Codigo4": {"chars": 39654, "lineas": 683}, "Codigo5": {"chars": 52568, "lineas": 793}, "Codigo6": {"chars": 52670, "lineas": 747}, "Codigo7": {"chars": 32015, "lineas": 514}, "Codigo8": {"chars": 8887, "lineas": 160}, "Codigo9": {"chars": 51529, "lineas": 884}, "Codigo10": {"chars": 48027, "lineas": 823}, "Codigo11": {"chars": 20286, "lineas": 289}, "Codigo12": {"chars": 35527, "lineas": 350}, "Codigo13": {"chars": 50669, "lineas": 627}, "Codigo14": {"chars": 45808, "lineas": 564}, "Codigo15": {"chars": 47900, "lineas": 668}, "Codigo16": {"chars": 27043, "lineas": 323}, "Codigo17": {"chars": 43676, "lineas": 537}, "Codigo18": {"chars": 18841, "lineas": 294}, "Codigo19": {"chars": 88408, "lineas": 1176}, "Codigo20": {"chars": 31771, "lineas": 400}, "Codigo21": {"chars": 33662, "lineas": 357}, "Codigo22": {"chars": 53292, "lineas": 635}, "Codigo23": {"chars": 53686, "lineas": 682}, "Codigo24": {"chars": 14256, "lineas": 195}, "Codigo25": {"chars": 1896, "lineas": 35}};
 function __mostrarErrorCarga(msg){
   window.__erroresCarga.push(msg);
   var pintar = function(){
@@ -68,7 +68,7 @@ window.addEventListener('load', function(){
 <noscript><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Audiowide&family=Exo+2:wght@400;700;900&family=Righteous&family=UnifrakturMaguntia&family=Inter:wght@400;600;700&family=Montserrat:ital,wght@0,400;0,700;0,900;1,400&family=Poppins:wght@400;600;700&family=Roboto:wght@400;700&family=Oswald:wght@400;700&family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lobster&family=Pacifico&family=Dancing+Script:wght@400;700&family=Raleway:wght@400;700&family=Anton&family=Fredoka:wght@400;600;700&family=Patrick+Hand&family=Caveat:wght@400;700&family=Gochi+Hand&family=Amatic+SC:wght@400;700&family=Permanent+Marker&family=Shadows+Into+Light&family=Gloria+Hallelujah&display=swap" rel="stylesheet"></noscript>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
 <script>window.fabric || document.write('<script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"><\/script>')</script>
-<script>try{if(localStorage.getItem('disenador_tema')==='claro')document.documentElement.classList.add('claro')}catch(e){}</script>
+<script>try{if(localStorage.getItem('disenador_tema')==='claro')document.documentElement.classList.add('claro');if(localStorage.getItem('disenador_letra_grande')==='1')document.documentElement.classList.add('letraGrande')}catch(e){}</script>
 <style>
   :root{
     --morado:#7c3aed; --morado2:#06b6d4; --fondo:#eef0f4; --panel:#ffffff;
@@ -359,6 +359,7 @@ window.addEventListener('load', function(){
   <button class="tb" id="bDeshacer" onclick="deshacer()" title="Deshacer (Ctrl+Z)">↶</button>
   <button class="tb" id="bRehacer" onclick="rehacer()" title="Rehacer (Ctrl+Y)">↷</button>
   <button class="tb" onclick="abrirBuscar()" title="Buscar y reemplazar texto (Ctrl+F)">🔍</button>
+  <button class="tb" id="bBuscarHerramientaBarra" onclick="abrirBuscarHerramienta()" title="Buscar una herramienta por lo que necesitas hacer (Ctrl+K)" aria-keyshortcuts="Control+K">🔎 Buscar herramienta</button>
   <button class="tb" onclick="abrirModal('mAyuda')" title="Ayuda y atajos de teclado (?)">?</button>
   <div class="esp"></div>
   <button class="tb" onclick="cambiarZoom(-0.1)">−</button>
@@ -376,17 +377,17 @@ window.addEventListener('load', function(){
 
 <div id="app">
   <!-- ====== PESTAÑAS ====== -->
-  <nav id="pestanas">
-    <button class="activa" data-tab="tPlantillas"><span>▦</span>Plantillas</button>
-    <button data-tab="tTexto"><span>T</span>Texto</button>
-    <button data-tab="tFormas"><span>◆</span>Formas</button>
-    <button data-tab="tElementos"><span>✿</span>Elementos</button>
-    <button data-tab="tDibujar"><span>✎</span>Dibujar</button>
-    <button data-tab="tImagenes"><span>🖼</span>Imágenes</button>
-    <button data-tab="tDiagramas"><span>⎔</span>Diagramas</button>
-    <button data-tab="tFondo"><span>▧</span>Fondo</button>
-    <button data-tab="tMarca"><span>★</span>Mi marca</button>
-    <button data-tab="tWeb"><span>🖥</span>Web y UI</button>
+  <nav id="pestanas" aria-label="Herramientas de diseño">
+    <button class="activa" data-tab="tPlantillas" aria-controls="tPlantillas" aria-label="Plantillas: empieza con un diseño listo" title="Empieza con un diseño listo para adaptar"><span>▦</span>Plantillas</button>
+    <button data-tab="tTexto" aria-controls="tTexto" aria-label="Texto: títulos y escritos" title="Agrega títulos y textos"><span>T</span>Texto</button>
+    <button data-tab="tFormas" aria-controls="tFormas" aria-label="Formas: cuadros, círculos y líneas" title="Agrega cuadros, círculos y líneas"><span>◆</span>Formas</button>
+    <button data-tab="tElementos" aria-controls="tElementos" aria-label="Íconos y adornos" title="Busca íconos, stickers y adornos"><span>✿</span>Íconos</button>
+    <button data-tab="tDibujar" aria-controls="tDibujar" aria-label="Dibujo a mano" title="Dibuja formas y trazos a mano"><span>✎</span>Dibujar</button>
+    <button data-tab="tImagenes" aria-controls="tImagenes" aria-label="Fotos e imágenes" title="Agrega fotos desde tu equipo o busca imágenes"><span>🖼</span>Imágenes</button>
+    <button data-tab="tDiagramas" aria-controls="tDiagramas" aria-label="Mapas, diagramas y líneas del tiempo" title="Crea mapas mentales, diagramas y líneas del tiempo"><span>⎔</span>Mapas</button>
+    <button data-tab="tFondo" aria-controls="tFondo" aria-label="Fondo de la página" title="Cambia el color o la imagen de fondo"><span>▧</span>Fondo</button>
+    <button data-tab="tMarca" aria-controls="tMarca" aria-label="Colores y logo de mi marca" title="Guarda y usa tus colores y logo"><span>★</span>Mi marca</button>
+    <button data-tab="tWeb" aria-controls="tWeb" aria-label="Diseño de páginas web y aplicaciones" title="Diseña páginas web y pantallas de aplicaciones"><span>🖥</span>Web y apps</button>
   </nav>
 
   <!-- ====== PANEL LATERAL ====== -->
@@ -394,9 +395,11 @@ window.addEventListener('load', function(){
     <div class="cerrarHoja"><button onclick="abrirLateral(false)">Cerrar ✕</button></div>
     <div class="panelTab activa" id="tPlantillas">
       <h3>Plantillas</h3>
-      <input type="text" id="buscarPlantilla" class="buscador" placeholder="Buscar: presentación, derecho, mapa…">
+      <button class="bigbtn" id="bBuscarHerramienta" type="button" aria-keyshortcuts="Control+K" onclick="abrirBuscarHerramienta()">🔎 Buscar una herramienta <kbd>Ctrl+K</kbd></button>
+      <input type="search" id="buscarPlantilla" class="buscador" aria-label="Buscar plantillas por tema o tipo de diseño" placeholder="¿Qué necesitas? Ej.: tarea, menú, mapa…" title="Busca por nombre, categoría o palabras comunes">
       <button class="bigbtn" style="text-align:center;margin-bottom:8px" onclick="guardarComoPlantilla()">＋ Guardar esta página como mi plantilla</button>
-      <div class="chips" id="chipsCat"></div>
+      <div class="chips" id="chipsCat" role="group" aria-label="Filtrar plantillas por categoría"></div>
+      <p id="estadoCatalogo" class="hint" role="status" aria-live="polite"></p>
       <div id="catalogo"></div>
       <div id="listaOrganizadores" hidden></div>
       <div id="listaPlantillas" hidden></div>
@@ -438,7 +441,7 @@ window.addEventListener('load', function(){
         <button class="forma" onclick="agregarForma('linea')" title="Línea"><svg viewBox="0 0 10 10"><rect x="0.5" y="4.4" width="9" height="1.2"/></svg></button>
       </div>
       <h4>Color para nuevas formas</h4>
-      <div class="fila"><input type="color" id="colorForma" value="#7c3aed"><span class="hint">Se aplica a lo que agregues</span></div>
+      <div class="fila"><input type="color" id="colorForma" value="#7c3aed" aria-label="Color para las formas nuevas"><span class="hint">Se aplica a lo que agregues</span></div>
       <h4>Íconos</h4>
       <input type="text" id="buscarIcono" class="buscador" placeholder="Buscar ícono: mazo, átomo, libro…">
       <h4>Generales</h4>
@@ -452,13 +455,13 @@ window.addEventListener('load', function(){
       <h3>Elementos</h3>
       <h4>Íconos</h4>
       <div class="filaBusca"><input type="search" id="buscaIcono" class="buscador" placeholder="Busca en inglés o español: home, casa, libro…" enterkeyhint="search"><button class="pb" id="bBuscaIcono">Buscar</button></div>
-      <div class="fila"><label>Color</label><input type="color" id="colorIcono" value="#111827"><select id="estiloIcono" title="Estilo de los íconos"><option value="ph,tabler,lucide,mdi,material-symbols">Línea y relleno</option><option value="fluent-emoji-flat,noto,twemoji">A color (emoji)</option><option value="">Todos</option></select></div>
+      <div class="fila"><label>Color</label><input type="color" id="colorIcono" value="#111827" aria-label="Color de los íconos"><select id="estiloIcono" title="Estilo de los íconos"><option value="ph,tabler,lucide,mdi,material-symbols">Línea y relleno</option><option value="fluent-emoji-flat,noto,twemoji">A color (emoji)</option><option value="">Todos</option></select></div>
       <div id="resIconos" class="gridBanco iconos"></div>
       <p class="hint" style="font-size:11px">Más de 200 000 íconos gratis de <a href="https://iconify.design" target="_blank" rel="noopener">Iconify</a>. Se agregan como dibujo: puedes cambiarles el color y el tamaño sin que pierdan calidad.</p>
       <h4>Código QR</h4>
       <input type="text" id="qrTexto" class="buscador" placeholder="Enlace, teléfono o texto">
       <p class="hint" style="font-size:11.5px;padding-top:0">Ejemplos: <b>https://link.mercadopago.com.mx/tunombre</b> · WhatsApp: <b>https://wa.me/5215500000000</b> · teléfono: <b>tel:5500000000</b></p>
-      <div class="fila"><label>Color</label><input type="color" id="qrColor" value="#000000"><label style="margin-left:8px">Fondo</label><input type="color" id="qrFondo" value="#ffffff"></div>
+      <div class="fila"><label for="qrColor">Color</label><input type="color" id="qrColor" value="#000000" aria-label="Color del código QR"><label for="qrFondo" style="margin-left:8px">Fondo</label><input type="color" id="qrFondo" value="#ffffff" aria-label="Color de fondo del código QR"></div>
       <div class="fila"><label>Fondo transparente</label><input type="checkbox" id="qrTransp"></div>
       <button class="bigbtn" onclick="crearQR()">▦ Crear código QR <span style="float:right;color:#6b7280;font-size:11px">si hay uno seleccionado, se actualiza</span></button>
       <h4>Decoraciones</h4>
@@ -740,8 +743,8 @@ window.addEventListener('load', function(){
           <button class="pb" data-t="dona">◯ Dona</button>
         </div>
         <div class="fila"><label>Título</label><input type="text" id="gTitulo"></div>
-        <label style="font-size:12px;color:var(--suave)">Datos — una fila por dato: <i>etiqueta, valor</i></label>
-        <textarea id="gDatos" class="datos" rows="6"></textarea>
+        <label for="gDatos" style="font-size:12px;color:var(--suave)">Datos — una fila por dato: <i>etiqueta, valor</i></label>
+        <textarea id="gDatos" class="datos" rows="6" aria-label="Datos de la gráfica, una fila por dato: etiqueta y valor"></textarea>
         <div class="fila"><label>Colores</label><select id="gPaleta"></select></div>
         <div class="fila"><label>Mostrar valores</label><input type="checkbox" id="gValores"></div>
       </div>
@@ -798,7 +801,7 @@ window.addEventListener('load', function(){
 
       <h4>Efectos</h4>
       <div class="fila"><label>Opacidad</label><input type="range" id="pOpac" min="0" max="100"></div>
-      <div class="fila"><label>Sombra</label><input type="checkbox" id="pSombra"><input type="color" id="pSombraColor" value="#000000"></div>
+      <div class="fila"><label for="pSombra">Sombra</label><input type="checkbox" id="pSombra"><input type="color" id="pSombraColor" value="#000000" aria-label="Color de la sombra"></div>
       <div class="fila"><label>Tipo de sombra</label><select id="pSombraTipo" title="Resplandor neón: brilla alrededor, del color que elijas"><option value="sombra">Sombra</option><option value="brillo">Resplandor neón</option></select></div>
       <div class="fila"><label>Desenf. sombra</label><input type="range" id="pSombraBlur" min="0" max="80" value="20"></div>
 
@@ -849,8 +852,8 @@ window.addEventListener('load', function(){
         <div class="fila"><label>Al hacer scroll</label><select id="p3Scroll"><option value="no">No hace nada</option><option value="girar">Gira</option><option value="animar" data-anim>Se desarma (animación del modelo)</option><option value="ambos" data-anim>Gira y se desarma</option></select></div>
       </div>
       <div class="fila" id="filaEfectoWeb" title="Solo se ve en la página web (Descargar → Página web)"><label>Efecto web</label>
-        <select id="pHover"><option value="">Al pasar el mouse: nada</option><option value="crecer">Crece</option><option value="elevar">Se eleva con sombra</option><option value="brillo">Brilla</option><option value="girar">Se inclina</option><option value="sacudir">Se sacude</option><option value="latido">Late siempre</option></select>
-        <select id="pScrollFx"><option value="">Al hacer scroll: nada</option><option value="paralaje">Paralaje (se mueve más lento)</option><option value="girar">Gira</option><option value="acercar">Se acerca</option><option value="fijo">Se queda fijo mientras bajas</option></select></div>
+        <select id="pHover" aria-label="Efecto al pasar el puntero"><option value="">Al pasar el mouse: nada</option><option value="crecer">Crece</option><option value="elevar">Se eleva con sombra</option><option value="brillo">Brilla</option><option value="girar">Se inclina</option><option value="sacudir">Se sacude</option><option value="latido">Late siempre</option></select>
+        <select id="pScrollFx" aria-label="Efecto al desplazarse por la página"><option value="">Al hacer scroll: nada</option><option value="paralaje">Paralaje (se mueve más lento)</option><option value="girar">Gira</option><option value="acercar">Se acerca</option><option value="fijo">Se queda fijo mientras bajas</option></select></div>
       <div class="grupoBtns" id="grupoMulti">
         <button class="pb" onclick="distribuir('h')" title="Mismo espacio entre ellos, a lo ancho">⇹ Distribuir ↔</button>
         <button class="pb" onclick="distribuir('v')" title="Mismo espacio entre ellos, a lo alto">⇳ Distribuir ↕</button>
@@ -886,7 +889,7 @@ window.addEventListener('load', function(){
   <label class="fila" style="cursor:pointer;background:#f5f3ff;border-radius:8px;padding:8px 10px"><input type="checkbox" id="tAcomodar" checked> <span><b>Acomodar el contenido</b> al nuevo tamaño en todas las páginas</span></label>
   <div id="listaTamanos"></div>
   <h4 style="font-size:12px;color:#6b7280">Personalizado (px)</h4>
-  <div class="fila"><input type="number" id="tamW" value="1080" min="50" max="8000"> × <input type="number" id="tamH" value="1080" min="50" max="8000"></div>
+  <div class="fila"><input type="number" id="tamW" value="1080" min="50" max="8000" aria-label="Ancho del diseño en píxeles"> × <input type="number" id="tamH" value="1080" min="50" max="8000" aria-label="Alto del diseño en píxeles"></div>
   <h4 style="font-size:12px;color:#6b7280">Lienzo flexible</h4>
   <button class="bigbtn" onclick="ajustarLienzoAContenido(false);cerrarModal('mTamano')">⤢ Ajustar el lienzo a lo que hay en el diseño</button>
   <label class="fila" style="cursor:pointer"><input type="checkbox" id="lienzoAuto"> Agrandar el lienzo automáticamente si algo se sale</label>
@@ -963,7 +966,7 @@ window.addEventListener('load', function(){
   <p class="hint" style="padding-top:0">Se crea un enlace a una <b>copia</b> de tu diseño tal como está ahora. Quien lo abra puede editar su copia y guardarla en su propio Drive; tu diseño no cambia. Si después haces cambios, crea un enlace nuevo.</p>
   <button class="btnP" onclick="crearEnlaceCompartir()">Crear enlace</button>
   <div id="cResultado" hidden style="margin-top:14px">
-    <div class="fila"><input type="text" id="cLink" readonly style="flex:1;min-width:0;padding:8px;border:1px solid var(--borde);border-radius:6px"><button class="btnS" onclick="copiarEnlace()">Copiar</button></div>
+    <div class="fila"><input type="text" id="cLink" readonly aria-label="Enlace para compartir el diseño" style="flex:1;min-width:0;padding:8px;border:1px solid var(--borde);border-radius:6px"><button class="btnS" onclick="copiarEnlace()">Copiar</button></div>
     <a id="cWhats" class="btnS" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">💬 Enviar por WhatsApp</a>
     <p class="hint" id="cAviso" style="font-size:12px"></p>
   </div>
@@ -974,7 +977,7 @@ window.addEventListener('load', function(){
   <h3>🔍 Buscar y reemplazar</h3>
   <div class="fila"><label>Buscar</label><input type="text" id="bTexto" style="flex:1;min-width:0;padding:7px;border:1px solid var(--borde);border-radius:6px"></div>
   <div class="fila"><label>Cambiar por</label><input type="text" id="bNuevo" style="flex:1;min-width:0;padding:7px;border:1px solid var(--borde);border-radius:6px"></div>
-  <div class="fila" style="gap:14px;font-size:12.5px"><label style="width:auto;cursor:pointer"><input type="checkbox" id="bMayus"> Distinguir mayúsculas</label><label style="width:auto;cursor:pointer"><input type="checkbox" id="bPalabra"> Palabra completa</label></div>
+  <div class="fila" style="gap:14px;font-size:12.5px"><label style="width:auto;cursor:pointer"><input type="checkbox" id="bBuscarMayus"> Distinguir mayúsculas</label><label style="width:auto;cursor:pointer"><input type="checkbox" id="bPalabra"> Palabra completa</label></div>
   <p class="hint" id="bInfo" style="padding:4px 0"></p>
   <div id="bLista" style="max-height:200px;overflow:auto"></div>
   <div class="acciones">
@@ -986,6 +989,7 @@ window.addEventListener('load', function(){
 
 <div class="modal" id="mAyuda"><div class="caja" style="width:min(560px,94vw)">
   <h3>❓ Ayuda</h3>
+  <button class="btnS bLetrasGrandes" id="bLetrasGrandes" type="button" aria-pressed="false" onclick="ponerLetrasGrandes(!document.documentElement.classList.contains('letraGrande'))">🔎 <span id="txtLetrasGrandes">Letras grandes: desactivadas</span></button>
   <div class="filaAyuda"><button class="btnP" onclick="iniciarPrimerosPasos(true)">🚀 Primeros pasos (practicando)</button><button class="btnS" onclick="iniciarRecorrido()">▶ Recorrido de 1 minuto</button></div>
   <a class="enlaceGuia" href="https://gamerpc.github.io/disenador/guia.html" target="_blank" rel="noopener">📘 Guías para maestros y alumnos (para imprimir o compartir)</a>
   <h4 style="font-size:12px;color:#6b7280;margin:6px 0">Lo básico</h4>
@@ -1001,10 +1005,21 @@ window.addEventListener('load', function(){
   <div class="acciones"><button class="btnS" onclick="cerrarModal('mAyuda')">Cerrar</button></div>
 </div></div>
 
+<div class="modal" id="mHerramientas"><div class="caja cajaHerramientas" role="dialog" aria-modal="true" aria-labelledby="tituloHerramientas" aria-describedby="ayudaHerramientas">
+  <h3 id="tituloHerramientas">🔎 Buscar una herramienta</h3>
+  <p class="hint" id="ayudaHerramientas">Escribe lo que quieres hacer. Por ejemplo: “quitar fondo”, “mapa mental” o “hacer un video”.</p>
+  <input type="search" id="buscarHerramienta" class="buscador" aria-label="Buscar herramientas por nombre o tarea" placeholder="¿Qué necesitas hacer?" autocomplete="off">
+  <div id="resultadoHerramientas" role="group" aria-label="Resultados de herramientas" aria-live="polite"></div>
+  <div class="acciones"><button class="btnS" id="bCerrarHerramientas" onclick="cerrarBuscarHerramienta()">Cerrar</button></div>
+</div></div>
+
 <div id="recorrido"><div id="recFoco"></div><div id="recCaja"><div id="recTexto"></div>
   <div class="pie"><span id="recNum"></span><button class="btnS" id="recAnt" onclick="siguientePaso(-1)">← Atrás</button><button class="btnS" onclick="terminarRecorrido()">Saltar</button><button class="btnP" id="recSig" onclick="siguientePaso(1)">Siguiente →</button></div>
 </div></div>
-<div id="bienvenida"><span>👋 ¿Primera vez aquí? Aprende lo básico practicando, en 2 minutos.</span><button style="background:#ff4b2b;color:#fff" onclick="iniciarPrimerosPasos(true)">🚀 Practicar</button><button style="background:#2b3245;color:#fff" onclick="iniciarRecorrido()">Solo ver recorrido</button><button style="background:#374151;color:#fff" onclick="cerrarBienvenida()">Ahora no</button></div>
+<section id="bienvenida" role="region" aria-label="Ayuda para empezar" aria-describedby="bienvenidaTexto">
+  <div class="bienvenidaTexto"><h2>👋 ¿Primera vez aquí?</h2><p id="bienvenidaTexto">Te acompañamos con pasos sencillos. Puedes empezar por una plantilla y cambiarla a tu gusto.</p></div>
+  <div class="bienvenidaAcciones"><button class="bienvenidaPrimario" onclick="iniciarPrimerosPasos(true)">🚀 Empezar paso a paso</button><button class="bienvenidaSecundario" onclick="iniciarRecorrido()">Ver recorrido</button><button class="bienvenidaCerrar" onclick="cerrarBienvenida()">Ahora no</button></div>
+</section>
 
 <div class="modal" id="mDonar"><div class="caja">
   <h3>❤ Apoya el proyecto</h3>

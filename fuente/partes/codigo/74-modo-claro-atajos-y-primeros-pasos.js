@@ -24,6 +24,17 @@ function ponerTema(claro, guardar = true){
   ponerTema(t === 'claro', false);
 })();
 
+/* ---------- Lectura cómoda: preferencia persistente para toda la interfaz ---------- */
+function ponerLetrasGrandes(activo, guardar = true){
+  document.documentElement.classList.toggle('letraGrande', !!activo);
+  if (guardar) try { localStorage.setItem('disenador_letra_grande', activo ? '1' : ''); } catch (e) {}
+  const b = $('bLetrasGrandes'), t = $('txtLetrasGrandes');
+  if (b) b.setAttribute('aria-pressed', activo ? 'true' : 'false');
+  if (t) t.textContent = 'Letras grandes: ' + (activo ? 'activadas' : 'desactivadas');
+  if (guardar) toast(activo ? 'Letras grandes activadas' : 'Letras grandes desactivadas');
+}
+(function(){ ponerLetrasGrandes(document.documentElement.classList.contains('letraGrande'), false); })();
+
 /* ---------- Atajos de teclado nuevos ---------- */
 function hayModalAbierto(){ return !!document.querySelector('.modal.abierto') || (typeof pasoRec !== 'undefined' && pasoRec >= 0); }
 function alternarEstiloTexto(prop){
@@ -41,7 +52,8 @@ document.addEventListener('keydown', e => {
   if (hayModalAbierto()) return;
   const ctrl = e.ctrlKey || e.metaKey, k = (e.key || '').toLowerCase();
   let hecho = true;
-  if (ctrl && !e.altKey && (k === 'arrowup' || k === 'arrowdown') && o){ orden(k === 'arrowup' ? (e.shiftKey ? 'frente' : 'adelante') : (e.shiftKey ? 'fondo' : 'atras')); }
+  if (ctrl && !e.altKey && k === 'k'){ abrirBuscarHerramienta(); }
+  else if (ctrl && !e.altKey && (k === 'arrowup' || k === 'arrowdown') && o){ orden(k === 'arrowup' ? (e.shiftKey ? 'frente' : 'adelante') : (e.shiftKey ? 'fondo' : 'atras')); }
   else if (ctrl && !e.altKey && (e.code === 'BracketRight' || e.code === 'BracketLeft') && o){ orden(e.code === 'BracketRight' ? (e.shiftKey ? 'frente' : 'adelante') : (e.shiftKey ? 'fondo' : 'atras')); }
   else if (ctrl && !e.altKey && k === 'e'){ abrirModal('mExportar'); }
   else if (ctrl && e.shiftKey && k === 'l' && o){ bloquearSel(); }
@@ -66,7 +78,7 @@ const ATAJOS_BOTONES = [
   ['agruparToggle()', 'Ctrl+G'], ['copiarEstilo()', 'Ctrl+Alt+C'], ['pegarEstilo()', 'Ctrl+Alt+V'], ['bloquearSel()', 'Ctrl+Shift+L'],
   ["orden('frente')", 'Ctrl+Shift+↑'], ["orden('adelante')", 'Ctrl+↑'], ["orden('atras')", 'Ctrl+↓'], ["orden('fondo')", 'Ctrl+Shift+↓'],
   ["agregarTexto('cuerpo')", 'T'], ["agregarForma('rect')", 'R'], ["agregarForma('circulo')", 'O'], ["agregarForma('linea')", 'L'],
-  ['deshacer()', 'Ctrl+Z'], ['rehacer()', 'Ctrl+Y'], ['abrirBuscar()', 'Ctrl+F'], ["abrirModal('mAyuda')", '?']
+  ['deshacer()', 'Ctrl+Z'], ['rehacer()', 'Ctrl+Y'], ['abrirBuscar()', 'Ctrl+F'], ['abrirBuscarHerramienta()', 'Ctrl+K'], ["abrirModal('mAyuda')", '?']
 ];
 function marcarAtajos(raiz = document){
   ATAJOS_BOTONES.forEach(([f, a]) => raiz.querySelectorAll(`button[onclick="${f.replace(/"/g, '\\"')}"]`).forEach(b => {
@@ -80,7 +92,7 @@ marcarAtajos();
 alActualizarPanel(() => marcarAtajos($('props')));
 
 const GRUPOS_ATAJOS = [
-  ['Lo básico', [['Ctrl + Z', 'Deshacer'], ['Ctrl + Y', 'Rehacer'], ['Ctrl + S', 'Guardar'], ['Ctrl + E', 'Exportar / descargar'], ['Ctrl + F', 'Buscar y reemplazar texto'], ['?', 'Abrir esta ayuda'], ['Esc', 'Salir del modo actual / quitar selección'], ['Clic derecho', 'Menú: copiar, duplicar, eliminar, orden… (en celular, deja el dedo presionado)'], ['Shift + F10', 'Abrir ese menú con el teclado']]],
+  ['Lo básico', [['Ctrl + Z', 'Deshacer'], ['Ctrl + Y', 'Rehacer'], ['Ctrl + S', 'Guardar'], ['Ctrl + E', 'Exportar / descargar'], ['Ctrl + F', 'Buscar y reemplazar texto'], ['Ctrl + K', 'Buscar una herramienta'], ['?', 'Abrir esta ayuda'], ['Esc', 'Salir del modo actual / quitar selección'], ['Clic derecho', 'Menú: copiar, duplicar, eliminar, orden… (en celular, deja el dedo presionado)'], ['Shift + F10', 'Abrir ese menú con el teclado']]],
   ['Agregar', [['T', 'Un texto'], ['R', 'Un rectángulo'], ['O', 'Un círculo'], ['L', 'Una línea'], ['I', 'Una imagen de tu equipo'], ['C', 'Modo conector (unir formas)'], ['Tab', 'Una idea conectada (en mapas)']]],
   ['Editar lo seleccionado', [['Ctrl + C / Ctrl + V', 'Copiar y pegar'], ['Ctrl + D', 'Duplicar'], ['Supr', 'Eliminar'], ['Ctrl + A', 'Seleccionar todo'], ['Ctrl + G', 'Agrupar / desagrupar'], ['Ctrl + Shift + L', 'Bloquear / desbloquear'], ['Ctrl + Alt + C / V', 'Copiar y pegar solo el estilo'], ['Flechas', 'Mover 1 px (con Shift, 10 px)']]],
   ['Orden', [['Ctrl + ↑', 'Traer adelante'], ['Ctrl + ↓', 'Enviar atrás'], ['Ctrl + Shift + ↑', 'Traer al frente'], ['Ctrl + Shift + ↓', 'Enviar al fondo']]],
@@ -116,7 +128,7 @@ const PASOS_PP = [
   { id:'texto', t:'Cambia un texto', d:'Haz doble clic en un texto del lienzo y escribe lo que quieras.', foco:'texto' },
   { id:'color', t:'Cambia un color', d:'Con algo seleccionado, toca el color en la barra de arriba y elige otro.', foco:'#props' },
   { id:'mover', t:'Mueve o agranda algo', d:'Arrastra un elemento o jala una de sus esquinas.', foco:'objeto' },
-  { id:'agregar', t:'Agrega algo nuevo', d:'En Elementos, Formas, Texto o Imágenes, toca algo para ponerlo en tu diseño.', tab:'tElementos', foco:'#pestanas [data-tab="tElementos"]' },
+  { id:'agregar', t:'Agrega algo nuevo', d:'En Íconos, Formas, Texto o Imágenes, toca algo para ponerlo en tu diseño.', tab:'tElementos', foco:'#pestanas [data-tab="tElementos"]' },
   { id:'exportar', t:'Descarga tu diseño', d:'Toca ⬇ Exportar y elige PNG, PDF o PowerPoint.', foco:'#barra [onclick*="mExportar"], #menuMas [onclick*="mExportar"]' }
 ];
 let PP = { hechos:[], activo:false, mini:false };

@@ -9,6 +9,12 @@ function cargando(v){ $('cargando').style.display = v ? 'flex' : 'none'; }
 function abrirModal(id){ $(id).classList.add('abierto'); }
 function cerrarModal(id){ $(id).classList.remove('abierto'); }
 document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('abierto'); }));
+// Relaciona las etiquetas visibles con su campo cuando una fila contiene un solo control.
+document.querySelectorAll('.fila').forEach(fila => {
+  const campos = [...fila.querySelectorAll('input[id],select[id],textarea[id]')].filter(c => c.closest('.fila') === fila);
+  const etiquetas = [...fila.children].filter(e => e.tagName === 'LABEL' && !e.querySelector('input,select,textarea'));
+  if (campos.length === 1 && etiquetas.length === 1 && !etiquetas[0].htmlFor) etiquetas[0].htmlFor = campos[0].id;
+});
 function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function aHex(c){
   if (!c || typeof c !== 'string') return '#000000';

@@ -13,8 +13,27 @@
   const fechaHora = s => s ? new Date(s).toLocaleString('es-MX', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
   const hoyISO = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
   const sinReglas = e => /permission|insufficient/i.test((e && (e.code || e.message)) || '');
-  const codigoNuevo = () => { const L = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let c = ''; for (let i = 0; i < 6; i++) c += L[Math.floor(Math.random() * L.length)]; return c; };
+  const codigoNuevo = () => {
+    const L = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789', limite = Math.floor(256 / L.length) * L.length;
+    let codigo = '';
+    while (codigo.length < 12){
+      const bytes = new Uint8Array(16); crypto.getRandomValues(bytes);
+      for (const b of bytes) if (b < limite){ codigo += L[b % L.length]; if (codigo.length === 12) break; }
+    }
+    return codigo;
+  };
   const grupos = () => N.db.collection('grupos');
+  const invitaciones = () => N.db.collection('invitaciones');
+  const datosInvitacion = (gid, codigo, g) => ({ grupo:gid, codigo, nombre:g.nombre, maestro:g.maestro, maestroNombre:g.maestroNombre || '' });
+  async function renovarCodigo(gid, g){
+    const codigo = codigoNuevo(), batch = N.db.batch(), ref = grupos().doc(gid);
+    batch.update(ref, { codigo });
+    batch.set(invitaciones().doc(codigo), datosInvitacion(gid, codigo, g));
+    batch.update(misGrupos().doc(gid), { codigo });
+    await batch.commit();
+    g.codigo = codigo;
+    return codigo;
+  }
   const sinPermiso = () => ({ docs:[], size:0 });     // si aún no se publican las reglas nuevas de avisos/exámenes, la escuela sigue funcionando
   const maestrosDe = g => [g.maestro, ...(g.auxiliares || [])].filter(Boolean);       // titular y auxiliares
   const esTitular = g => !!(g && N.usuario && g.maestro === N.usuario.uid);
@@ -168,16 +187,20 @@
   }
   function formGrupo(){
     cuerpo().innerHTML = `<div class="escForm"><label for="escNomGrupo">Nombre del grupo</label><input id="escNomGrupo" class="buscador" placeholder="Ej. Derecho Penal · 6A · 2026-2" maxlength="80">
-      <p class="hint">Al crearlo te damos un código de 6 letras para que tus alumnos se unan.</p>
+      <p class="hint">Al crearlo te damos un código privado de 12 caracteres para que tus alumnos se unan.</p>
       <p class="hint">Si tus alumnos son menores de edad, verifica que tu escuela cuente con la autorización de sus madres, padres o tutores para usar herramientas en línea.</p><button class="btnP" id="escCrearOk">Crear grupo</button></div>`;
     $e('escNomGrupo').focus();
     $e('escCrearOk').onclick = async () => {
       const nombre = $e('escNomGrupo').value.trim(); if (!nombre) return toast('Escribe el nombre del grupo');
       cargando(true);
       try {
-        let codigo; for (let i = 0; i < 5; i++){ codigo = codigoNuevo(); if (!(await grupos().where('codigo', '==', codigo).get()).docs.length) break; }
+        const codigo = codigoNuevo();
         const ref = grupos().doc(), u = N.usuario, ahora = N.ahora();
-        await ref.set({ nombre, codigo, maestro:u.uid, maestroNombre:u.displayName || '', creado:ahora });
+        const grupoNuevo = { nombre, codigo, maestro:u.uid, maestroNombre:u.displayName || '', creado:ahora };
+        const batch = N.db.batch();
+        batch.set(ref, grupoNuevo);
+        batch.set(invitaciones().doc(codigo), datosInvitacion(ref.id, codigo, grupoNuevo));
+        await batch.commit();
         await misGrupos().doc(ref.id).set({ nombre, codigo, rol:'maestro', maestroNombre:u.displayName || '', unido:ahora });
         toast('Grupo creado. Comparte el código ' + codigo + ' con tus alumnos.');
         pila = []; ver(nombre, () => grupoMaestro(ref.id), true); $e('escAtras').hidden = false; pila = [['🎓 Mi escuela', inicio]];
@@ -185,7 +208,7 @@
     };
   }
   function formUnirme(codigoInicial){
-    cuerpo().innerHTML = `<div class="escForm"><label for="escCodigo">Código del grupo</label><input id="escCodigo" class="buscador" placeholder="Ej. K7P2QX" maxlength="6" style="text-transform:uppercase;letter-spacing:.2em;font-weight:700" value="${esc(codigoInicial || '')}">
+    cuerpo().innerHTML = `<div class="escForm"><label for="escCodigo">Código del grupo</label><input id="escCodigo" class="buscador" placeholder="12 letras o números" maxlength="12" style="text-transform:uppercase;letter-spacing:.12em;font-weight:700" value="${esc(codigoInicial || '')}">
       <p class="hint">Al unirte, tu maestro verá tu nombre, tu correo y tu foto de Google, tus entregas y tus respuestas. <a href="https://gamerpc.github.io/disenador/privacidad.html#menores" target="_blank" rel="noopener">Aviso de privacidad</a>.</p>
       <label style="display:flex;gap:8px;align-items:center;color:inherit"><input type="checkbox" id="escComoAux" style="width:auto"> Soy maestro(a) auxiliar o adjunto de este grupo</label>
       <p class="hint" id="escAuxNota" hidden style="padding-top:0">El maestro titular recibe tu solicitud y te aprueba. Después podrás publicar, calificar, corregir y pasar lista en el grupo.</p>
@@ -193,24 +216,24 @@
     $e('escCodigo').focus();
     $e('escComoAux').onchange = e => { $e('escAuxNota').hidden = !e.target.checked; };
     $e('escUnirOk').onclick = async () => {
-      const codigo = $e('escCodigo').value.trim().toUpperCase(); if (codigo.length !== 6) return toast('El código tiene 6 letras o números');
+      const codigo = $e('escCodigo').value.trim().toUpperCase(); if (codigo.length !== 12) return toast('El código debe tener 12 letras o números');
       cargando(true);
       try {
-        const d = (await grupos().where('codigo', '==', codigo).get()).docs[0];
-        if (!d) throw new Error('No encontré un grupo con ese código. Revísalo con tu maestro.');
-        const g = d.data(), u = N.usuario, ahora = N.ahora();
+        const d = await invitaciones().doc(codigo).get();
+        if (!d.exists) throw new Error('No encontré una invitación vigente con ese código. Pide a tu maestro que comparta el código actual.');
+        const g = d.data(), gid = g.grupo, u = N.usuario, ahora = N.ahora();
         if (g.maestro === u.uid) throw new Error('Tú eres el maestro de este grupo');
         if ($e('escComoAux').checked){
-          await grupos().doc(d.id).collection('auxSolicitudes').doc(u.uid).set({ nombre:u.displayName || u.email || 'Maestro(a)', correo:u.email || '', fecha:ahora });
-          await misGrupos().doc(d.id).set({ nombre:g.nombre, codigo:g.codigo, rol:'maestro', aux:true, maestroNombre:g.maestroNombre || '', unido:ahora });
-          avisarA([g.maestro], { tipo:'aux', grupo:d.id, grupoNombre:g.nombre, texto:(u.displayName || 'Alguien') + ' pidió ser maestro(a) auxiliar de «' + g.nombre + '»' });
+          await grupos().doc(gid).collection('auxSolicitudes').doc(u.uid).set({ nombre:u.displayName || u.email || 'Maestro(a)', correo:u.email || '', fecha:ahora, codigo });
+          await misGrupos().doc(gid).set({ nombre:g.nombre, codigo:g.codigo, rol:'maestro', aux:true, maestroNombre:g.maestroNombre || '', unido:ahora });
+          avisarA([g.maestro], { tipo:'aux', grupo:gid, grupoNombre:g.nombre, texto:(u.displayName || 'Alguien') + ' pidió ser maestro(a) auxiliar de «' + g.nombre + '»' });
           toast('Solicitud enviada. Cuando el maestro titular te apruebe, verás el grupo completo.');
-          pila = [['🎓 Mi escuela', inicio]]; ver(g.nombre, () => grupoMaestro(d.id), true); $e('escAtras').hidden = false; return;
+          pila = [['🎓 Mi escuela', inicio]]; ver(g.nombre, () => grupoMaestro(gid), true); $e('escAtras').hidden = false; return;
         }
-        await grupos().doc(d.id).collection('miembros').doc(u.uid).set({ nombre:u.displayName || u.email || 'Alumno', correo:u.email || '', foto:u.photoURL || '', unido:ahora });
-        await misGrupos().doc(d.id).set({ nombre:g.nombre, rol:'alumno', maestroNombre:g.maestroNombre || '', unido:ahora });
+        await grupos().doc(gid).collection('miembros').doc(u.uid).set({ nombre:u.displayName || u.email || 'Alumno', correo:u.email || '', foto:u.photoURL || '', unido:ahora, codigo });
+        await misGrupos().doc(gid).set({ nombre:g.nombre, rol:'alumno', maestroNombre:g.maestroNombre || '', unido:ahora });
         toast('¡Listo! Ya estás en «' + g.nombre + '».');
-        pila = [['🎓 Mi escuela', inicio]]; ver(g.nombre, () => grupoAlumno(d.id), true); $e('escAtras').hidden = false;
+        pila = [['🎓 Mi escuela', inicio]]; ver(g.nombre, () => grupoAlumno(gid), true); $e('escAtras').hidden = false;
       } catch (e) { toast(e.message); } finally { cargando(false); }
     };
   }
@@ -246,7 +269,7 @@
     const enlace = location.origin + location.pathname + '?grupo=' + g.codigo;
     cuerpo().innerHTML = `<p class="hint" style="padding-top:0">Código para tus alumnos:</p><div class="codigoGrande">${esc(g.codigo)}</div>
       ${g.archivado ? '<p class="hint"><span class="insig i-pend">🗄 Grupo archivado</span> Los alumnos lo ven en «archivados» y ya no reciben actividades nuevas.</p>' : ''}
-      <div class="grupoBtns"><button class="pb" id="escCopiar">🔗 Copiar enlace para unirse</button><button class="pb" id="escNuevaAct">＋ Nueva actividad con el diseño actual</button>
+      <div class="grupoBtns">${titular && (!g.codigo || g.codigo.length !== 12) ? '<button class="btnP" id="escRenovarCodigo">🔒 Renovar código para proteger el grupo</button>' : ''}<button class="pb" id="escCopiar">🔗 Copiar enlace para unirse</button><button class="pb" id="escNuevaAct">＋ Nueva actividad con el diseño actual</button>
         <button class="pb" id="escNuevoEx">📝 Nuevo examen</button><button class="pb" id="escCalendario">📅 Calendario</button><button class="pb" id="escLista">✅ Pase de lista</button>${titular ? `<button class="pb" id="escPond">⚖ Ponderación${g.ponderacion ? ' ✓' : ''}</button>` : ''}<button class="pb" id="escCalif">⬇ Calificaciones (Excel)</button><button class="pb" id="escRespaldo">📦 Respaldo</button>${titular ? `<button class="pb" id="escArchivar">${g.archivado ? '♻ Reactivar grupo' : '🗄 Archivar grupo'}</button>` : ''}</div>
       ${mbNube >= 1 ? `<p class="hint" style="padding-top:0">☁ Los trabajos de este grupo ocupan unos <b>${mbNube.toFixed(0)} MB</b> en la nube${mbNube > 150 ? ' · al cerrar el semestre descarga el <b>📦 Respaldo</b> y libera espacio' : ''}.</p>` : ''}
       ${titular ? '' : `<p class="hint" style="padding-top:0"><span class="insig i-maestro">Auxiliar</span> Maestro(a) titular: ${esc(g.maestroNombre || '')}</p>`}
@@ -262,6 +285,11 @@
         ${!(g.auxiliares || []).length && !solicitudes.length ? '<p class="hint" style="padding-top:0">¿Das la materia con alguien más? Comparte el código: al unirse marca «Soy maestro(a) auxiliar» y aquí lo apruebas.</p>' : ''}</div>` : ''}
       <h4>Alumnos (${miembros.size})</h4>${miembros.size ? `<div class="alumnos">${miembros.docs.map(m => `<span class="alumno">${esc(m.data().nombre)}<small>${esc(m.data().correo || '')}</small><button class="pb" data-sacar="${esc(m.id)}" title="Sacar del grupo" aria-label="Sacar a ${esc(m.data().nombre)} del grupo">✕</button></span>`).join('')}</div>` : '<p class="hint" style="padding-top:0">Todavía no se une nadie.</p>'}`;
     $e('escCalif').onclick = () => descargarCalificaciones(gid, g, miembros, lista);
+    if ($e('escRenovarCodigo')) $e('escRenovarCodigo').onclick = async () => {
+      if (!confirm('El código anterior dejará de servir. Después tendrás que compartir el nuevo código con tus alumnos. ¿Renovarlo ahora?')) return;
+      try { await renovarCodigo(gid, g); toast('🔒 Código renovado. Comparte el código nuevo con tus alumnos.'); ver(g.nombre, () => grupoMaestro(gid), true); }
+      catch (e) { toast('No se pudo renovar el código. Revisa que estén publicadas las reglas nuevas de Firestore.'); }
+    };
     $e('escRespaldo').onclick = () => ver('📦 Respaldo · ' + g.nombre, () => panelRespaldo(gid, g, miembros, lista));
     if ($e('escPond')) $e('escPond').onclick = () => ver('⚖ Ponderación · ' + g.nombre, () => formPonderacion(gid, g));
     $e('escCalendario').onclick = () => ver('📅 Calendario · ' + g.nombre, () => calendario(gid, true));

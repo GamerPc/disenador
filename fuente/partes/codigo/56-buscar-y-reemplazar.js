@@ -5,7 +5,7 @@ let resultadosBusqueda = [], posBusqueda = -1;
 function expresionBusqueda(){
   const q = $('bTexto').value; if (!q) return null;
   const esc_ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp($('bPalabra').checked ? '(^|[^\\wÀ-ÿ])(' + esc_ + ')(?=$|[^\\wÀ-ÿ])' : '(' + esc_ + ')', $('bMayus').checked ? 'g' : 'gi');
+  return new RegExp($('bPalabra').checked ? '(^|[^\\wÀ-ÿ])(' + esc_ + ')(?=$|[^\\wÀ-ÿ])' : '(' + esc_ + ')', $('bBuscarMayus').checked ? 'g' : 'gi');
 }
 function textosDeJSON(lista, cb, ruta = []){
   (lista || []).forEach((o, i) => {
@@ -66,7 +66,7 @@ async function reemplazarTodo(){
   finally { cargando(false); }
 }
 $('bTexto').addEventListener('input', () => { clearTimeout(buscarTextos._t); buscarTextos._t = setTimeout(buscarTextos, 250); });
-['bMayus', 'bPalabra'].forEach(id => $(id).addEventListener('change', buscarTextos));
+['bBuscarMayus', 'bPalabra'].forEach(id => $(id).addEventListener('change', buscarTextos));
 $('bTexto').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); siguienteResultado(); } });
 function abrirBuscar(){ abrirModal('mBuscar'); setTimeout(() => { $('bTexto').focus(); $('bTexto').select(); buscarTextos(); }, 50); }
 
