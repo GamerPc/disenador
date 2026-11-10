@@ -12233,6 +12233,13 @@ $('mHerramientas').addEventListener('click', e => { if (e.target === $('mHerrami
 document.addEventListener('keydown', e => {
   if (!$('mHerramientas').classList.contains('abierto')) return;
   if (e.key === 'Escape'){ e.preventDefault(); cerrarBuscarHerramienta(); }
+  else if (e.key === 'Tab'){
+    const focables = [...$('mHerramientas').querySelectorAll('input:not([disabled]),button:not([disabled])')].filter(x => !x.closest('[hidden]'));
+    if (!focables.length) return;
+    const primero = focables[0], ultimo = focables[focables.length - 1];
+    if (e.shiftKey && (e.target === primero || !focables.includes(e.target))){ e.preventDefault(); ultimo.focus(); }
+    else if (!e.shiftKey && e.target === ultimo){ e.preventDefault(); primero.focus(); }
+  }
   else if (e.key === 'ArrowDown' && e.target === $('buscarHerramienta')){
     const primero = $('resultadoHerramientas').querySelector('button'); if (primero){ e.preventDefault(); primero.focus(); }
   } else if (e.key === 'Enter' && e.target === $('buscarHerramienta')){
