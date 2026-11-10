@@ -672,7 +672,10 @@
 <div id="recorrido"><div id="recFoco"></div><div id="recCaja"><div id="recTexto"></div>
   <div class="pie"><span id="recNum"></span><button class="btnS" id="recAnt" onclick="siguientePaso(-1)">← Atrás</button><button class="btnS" onclick="terminarRecorrido()">Saltar</button><button class="btnP" id="recSig" onclick="siguientePaso(1)">Siguiente →</button></div>
 </div></div>
-<div id="bienvenida"><span>👋 ¿Primera vez aquí? Aprende lo básico practicando, en 2 minutos.</span><button style="background:#ff4b2b;color:#fff" onclick="iniciarPrimerosPasos(true)">🚀 Practicar</button><button style="background:#2b3245;color:#fff" onclick="iniciarRecorrido()">Solo ver recorrido</button><button style="background:#374151;color:#fff" onclick="cerrarBienvenida()">Ahora no</button></div>
+<section id="bienvenida" role="region" aria-label="Ayuda para empezar" aria-describedby="bienvenidaTexto">
+  <div class="bienvenidaTexto"><h2>👋 ¿Primera vez aquí?</h2><p id="bienvenidaTexto">Te acompañamos con pasos sencillos. Puedes empezar por una plantilla y cambiarla a tu gusto.</p></div>
+  <div class="bienvenidaAcciones"><button class="bienvenidaPrimario" onclick="iniciarPrimerosPasos(true)">🚀 Empezar paso a paso</button><button class="bienvenidaSecundario" onclick="iniciarRecorrido()">Ver recorrido</button><button class="bienvenidaCerrar" onclick="cerrarBienvenida()">Ahora no</button></div>
+</section>
 
 <div class="modal" id="mDonar"><div class="caja">
   <h3>❤ Apoya el proyecto</h3>
