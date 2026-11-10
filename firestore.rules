@@ -20,6 +20,28 @@ service cloud.firestore {
       }
     }
 
+    // Invitaciones escolares privadas: los códigos aportan ≈59 bits y solo permiten lecturas directas, nunca listados.
+    match /invitaciones/{codigo} {
+      function tokenValido(c) { return c is string && c.matches('^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{12}$'); }
+      function grupoRef(gid) { return /databases/$(database)/documents/grupos/$(gid); }
+      function contenidoValido(d, c) {
+        return d.keys().hasOnly(['grupo', 'codigo', 'nombre', 'maestro', 'maestroNombre'])
+          && d.grupo is string && d.codigo == c && d.nombre is string && d.nombre.size() <= 80
+          && d.maestro is string && d.maestroNombre is string;
+      }
+      allow get: if request.auth != null && tokenValido(codigo)
+        && contenidoValido(resource.data, codigo)
+        && get(grupoRef(resource.data.grupo)).data.codigo == codigo;
+      allow list: if false;
+      // Crear el grupo (o renovar su código) y su invitación es una sola operación atómica.
+      allow create: if request.auth != null && tokenValido(codigo) && contenidoValido(request.resource.data, codigo)
+        && getAfter(grupoRef(request.resource.data.grupo)).data.maestro == request.auth.uid
+        && request.resource.data.maestro == request.auth.uid
+        && getAfter(grupoRef(request.resource.data.grupo)).data.nombre == request.resource.data.nombre
+        && getAfter(grupoRef(request.resource.data.grupo)).data.codigo == codigo;
+      allow update, delete: if false;
+    }
+
     // MODO ESCUELA: el maestro crea el grupo y las actividades; los alumnos se unen con el código y entregan
     match /grupos/{g} {
       function grupo() { return get(/databases/$(database)/documents/grupos/$(g)).data; }
@@ -27,18 +49,33 @@ service cloud.firestore {
       function esMaestro() { return request.auth != null && (grupo().maestro == request.auth.uid || request.auth.uid in grupo().get('auxiliares', [])); }
       function esMiembro() { return request.auth != null && exists(/databases/$(database)/documents/grupos/$(g)/miembros/$(request.auth.uid)); }
 
-      allow read: if request.auth != null;      // para poder buscar el grupo por su código
-      allow create: if request.auth != null && request.resource.data.maestro == request.auth.uid;
-      allow update, delete: if request.auth != null && resource.data.maestro == request.auth.uid;
+      // Evita listar grupos o leerlos sin pertenecer. La búsqueda usa /invitaciones/{código}.
+      allow get: if esMaestro() || esMiembro()
+        || (request.auth != null && exists(/databases/$(database)/documents/grupos/$(g)/auxSolicitudes/$(request.auth.uid)));
+      allow list: if false;
+      allow create: if request.auth != null && request.resource.data.maestro == request.auth.uid
+        && request.resource.data.codigo is string
+        && request.resource.data.codigo.matches('^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{12}$');
+      allow update: if request.auth != null && resource.data.maestro == request.auth.uid
+        && (request.resource.data.codigo == resource.data.codigo
+          || (request.resource.data.codigo is string
+            && request.resource.data.codigo.matches('^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{12}$')
+            && existsAfter(/databases/$(database)/documents/invitaciones/$(request.resource.data.codigo))
+            && getAfter(/databases/$(database)/documents/invitaciones/$(request.resource.data.codigo)).data.grupo == g));
+      allow delete: if request.auth != null && resource.data.maestro == request.auth.uid;
 
       // solicitudes para ser maestro auxiliar: las hace cada quien; el titular las aprueba (agrega el uid a «auxiliares»)
       match /auxSolicitudes/{u} {
         allow read, delete: if request.auth != null && (request.auth.uid == u || grupo().maestro == request.auth.uid);
-        allow create: if request.auth != null && request.auth.uid == u;
+        allow create: if request.auth != null && request.auth.uid == u
+          && request.resource.data.keys().hasOnly(['nombre', 'correo', 'fecha', 'codigo'])
+          && request.resource.data.codigo == grupo().codigo;
       }
       match /miembros/{u} {
         allow read: if esMaestro() || (request.auth != null && request.auth.uid == u);
-        allow create, update: if request.auth != null && request.auth.uid == u;
+        allow create, update: if request.auth != null && request.auth.uid == u
+          && request.resource.data.keys().hasOnly(['nombre', 'correo', 'foto', 'unido', 'codigo'])
+          && request.resource.data.codigo == grupo().codigo;
         allow delete: if esMaestro() || (request.auth != null && request.auth.uid == u);
       }
       match /actividades/{a} {

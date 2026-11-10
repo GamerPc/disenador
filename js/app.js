@@ -10279,7 +10279,7 @@ agruparToggle = function(){
    En la versión web el estudio (grabar, editar, plantillas de video, cámara del teléfono)
    vive en js/video.js y se descarga hasta que alguien lo abre: así el Diseñador abre más rápido.
    ========================================================= */
-const URL_VIDEO_EV = 'js/video.js?v=bc0c4aba';
+const URL_VIDEO_EV = 'js/video.js?v=a582357d';
 let cargaVideoEV = null;
 function cargarEstudioVideo(){
   if (typeof abrirEstudioVideo === 'function') return Promise.resolve();
