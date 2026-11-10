@@ -8,13 +8,13 @@ const ALIAS_HERRAMIENTAS = {
   tElementos:'iconos íconos stickers qr código barras adornos',
   tDibujar:'pluma dibujo a mano trazo firma',
   tImagenes:'fotos imágenes quitar fondo recortar banco fotos libres',
-  tDiagramas:'mapas mentales conceptos organigrama flujo cronología',
+  tDiagramas:'mapa mental mapas mentales conceptos organigrama flujo cronología',
   tFondo:'colores textura color fondo página',
   tMarca:'logo marca colores identidad visual',
   tWeb:'página sitio web app aplicación celular sistema interfaz'
 };
 const normalizarBusquedaHerramienta = texto => sinAcentos(String(texto || '')).replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
-const PUENTE_BUSQUEDA_HERRAMIENTA = new Set(['de','del','para','con','por','el','la','las','los','y','un','una','mi','en']);
+const PUENTE_BUSQUEDA_HERRAMIENTA = new Set(['de','del','para','con','por','el','la','las','los','y','un','una','mi','en','hacer','haz','crear','crea','diseñar','diseña','quiero','necesito']);
 let focoAntesBuscarHerramienta = null;
 
 function listarHerramientasBuscables(){
