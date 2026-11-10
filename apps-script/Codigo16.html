@@ -106,6 +106,7 @@ function cerrarPopRapido(op = {}){
   document.querySelectorAll('#barraRapida button.abierto, #bCapasFlot.abierto').forEach(b => b.classList.remove('abierto'));
   if (!op.porPestana){
     if (p.tabAntes){ const tb = $(p.tabAntes); tb && tb.classList.add('activa'); const bt = document.querySelector(`#pestanas button[data-tab="${p.tabAntes}"]`); bt && bt.classList.add('activa'); }
+    if (typeof sincronizarPestanasA11y === 'function') sincronizarPestanasA11y();
     if (p.lateralCerrado && esEscritorio() && interfazLimpia()) ponerLateral(false, false);
     else if (p.lateralCerrado && !esEscritorio() && typeof abrirLateral === 'function') abrirLateral(false);
   }
@@ -122,6 +123,7 @@ function abrirPopRapido(boton, titulo, contenido, op = {}){
   document.querySelectorAll('.panelTab').forEach(x => x.classList.remove('activa'));
   document.querySelectorAll('#pestanas button').forEach(x => x.classList.remove('activa'));
   $('tOpciones').classList.add('activa');
+  if (typeof sincronizarPestanasA11y === 'function') sincronizarPestanasA11y();
   if (esEscritorio()){ if ($('app').classList.contains('sinLateral')) ponerLateral(true, false); }
   else if (typeof abrirLateral === 'function') abrirLateral(true);
   $('opcTitulo').textContent = titulo;

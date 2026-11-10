@@ -1241,17 +1241,17 @@ window.addEventListener('load', function(){
 
 <div id="app">
   <!-- ====== PESTAÑAS ====== -->
-  <nav id="pestanas" aria-label="Herramientas de diseño">
-    <button class="activa" data-tab="tPlantillas" aria-controls="tPlantillas" aria-label="Plantillas: empieza con un diseño listo" title="Empieza con un diseño listo para adaptar"><span>▦</span>Plantillas</button>
-    <button data-tab="tTexto" aria-controls="tTexto" aria-label="Texto: títulos y escritos" title="Agrega títulos y textos"><span>T</span>Texto</button>
-    <button data-tab="tFormas" aria-controls="tFormas" aria-label="Formas: cuadros, círculos y líneas" title="Agrega cuadros, círculos y líneas"><span>◆</span>Formas</button>
-    <button data-tab="tElementos" aria-controls="tElementos" aria-label="Íconos y adornos" title="Busca íconos, stickers y adornos"><span>✿</span>Íconos</button>
-    <button data-tab="tDibujar" aria-controls="tDibujar" aria-label="Dibujo a mano" title="Dibuja formas y trazos a mano"><span>✎</span>Dibujar</button>
-    <button data-tab="tImagenes" aria-controls="tImagenes" aria-label="Fotos e imágenes" title="Agrega fotos desde tu equipo o busca imágenes"><span>🖼</span>Imágenes</button>
-    <button data-tab="tDiagramas" aria-controls="tDiagramas" aria-label="Mapas, diagramas y líneas del tiempo" title="Crea mapas mentales, diagramas y líneas del tiempo"><span>⎔</span>Mapas</button>
-    <button data-tab="tFondo" aria-controls="tFondo" aria-label="Fondo de la página" title="Cambia el color o la imagen de fondo"><span>▧</span>Fondo</button>
-    <button data-tab="tMarca" aria-controls="tMarca" aria-label="Colores y logo de mi marca" title="Guarda y usa tus colores y logo"><span>★</span>Mi marca</button>
-    <button data-tab="tWeb" aria-controls="tWeb" aria-label="Diseño de páginas web y aplicaciones" title="Diseña páginas web y pantallas de aplicaciones"><span>🖥</span>Web y apps</button>
+  <nav id="pestanas" role="tablist" aria-label="Herramientas de diseño" aria-orientation="vertical">
+    <button class="activa" type="button" role="tab" id="tabPlantillas" aria-selected="true" tabindex="0" data-tab="tPlantillas" aria-controls="tPlantillas" aria-label="Plantillas: empieza con un diseño listo" title="Empieza con un diseño listo para adaptar"><span>▦</span>Plantillas</button>
+    <button data-tab="tTexto" type="button" role="tab" id="tabTexto" tabindex="-1" aria-selected="false" aria-controls="tTexto" aria-label="Texto: títulos y escritos" title="Agrega títulos y textos"><span>T</span>Texto</button>
+    <button data-tab="tFormas" type="button" role="tab" id="tabFormas" tabindex="-1" aria-selected="false" aria-controls="tFormas" aria-label="Formas: cuadros, círculos y líneas" title="Agrega cuadros, círculos y líneas"><span>◆</span>Formas</button>
+    <button data-tab="tElementos" type="button" role="tab" id="tabElementos" tabindex="-1" aria-selected="false" aria-controls="tElementos" aria-label="Íconos y adornos" title="Busca íconos, stickers y adornos"><span>✿</span>Íconos</button>
+    <button data-tab="tDibujar" type="button" role="tab" id="tabDibujar" tabindex="-1" aria-selected="false" aria-controls="tDibujar" aria-label="Dibujo a mano" title="Dibuja formas y trazos a mano"><span>✎</span>Dibujar</button>
+    <button data-tab="tImagenes" type="button" role="tab" id="tabImagenes" tabindex="-1" aria-selected="false" aria-controls="tImagenes" aria-label="Fotos e imágenes" title="Agrega fotos desde tu equipo o busca imágenes"><span>🖼</span>Imágenes</button>
+    <button data-tab="tDiagramas" type="button" role="tab" id="tabDiagramas" tabindex="-1" aria-selected="false" aria-controls="tDiagramas" aria-label="Mapas, diagramas y líneas del tiempo" title="Crea mapas mentales, diagramas y líneas del tiempo"><span>⎔</span>Mapas</button>
+    <button data-tab="tFondo" type="button" role="tab" id="tabFondo" tabindex="-1" aria-selected="false" aria-controls="tFondo" aria-label="Fondo de la página" title="Cambia el color o la imagen de fondo"><span>▧</span>Fondo</button>
+    <button data-tab="tMarca" type="button" role="tab" id="tabMarca" tabindex="-1" aria-selected="false" aria-controls="tMarca" aria-label="Colores y logo de mi marca" title="Guarda y usa tus colores y logo"><span>★</span>Mi marca</button>
+    <button data-tab="tWeb" type="button" role="tab" id="tabWeb" tabindex="-1" aria-selected="false" aria-controls="tWeb" aria-label="Diseño de páginas web y aplicaciones" title="Diseña páginas web y pantallas de aplicaciones"><span>🖥</span>Web y apps</button>
   </nav>
 
   <!-- ====== PANEL LATERAL ====== -->
@@ -1952,7 +1952,7 @@ window.addEventListener('load', function(){
 
 <script src="config.js?v=d42c06db"></script>
 <script src="js/almacen-local.js?v=648af80d"></script>
-<script src="js/app.js?v=8fae07bd"></script>
+<script src="js/app.js?v=bee8e46a"></script>
 <script src="js/nube.js?v=3379e3f5"></script>
 <script src="js/escuela.js?v=89d01a2a"></script>
 <script src="js/equipo.js?v=32f6bb8a"></script>
