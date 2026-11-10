@@ -609,6 +609,11 @@ function coincideBusquedaCatalogo(it, palabras){
   const texto = sinAcentos([it.nombre, it.cat, ALIAS_CATALOGO[it.cat] || ''].join(' '));
   return palabras.every(p => texto.includes(p));
 }
+function textoEstadoCatalogo(encontrados, consulta, categoria){
+  return consulta
+    ? `${encontrados} ${encontrados === 1 ? 'resultado' : 'resultados'} para “${consulta}”.`
+    : `${encontrados} diseños ${categoria === 'Todas' ? 'disponibles' : 'en esta categoría'}.`;
+}
 function mostrarCatalogoVacio(cont, consulta){
   const caja = document.createElement('div'); caja.className = 'vacioCatalogo'; caja.setAttribute('role', 'status');
   const mensaje = document.createElement('p'); mensaje.className = 'hint';
@@ -628,11 +633,13 @@ function mostrarCatalogoVacio(cont, consulta){
   caja.appendChild(todas); cont.appendChild(caja);
 }
 function renderCatalogo(){
-  const palabras = palabrasBusquedaCatalogo($('buscarPlantilla').value);
+  const consulta = $('buscarPlantilla').value.trim(), palabras = palabrasBusquedaCatalogo(consulta);
   const cont = $('catalogo'); cont.innerHTML = '';
+  let encontrados = 0;
   CATEGORIAS.forEach(cat => {
     if (catActiva !== 'Todas' && catActiva !== cat) return;
     const items = CATALOGO.filter(it => it.cat === cat && coincideBusquedaCatalogo(it, palabras));
+    encontrados += items.length;
     if (!items.length){
       if (cat === CAT_MIAS && !palabras.length && catActiva === CAT_MIAS) cont.innerHTML = '<p class="hint">Aún no tienes plantillas propias. Diseña algo y pulsa “Guardar esta página como mi plantilla”.</p>';
       return;
@@ -666,6 +673,8 @@ function renderCatalogo(){
     });
     cont.appendChild(grid);
   });
+  const estado = $('estadoCatalogo');
+  if (estado) estado.textContent = textoEstadoCatalogo(encontrados, consulta, catActiva);
   if (!cont.children.length) mostrarCatalogoVacio(cont, $('buscarPlantilla').value.trim());
 }
 ['Todas', ...CATEGORIAS].forEach(cat => {
