@@ -109,7 +109,7 @@
         <button class="forma" onclick="agregarForma('linea')" title="Línea"><svg viewBox="0 0 10 10"><rect x="0.5" y="4.4" width="9" height="1.2"/></svg></button>
       </div>
       <h4>Color para nuevas formas</h4>
-      <div class="fila"><input type="color" id="colorForma" value="#7c3aed"><span class="hint">Se aplica a lo que agregues</span></div>
+      <div class="fila"><input type="color" id="colorForma" value="#7c3aed" aria-label="Color para las formas nuevas"><span class="hint">Se aplica a lo que agregues</span></div>
       <h4>Íconos</h4>
       <input type="text" id="buscarIcono" class="buscador" placeholder="Buscar ícono: mazo, átomo, libro…">
       <h4>Generales</h4>
@@ -123,13 +123,13 @@
       <h3>Elementos</h3>
       <h4>Íconos</h4>
       <div class="filaBusca"><input type="search" id="buscaIcono" class="buscador" placeholder="Busca en inglés o español: home, casa, libro…" enterkeyhint="search"><button class="pb" id="bBuscaIcono">Buscar</button></div>
-      <div class="fila"><label>Color</label><input type="color" id="colorIcono" value="#111827"><select id="estiloIcono" title="Estilo de los íconos"><option value="ph,tabler,lucide,mdi,material-symbols">Línea y relleno</option><option value="fluent-emoji-flat,noto,twemoji">A color (emoji)</option><option value="">Todos</option></select></div>
+      <div class="fila"><label>Color</label><input type="color" id="colorIcono" value="#111827" aria-label="Color de los íconos"><select id="estiloIcono" title="Estilo de los íconos"><option value="ph,tabler,lucide,mdi,material-symbols">Línea y relleno</option><option value="fluent-emoji-flat,noto,twemoji">A color (emoji)</option><option value="">Todos</option></select></div>
       <div id="resIconos" class="gridBanco iconos"></div>
       <p class="hint" style="font-size:11px">Más de 200 000 íconos gratis de <a href="https://iconify.design" target="_blank" rel="noopener">Iconify</a>. Se agregan como dibujo: puedes cambiarles el color y el tamaño sin que pierdan calidad.</p>
       <h4>Código QR</h4>
       <input type="text" id="qrTexto" class="buscador" placeholder="Enlace, teléfono o texto">
       <p class="hint" style="font-size:11.5px;padding-top:0">Ejemplos: <b>https://link.mercadopago.com.mx/tunombre</b> · WhatsApp: <b>https://wa.me/5215500000000</b> · teléfono: <b>tel:5500000000</b></p>
-      <div class="fila"><label>Color</label><input type="color" id="qrColor" value="#000000"><label style="margin-left:8px">Fondo</label><input type="color" id="qrFondo" value="#ffffff"></div>
+      <div class="fila"><label for="qrColor">Color</label><input type="color" id="qrColor" value="#000000" aria-label="Color del código QR"><label for="qrFondo" style="margin-left:8px">Fondo</label><input type="color" id="qrFondo" value="#ffffff" aria-label="Color de fondo del código QR"></div>
       <div class="fila"><label>Fondo transparente</label><input type="checkbox" id="qrTransp"></div>
       <button class="bigbtn" onclick="crearQR()">▦ Crear código QR <span style="float:right;color:#6b7280;font-size:11px">si hay uno seleccionado, se actualiza</span></button>
       <h4>Decoraciones</h4>
@@ -411,8 +411,8 @@
           <button class="pb" data-t="dona">◯ Dona</button>
         </div>
         <div class="fila"><label>Título</label><input type="text" id="gTitulo"></div>
-        <label style="font-size:12px;color:var(--suave)">Datos — una fila por dato: <i>etiqueta, valor</i></label>
-        <textarea id="gDatos" class="datos" rows="6"></textarea>
+        <label for="gDatos" style="font-size:12px;color:var(--suave)">Datos — una fila por dato: <i>etiqueta, valor</i></label>
+        <textarea id="gDatos" class="datos" rows="6" aria-label="Datos de la gráfica, una fila por dato: etiqueta y valor"></textarea>
         <div class="fila"><label>Colores</label><select id="gPaleta"></select></div>
         <div class="fila"><label>Mostrar valores</label><input type="checkbox" id="gValores"></div>
       </div>
@@ -469,7 +469,7 @@
 
       <h4>Efectos</h4>
       <div class="fila"><label>Opacidad</label><input type="range" id="pOpac" min="0" max="100"></div>
-      <div class="fila"><label>Sombra</label><input type="checkbox" id="pSombra"><input type="color" id="pSombraColor" value="#000000"></div>
+      <div class="fila"><label for="pSombra">Sombra</label><input type="checkbox" id="pSombra"><input type="color" id="pSombraColor" value="#000000" aria-label="Color de la sombra"></div>
       <div class="fila"><label>Tipo de sombra</label><select id="pSombraTipo" title="Resplandor neón: brilla alrededor, del color que elijas"><option value="sombra">Sombra</option><option value="brillo">Resplandor neón</option></select></div>
       <div class="fila"><label>Desenf. sombra</label><input type="range" id="pSombraBlur" min="0" max="80" value="20"></div>
 
@@ -520,8 +520,8 @@
         <div class="fila"><label>Al hacer scroll</label><select id="p3Scroll"><option value="no">No hace nada</option><option value="girar">Gira</option><option value="animar" data-anim>Se desarma (animación del modelo)</option><option value="ambos" data-anim>Gira y se desarma</option></select></div>
       </div>
       <div class="fila" id="filaEfectoWeb" title="Solo se ve en la página web (Descargar → Página web)"><label>Efecto web</label>
-        <select id="pHover"><option value="">Al pasar el mouse: nada</option><option value="crecer">Crece</option><option value="elevar">Se eleva con sombra</option><option value="brillo">Brilla</option><option value="girar">Se inclina</option><option value="sacudir">Se sacude</option><option value="latido">Late siempre</option></select>
-        <select id="pScrollFx"><option value="">Al hacer scroll: nada</option><option value="paralaje">Paralaje (se mueve más lento)</option><option value="girar">Gira</option><option value="acercar">Se acerca</option><option value="fijo">Se queda fijo mientras bajas</option></select></div>
+        <select id="pHover" aria-label="Efecto al pasar el puntero"><option value="">Al pasar el mouse: nada</option><option value="crecer">Crece</option><option value="elevar">Se eleva con sombra</option><option value="brillo">Brilla</option><option value="girar">Se inclina</option><option value="sacudir">Se sacude</option><option value="latido">Late siempre</option></select>
+        <select id="pScrollFx" aria-label="Efecto al desplazarse por la página"><option value="">Al hacer scroll: nada</option><option value="paralaje">Paralaje (se mueve más lento)</option><option value="girar">Gira</option><option value="acercar">Se acerca</option><option value="fijo">Se queda fijo mientras bajas</option></select></div>
       <div class="grupoBtns" id="grupoMulti">
         <button class="pb" onclick="distribuir('h')" title="Mismo espacio entre ellos, a lo ancho">⇹ Distribuir ↔</button>
         <button class="pb" onclick="distribuir('v')" title="Mismo espacio entre ellos, a lo alto">⇳ Distribuir ↕</button>
@@ -557,7 +557,7 @@
   <label class="fila" style="cursor:pointer;background:#f5f3ff;border-radius:8px;padding:8px 10px"><input type="checkbox" id="tAcomodar" checked> <span><b>Acomodar el contenido</b> al nuevo tamaño en todas las páginas</span></label>
   <div id="listaTamanos"></div>
   <h4 style="font-size:12px;color:#6b7280">Personalizado (px)</h4>
-  <div class="fila"><input type="number" id="tamW" value="1080" min="50" max="8000"> × <input type="number" id="tamH" value="1080" min="50" max="8000"></div>
+  <div class="fila"><input type="number" id="tamW" value="1080" min="50" max="8000" aria-label="Ancho del diseño en píxeles"> × <input type="number" id="tamH" value="1080" min="50" max="8000" aria-label="Alto del diseño en píxeles"></div>
   <h4 style="font-size:12px;color:#6b7280">Lienzo flexible</h4>
   <button class="bigbtn" onclick="ajustarLienzoAContenido(false);cerrarModal('mTamano')">⤢ Ajustar el lienzo a lo que hay en el diseño</button>
   <label class="fila" style="cursor:pointer"><input type="checkbox" id="lienzoAuto"> Agrandar el lienzo automáticamente si algo se sale</label>
@@ -634,7 +634,7 @@
   <p class="hint" style="padding-top:0">Se crea un enlace a una <b>copia</b> de tu diseño tal como está ahora. Quien lo abra puede editar su copia y guardarla en su propio Drive; tu diseño no cambia. Si después haces cambios, crea un enlace nuevo.</p>
   <button class="btnP" onclick="crearEnlaceCompartir()">Crear enlace</button>
   <div id="cResultado" hidden style="margin-top:14px">
-    <div class="fila"><input type="text" id="cLink" readonly style="flex:1;min-width:0;padding:8px;border:1px solid var(--borde);border-radius:6px"><button class="btnS" onclick="copiarEnlace()">Copiar</button></div>
+    <div class="fila"><input type="text" id="cLink" readonly aria-label="Enlace para compartir el diseño" style="flex:1;min-width:0;padding:8px;border:1px solid var(--borde);border-radius:6px"><button class="btnS" onclick="copiarEnlace()">Copiar</button></div>
     <a id="cWhats" class="btnS" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">💬 Enviar por WhatsApp</a>
     <p class="hint" id="cAviso" style="font-size:12px"></p>
   </div>

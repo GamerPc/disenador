@@ -292,15 +292,15 @@ const LIM_MP = { jpg:120, png:120, psd:200, tif:250, pdf:250, eps:200 };
   const op = document.createElement('option'); op.value = 'imprenta'; op.textContent = '🖨 Para imprenta: lona, sublimación (PDF, TIFF, PSD, EPS…)';
   const svg = $('eFormato').querySelector('option[value="svg"]') || $('eFormato').querySelector('option[value="pdf"]'); svg.after(op);
   const d = document.createElement('div'); d.id = 'filaImprenta'; d.style.display = 'none';
-  d.innerHTML = `<div class="fila"><label>Archivo</label><select id="ipFmt">${Object.entries(FMT_IMP).map(([k, f]) => `<option value="${k}">${f.n} (.${f.ext})</option>`).join('')}</select></div>
+  d.innerHTML = `<div class="fila"><label for="ipFmt">Archivo</label><select id="ipFmt" aria-label="Formato del archivo para imprenta">${Object.entries(FMT_IMP).map(([k, f]) => `<option value="${k}">${f.n} (.${f.ext})</option>`).join('')}</select></div>
     <p class="hint" id="ipUsa" style="font-size:11.5px;padding-top:0"></p>
     <div class="fila"><label>Medida real</label><input type="number" id="ipW" min="0.5" step="0.1" style="width:80px" aria-label="Ancho en cm"> × <input type="number" id="ipH" min="0.5" step="0.1" style="width:80px" aria-label="Alto en cm"><span class="hint">cm</span></div>
-    <div class="fila"><label>Resolución</label><select id="ipDpi"><option value="72">72 dpi (lona vista de lejos)</option><option value="100">100 dpi (lona, recomendado)</option><option value="150">150 dpi (lona de cerca, pendón)</option><option value="200">200 dpi</option><option value="300">300 dpi (sublimación, papel)</option></select></div>
-    <div class="fila"><label>Sangrado</label><input type="number" id="ipSang" min="0" max="50" step="0.5" value="0" style="width:70px"><span class="hint">mm por lado (lo que se corta; en sublimación 2–3 mm)</span></div>
-    <div class="fila" id="ipFilaMarcas"><label>Marcas de corte</label><input type="checkbox" id="ipMarcas"></div>
-    <div class="fila"><label>Espejo</label><input type="checkbox" id="ipEspejo"><span class="hint" style="font-size:11px">volteado: para sublimación y transfer (si tu impresora no lo voltea sola)</span></div>
-    <div class="fila" id="ipFilaColor"><label>Color</label><select id="ipColor"><option value="rgb">RGB (sublimación y la mayoría de las lonas)</option><option value="cmyk">CMYK aproximado (si la imprenta lo pide)</option></select></div>
-    <div class="fila" id="ipFilaTransp"><label>Fondo transparente</label><input type="checkbox" id="ipTransp"><span class="hint" style="font-size:11px">para DTF o vinil</span></div>
+    <div class="fila"><label for="ipDpi">Resolución</label><select id="ipDpi" aria-label="Resolución de impresión en dpi"><option value="72">72 dpi (lona vista de lejos)</option><option value="100">100 dpi (lona, recomendado)</option><option value="150">150 dpi (lona de cerca, pendón)</option><option value="200">200 dpi</option><option value="300">300 dpi (sublimación, papel)</option></select></div>
+    <div class="fila"><label for="ipSang">Sangrado</label><input type="number" id="ipSang" aria-label="Sangrado por lado en milímetros" min="0" max="50" step="0.5" value="0" style="width:70px"><span class="hint">mm por lado (lo que se corta; en sublimación 2–3 mm)</span></div>
+    <div class="fila" id="ipFilaMarcas"><label for="ipMarcas">Marcas de corte</label><input type="checkbox" id="ipMarcas"></div>
+    <div class="fila"><label for="ipEspejo">Espejo</label><input type="checkbox" id="ipEspejo"><span class="hint" style="font-size:11px">volteado: para sublimación y transfer (si tu impresora no lo voltea sola)</span></div>
+    <div class="fila" id="ipFilaColor"><label for="ipColor">Color</label><select id="ipColor" aria-label="Perfil de color"><option value="rgb">RGB (sublimación y la mayoría de las lonas)</option><option value="cmyk">CMYK aproximado (si la imprenta lo pide)</option></select></div>
+    <div class="fila" id="ipFilaTransp"><label for="ipTransp">Fondo transparente</label><input type="checkbox" id="ipTransp"><span class="hint" style="font-size:11px">para DTF o vinil</span></div>
     <p class="hint" id="ipInfo" style="font-size:12px;padding-top:0"></p>
     <details class="ayudaImp"><summary>¿Qué archivo pide cada programa o imprenta?</summary><ul>
       <li><b>CorelDRAW</b>: PDF, EPS o SVG (Archivo → Importar). El formato .cdr es cerrado: ningún programa fuera de Corel lo crea.</li>

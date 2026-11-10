@@ -1237,7 +1237,7 @@
         <button class="forma" onclick="agregarForma('linea')" title="Línea"><svg viewBox="0 0 10 10"><rect x="0.5" y="4.4" width="9" height="1.2"/></svg></button>
       </div>
       <h4>Color para nuevas formas</h4>
-      <div class="fila"><input type="color" id="colorForma" value="#7c3aed"><span class="hint">Se aplica a lo que agregues</span></div>
+      <div class="fila"><input type="color" id="colorForma" value="#7c3aed" aria-label="Color para las formas nuevas"><span class="hint">Se aplica a lo que agregues</span></div>
       <h4>Íconos</h4>
       <input type="text" id="buscarIcono" class="buscador" placeholder="Buscar ícono: mazo, átomo, libro…">
       <h4>Generales</h4>
@@ -1251,13 +1251,13 @@
       <h3>Elementos</h3>
       <h4>Íconos</h4>
       <div class="filaBusca"><input type="search" id="buscaIcono" class="buscador" placeholder="Busca en inglés o español: home, casa, libro…" enterkeyhint="search"><button class="pb" id="bBuscaIcono">Buscar</button></div>
-      <div class="fila"><label>Color</label><input type="color" id="colorIcono" value="#111827"><select id="estiloIcono" title="Estilo de los íconos"><option value="ph,tabler,lucide,mdi,material-symbols">Línea y relleno</option><option value="fluent-emoji-flat,noto,twemoji">A color (emoji)</option><option value="">Todos</option></select></div>
+      <div class="fila"><label>Color</label><input type="color" id="colorIcono" value="#111827" aria-label="Color de los íconos"><select id="estiloIcono" title="Estilo de los íconos"><option value="ph,tabler,lucide,mdi,material-symbols">Línea y relleno</option><option value="fluent-emoji-flat,noto,twemoji">A color (emoji)</option><option value="">Todos</option></select></div>
       <div id="resIconos" class="gridBanco iconos"></div>
       <p class="hint" style="font-size:11px">Más de 200 000 íconos gratis de <a href="https://iconify.design" target="_blank" rel="noopener">Iconify</a>. Se agregan como dibujo: puedes cambiarles el color y el tamaño sin que pierdan calidad.</p>
       <h4>Código QR</h4>
       <input type="text" id="qrTexto" class="buscador" placeholder="Enlace, teléfono o texto">
       <p class="hint" style="font-size:11.5px;padding-top:0">Ejemplos: <b>https://link.mercadopago.com.mx/tunombre</b> · WhatsApp: <b>https://wa.me/5215500000000</b> · teléfono: <b>tel:5500000000</b></p>
-      <div class="fila"><label>Color</label><input type="color" id="qrColor" value="#000000"><label style="margin-left:8px">Fondo</label><input type="color" id="qrFondo" value="#ffffff"></div>
+      <div class="fila"><label for="qrColor">Color</label><input type="color" id="qrColor" value="#000000" aria-label="Color del código QR"><label for="qrFondo" style="margin-left:8px">Fondo</label><input type="color" id="qrFondo" value="#ffffff" aria-label="Color de fondo del código QR"></div>
       <div class="fila"><label>Fondo transparente</label><input type="checkbox" id="qrTransp"></div>
       <button class="bigbtn" onclick="crearQR()">▦ Crear código QR <span style="float:right;color:#6b7280;font-size:11px">si hay uno seleccionado, se actualiza</span></button>
       <h4>Decoraciones</h4>
@@ -1539,8 +1539,8 @@
           <button class="pb" data-t="dona">◯ Dona</button>
         </div>
         <div class="fila"><label>Título</label><input type="text" id="gTitulo"></div>
-        <label style="font-size:12px;color:var(--suave)">Datos — una fila por dato: <i>etiqueta, valor</i></label>
-        <textarea id="gDatos" class="datos" rows="6"></textarea>
+        <label for="gDatos" style="font-size:12px;color:var(--suave)">Datos — una fila por dato: <i>etiqueta, valor</i></label>
+        <textarea id="gDatos" class="datos" rows="6" aria-label="Datos de la gráfica, una fila por dato: etiqueta y valor"></textarea>
         <div class="fila"><label>Colores</label><select id="gPaleta"></select></div>
         <div class="fila"><label>Mostrar valores</label><input type="checkbox" id="gValores"></div>
       </div>
@@ -1597,7 +1597,7 @@
 
       <h4>Efectos</h4>
       <div class="fila"><label>Opacidad</label><input type="range" id="pOpac" min="0" max="100"></div>
-      <div class="fila"><label>Sombra</label><input type="checkbox" id="pSombra"><input type="color" id="pSombraColor" value="#000000"></div>
+      <div class="fila"><label for="pSombra">Sombra</label><input type="checkbox" id="pSombra"><input type="color" id="pSombraColor" value="#000000" aria-label="Color de la sombra"></div>
       <div class="fila"><label>Tipo de sombra</label><select id="pSombraTipo" title="Resplandor neón: brilla alrededor, del color que elijas"><option value="sombra">Sombra</option><option value="brillo">Resplandor neón</option></select></div>
       <div class="fila"><label>Desenf. sombra</label><input type="range" id="pSombraBlur" min="0" max="80" value="20"></div>
 
@@ -1648,8 +1648,8 @@
         <div class="fila"><label>Al hacer scroll</label><select id="p3Scroll"><option value="no">No hace nada</option><option value="girar">Gira</option><option value="animar" data-anim>Se desarma (animación del modelo)</option><option value="ambos" data-anim>Gira y se desarma</option></select></div>
       </div>
       <div class="fila" id="filaEfectoWeb" title="Solo se ve en la página web (Descargar → Página web)"><label>Efecto web</label>
-        <select id="pHover"><option value="">Al pasar el mouse: nada</option><option value="crecer">Crece</option><option value="elevar">Se eleva con sombra</option><option value="brillo">Brilla</option><option value="girar">Se inclina</option><option value="sacudir">Se sacude</option><option value="latido">Late siempre</option></select>
-        <select id="pScrollFx"><option value="">Al hacer scroll: nada</option><option value="paralaje">Paralaje (se mueve más lento)</option><option value="girar">Gira</option><option value="acercar">Se acerca</option><option value="fijo">Se queda fijo mientras bajas</option></select></div>
+        <select id="pHover" aria-label="Efecto al pasar el puntero"><option value="">Al pasar el mouse: nada</option><option value="crecer">Crece</option><option value="elevar">Se eleva con sombra</option><option value="brillo">Brilla</option><option value="girar">Se inclina</option><option value="sacudir">Se sacude</option><option value="latido">Late siempre</option></select>
+        <select id="pScrollFx" aria-label="Efecto al desplazarse por la página"><option value="">Al hacer scroll: nada</option><option value="paralaje">Paralaje (se mueve más lento)</option><option value="girar">Gira</option><option value="acercar">Se acerca</option><option value="fijo">Se queda fijo mientras bajas</option></select></div>
       <div class="grupoBtns" id="grupoMulti">
         <button class="pb" onclick="distribuir('h')" title="Mismo espacio entre ellos, a lo ancho">⇹ Distribuir ↔</button>
         <button class="pb" onclick="distribuir('v')" title="Mismo espacio entre ellos, a lo alto">⇳ Distribuir ↕</button>
@@ -1685,7 +1685,7 @@
   <label class="fila" style="cursor:pointer;background:#f5f3ff;border-radius:8px;padding:8px 10px"><input type="checkbox" id="tAcomodar" checked> <span><b>Acomodar el contenido</b> al nuevo tamaño en todas las páginas</span></label>
   <div id="listaTamanos"></div>
   <h4 style="font-size:12px;color:#6b7280">Personalizado (px)</h4>
-  <div class="fila"><input type="number" id="tamW" value="1080" min="50" max="8000"> × <input type="number" id="tamH" value="1080" min="50" max="8000"></div>
+  <div class="fila"><input type="number" id="tamW" value="1080" min="50" max="8000" aria-label="Ancho del diseño en píxeles"> × <input type="number" id="tamH" value="1080" min="50" max="8000" aria-label="Alto del diseño en píxeles"></div>
   <h4 style="font-size:12px;color:#6b7280">Lienzo flexible</h4>
   <button class="bigbtn" onclick="ajustarLienzoAContenido(false);cerrarModal('mTamano')">⤢ Ajustar el lienzo a lo que hay en el diseño</button>
   <label class="fila" style="cursor:pointer"><input type="checkbox" id="lienzoAuto"> Agrandar el lienzo automáticamente si algo se sale</label>
@@ -1762,7 +1762,7 @@
   <p class="hint" style="padding-top:0">Se crea un enlace a una <b>copia</b> de tu diseño tal como está ahora. Quien lo abra puede editar su copia y guardarla en su propio Drive; tu diseño no cambia. Si después haces cambios, crea un enlace nuevo.</p>
   <button class="btnP" onclick="crearEnlaceCompartir()">Crear enlace</button>
   <div id="cResultado" hidden style="margin-top:14px">
-    <div class="fila"><input type="text" id="cLink" readonly style="flex:1;min-width:0;padding:8px;border:1px solid var(--borde);border-radius:6px"><button class="btnS" onclick="copiarEnlace()">Copiar</button></div>
+    <div class="fila"><input type="text" id="cLink" readonly aria-label="Enlace para compartir el diseño" style="flex:1;min-width:0;padding:8px;border:1px solid var(--borde);border-radius:6px"><button class="btnS" onclick="copiarEnlace()">Copiar</button></div>
     <a id="cWhats" class="btnS" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">💬 Enviar por WhatsApp</a>
     <p class="hint" id="cAviso" style="font-size:12px"></p>
   </div>
@@ -2049,6 +2049,12 @@ function cargando(v){ $('cargando').style.display = v ? 'flex' : 'none'; }
 function abrirModal(id){ $(id).classList.add('abierto'); }
 function cerrarModal(id){ $(id).classList.remove('abierto'); }
 document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('abierto'); }));
+// Relaciona las etiquetas visibles con su campo cuando una fila contiene un solo control.
+document.querySelectorAll('.fila').forEach(fila => {
+  const campos = [...fila.querySelectorAll('input[id],select[id],textarea[id]')].filter(c => c.closest('.fila') === fila);
+  const etiquetas = [...fila.children].filter(e => e.tagName === 'LABEL' && !e.querySelector('input,select,textarea'));
+  if (campos.length === 1 && etiquetas.length === 1 && !etiquetas[0].htmlFor) etiquetas[0].htmlFor = campos[0].id;
+});
 function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function aHex(c){
   if (!c || typeof c !== 'string') return '#000000';
@@ -9789,7 +9795,7 @@ FORMATO('html').drive = async function(){
   const sel = $('eFormato'), op = document.createElement('option'); op.value = 'html'; op.textContent = '🌐 Página web (HTML con efectos y 3D)';
   sel.appendChild(op);
   const fila = document.createElement('div'); fila.className = 'fila'; fila.id = 'filaModoHTML'; fila.hidden = true;
-  fila.innerHTML = '<label>Páginas</label><select id="eModoHTML"><option value="auto">Automático</option><option value="scroll">Una debajo de otra (sitio web)</option><option value="pantallas">Una pantalla a la vez (prototipo de app)</option></select>';
+  fila.innerHTML = '<label for="eModoHTML">Páginas</label><select id="eModoHTML" aria-label="Cómo mostrar las páginas en el sitio web"><option value="auto">Automático</option><option value="scroll">Una debajo de otra (sitio web)</option><option value="pantallas">Una pantalla a la vez (prototipo de app)</option></select>';
   sel.closest('.fila').after(fila);
   const ver = () => { fila.hidden = sel.value !== 'html'; };
   sel.addEventListener('change', ver); ver();
@@ -10314,7 +10320,7 @@ function textoParaIA(){ const t = typeof textoUnico === 'function' ? textoUnico(
     <details style="margin:4px 0 10px"><summary class="hint" style="cursor:pointer">✍ Escribir algo nuevo a partir de una idea</summary>
       <div class="filaBusca" style="margin-top:6px"><input id="iaIdea" class="buscador" placeholder="Ej. invitación para la feria de ciencias del viernes"><button class="pb" id="iaEscribir">Escribir</button></div></details>
     <div id="iaResultado" hidden><label class="hint" style="display:block;padding:4px 0">Propuesta (puedes corregirla antes de usarla)</label>
-      <textarea id="iaSalida" rows="5" style="width:100%;box-sizing:border-box"></textarea><div id="iaOpciones" class="escLista" style="display:flex;flex-direction:column;gap:6px"></div>
+      <textarea id="iaSalida" rows="5" aria-label="Texto generado por el asistente de escritura" style="width:100%;box-sizing:border-box"></textarea><div id="iaOpciones" class="escLista" style="display:flex;flex-direction:column;gap:6px"></div>
       <div class="grupoBtns" style="margin-top:8px"><button class="btnP" id="iaUsar">✓ Reemplazar el texto</button><button class="pb" id="iaNuevo">＋ Agregar como texto nuevo</button><button class="pb" id="iaCopiar">Copiar</button></div></div>
     <details id="iaConfig" style="margin-top:12px"><summary class="hint" style="cursor:pointer">⚙ Usar mi propia clave de Google Gemini (si tu navegador no trae IA)</summary>
       <p class="hint" style="font-size:12px">Créala gratis en <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> y pégala aquí. Se guarda <b>solo en este navegador</b>; no la compartas ni la uses en computadoras públicas. El texto que mandes se procesa en los servidores de Google.</p>
@@ -15122,15 +15128,15 @@ const LIM_MP = { jpg:120, png:120, psd:200, tif:250, pdf:250, eps:200 };
   const op = document.createElement('option'); op.value = 'imprenta'; op.textContent = '🖨 Para imprenta: lona, sublimación (PDF, TIFF, PSD, EPS…)';
   const svg = $('eFormato').querySelector('option[value="svg"]') || $('eFormato').querySelector('option[value="pdf"]'); svg.after(op);
   const d = document.createElement('div'); d.id = 'filaImprenta'; d.style.display = 'none';
-  d.innerHTML = `<div class="fila"><label>Archivo</label><select id="ipFmt">${Object.entries(FMT_IMP).map(([k, f]) => `<option value="${k}">${f.n} (.${f.ext})</option>`).join('')}</select></div>
+  d.innerHTML = `<div class="fila"><label for="ipFmt">Archivo</label><select id="ipFmt" aria-label="Formato del archivo para imprenta">${Object.entries(FMT_IMP).map(([k, f]) => `<option value="${k}">${f.n} (.${f.ext})</option>`).join('')}</select></div>
     <p class="hint" id="ipUsa" style="font-size:11.5px;padding-top:0"></p>
     <div class="fila"><label>Medida real</label><input type="number" id="ipW" min="0.5" step="0.1" style="width:80px" aria-label="Ancho en cm"> × <input type="number" id="ipH" min="0.5" step="0.1" style="width:80px" aria-label="Alto en cm"><span class="hint">cm</span></div>
-    <div class="fila"><label>Resolución</label><select id="ipDpi"><option value="72">72 dpi (lona vista de lejos)</option><option value="100">100 dpi (lona, recomendado)</option><option value="150">150 dpi (lona de cerca, pendón)</option><option value="200">200 dpi</option><option value="300">300 dpi (sublimación, papel)</option></select></div>
-    <div class="fila"><label>Sangrado</label><input type="number" id="ipSang" min="0" max="50" step="0.5" value="0" style="width:70px"><span class="hint">mm por lado (lo que se corta; en sublimación 2–3 mm)</span></div>
-    <div class="fila" id="ipFilaMarcas"><label>Marcas de corte</label><input type="checkbox" id="ipMarcas"></div>
-    <div class="fila"><label>Espejo</label><input type="checkbox" id="ipEspejo"><span class="hint" style="font-size:11px">volteado: para sublimación y transfer (si tu impresora no lo voltea sola)</span></div>
-    <div class="fila" id="ipFilaColor"><label>Color</label><select id="ipColor"><option value="rgb">RGB (sublimación y la mayoría de las lonas)</option><option value="cmyk">CMYK aproximado (si la imprenta lo pide)</option></select></div>
-    <div class="fila" id="ipFilaTransp"><label>Fondo transparente</label><input type="checkbox" id="ipTransp"><span class="hint" style="font-size:11px">para DTF o vinil</span></div>
+    <div class="fila"><label for="ipDpi">Resolución</label><select id="ipDpi" aria-label="Resolución de impresión en dpi"><option value="72">72 dpi (lona vista de lejos)</option><option value="100">100 dpi (lona, recomendado)</option><option value="150">150 dpi (lona de cerca, pendón)</option><option value="200">200 dpi</option><option value="300">300 dpi (sublimación, papel)</option></select></div>
+    <div class="fila"><label for="ipSang">Sangrado</label><input type="number" id="ipSang" aria-label="Sangrado por lado en milímetros" min="0" max="50" step="0.5" value="0" style="width:70px"><span class="hint">mm por lado (lo que se corta; en sublimación 2–3 mm)</span></div>
+    <div class="fila" id="ipFilaMarcas"><label for="ipMarcas">Marcas de corte</label><input type="checkbox" id="ipMarcas"></div>
+    <div class="fila"><label for="ipEspejo">Espejo</label><input type="checkbox" id="ipEspejo"><span class="hint" style="font-size:11px">volteado: para sublimación y transfer (si tu impresora no lo voltea sola)</span></div>
+    <div class="fila" id="ipFilaColor"><label for="ipColor">Color</label><select id="ipColor" aria-label="Perfil de color"><option value="rgb">RGB (sublimación y la mayoría de las lonas)</option><option value="cmyk">CMYK aproximado (si la imprenta lo pide)</option></select></div>
+    <div class="fila" id="ipFilaTransp"><label for="ipTransp">Fondo transparente</label><input type="checkbox" id="ipTransp"><span class="hint" style="font-size:11px">para DTF o vinil</span></div>
     <p class="hint" id="ipInfo" style="font-size:12px;padding-top:0"></p>
     <details class="ayudaImp"><summary>¿Qué archivo pide cada programa o imprenta?</summary><ul>
       <li><b>CorelDRAW</b>: PDF, EPS o SVG (Archivo → Importar). El formato .cdr es cerrado: ningún programa fuera de Corel lo crea.</li>

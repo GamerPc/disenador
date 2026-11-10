@@ -507,7 +507,7 @@ FORMATO('html').drive = async function(){
   const sel = $('eFormato'), op = document.createElement('option'); op.value = 'html'; op.textContent = '🌐 Página web (HTML con efectos y 3D)';
   sel.appendChild(op);
   const fila = document.createElement('div'); fila.className = 'fila'; fila.id = 'filaModoHTML'; fila.hidden = true;
-  fila.innerHTML = '<label>Páginas</label><select id="eModoHTML"><option value="auto">Automático</option><option value="scroll">Una debajo de otra (sitio web)</option><option value="pantallas">Una pantalla a la vez (prototipo de app)</option></select>';
+  fila.innerHTML = '<label for="eModoHTML">Páginas</label><select id="eModoHTML" aria-label="Cómo mostrar las páginas en el sitio web"><option value="auto">Automático</option><option value="scroll">Una debajo de otra (sitio web)</option><option value="pantallas">Una pantalla a la vez (prototipo de app)</option></select>';
   sel.closest('.fila').after(fila);
   const ver = () => { fila.hidden = sel.value !== 'html'; };
   sel.addEventListener('change', ver); ver();

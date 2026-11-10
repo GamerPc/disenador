@@ -164,6 +164,12 @@ function cargando(v){ $('cargando').style.display = v ? 'flex' : 'none'; }
 function abrirModal(id){ $(id).classList.add('abierto'); }
 function cerrarModal(id){ $(id).classList.remove('abierto'); }
 document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('abierto'); }));
+// Relaciona las etiquetas visibles con su campo cuando una fila contiene un solo control.
+document.querySelectorAll('.fila').forEach(fila => {
+  const campos = [...fila.querySelectorAll('input[id],select[id],textarea[id]')].filter(c => c.closest('.fila') === fila);
+  const etiquetas = [...fila.children].filter(e => e.tagName === 'LABEL' && !e.querySelector('input,select,textarea'));
+  if (campos.length === 1 && etiquetas.length === 1 && !etiquetas[0].htmlFor) etiquetas[0].htmlFor = campos[0].id;
+});
 function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function aHex(c){
   if (!c || typeof c !== 'string') return '#000000';
@@ -7904,7 +7910,7 @@ FORMATO('html').drive = async function(){
   const sel = $('eFormato'), op = document.createElement('option'); op.value = 'html'; op.textContent = '🌐 Página web (HTML con efectos y 3D)';
   sel.appendChild(op);
   const fila = document.createElement('div'); fila.className = 'fila'; fila.id = 'filaModoHTML'; fila.hidden = true;
-  fila.innerHTML = '<label>Páginas</label><select id="eModoHTML"><option value="auto">Automático</option><option value="scroll">Una debajo de otra (sitio web)</option><option value="pantallas">Una pantalla a la vez (prototipo de app)</option></select>';
+  fila.innerHTML = '<label for="eModoHTML">Páginas</label><select id="eModoHTML" aria-label="Cómo mostrar las páginas en el sitio web"><option value="auto">Automático</option><option value="scroll">Una debajo de otra (sitio web)</option><option value="pantallas">Una pantalla a la vez (prototipo de app)</option></select>';
   sel.closest('.fila').after(fila);
   const ver = () => { fila.hidden = sel.value !== 'html'; };
   sel.addEventListener('change', ver); ver();
@@ -8429,7 +8435,7 @@ function textoParaIA(){ const t = typeof textoUnico === 'function' ? textoUnico(
     <details style="margin:4px 0 10px"><summary class="hint" style="cursor:pointer">✍ Escribir algo nuevo a partir de una idea</summary>
       <div class="filaBusca" style="margin-top:6px"><input id="iaIdea" class="buscador" placeholder="Ej. invitación para la feria de ciencias del viernes"><button class="pb" id="iaEscribir">Escribir</button></div></details>
     <div id="iaResultado" hidden><label class="hint" style="display:block;padding:4px 0">Propuesta (puedes corregirla antes de usarla)</label>
-      <textarea id="iaSalida" rows="5" style="width:100%;box-sizing:border-box"></textarea><div id="iaOpciones" class="escLista" style="display:flex;flex-direction:column;gap:6px"></div>
+      <textarea id="iaSalida" rows="5" aria-label="Texto generado por el asistente de escritura" style="width:100%;box-sizing:border-box"></textarea><div id="iaOpciones" class="escLista" style="display:flex;flex-direction:column;gap:6px"></div>
       <div class="grupoBtns" style="margin-top:8px"><button class="btnP" id="iaUsar">✓ Reemplazar el texto</button><button class="pb" id="iaNuevo">＋ Agregar como texto nuevo</button><button class="pb" id="iaCopiar">Copiar</button></div></div>
     <details id="iaConfig" style="margin-top:12px"><summary class="hint" style="cursor:pointer">⚙ Usar mi propia clave de Google Gemini (si tu navegador no trae IA)</summary>
       <p class="hint" style="font-size:12px">Créala gratis en <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> y pégala aquí. Se guarda <b>solo en este navegador</b>; no la compartas ni la uses en computadoras públicas. El texto que mandes se procesa en los servidores de Google.</p>
@@ -11667,15 +11673,15 @@ const LIM_MP = { jpg:120, png:120, psd:200, tif:250, pdf:250, eps:200 };
   const op = document.createElement('option'); op.value = 'imprenta'; op.textContent = '🖨 Para imprenta: lona, sublimación (PDF, TIFF, PSD, EPS…)';
   const svg = $('eFormato').querySelector('option[value="svg"]') || $('eFormato').querySelector('option[value="pdf"]'); svg.after(op);
   const d = document.createElement('div'); d.id = 'filaImprenta'; d.style.display = 'none';
-  d.innerHTML = `<div class="fila"><label>Archivo</label><select id="ipFmt">${Object.entries(FMT_IMP).map(([k, f]) => `<option value="${k}">${f.n} (.${f.ext})</option>`).join('')}</select></div>
+  d.innerHTML = `<div class="fila"><label for="ipFmt">Archivo</label><select id="ipFmt" aria-label="Formato del archivo para imprenta">${Object.entries(FMT_IMP).map(([k, f]) => `<option value="${k}">${f.n} (.${f.ext})</option>`).join('')}</select></div>
     <p class="hint" id="ipUsa" style="font-size:11.5px;padding-top:0"></p>
     <div class="fila"><label>Medida real</label><input type="number" id="ipW" min="0.5" step="0.1" style="width:80px" aria-label="Ancho en cm"> × <input type="number" id="ipH" min="0.5" step="0.1" style="width:80px" aria-label="Alto en cm"><span class="hint">cm</span></div>
-    <div class="fila"><label>Resolución</label><select id="ipDpi"><option value="72">72 dpi (lona vista de lejos)</option><option value="100">100 dpi (lona, recomendado)</option><option value="150">150 dpi (lona de cerca, pendón)</option><option value="200">200 dpi</option><option value="300">300 dpi (sublimación, papel)</option></select></div>
-    <div class="fila"><label>Sangrado</label><input type="number" id="ipSang" min="0" max="50" step="0.5" value="0" style="width:70px"><span class="hint">mm por lado (lo que se corta; en sublimación 2–3 mm)</span></div>
-    <div class="fila" id="ipFilaMarcas"><label>Marcas de corte</label><input type="checkbox" id="ipMarcas"></div>
-    <div class="fila"><label>Espejo</label><input type="checkbox" id="ipEspejo"><span class="hint" style="font-size:11px">volteado: para sublimación y transfer (si tu impresora no lo voltea sola)</span></div>
-    <div class="fila" id="ipFilaColor"><label>Color</label><select id="ipColor"><option value="rgb">RGB (sublimación y la mayoría de las lonas)</option><option value="cmyk">CMYK aproximado (si la imprenta lo pide)</option></select></div>
-    <div class="fila" id="ipFilaTransp"><label>Fondo transparente</label><input type="checkbox" id="ipTransp"><span class="hint" style="font-size:11px">para DTF o vinil</span></div>
+    <div class="fila"><label for="ipDpi">Resolución</label><select id="ipDpi" aria-label="Resolución de impresión en dpi"><option value="72">72 dpi (lona vista de lejos)</option><option value="100">100 dpi (lona, recomendado)</option><option value="150">150 dpi (lona de cerca, pendón)</option><option value="200">200 dpi</option><option value="300">300 dpi (sublimación, papel)</option></select></div>
+    <div class="fila"><label for="ipSang">Sangrado</label><input type="number" id="ipSang" aria-label="Sangrado por lado en milímetros" min="0" max="50" step="0.5" value="0" style="width:70px"><span class="hint">mm por lado (lo que se corta; en sublimación 2–3 mm)</span></div>
+    <div class="fila" id="ipFilaMarcas"><label for="ipMarcas">Marcas de corte</label><input type="checkbox" id="ipMarcas"></div>
+    <div class="fila"><label for="ipEspejo">Espejo</label><input type="checkbox" id="ipEspejo"><span class="hint" style="font-size:11px">volteado: para sublimación y transfer (si tu impresora no lo voltea sola)</span></div>
+    <div class="fila" id="ipFilaColor"><label for="ipColor">Color</label><select id="ipColor" aria-label="Perfil de color"><option value="rgb">RGB (sublimación y la mayoría de las lonas)</option><option value="cmyk">CMYK aproximado (si la imprenta lo pide)</option></select></div>
+    <div class="fila" id="ipFilaTransp"><label for="ipTransp">Fondo transparente</label><input type="checkbox" id="ipTransp"><span class="hint" style="font-size:11px">para DTF o vinil</span></div>
     <p class="hint" id="ipInfo" style="font-size:12px;padding-top:0"></p>
     <details class="ayudaImp"><summary>¿Qué archivo pide cada programa o imprenta?</summary><ul>
       <li><b>CorelDRAW</b>: PDF, EPS o SVG (Archivo → Importar). El formato .cdr es cerrado: ningún programa fuera de Corel lo crea.</li>
