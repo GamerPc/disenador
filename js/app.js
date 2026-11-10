@@ -4257,6 +4257,24 @@ function coincideBusquedaCatalogo(it, palabras){
   const texto = sinAcentos([it.nombre, it.cat, ALIAS_CATALOGO[it.cat] || ''].join(' '));
   return palabras.every(p => texto.includes(p));
 }
+function mostrarCatalogoVacio(cont, consulta){
+  const caja = document.createElement('div'); caja.className = 'vacioCatalogo'; caja.setAttribute('role', 'status');
+  const mensaje = document.createElement('p'); mensaje.className = 'hint';
+  mensaje.textContent = consulta
+    ? `No encontramos diseños con “${consulta}”. Prueba con otras palabras o muestra todo el catálogo.`
+    : 'Esta categoría no tiene diseños disponibles. Puedes volver a ver todo el catálogo.';
+  caja.appendChild(mensaje);
+  const limpiar = document.createElement('button'); limpiar.className = 'bigbtn'; limpiar.type = 'button'; limpiar.textContent = 'Borrar búsqueda';
+  limpiar.onclick = () => { $('buscarPlantilla').value = ''; renderCatalogo(); $('buscarPlantilla').focus(); };
+  caja.appendChild(limpiar);
+  const todas = document.createElement('button'); todas.className = 'bigbtn'; todas.type = 'button'; todas.textContent = 'Ver todo el catálogo';
+  todas.onclick = () => {
+    $('buscarPlantilla').value = ''; catActiva = 'Todas';
+    document.querySelectorAll('#chipsCat .chip').forEach((x, i) => x.classList.toggle('on', i === 0));
+    renderCatalogo(); $('buscarPlantilla').focus();
+  };
+  caja.appendChild(todas); cont.appendChild(caja);
+}
 function renderCatalogo(){
   const palabras = palabrasBusquedaCatalogo($('buscarPlantilla').value);
   const cont = $('catalogo'); cont.innerHTML = '';
@@ -4296,7 +4314,7 @@ function renderCatalogo(){
     });
     cont.appendChild(grid);
   });
-  if (!cont.children.length) cont.innerHTML = '<p class="hint">No encontramos una plantilla con esas palabras. Prueba con “tarea”, “menú” o “mapa”, o elige “Todas”.</p>';
+  if (!cont.children.length) mostrarCatalogoVacio(cont, $('buscarPlantilla').value.trim());
 }
 ['Todas', ...CATEGORIAS].forEach(cat => {
   const c = document.createElement('button'); c.className = 'chip' + (cat === 'Todas' ? ' on' : '');
