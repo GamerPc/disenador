@@ -5,7 +5,7 @@
 <script>
 // Si algo falla al cargar, se muestra aquí en vez de dejar la pantalla en blanco
 window.__erroresCarga = []; window.__lineasError = [];
-window.__esperado = {"Codigo1": {"chars": 54481, "lineas": 993}, "Codigo2": {"chars": 49426, "lineas": 622}, "Codigo3": {"chars": 31574, "lineas": 574}, "Codigo4": {"chars": 39654, "lineas": 683}, "Codigo5": {"chars": 52568, "lineas": 793}, "Codigo6": {"chars": 52653, "lineas": 763}, "Codigo7": {"chars": 27168, "lineas": 435}, "Codigo8": {"chars": 8887, "lineas": 160}, "Codigo9": {"chars": 51517, "lineas": 884}, "Codigo10": {"chars": 48027, "lineas": 823}, "Codigo11": {"chars": 20286, "lineas": 289}, "Codigo12": {"chars": 35527, "lineas": 350}, "Codigo13": {"chars": 50599, "lineas": 627}, "Codigo14": {"chars": 45750, "lineas": 564}, "Codigo15": {"chars": 47751, "lineas": 667}, "Codigo16": {"chars": 27043, "lineas": 323}, "Codigo17": {"chars": 43676, "lineas": 537}, "Codigo18": {"chars": 18841, "lineas": 294}, "Codigo19": {"chars": 88408, "lineas": 1176}, "Codigo20": {"chars": 31771, "lineas": 400}, "Codigo21": {"chars": 33662, "lineas": 357}, "Codigo22": {"chars": 53292, "lineas": 635}, "Codigo23": {"chars": 53425, "lineas": 682}, "Codigo24": {"chars": 7011, "lineas": 94}, "Codigo25": {"chars": 1896, "lineas": 35}};
+window.__esperado = {"Codigo1": {"chars": 54481, "lineas": 993}, "Codigo2": {"chars": 49426, "lineas": 622}, "Codigo3": {"chars": 31574, "lineas": 574}, "Codigo4": {"chars": 39654, "lineas": 683}, "Codigo5": {"chars": 52568, "lineas": 793}, "Codigo6": {"chars": 52653, "lineas": 763}, "Codigo7": {"chars": 27168, "lineas": 435}, "Codigo8": {"chars": 8887, "lineas": 160}, "Codigo9": {"chars": 51517, "lineas": 884}, "Codigo10": {"chars": 48027, "lineas": 823}, "Codigo11": {"chars": 20286, "lineas": 289}, "Codigo12": {"chars": 35527, "lineas": 350}, "Codigo13": {"chars": 50599, "lineas": 627}, "Codigo14": {"chars": 45750, "lineas": 564}, "Codigo15": {"chars": 47748, "lineas": 667}, "Codigo16": {"chars": 27043, "lineas": 323}, "Codigo17": {"chars": 43676, "lineas": 537}, "Codigo18": {"chars": 18841, "lineas": 294}, "Codigo19": {"chars": 88408, "lineas": 1176}, "Codigo20": {"chars": 31771, "lineas": 400}, "Codigo21": {"chars": 33662, "lineas": 357}, "Codigo22": {"chars": 53292, "lineas": 635}, "Codigo23": {"chars": 53425, "lineas": 682}, "Codigo24": {"chars": 7011, "lineas": 94}, "Codigo25": {"chars": 1896, "lineas": 35}};
 function __mostrarErrorCarga(msg){
   window.__erroresCarga.push(msg);
   var pintar = function(){
@@ -376,17 +376,17 @@ window.addEventListener('load', function(){
 
 <div id="app">
   <!-- ====== PESTAÑAS ====== -->
-  <nav id="pestanas">
-    <button class="activa" data-tab="tPlantillas"><span>▦</span>Plantillas</button>
-    <button data-tab="tTexto"><span>T</span>Texto</button>
-    <button data-tab="tFormas"><span>◆</span>Formas</button>
-    <button data-tab="tElementos"><span>✿</span>Elementos</button>
-    <button data-tab="tDibujar"><span>✎</span>Dibujar</button>
-    <button data-tab="tImagenes"><span>🖼</span>Imágenes</button>
-    <button data-tab="tDiagramas"><span>⎔</span>Diagramas</button>
-    <button data-tab="tFondo"><span>▧</span>Fondo</button>
-    <button data-tab="tMarca"><span>★</span>Mi marca</button>
-    <button data-tab="tWeb"><span>🖥</span>Web y UI</button>
+  <nav id="pestanas" aria-label="Herramientas de diseño">
+    <button class="activa" data-tab="tPlantillas" aria-controls="tPlantillas" aria-label="Plantillas: empieza con un diseño listo" title="Empieza con un diseño listo para adaptar"><span>▦</span>Plantillas</button>
+    <button data-tab="tTexto" aria-controls="tTexto" aria-label="Texto: títulos y escritos" title="Agrega títulos y textos"><span>T</span>Texto</button>
+    <button data-tab="tFormas" aria-controls="tFormas" aria-label="Formas: cuadros, círculos y líneas" title="Agrega cuadros, círculos y líneas"><span>◆</span>Formas</button>
+    <button data-tab="tElementos" aria-controls="tElementos" aria-label="Íconos y adornos" title="Busca íconos, stickers y adornos"><span>✿</span>Íconos</button>
+    <button data-tab="tDibujar" aria-controls="tDibujar" aria-label="Dibujo a mano" title="Dibuja formas y trazos a mano"><span>✎</span>Dibujar</button>
+    <button data-tab="tImagenes" aria-controls="tImagenes" aria-label="Fotos e imágenes" title="Agrega fotos desde tu equipo o busca imágenes"><span>🖼</span>Imágenes</button>
+    <button data-tab="tDiagramas" aria-controls="tDiagramas" aria-label="Mapas, diagramas y líneas del tiempo" title="Crea mapas mentales, diagramas y líneas del tiempo"><span>⎔</span>Mapas</button>
+    <button data-tab="tFondo" aria-controls="tFondo" aria-label="Fondo de la página" title="Cambia el color o la imagen de fondo"><span>▧</span>Fondo</button>
+    <button data-tab="tMarca" aria-controls="tMarca" aria-label="Colores y logo de mi marca" title="Guarda y usa tus colores y logo"><span>★</span>Mi marca</button>
+    <button data-tab="tWeb" aria-controls="tWeb" aria-label="Diseño de páginas web y aplicaciones" title="Diseña páginas web y pantallas de aplicaciones"><span>🖥</span>Web y apps</button>
   </nav>
 
   <!-- ====== PANEL LATERAL ====== -->

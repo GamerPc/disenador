@@ -127,7 +127,7 @@ const PASOS_PP = [
   { id:'texto', t:'Cambia un texto', d:'Haz doble clic en un texto del lienzo y escribe lo que quieras.', foco:'texto' },
   { id:'color', t:'Cambia un color', d:'Con algo seleccionado, toca el color en la barra de arriba y elige otro.', foco:'#props' },
   { id:'mover', t:'Mueve o agranda algo', d:'Arrastra un elemento o jala una de sus esquinas.', foco:'objeto' },
-  { id:'agregar', t:'Agrega algo nuevo', d:'En Elementos, Formas, Texto o Imágenes, toca algo para ponerlo en tu diseño.', tab:'tElementos', foco:'#pestanas [data-tab="tElementos"]' },
+  { id:'agregar', t:'Agrega algo nuevo', d:'En Íconos, Formas, Texto o Imágenes, toca algo para ponerlo en tu diseño.', tab:'tElementos', foco:'#pestanas [data-tab="tElementos"]' },
   { id:'exportar', t:'Descarga tu diseño', d:'Toca ⬇ Exportar y elige PNG, PDF o PowerPoint.', foco:'#barra [onclick*="mExportar"], #menuMas [onclick*="mExportar"]' }
 ];
 let PP = { hechos:[], activo:false, mini:false };

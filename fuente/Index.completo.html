@@ -1165,17 +1165,17 @@
 
 <div id="app">
   <!-- ====== PESTAÑAS ====== -->
-  <nav id="pestanas">
-    <button class="activa" data-tab="tPlantillas"><span>▦</span>Plantillas</button>
-    <button data-tab="tTexto"><span>T</span>Texto</button>
-    <button data-tab="tFormas"><span>◆</span>Formas</button>
-    <button data-tab="tElementos"><span>✿</span>Elementos</button>
-    <button data-tab="tDibujar"><span>✎</span>Dibujar</button>
-    <button data-tab="tImagenes"><span>🖼</span>Imágenes</button>
-    <button data-tab="tDiagramas"><span>⎔</span>Diagramas</button>
-    <button data-tab="tFondo"><span>▧</span>Fondo</button>
-    <button data-tab="tMarca"><span>★</span>Mi marca</button>
-    <button data-tab="tWeb"><span>🖥</span>Web y UI</button>
+  <nav id="pestanas" aria-label="Herramientas de diseño">
+    <button class="activa" data-tab="tPlantillas" aria-controls="tPlantillas" aria-label="Plantillas: empieza con un diseño listo" title="Empieza con un diseño listo para adaptar"><span>▦</span>Plantillas</button>
+    <button data-tab="tTexto" aria-controls="tTexto" aria-label="Texto: títulos y escritos" title="Agrega títulos y textos"><span>T</span>Texto</button>
+    <button data-tab="tFormas" aria-controls="tFormas" aria-label="Formas: cuadros, círculos y líneas" title="Agrega cuadros, círculos y líneas"><span>◆</span>Formas</button>
+    <button data-tab="tElementos" aria-controls="tElementos" aria-label="Íconos y adornos" title="Busca íconos, stickers y adornos"><span>✿</span>Íconos</button>
+    <button data-tab="tDibujar" aria-controls="tDibujar" aria-label="Dibujo a mano" title="Dibuja formas y trazos a mano"><span>✎</span>Dibujar</button>
+    <button data-tab="tImagenes" aria-controls="tImagenes" aria-label="Fotos e imágenes" title="Agrega fotos desde tu equipo o busca imágenes"><span>🖼</span>Imágenes</button>
+    <button data-tab="tDiagramas" aria-controls="tDiagramas" aria-label="Mapas, diagramas y líneas del tiempo" title="Crea mapas mentales, diagramas y líneas del tiempo"><span>⎔</span>Mapas</button>
+    <button data-tab="tFondo" aria-controls="tFondo" aria-label="Fondo de la página" title="Cambia el color o la imagen de fondo"><span>▧</span>Fondo</button>
+    <button data-tab="tMarca" aria-controls="tMarca" aria-label="Colores y logo de mi marca" title="Guarda y usa tus colores y logo"><span>★</span>Mi marca</button>
+    <button data-tab="tWeb" aria-controls="tWeb" aria-label="Diseño de páginas web y aplicaciones" title="Diseña páginas web y pantallas de aplicaciones"><span>🖥</span>Web y apps</button>
   </nav>
 
   <!-- ====== PANEL LATERAL ====== -->
@@ -10513,7 +10513,7 @@ const PASOS_PP = [
   { id:'texto', t:'Cambia un texto', d:'Haz doble clic en un texto del lienzo y escribe lo que quieras.', foco:'texto' },
   { id:'color', t:'Cambia un color', d:'Con algo seleccionado, toca el color en la barra de arriba y elige otro.', foco:'#props' },
   { id:'mover', t:'Mueve o agranda algo', d:'Arrastra un elemento o jala una de sus esquinas.', foco:'objeto' },
-  { id:'agregar', t:'Agrega algo nuevo', d:'En Elementos, Formas, Texto o Imágenes, toca algo para ponerlo en tu diseño.', tab:'tElementos', foco:'#pestanas [data-tab="tElementos"]' },
+  { id:'agregar', t:'Agrega algo nuevo', d:'En Íconos, Formas, Texto o Imágenes, toca algo para ponerlo en tu diseño.', tab:'tElementos', foco:'#pestanas [data-tab="tElementos"]' },
   { id:'exportar', t:'Descarga tu diseño', d:'Toca ⬇ Exportar y elige PNG, PDF o PowerPoint.', foco:'#barra [onclick*="mExportar"], #menuMas [onclick*="mExportar"]' }
 ];
 let PP = { hechos:[], activo:false, mini:false };
