@@ -109,7 +109,7 @@ function mostrarCatalogoVacio(cont, consulta){
   const todas = document.createElement('button'); todas.className = 'bigbtn'; todas.type = 'button'; todas.textContent = 'Ver todo el catálogo';
   todas.onclick = () => {
     $('buscarPlantilla').value = ''; catActiva = 'Todas';
-    document.querySelectorAll('#chipsCat .chip').forEach((x, i) => x.classList.toggle('on', i === 0));
+    document.querySelectorAll('#chipsCat .chip').forEach((x, i) => { const activa = i === 0; x.classList.toggle('on', activa); x.setAttribute('aria-pressed', activa ? 'true' : 'false'); });
     renderCatalogo(); $('buscarPlantilla').focus();
   };
   caja.appendChild(todas); cont.appendChild(caja);
@@ -157,9 +157,18 @@ function renderCatalogo(){
 }
 ['Todas', ...CATEGORIAS].forEach(cat => {
   const c = document.createElement('button'); c.className = 'chip' + (cat === 'Todas' ? ' on' : '');
+  c.setAttribute('aria-pressed', cat === 'Todas' ? 'true' : 'false');
   c.textContent = cat === CAT_MAPAS ? 'Mapas' : cat === CAT_TABLAS ? 'Tablas' : cat === CAT_PROC ? 'Procesos' : cat === CAT_PORT ? 'Portadas' : cat === CAT_INFO ? 'Infografías' : cat === CAT_MIAS ? '★ Mías' : cat === CAT_PRES ? '▶ Presentaciones' : cat === CAT_DER ? '⚖ Derecho' : cat;
-  c.onclick = () => { catActiva = cat; document.querySelectorAll('#chipsCat .chip').forEach(x => x.classList.toggle('on', x === c)); renderCatalogo(); };
+  c.onclick = () => { catActiva = cat; document.querySelectorAll('#chipsCat .chip').forEach(x => { const activa = x === c; x.classList.toggle('on', activa); x.setAttribute('aria-pressed', activa ? 'true' : 'false'); }); renderCatalogo(); };
   $('chipsCat').appendChild(c);
+});
+const chipsCat = $('chipsCat');
+function completarEstadoChips(){ chipsCat.querySelectorAll('.chip').forEach(b => { if (!b.hasAttribute('aria-pressed')) b.setAttribute('aria-pressed', b.classList.contains('on') ? 'true' : 'false'); }); }
+completarEstadoChips();
+new MutationObserver(completarEstadoChips).observe(chipsCat, { childList:true });
+chipsCat.addEventListener('click', e => {
+  const elegida = e.target.closest('.chip'); if (!elegida) return;
+  chipsCat.querySelectorAll('.chip').forEach(b => b.setAttribute('aria-pressed', b === elegida ? 'true' : 'false'));
 });
 $('buscarPlantilla').addEventListener('input', renderCatalogo);
 renderCatalogo();

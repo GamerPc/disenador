@@ -1185,7 +1185,7 @@
       <h3>Plantillas</h3>
       <input type="search" id="buscarPlantilla" class="buscador" aria-label="Buscar plantillas por tema o tipo de diseño" placeholder="¿Qué necesitas? Ej.: tarea, menú, mapa…" title="Busca por nombre, categoría o palabras comunes">
       <button class="bigbtn" style="text-align:center;margin-bottom:8px" onclick="guardarComoPlantilla()">＋ Guardar esta página como mi plantilla</button>
-      <div class="chips" id="chipsCat"></div>
+      <div class="chips" id="chipsCat" role="group" aria-label="Filtrar plantillas por categoría"></div>
       <div id="catalogo"></div>
       <div id="listaOrganizadores" hidden></div>
       <div id="listaPlantillas" hidden></div>
@@ -6137,7 +6137,7 @@ function mostrarCatalogoVacio(cont, consulta){
   const todas = document.createElement('button'); todas.className = 'bigbtn'; todas.type = 'button'; todas.textContent = 'Ver todo el catálogo';
   todas.onclick = () => {
     $('buscarPlantilla').value = ''; catActiva = 'Todas';
-    document.querySelectorAll('#chipsCat .chip').forEach((x, i) => x.classList.toggle('on', i === 0));
+    document.querySelectorAll('#chipsCat .chip').forEach((x, i) => { const activa = i === 0; x.classList.toggle('on', activa); x.setAttribute('aria-pressed', activa ? 'true' : 'false'); });
     renderCatalogo(); $('buscarPlantilla').focus();
   };
   caja.appendChild(todas); cont.appendChild(caja);
@@ -6185,9 +6185,18 @@ function renderCatalogo(){
 }
 ['Todas', ...CATEGORIAS].forEach(cat => {
   const c = document.createElement('button'); c.className = 'chip' + (cat === 'Todas' ? ' on' : '');
+  c.setAttribute('aria-pressed', cat === 'Todas' ? 'true' : 'false');
   c.textContent = cat === CAT_MAPAS ? 'Mapas' : cat === CAT_TABLAS ? 'Tablas' : cat === CAT_PROC ? 'Procesos' : cat === CAT_PORT ? 'Portadas' : cat === CAT_INFO ? 'Infografías' : cat === CAT_MIAS ? '★ Mías' : cat === CAT_PRES ? '▶ Presentaciones' : cat === CAT_DER ? '⚖ Derecho' : cat;
-  c.onclick = () => { catActiva = cat; document.querySelectorAll('#chipsCat .chip').forEach(x => x.classList.toggle('on', x === c)); renderCatalogo(); };
+  c.onclick = () => { catActiva = cat; document.querySelectorAll('#chipsCat .chip').forEach(x => { const activa = x === c; x.classList.toggle('on', activa); x.setAttribute('aria-pressed', activa ? 'true' : 'false'); }); renderCatalogo(); };
   $('chipsCat').appendChild(c);
+});
+const chipsCat = $('chipsCat');
+function completarEstadoChips(){ chipsCat.querySelectorAll('.chip').forEach(b => { if (!b.hasAttribute('aria-pressed')) b.setAttribute('aria-pressed', b.classList.contains('on') ? 'true' : 'false'); }); }
+completarEstadoChips();
+new MutationObserver(completarEstadoChips).observe(chipsCat, { childList:true });
+chipsCat.addEventListener('click', e => {
+  const elegida = e.target.closest('.chip'); if (!elegida) return;
+  chipsCat.querySelectorAll('.chip').forEach(b => b.setAttribute('aria-pressed', b === elegida ? 'true' : 'false'));
 });
 $('buscarPlantilla').addEventListener('input', renderCatalogo);
 renderCatalogo();
