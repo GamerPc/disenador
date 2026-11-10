@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Audiowide&family=Exo+2:wght@400;700;900&family=Righteous&family=UnifrakturMaguntia&family=Inter:wght@400;600;700&family=Montserrat:ital,wght@0,400;0,700;0,900;1,400&family=Poppins:wght@400;600;700&family=Roboto:wght@400;700&family=Oswald:wght@400;700&family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lobster&family=Pacifico&family=Dancing+Script:wght@400;700&family=Raleway:wght@400;700&family=Anton&family=Fredoka:wght@400;600;700&family=Patrick+Hand&family=Caveat:wght@400;700&family=Gochi+Hand&family=Amatic+SC:wght@400;700&family=Permanent+Marker&family=Shadows+Into+Light&family=Gloria+Hallelujah&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Audiowide&family=Exo+2:wght@400;700;900&family=Righteous&family=UnifrakturMaguntia&family=Inter:wght@400;600;700&family=Montserrat:ital,wght@0,400;0,700;0,900;1,400&family=Poppins:wght@400;600;700&family=Roboto:wght@400;700&family=Oswald:wght@400;700&family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lobster&family=Pacifico&family=Dancing+Script:wght@400;700&family=Raleway:wght@400;700&family=Anton&family=Fredoka:wght@400;600;700&family=Patrick+Hand&family=Caveat:wght@400;700&family=Gochi+Hand&family=Amatic+SC:wght@400;700&family=Permanent+Marker&family=Shadows+Into+Light&family=Gloria+Hallelujah&display=swap" rel="stylesheet"></noscript>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
-<script>try{if(localStorage.getItem('disenador_tema')==='claro')document.documentElement.classList.add('claro')}catch(e){}</script>
+<script>try{if(localStorage.getItem('disenador_tema')==='claro')document.documentElement.classList.add('claro');if(localStorage.getItem('disenador_letra_grande')==='1')document.documentElement.classList.add('letraGrande')}catch(e){}</script>
 <style>
 {{ESTILOS}}
 </style>
@@ -654,6 +654,7 @@
 
 <div class="modal" id="mAyuda"><div class="caja" style="width:min(560px,94vw)">
   <h3>❓ Ayuda</h3>
+  <button class="btnS bLetrasGrandes" id="bLetrasGrandes" type="button" aria-pressed="false" onclick="ponerLetrasGrandes(!document.documentElement.classList.contains('letraGrande'))">🔎 <span id="txtLetrasGrandes">Letras grandes: desactivadas</span></button>
   <div class="filaAyuda"><button class="btnP" onclick="iniciarPrimerosPasos(true)">🚀 Primeros pasos (practicando)</button><button class="btnS" onclick="iniciarRecorrido()">▶ Recorrido de 1 minuto</button></div>
   <a class="enlaceGuia" href="https://gamerpc.github.io/disenador/guia.html" target="_blank" rel="noopener">📘 Guías para maestros y alumnos (para imprimir o compartir)</a>
   <h4 style="font-size:12px;color:#6b7280;margin:6px 0">Lo básico</h4>

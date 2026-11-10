@@ -5,7 +5,7 @@
 <script>
 // Si algo falla al cargar, se muestra aquí en vez de dejar la pantalla en blanco
 window.__erroresCarga = []; window.__lineasError = [];
-window.__esperado = {"Codigo1": {"chars": 54481, "lineas": 993}, "Codigo2": {"chars": 49426, "lineas": 622}, "Codigo3": {"chars": 31574, "lineas": 574}, "Codigo4": {"chars": 39654, "lineas": 683}, "Codigo5": {"chars": 52568, "lineas": 793}, "Codigo6": {"chars": 52653, "lineas": 763}, "Codigo7": {"chars": 27168, "lineas": 435}, "Codigo8": {"chars": 8887, "lineas": 160}, "Codigo9": {"chars": 51517, "lineas": 884}, "Codigo10": {"chars": 48027, "lineas": 823}, "Codigo11": {"chars": 20286, "lineas": 289}, "Codigo12": {"chars": 35527, "lineas": 350}, "Codigo13": {"chars": 50599, "lineas": 627}, "Codigo14": {"chars": 45750, "lineas": 564}, "Codigo15": {"chars": 47020, "lineas": 656}, "Codigo16": {"chars": 27043, "lineas": 323}, "Codigo17": {"chars": 43676, "lineas": 537}, "Codigo18": {"chars": 18841, "lineas": 294}, "Codigo19": {"chars": 88408, "lineas": 1176}, "Codigo20": {"chars": 31771, "lineas": 400}, "Codigo21": {"chars": 33662, "lineas": 357}, "Codigo22": {"chars": 53292, "lineas": 635}, "Codigo23": {"chars": 53425, "lineas": 682}, "Codigo24": {"chars": 7011, "lineas": 94}, "Codigo25": {"chars": 1896, "lineas": 35}};
+window.__esperado = {"Codigo1": {"chars": 54481, "lineas": 993}, "Codigo2": {"chars": 49426, "lineas": 622}, "Codigo3": {"chars": 31574, "lineas": 574}, "Codigo4": {"chars": 39654, "lineas": 683}, "Codigo5": {"chars": 52568, "lineas": 793}, "Codigo6": {"chars": 52653, "lineas": 763}, "Codigo7": {"chars": 27168, "lineas": 435}, "Codigo8": {"chars": 8887, "lineas": 160}, "Codigo9": {"chars": 51517, "lineas": 884}, "Codigo10": {"chars": 48027, "lineas": 823}, "Codigo11": {"chars": 20286, "lineas": 289}, "Codigo12": {"chars": 35527, "lineas": 350}, "Codigo13": {"chars": 50599, "lineas": 627}, "Codigo14": {"chars": 45750, "lineas": 564}, "Codigo15": {"chars": 47751, "lineas": 667}, "Codigo16": {"chars": 27043, "lineas": 323}, "Codigo17": {"chars": 43676, "lineas": 537}, "Codigo18": {"chars": 18841, "lineas": 294}, "Codigo19": {"chars": 88408, "lineas": 1176}, "Codigo20": {"chars": 31771, "lineas": 400}, "Codigo21": {"chars": 33662, "lineas": 357}, "Codigo22": {"chars": 53292, "lineas": 635}, "Codigo23": {"chars": 53425, "lineas": 682}, "Codigo24": {"chars": 7011, "lineas": 94}, "Codigo25": {"chars": 1896, "lineas": 35}};
 function __mostrarErrorCarga(msg){
   window.__erroresCarga.push(msg);
   var pintar = function(){
@@ -68,7 +68,7 @@ window.addEventListener('load', function(){
 <noscript><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Audiowide&family=Exo+2:wght@400;700;900&family=Righteous&family=UnifrakturMaguntia&family=Inter:wght@400;600;700&family=Montserrat:ital,wght@0,400;0,700;0,900;1,400&family=Poppins:wght@400;600;700&family=Roboto:wght@400;700&family=Oswald:wght@400;700&family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lobster&family=Pacifico&family=Dancing+Script:wght@400;700&family=Raleway:wght@400;700&family=Anton&family=Fredoka:wght@400;600;700&family=Patrick+Hand&family=Caveat:wght@400;700&family=Gochi+Hand&family=Amatic+SC:wght@400;700&family=Permanent+Marker&family=Shadows+Into+Light&family=Gloria+Hallelujah&display=swap" rel="stylesheet"></noscript>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
 <script>window.fabric || document.write('<script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"><\/script>')</script>
-<script>try{if(localStorage.getItem('disenador_tema')==='claro')document.documentElement.classList.add('claro')}catch(e){}</script>
+<script>try{if(localStorage.getItem('disenador_tema')==='claro')document.documentElement.classList.add('claro');if(localStorage.getItem('disenador_letra_grande')==='1')document.documentElement.classList.add('letraGrande')}catch(e){}</script>
 <style>
   :root{
     --morado:#7c3aed; --morado2:#06b6d4; --fondo:#eef0f4; --panel:#ffffff;
@@ -986,6 +986,7 @@ window.addEventListener('load', function(){
 
 <div class="modal" id="mAyuda"><div class="caja" style="width:min(560px,94vw)">
   <h3>❓ Ayuda</h3>
+  <button class="btnS bLetrasGrandes" id="bLetrasGrandes" type="button" aria-pressed="false" onclick="ponerLetrasGrandes(!document.documentElement.classList.contains('letraGrande'))">🔎 <span id="txtLetrasGrandes">Letras grandes: desactivadas</span></button>
   <div class="filaAyuda"><button class="btnP" onclick="iniciarPrimerosPasos(true)">🚀 Primeros pasos (practicando)</button><button class="btnS" onclick="iniciarRecorrido()">▶ Recorrido de 1 minuto</button></div>
   <a class="enlaceGuia" href="https://gamerpc.github.io/disenador/guia.html" target="_blank" rel="noopener">📘 Guías para maestros y alumnos (para imprimir o compartir)</a>
   <h4 style="font-size:12px;color:#6b7280;margin:6px 0">Lo básico</h4>

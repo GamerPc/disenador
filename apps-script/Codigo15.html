@@ -27,6 +27,17 @@ function ponerTema(claro, guardar = true){
   ponerTema(t === 'claro', false);
 })();
 
+/* ---------- Lectura cómoda: preferencia persistente para toda la interfaz ---------- */
+function ponerLetrasGrandes(activo, guardar = true){
+  document.documentElement.classList.toggle('letraGrande', !!activo);
+  if (guardar) try { localStorage.setItem('disenador_letra_grande', activo ? '1' : ''); } catch (e) {}
+  const b = $('bLetrasGrandes'), t = $('txtLetrasGrandes');
+  if (b) b.setAttribute('aria-pressed', activo ? 'true' : 'false');
+  if (t) t.textContent = 'Letras grandes: ' + (activo ? 'activadas' : 'desactivadas');
+  if (guardar) toast(activo ? 'Letras grandes activadas' : 'Letras grandes desactivadas');
+}
+(function(){ ponerLetrasGrandes(document.documentElement.classList.contains('letraGrande'), false); })();
+
 /* ---------- Atajos de teclado nuevos ---------- */
 function hayModalAbierto(){ return !!document.querySelector('.modal.abierto') || (typeof pasoRec !== 'undefined' && pasoRec >= 0); }
 function alternarEstiloTexto(prop){

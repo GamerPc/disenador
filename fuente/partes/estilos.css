@@ -1099,3 +1099,23 @@
   html.claro #bienvenida p{color:#526174}
   html.claro #bienvenida button{background:#eef2f7;color:#172033;border-color:#cbd5e1}
   html.claro #bienvenida button.bienvenidaPrimario{background:#a92d18;color:#fff;border-color:#a92d18}
+
+  /* Opción para quien necesita leer con más comodidad: solo escala la interfaz, no el diseño. */
+  html.letraGrande #barra .tb{font-size:14px}
+  html.letraGrande #pestanas button{font-size:14px;min-height:48px;gap:5px}
+  html.letraGrande #pestanas button span{font-size:23px}
+  html.letraGrande #lateral{font-size:15px}
+  html.letraGrande #lateral h3{font-size:17px}
+  html.letraGrande #lateral h4{font-size:14px}
+  html.letraGrande #lateral .bigbtn,html.letraGrande #lateral .buscador{font-size:15px}
+  html.letraGrande #lateral .hint{font-size:14.5px !important;line-height:1.5}
+  html.letraGrande #lateral .chip{font-size:14px;padding:8px 12px}
+  html.letraGrande #lateral .tarjetaPl span{font-size:14px;line-height:1.4}
+  html.letraGrande #props h4{font-size:14px}
+  html.letraGrande #props .fila label,html.letraGrande #props .pb,html.letraGrande #capas li{font-size:14px}
+  html.letraGrande .modal .caja{font-size:15px;line-height:1.5}
+  html.letraGrande .modal .btnP,html.letraGrande .modal .btnS{font-size:14px;min-height:44px}
+  #bLetrasGrandes{width:100%;min-height:48px;margin:0 0 10px;text-align:left;font-size:14px}
+  #bLetrasGrandes[aria-pressed="true"]{border-color:#19c8ff;background:rgba(25,200,255,.12);color:var(--texto)}
+  html.claro #bLetrasGrandes[aria-pressed="true"]{background:#e7f8ff;color:#12314a}
+  @media (max-width:820px){html.letraGrande #pestanas button{font-size:13px;min-height:54px}}
