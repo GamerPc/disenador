@@ -1200,6 +1200,13 @@ window.addEventListener('load', function(){
   #bLetrasGrandes[aria-pressed="true"]{border-color:#19c8ff;background:rgba(25,200,255,.12);color:var(--texto)}
   html.claro #bLetrasGrandes[aria-pressed="true"]{background:#e7f8ff;color:#12314a}
   @media (max-width:820px){html.letraGrande #pestanas button{font-size:13px;min-height:54px}}
+  .cajaHerramientas{width:min(640px,94vw)}
+  #ayudaHerramientas{margin:0 0 10px}
+  #resultadoHerramientas{display:flex;flex-direction:column;gap:7px;max-height:min(52vh,470px);overflow:auto;margin-top:8px}
+  #resultadoHerramientas:empty{display:none}
+  .toolResultado{margin:0;padding:10px 12px;min-height:48px}
+  .toolResultado small{display:block;color:var(--suave);font-size:12.5px;font-weight:400;line-height:1.4;margin-top:3px}
+  .toolResultado:focus-visible{outline:3px solid #19c8ff;outline-offset:2px}
 
 </style>
 </head>
@@ -1251,6 +1258,7 @@ window.addEventListener('load', function(){
     <div class="cerrarHoja"><button onclick="abrirLateral(false)">Cerrar ✕</button></div>
     <div class="panelTab activa" id="tPlantillas">
       <h3>Plantillas</h3>
+      <button class="bigbtn" id="bBuscarHerramienta" type="button" aria-keyshortcuts="Control+K" onclick="abrirBuscarHerramienta()">🔎 Buscar una herramienta <kbd>Ctrl+K</kbd></button>
       <input type="search" id="buscarPlantilla" class="buscador" aria-label="Buscar plantillas por tema o tipo de diseño" placeholder="¿Qué necesitas? Ej.: tarea, menú, mapa…" title="Busca por nombre, categoría o palabras comunes">
       <button class="bigbtn" style="text-align:center;margin-bottom:8px" onclick="guardarComoPlantilla()">＋ Guardar esta página como mi plantilla</button>
       <div class="chips" id="chipsCat" role="group" aria-label="Filtrar plantillas por categoría"></div>
@@ -1860,6 +1868,14 @@ window.addEventListener('load', function(){
   <div class="acciones"><button class="btnS" onclick="cerrarModal('mAyuda')">Cerrar</button></div>
 </div></div>
 
+<div class="modal" id="mHerramientas"><div class="caja cajaHerramientas" role="dialog" aria-modal="true" aria-labelledby="tituloHerramientas" aria-describedby="ayudaHerramientas">
+  <h3 id="tituloHerramientas">🔎 Buscar una herramienta</h3>
+  <p class="hint" id="ayudaHerramientas">Escribe lo que quieres hacer. Por ejemplo: “quitar fondo”, “mapa mental” o “hacer un video”.</p>
+  <input type="search" id="buscarHerramienta" class="buscador" aria-label="Buscar herramientas por nombre o tarea" placeholder="¿Qué necesitas hacer?" autocomplete="off">
+  <div id="resultadoHerramientas" role="group" aria-label="Resultados de herramientas" aria-live="polite"></div>
+  <div class="acciones"><button class="btnS" onclick="cerrarBuscarHerramienta()">Cerrar</button></div>
+</div></div>
+
 <div id="recorrido"><div id="recFoco"></div><div id="recCaja"><div id="recTexto"></div>
   <div class="pie"><span id="recNum"></span><button class="btnS" id="recAnt" onclick="siguientePaso(-1)">← Atrás</button><button class="btnS" onclick="terminarRecorrido()">Saltar</button><button class="btnP" id="recSig" onclick="siguientePaso(1)">Siguiente →</button></div>
 </div></div>
@@ -1935,7 +1951,7 @@ window.addEventListener('load', function(){
 
 <script src="config.js?v=d42c06db"></script>
 <script src="js/almacen-local.js?v=648af80d"></script>
-<script src="js/app.js?v=c3cde2ff"></script>
+<script src="js/app.js?v=c76692cb"></script>
 <script src="js/nube.js?v=3379e3f5"></script>
 <script src="js/escuela.js?v=89d01a2a"></script>
 <script src="js/equipo.js?v=32f6bb8a"></script>

@@ -62,6 +62,7 @@
     <div class="cerrarHoja"><button onclick="abrirLateral(false)">Cerrar ✕</button></div>
     <div class="panelTab activa" id="tPlantillas">
       <h3>Plantillas</h3>
+      <button class="bigbtn" id="bBuscarHerramienta" type="button" aria-keyshortcuts="Control+K" onclick="abrirBuscarHerramienta()">🔎 Buscar una herramienta <kbd>Ctrl+K</kbd></button>
       <input type="search" id="buscarPlantilla" class="buscador" aria-label="Buscar plantillas por tema o tipo de diseño" placeholder="¿Qué necesitas? Ej.: tarea, menú, mapa…" title="Busca por nombre, categoría o palabras comunes">
       <button class="bigbtn" style="text-align:center;margin-bottom:8px" onclick="guardarComoPlantilla()">＋ Guardar esta página como mi plantilla</button>
       <div class="chips" id="chipsCat" role="group" aria-label="Filtrar plantillas por categoría"></div>
@@ -669,6 +670,14 @@
   <div id="listaAtajos"></div>
   <p style="font-size:12px;margin:10px 0 0"><a href="https://gamerpc.github.io/disenador/privacidad.html" target="_blank" rel="noopener">Aviso de privacidad</a> · <a href="https://gamerpc.github.io/disenador/terminos.html" target="_blank" rel="noopener">Términos de uso</a></p>
   <div class="acciones"><button class="btnS" onclick="cerrarModal('mAyuda')">Cerrar</button></div>
+</div></div>
+
+<div class="modal" id="mHerramientas"><div class="caja cajaHerramientas" role="dialog" aria-modal="true" aria-labelledby="tituloHerramientas" aria-describedby="ayudaHerramientas">
+  <h3 id="tituloHerramientas">🔎 Buscar una herramienta</h3>
+  <p class="hint" id="ayudaHerramientas">Escribe lo que quieres hacer. Por ejemplo: “quitar fondo”, “mapa mental” o “hacer un video”.</p>
+  <input type="search" id="buscarHerramienta" class="buscador" aria-label="Buscar herramientas por nombre o tarea" placeholder="¿Qué necesitas hacer?" autocomplete="off">
+  <div id="resultadoHerramientas" role="group" aria-label="Resultados de herramientas" aria-live="polite"></div>
+  <div class="acciones"><button class="btnS" onclick="cerrarBuscarHerramienta()">Cerrar</button></div>
 </div></div>
 
 <div id="recorrido"><div id="recFoco"></div><div id="recCaja"><div id="recTexto"></div>
