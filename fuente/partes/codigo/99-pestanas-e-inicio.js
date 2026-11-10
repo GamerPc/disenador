@@ -1,7 +1,37 @@
 /* =========================================================
    PESTAÑAS E INICIO
    ========================================================= */
-document.querySelectorAll('#pestanas button[data-tab]').forEach(b => b.onclick = () => {   // solo las pestañas de panel (🎬 Video tiene su propio botón)
+const listaPestanas = $('pestanas');
+const botonesPestanas = [...document.querySelectorAll('#pestanas button[data-tab]')];
+function sincronizarPestanasA11y(){
+  const seleccionada = botonesPestanas.find(b => b.classList.contains('activa'));
+  botonesPestanas.forEach(b => {
+    const activa = b === seleccionada;
+    b.setAttribute('aria-selected', activa ? 'true' : 'false');
+    b.tabIndex = activa ? 0 : -1;
+    const panel = $(b.dataset.tab);
+    if (panel){ panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', b.id); }
+  });
+  if (listaPestanas) listaPestanas.setAttribute('aria-orientation', matchMedia('(max-width: 820px)').matches ? 'horizontal' : 'vertical');
+}
+sincronizarPestanasA11y();
+if (listaPestanas){
+  listaPestanas.addEventListener('keydown', e => {
+    const actual = botonesPestanas.indexOf(document.activeElement);
+    if (actual < 0) return;
+    let siguiente = actual;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') siguiente = (actual + 1) % botonesPestanas.length;
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') siguiente = (actual + botonesPestanas.length - 1) % botonesPestanas.length;
+    else if (e.key === 'Home') siguiente = 0;
+    else if (e.key === 'End') siguiente = botonesPestanas.length - 1;
+    else return;
+    e.preventDefault();
+    botonesPestanas[siguiente].focus();
+    botonesPestanas[siguiente].click();
+  });
+  addEventListener('resize', sincronizarPestanasA11y, { passive:true });
+}
+botonesPestanas.forEach(b => b.onclick = () => {   // solo las pestañas de panel (🎬 Video tiene su propio botón)
   if (esTel()){
     const abierto = $('lateral').classList.contains('abierto');
     if (abierto && b.classList.contains('activa')){ abrirLateral(false); return; }
@@ -10,6 +40,7 @@ document.querySelectorAll('#pestanas button[data-tab]').forEach(b => b.onclick =
   document.querySelectorAll('#pestanas button').forEach(x => x.classList.remove('activa'));
   document.querySelectorAll('.panelTab').forEach(x => x.classList.remove('activa'));
   b.classList.add('activa'); $(b.dataset.tab).classList.add('activa');
+  sincronizarPestanasA11y();
 });
 
 (async function iniciar(){

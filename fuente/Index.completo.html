@@ -1173,17 +1173,17 @@
 
 <div id="app">
   <!-- ====== PESTAÑAS ====== -->
-  <nav id="pestanas" aria-label="Herramientas de diseño">
-    <button class="activa" data-tab="tPlantillas" aria-controls="tPlantillas" aria-label="Plantillas: empieza con un diseño listo" title="Empieza con un diseño listo para adaptar"><span>▦</span>Plantillas</button>
-    <button data-tab="tTexto" aria-controls="tTexto" aria-label="Texto: títulos y escritos" title="Agrega títulos y textos"><span>T</span>Texto</button>
-    <button data-tab="tFormas" aria-controls="tFormas" aria-label="Formas: cuadros, círculos y líneas" title="Agrega cuadros, círculos y líneas"><span>◆</span>Formas</button>
-    <button data-tab="tElementos" aria-controls="tElementos" aria-label="Íconos y adornos" title="Busca íconos, stickers y adornos"><span>✿</span>Íconos</button>
-    <button data-tab="tDibujar" aria-controls="tDibujar" aria-label="Dibujo a mano" title="Dibuja formas y trazos a mano"><span>✎</span>Dibujar</button>
-    <button data-tab="tImagenes" aria-controls="tImagenes" aria-label="Fotos e imágenes" title="Agrega fotos desde tu equipo o busca imágenes"><span>🖼</span>Imágenes</button>
-    <button data-tab="tDiagramas" aria-controls="tDiagramas" aria-label="Mapas, diagramas y líneas del tiempo" title="Crea mapas mentales, diagramas y líneas del tiempo"><span>⎔</span>Mapas</button>
-    <button data-tab="tFondo" aria-controls="tFondo" aria-label="Fondo de la página" title="Cambia el color o la imagen de fondo"><span>▧</span>Fondo</button>
-    <button data-tab="tMarca" aria-controls="tMarca" aria-label="Colores y logo de mi marca" title="Guarda y usa tus colores y logo"><span>★</span>Mi marca</button>
-    <button data-tab="tWeb" aria-controls="tWeb" aria-label="Diseño de páginas web y aplicaciones" title="Diseña páginas web y pantallas de aplicaciones"><span>🖥</span>Web y apps</button>
+  <nav id="pestanas" role="tablist" aria-label="Herramientas de diseño" aria-orientation="vertical">
+    <button class="activa" type="button" role="tab" id="tabPlantillas" aria-selected="true" tabindex="0" data-tab="tPlantillas" aria-controls="tPlantillas" aria-label="Plantillas: empieza con un diseño listo" title="Empieza con un diseño listo para adaptar"><span>▦</span>Plantillas</button>
+    <button data-tab="tTexto" type="button" role="tab" id="tabTexto" tabindex="-1" aria-selected="false" aria-controls="tTexto" aria-label="Texto: títulos y escritos" title="Agrega títulos y textos"><span>T</span>Texto</button>
+    <button data-tab="tFormas" type="button" role="tab" id="tabFormas" tabindex="-1" aria-selected="false" aria-controls="tFormas" aria-label="Formas: cuadros, círculos y líneas" title="Agrega cuadros, círculos y líneas"><span>◆</span>Formas</button>
+    <button data-tab="tElementos" type="button" role="tab" id="tabElementos" tabindex="-1" aria-selected="false" aria-controls="tElementos" aria-label="Íconos y adornos" title="Busca íconos, stickers y adornos"><span>✿</span>Íconos</button>
+    <button data-tab="tDibujar" type="button" role="tab" id="tabDibujar" tabindex="-1" aria-selected="false" aria-controls="tDibujar" aria-label="Dibujo a mano" title="Dibuja formas y trazos a mano"><span>✎</span>Dibujar</button>
+    <button data-tab="tImagenes" type="button" role="tab" id="tabImagenes" tabindex="-1" aria-selected="false" aria-controls="tImagenes" aria-label="Fotos e imágenes" title="Agrega fotos desde tu equipo o busca imágenes"><span>🖼</span>Imágenes</button>
+    <button data-tab="tDiagramas" type="button" role="tab" id="tabDiagramas" tabindex="-1" aria-selected="false" aria-controls="tDiagramas" aria-label="Mapas, diagramas y líneas del tiempo" title="Crea mapas mentales, diagramas y líneas del tiempo"><span>⎔</span>Mapas</button>
+    <button data-tab="tFondo" type="button" role="tab" id="tabFondo" tabindex="-1" aria-selected="false" aria-controls="tFondo" aria-label="Fondo de la página" title="Cambia el color o la imagen de fondo"><span>▧</span>Fondo</button>
+    <button data-tab="tMarca" type="button" role="tab" id="tabMarca" tabindex="-1" aria-selected="false" aria-controls="tMarca" aria-label="Colores y logo de mi marca" title="Guarda y usa tus colores y logo"><span>★</span>Mi marca</button>
+    <button data-tab="tWeb" type="button" role="tab" id="tabWeb" tabindex="-1" aria-selected="false" aria-controls="tWeb" aria-label="Diseño de páginas web y aplicaciones" title="Diseña páginas web y pantallas de aplicaciones"><span>🖥</span>Web y apps</button>
   </nav>
 
   <!-- ====== PANEL LATERAL ====== -->
@@ -11241,6 +11241,7 @@ function cerrarPopRapido(op = {}){
   document.querySelectorAll('#barraRapida button.abierto, #bCapasFlot.abierto').forEach(b => b.classList.remove('abierto'));
   if (!op.porPestana){
     if (p.tabAntes){ const tb = $(p.tabAntes); tb && tb.classList.add('activa'); const bt = document.querySelector(`#pestanas button[data-tab="${p.tabAntes}"]`); bt && bt.classList.add('activa'); }
+    if (typeof sincronizarPestanasA11y === 'function') sincronizarPestanasA11y();
     if (p.lateralCerrado && esEscritorio() && interfazLimpia()) ponerLateral(false, false);
     else if (p.lateralCerrado && !esEscritorio() && typeof abrirLateral === 'function') abrirLateral(false);
   }
@@ -11257,6 +11258,7 @@ function abrirPopRapido(boton, titulo, contenido, op = {}){
   document.querySelectorAll('.panelTab').forEach(x => x.classList.remove('activa'));
   document.querySelectorAll('#pestanas button').forEach(x => x.classList.remove('activa'));
   $('tOpciones').classList.add('activa');
+  if (typeof sincronizarPestanasA11y === 'function') sincronizarPestanasA11y();
   if (esEscritorio()){ if ($('app').classList.contains('sinLateral')) ponerLateral(true, false); }
   else if (typeof abrirLateral === 'function') abrirLateral(true);
   $('opcTitulo').textContent = titulo;
@@ -15711,7 +15713,37 @@ document.addEventListener('keydown', e => {
 /* =========================================================
    PESTAÑAS E INICIO
    ========================================================= */
-document.querySelectorAll('#pestanas button[data-tab]').forEach(b => b.onclick = () => {   // solo las pestañas de panel (🎬 Video tiene su propio botón)
+const listaPestanas = $('pestanas');
+const botonesPestanas = [...document.querySelectorAll('#pestanas button[data-tab]')];
+function sincronizarPestanasA11y(){
+  const seleccionada = botonesPestanas.find(b => b.classList.contains('activa'));
+  botonesPestanas.forEach(b => {
+    const activa = b === seleccionada;
+    b.setAttribute('aria-selected', activa ? 'true' : 'false');
+    b.tabIndex = activa ? 0 : -1;
+    const panel = $(b.dataset.tab);
+    if (panel){ panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', b.id); }
+  });
+  if (listaPestanas) listaPestanas.setAttribute('aria-orientation', matchMedia('(max-width: 820px)').matches ? 'horizontal' : 'vertical');
+}
+sincronizarPestanasA11y();
+if (listaPestanas){
+  listaPestanas.addEventListener('keydown', e => {
+    const actual = botonesPestanas.indexOf(document.activeElement);
+    if (actual < 0) return;
+    let siguiente = actual;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') siguiente = (actual + 1) % botonesPestanas.length;
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') siguiente = (actual + botonesPestanas.length - 1) % botonesPestanas.length;
+    else if (e.key === 'Home') siguiente = 0;
+    else if (e.key === 'End') siguiente = botonesPestanas.length - 1;
+    else return;
+    e.preventDefault();
+    botonesPestanas[siguiente].focus();
+    botonesPestanas[siguiente].click();
+  });
+  addEventListener('resize', sincronizarPestanasA11y, { passive:true });
+}
+botonesPestanas.forEach(b => b.onclick = () => {   // solo las pestañas de panel (🎬 Video tiene su propio botón)
   if (esTel()){
     const abierto = $('lateral').classList.contains('abierto');
     if (abierto && b.classList.contains('activa')){ abrirLateral(false); return; }
@@ -15720,6 +15752,7 @@ document.querySelectorAll('#pestanas button[data-tab]').forEach(b => b.onclick =
   document.querySelectorAll('#pestanas button').forEach(x => x.classList.remove('activa'));
   document.querySelectorAll('.panelTab').forEach(x => x.classList.remove('activa'));
   b.classList.add('activa'); $(b.dataset.tab).classList.add('activa');
+  sincronizarPestanasA11y();
 });
 
 (async function iniciar(){
@@ -15738,6 +15771,7 @@ document.querySelectorAll('#pestanas button[data-tab]').forEach(b => b.onclick =
     ajustarZoom(); guardarEstado();
   }
 })();
+
 </script>
 </body>
 </html>
