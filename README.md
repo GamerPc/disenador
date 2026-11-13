@@ -262,6 +262,10 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - **Menos lecturas de Firestore** (plan gratis: 50,000 lecturas/día, 20,000 escrituras/día, 1 GiB): lo leído hace poco se reutiliza unos minutos; las actividades y exámenes que ya cerraron guardan su conteo de entregas; los pendientes del alumno se guardan 10 min. En un grupo de 30 alumnos con 10 actividades: abrir el grupo de nuevo pasó de ~450 a ~16 lecturas, y abrir la app como alumno de ~28 a ~2. El grupo muestra cuánto espacio ocupan sus trabajos.
 - **Reglas nuevas**: `buzon`, `auxSolicitudes`, `inicios`, `esMaestro()` con auxiliares, borrar partes de entregas (maestro) y `abiertas` protegido → volver a publicar `firestore.rules`.
 
+## v65: página de inicio completa
+- `91-pantalla-de-inicio.js` ahora es una página completa antes del diseñador (ya no una ventana encima): encabezado con Sencillo/Completo, Abrir, Mi escuela e «Ir al diseñador»; el buscador «¿Qué quieres crear hoy?» (con dictado) filtra en vivo la **galería de todas las plantillas** con su vista previa, por categorías; «Empieza en blanco» con tamaños; atajos; y «Tu último diseño» para seguir donde te quedaste.
+- Si ya hay un diseño y eliges una plantilla o un tamaño nuevo, pregunta una sola vez antes de cambiarlo. La app abre siempre en esta página (salvo si se llega por un enlace).
+
 ## v64: modo sencillo para todas las edades
 - `92-modo-sencillo.js`: dos modos. **Sencillo** (para quien llega nuevo: niños, adultos mayores, principiantes) esconde lo avanzado (Mi marca, Web y apps, Video, Equipo, Capas, notas, diapositivas, conectores, animación, posición exacta…), pone el nombre escrito debajo de cada botón, usa palabras fáciles (Figuras, Stickers, Fotos, Descargar) y muestra abajo una ayudita que dice qué hacer en cada momento. **Completo** es la app de siempre, para quien ya diseña. Quien ya usaba la app sigue en el completo.
 - Se cambia con el botón «😊 Sencillo / 🎨 Completo» de la barra de arriba, en Archivo o en la pantalla de inicio. La ayudita se puede ocultar (✕) y volver a mostrar desde Archivo.

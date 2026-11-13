@@ -40,6 +40,7 @@ async function hacerVistas(){
       await pausaVista();
       it.vista = vistaDe(it.tam, it.crear);
       if (it.boton && it.vista) it.boton.querySelector('.mini').innerHTML = `<img src="${it.vista}" alt="">`;
+      if (it.botonInicio && it.vista){ const m = it.botonInicio.querySelector('.inTplMini'); if (m) m.innerHTML = `<img src="${it.vista}" alt="">`; }
     }
   } finally { haciendoVistas = false; }
 }

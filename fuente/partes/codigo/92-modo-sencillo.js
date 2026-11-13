@@ -57,16 +57,6 @@ function ponerModo(m, avisar = true){
     br.querySelectorAll('button[data-k]').forEach(x => { const t = ETIQUETAS_BR[x.dataset.k]; if (t && !x.querySelector('.etqS')){ const s = document.createElement('span'); s.className = 'etqS'; s.textContent = t; x.appendChild(s); } });
     const tam = br.querySelector('.tamBR'); if (tam && !tam.querySelector('.etqS')){ const s = document.createElement('span'); s.className = 'etqS'; s.textContent = 'Tamaño'; tam.appendChild(s); }
   }).observe(br, { childList:true });
-  // elegir el modo desde la pantalla de inicio
-  const pie = document.querySelector('#inicioApp .inHeroe');
-  if (pie){
-    const d = document.createElement('div'); d.className = 'inModo'; d.setAttribute('role', 'group'); d.setAttribute('aria-label', '¿Cómo quieres usar el Diseñador?');
-    d.innerHTML = `<span>¿Cómo lo quieres ver?</span>
-      <button type="button" data-modo="sencillo"><b>😊 Sencillo</b><small>Lo básico, botones grandes y ayuda paso a paso</small></button>
-      <button type="button" data-modo="completo"><b>🎨 Completo</b><small>Todas las herramientas, para quien ya diseña</small></button>`;
-    d.querySelectorAll('[data-modo]').forEach(x => x.onclick = () => ponerModo(x.dataset.modo));
-    pie.appendChild(d);
-  }
   // la ayudita de abajo
   const a = document.createElement('div'); a.id = 'ayudaS'; a.setAttribute('role', 'status'); a.setAttribute('aria-live', 'polite');
   a.innerHTML = '<span id="ayudaSTexto"></span><button type="button" id="ayudaSCerrar" aria-label="Ocultar la ayuda" title="Ocultar la ayuda">✕</button>';
