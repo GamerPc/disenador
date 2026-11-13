@@ -240,7 +240,14 @@
 
   // ---------- maestro ----------
   async function grupoMaestro(gid){
-    const gref = grupos().doc(gid), g = (await gref.get()).data(), titular = esTitular(g);
+    const gref = grupos().doc(gid), gsnap = await gref.get().catch(() => null);
+    // con las reglas privadas, quien ya no es auxiliar (o fue rechazado) no puede leer el grupo: le dejamos quitarlo de su lista
+    if (!gsnap || !gsnap.exists){
+      cuerpo().innerHTML = '<p class="hint" style="padding-top:0">Ya no tienes acceso a este grupo. Si es un error, pide al maestro titular el código actual.</p><button class="pb" id="escCancelarAux">Quitarlo de mi lista</button>';
+      $e('escCancelarAux').onclick = async () => { await misGrupos().doc(gid).delete().catch(() => {}); $e('escAtras').click(); };
+      return;
+    }
+    const g = gsnap.data(), titular = esTitular(g);
     if (!titular && !(g.auxiliares || []).includes(N.usuario.uid)){
       const sol = await gref.collection('auxSolicitudes').doc(N.usuario.uid).get().catch(() => null);
       cuerpo().innerHTML = sol && sol.exists ? `<p class="hint" style="padding-top:0">⏳ Pediste ser maestro(a) auxiliar de este grupo. En cuanto ${esc(g.maestroNombre || 'el maestro titular')} te apruebe, aquí verás todo.</p><button class="pb" id="escCancelarAux">Cancelar mi solicitud</button>`
