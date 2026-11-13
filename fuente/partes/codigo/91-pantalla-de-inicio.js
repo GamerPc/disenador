@@ -17,7 +17,8 @@ const INICIO_ATAJOS = [
   ['🧠', 'Mapa mental', () => abrirInicioPestana('tDiagramas')],
   ['🪄', 'Quitar fondo', () => abrirInicioPestana('tImagenes')],
   ['🔳', 'Código QR', () => abrirInicioPestana('tElementos')],
-  ['🎬', 'Video', () => { if (typeof irAlEstudioEV === 'function') irAlEstudioEV(); }]
+  ['🎬', 'Video', () => { if (typeof irAlEstudioEV === 'function') irAlEstudioEV(); }],
+  ['📉', 'Reducir un PDF', () => abrirReducirPDF()]
 ];
 // orden y nombre con dibujito de cada categoría en la página de inicio
 const INICIO_CATS = [

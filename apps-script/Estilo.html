@@ -1005,4 +1005,34 @@ html.letraGrande #ayudaS{font-size:17px}
   html.sencillo #pieZoom{display:none!important}}
 html.sencillo #barraSel [data-acc="bloquear"]{display:none}
 
+/* ---------- reducir el peso de un PDF ---------- */
+#mReducirPDF .caja{max-width:560px}
+#mReducirPDF .rpZona{display:flex;flex-direction:column;align-items:center;gap:4px;padding:22px 16px;border:2px dashed color-mix(in srgb,var(--morado) 55%,var(--borde));border-radius:16px;background:color-mix(in srgb,var(--morado) 6%,transparent);cursor:pointer;text-align:center}
+#mReducirPDF .rpZona:hover,#mReducirPDF .rpZona.encima{background:color-mix(in srgb,var(--morado) 14%,transparent);border-color:var(--morado)}
+#mReducirPDF .rpZona:focus-within{outline:3px solid var(--morado);outline-offset:2px}
+#mReducirPDF .rpIco{font-size:34px}
+#mReducirPDF .rpZona b{font-size:16px}
+#mReducirPDF .rpZona small{color:var(--suave);font-size:13px}
+#mReducirPDF .rpNiveles{border:0;margin:14px 0 4px;padding:0;display:grid;gap:8px}
+#mReducirPDF .rpNiveles legend{font-weight:700;font-size:14px;margin-bottom:8px;padding:0}
+#mReducirPDF .rpNiveles label{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--borde);border-radius:12px;cursor:pointer}
+#mReducirPDF .rpNiveles label:has(input:checked){border-color:var(--morado);background:color-mix(in srgb,var(--morado) 10%,transparent)}
+#mReducirPDF .rpNiveles input{width:18px;height:18px;accent-color:var(--morado);flex:none}
+#mReducirPDF .rpNiveles b{display:block;font-size:14px}
+#mReducirPDF .rpNiveles small{display:block;font-size:12.5px;color:var(--suave)}
+#mReducirPDF .rpLista{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+#mReducirPDF .rpLista:empty{display:none}
+#mReducirPDF .rpFila{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 12px;border:1px solid var(--borde);border-radius:12px}
+#mReducirPDF .rpNom{flex:1;min-width:0}
+#mReducirPDF .rpNom b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#mReducirPDF .rpNom small{display:block;font-size:13px;color:var(--suave);margin-top:2px}
+#mReducirPDF .rpNom small b{display:inline;color:var(--texto)}
+#mReducirPDF .rpMenos{display:inline-block;margin-left:4px;padding:1px 8px;border-radius:999px;background:color-mix(in srgb,#16a34a 18%,transparent);color:#15803d;font-weight:700;font-size:12px}
+html:not(.claro) #mReducirPDF .rpMenos{color:#4ade80}
+#mReducirPDF .rpNota{font-size:12px}
+#mReducirPDF .rpBarra{flex-basis:100%;height:6px;border-radius:99px;background:var(--hover);overflow:hidden}
+#mReducirPDF .rpBarra i{display:block;height:100%;width:0;background:var(--morado);transition:width .2s}
+#mReducirPDF .rpBajar{text-decoration:none;display:inline-flex;align-items:center}
+#mReducirPDF .rpError small{color:var(--rojo,#dc2626)}
+
 </style>
