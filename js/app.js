@@ -12187,6 +12187,7 @@ function listarHerramientasBuscables(){
   agregar('Presentar o proyectar', 'Muestra tus diapositivas en pantalla completa', 'exposición exposición diapositivas clase', () => abrirModal('mPresentar'));
   agregar('Buscar texto en el diseño', 'Encuentra y reemplaza palabras', 'buscar reemplazar texto', () => abrirBuscar());
   if (typeof abrirEscuela === 'function') agregar('Modo escuela', 'Grupos, tareas, actividades y entregas', 'maestro alumno clase escolar', () => abrirEscuela());
+  if (typeof abrirEditorFoto === 'function') agregar('Editar foto', 'Ajustes, filtros, pinceles y fondo con IA (toca una foto primero)', 'photoshop retocar foto filtro brillo borrar mancha desenfocar pixelar ocultar cara mejorar fondo borroso', () => abrirEditorFoto());
   if (typeof abrirReducirPDF === 'function') agregar('Reducir el peso de un PDF', 'Hazlo más ligero sin cambiar las letras', 'comprimir pdf pesado ligero whatsapp correo tamaño archivo bajar peso optimizar', () => abrirReducirPDF());
   if (typeof irAlEstudioEV === 'function') agregar('Estudio de video', 'Graba, edita y prepara videos', 'cámara grabar música reels mp4', () => irAlEstudioEV());
   return items;
@@ -12804,6 +12805,397 @@ function abrirReducirPDF(){
   if (!('CompressionStream' in window)) return toast('Tu navegador es antiguo para esta herramienta. Actualízalo (Chrome, Edge, Safari o Firefox recientes).');
   abrirModal('mReducirPDF'); cargarPdfLib().catch(() => {});
 }
+/* =========================================================
+   EDITOR DE FOTOS (estilo Photoshop / Canva) — todo en el navegador
+   Ajustes (exposición, contraste, temperatura, luces, sombras, nitidez, viñeta, grano y
+   «mejorar automáticamente»), filtros de un toque, pinceles (borrar, restaurar, desenfocar,
+   pixelar y corrector para quitar manchas u objetos pequeños) y fondo con IA (desenfocar,
+   cambiar de color o quitar). Se trabaja sobre una copia chica para que vaya rápido y al
+   aplicar se repite todo sobre la foto en su tamaño real.
+   ========================================================= */
+const AJUSTES_FOTO = [
+  ['exp', 'Exposición', -100, 100], ['con', 'Contraste', -100, 100], ['sat', 'Saturación', -100, 100], ['tem', 'Temperatura', -100, 100],
+  ['luz', 'Luces', -100, 100], ['som', 'Sombras', -100, 100], ['nit', 'Nitidez', 0, 100], ['vin', 'Viñeta', 0, 100], ['gra', 'Grano', 0, 100]
+];
+const AJ0 = () => ({ exp:0, con:0, sat:0, tem:0, luz:0, som:0, nit:0, vin:0, gra:0, modo:'', duo:['#1e3a8a', '#fbbf24'] });
+// filtros de un toque: [nombre, ajustes]
+const FILTROS_FOTO = [
+  ['Original', {}], ['Vívido', { con:18, sat:35, nit:20 }], ['Cálido', { tem:35, sat:10, exp:4 }], ['Frío', { tem:-35, con:8 }],
+  ['Luminoso', { exp:18, som:30, con:-6 }], ['Dramático', { con:45, luz:-30, som:-10, sat:-15, vin:45 }], ['Vintage', { tem:22, con:-14, sat:-28, gra:28, vin:35, modo:'' }],
+  ['Blanco y negro', { modo:'gris', con:20 }], ['B/N intenso', { modo:'gris', con:55, vin:40, gra:15 }], ['Sepia', { modo:'sepia', con:5 }],
+  ['Duotono', { modo:'duo', con:15 }], ['Película', { con:12, sat:-10, tem:10, gra:40, luz:-20 }]
+];
+const PINCELES_FOTO = [
+  ['borrar', '🧽', 'Borrar', 'Vuelve transparente lo que pintes', 'rgba(239,68,68,.45)'],
+  ['restaurar', '↩', 'Restaurar', 'Regresa lo que borraste', 'rgba(34,197,94,.45)'],
+  ['corrector', '🩹', 'Corrector', 'Quita manchas, granitos o cosas pequeñas', 'rgba(250,204,21,.5)'],
+  ['desenfocar', '💧', 'Desenfocar', 'Para caras o datos que no deben verse', 'rgba(59,130,246,.45)'],
+  ['pixelar', '▦', 'Pixelar', 'Cuadritos encima de lo que quieras ocultar', 'rgba(168,85,247,.45)']
+];
+const ef = { img:null, fuente:null, w:0, h:0, aj:AJ0(), trazos:[], rehacer:[], fondo:null, mascaraIA:null, herr:'borrar', radio:0.04, suave:0.6, tab:'ajustar', prev:null, cache:null };
+// ---------- procesar píxeles ----------
+function ajustarPixeles(id, a, w, h){
+  const d = id.data, n = w * h;
+  const kExp = a.exp * 1.1, kCon = a.con >= 0 ? 1 + a.con / 100 * 1.6 : 1 + a.con / 100, kSat = 1 + a.sat / 100;
+  const kTem = a.tem * 0.28, kLuz = a.luz * 0.7, kSom = a.som * 0.7, kGra = a.gra * 0.45, kVin = a.vin / 100;
+  const [d1, d2] = (a.duo || ['#000', '#fff']).map(c => { const x = parseInt(c.slice(1).padEnd(6, '0'), 16); return [x >> 16 & 255, x >> 8 & 255, x & 255]; });
+  const cx = w / 2, cy = h / 2, rmax = Math.hypot(cx, cy);
+  for (let i = 0; i < n; i++){
+    const k = i * 4; let r = d[k], g = d[k + 1], b = d[k + 2];
+    r += kExp + kTem; g += kExp; b += kExp - kTem;
+    if (kLuz || kSom){ const L = (0.299 * r + 0.587 * g + 0.114 * b) / 255, l2 = Math.min(1, Math.max(0, L)), dl = kSom * (1 - l2) * (1 - l2) + kLuz * l2 * l2; r += dl; g += dl; b += dl; }
+    r = (r - 128) * kCon + 128; g = (g - 128) * kCon + 128; b = (b - 128) * kCon + 128;
+    const Y = 0.299 * r + 0.587 * g + 0.114 * b;
+    if (a.modo === 'gris'){ r = g = b = Y; }
+    else if (a.modo === 'sepia'){ r = Y * 1.07 + 20; g = Y * 0.95 + 8; b = Y * 0.78 - 8; }
+    else if (a.modo === 'duo'){ const t = Math.min(1, Math.max(0, Y / 255)); r = d1[0] + (d2[0] - d1[0]) * t; g = d1[1] + (d2[1] - d1[1]) * t; b = d1[2] + (d2[2] - d1[2]) * t; }
+    else if (kSat !== 1){ r = Y + (r - Y) * kSat; g = Y + (g - Y) * kSat; b = Y + (b - Y) * kSat; }
+    if (kVin){ const x = i % w, y = (i / w) | 0, t = Math.hypot(x - cx, y - cy) / rmax, v = 1 - kVin * Math.max(0, (t - 0.35) / 0.65) ** 1.6 * 0.85; r *= v; g *= v; b *= v; }
+    if (kGra){ const z = (Math.random() - 0.5) * kGra; r += z; g += z; b += z; }
+    d[k] = r; d[k + 1] = g; d[k + 2] = b;          // Uint8ClampedArray recorta a 0-255 solo
+  }
+  if (a.nit) enfocar(id, w, h, a.nit / 100);
+}
+function enfocar(id, w, h, cant){
+  const d = id.data, o = new Uint8ClampedArray(d), k = cant * 1.2;
+  for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++){
+    const i = (y * w + x) * 4;
+    for (let c = 0; c < 3; c++){ const v = o[i + c], m = (o[i - 4 + c] + o[i + 4 + c] + o[i - w * 4 + c] + o[i + w * 4 + c]) / 4; d[i + c] = v + (v - m) * k; }
+  }
+}
+// «mejorar automáticamente»: estira el contraste, corrige el color y da un poco de vida
+function ajusteAutomatico(id){
+  const d = id.data, hist = new Uint32Array(256); let sr = 0, sg = 0, sb = 0, n = 0;
+  for (let i = 0; i < d.length; i += 16){ if (d[i + 3] < 128) continue; const L = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) | 0; hist[L]++; sr += d[i]; sg += d[i + 1]; sb += d[i + 2]; n++; }
+  if (!n) return AJ0();
+  const perc = p => { let s = 0; for (let v = 0; v < 256; v++){ s += hist[v]; if (s >= n * p) return v; } return 255; };
+  const lo = perc(0.01), hi = perc(0.99), med = perc(0.5);
+  const a = AJ0();
+  a.con = Math.max(-10, Math.min(45, Math.round((255 / Math.max(40, hi - lo) - 1) * 60)));
+  a.exp = Math.max(-35, Math.min(40, Math.round((128 - med) * 0.35)));
+  a.tem = Math.max(-40, Math.min(40, Math.round(((sb - sr) / n) * 0.6)));
+  a.som = lo > 30 ? 0 : 15; a.luz = hi < 235 ? 0 : -12; a.sat = 12; a.nit = 15;
+  return a;
+}
+// ---------- máscaras de pincel ----------
+function mascaraTrazo(t, w, h){
+  const m = document.createElement('canvas'); m.width = w; m.height = h;
+  const g = m.getContext('2d'), r = Math.max(1.5, t.r * w), suave = t.s;
+  const punto = (x, y) => { const gr = g.createRadialGradient(x, y, r * (1 - suave), x, y, r); gr.addColorStop(0, '#fff'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); };
+  let ant = null;
+  t.pts.forEach(([px, py]) => {
+    const x = px * w, y = py * h;
+    if (ant){ const dist = Math.hypot(x - ant[0], y - ant[1]), paso = Math.max(1, r * 0.25); for (let s = paso; s < dist; s += paso) punto(ant[0] + (x - ant[0]) * s / dist, ant[1] + (y - ant[1]) * s / dist); }
+    punto(x, y); ant = [x, y];
+  });
+  return m;
+}
+function cajaTrazo(t, w, h){
+  const xs = t.pts.map(p => p[0] * w), ys = t.pts.map(p => p[1] * h), r = t.r * w + 2;
+  const x0 = Math.max(0, Math.floor(Math.min(...xs) - r)), y0 = Math.max(0, Math.floor(Math.min(...ys) - r));
+  return [x0, y0, Math.min(w, Math.ceil(Math.max(...xs) + r)) - x0, Math.min(h, Math.ceil(Math.max(...ys) + r)) - y0];
+}
+// desenfoque rápido que funciona en todos los navegadores: achicar y volver a agrandar
+function desenfocado(src, w, h, cuanto){
+  const f = Math.max(2, cuanto), sw = Math.max(1, Math.round(w / f)), sh = Math.max(1, Math.round(h / f));
+  const a = document.createElement('canvas'); a.width = sw; a.height = sh; const ga = a.getContext('2d'); ga.imageSmoothingQuality = 'high'; ga.drawImage(src, 0, 0, sw, sh);
+  const b = document.createElement('canvas'); b.width = w; b.height = h; const gb = b.getContext('2d'); gb.imageSmoothingQuality = 'high'; gb.drawImage(a, 0, 0, w, h);
+  return b;
+}
+function pixelado(src, w, h, bloque){
+  const sw = Math.max(1, Math.round(w / bloque)), sh = Math.max(1, Math.round(h / bloque));
+  const a = document.createElement('canvas'); a.width = sw; a.height = sh; a.getContext('2d').drawImage(src, 0, 0, sw, sh);
+  const b = document.createElement('canvas'); b.width = w; b.height = h; const gb = b.getContext('2d'); gb.imageSmoothingEnabled = false; gb.drawImage(a, 0, 0, w, h);
+  return b;
+}
+function ponerConMascara(dest, capa, masc){
+  const w = dest.width, h = dest.height, t = document.createElement('canvas'); t.width = w; t.height = h;
+  const g = t.getContext('2d'); g.drawImage(capa, 0, 0); g.globalCompositeOperation = 'destination-in'; g.drawImage(masc, 0, 0, w, h);
+  dest.getContext('2d').drawImage(t, 0, 0);
+}
+// corrector: rellena lo pintado con lo que hay alrededor (difusión), con un poco de textura
+function corregir(cv, t){
+  const w = cv.width, h = cv.height, g = cv.getContext('2d', { willReadFrequently:true });
+  const [x0, y0, bw, bh] = cajaTrazo(t, w, h), mx = Math.max(4, Math.round(t.r * w * 1.2));
+  const X = Math.max(0, x0 - mx), Y = Math.max(0, y0 - mx), W2 = Math.min(w, x0 + bw + mx) - X, H2 = Math.min(h, y0 + bh + mx) - Y;
+  if (W2 < 3 || H2 < 3) return;
+  const id = g.getImageData(X, Y, W2, H2), d = id.data;
+  const mm = mascaraTrazo(t, w, h).getContext('2d').getImageData(X, Y, W2, H2).data;
+  const sel = new Uint8Array(W2 * H2); let haySel = false;
+  for (let i = 0; i < W2 * H2; i++) if (mm[i * 4 + 3] > 40){ sel[i] = 1; haySel = true; }
+  if (!haySel) return;
+  const f = new Float32Array(W2 * H2 * 3);
+  for (let i = 0; i < W2 * H2; i++){ f[i * 3] = d[i * 4]; f[i * 3 + 1] = d[i * 4 + 1]; f[i * 3 + 2] = d[i * 4 + 2]; }
+  // empieza con el promedio del borde para que converja rápido
+  let s = [0, 0, 0], c = 0;
+  for (let y = 0; y < H2; y++) for (let x = 0; x < W2; x++){ const i = y * W2 + x; if (!sel[i] && ((x && sel[i - 1]) || (x < W2 - 1 && sel[i + 1]) || (y && sel[i - W2]) || (y < H2 - 1 && sel[i + W2]))){ s[0] += f[i * 3]; s[1] += f[i * 3 + 1]; s[2] += f[i * 3 + 2]; c++; } }
+  if (c) for (let i = 0; i < W2 * H2; i++) if (sel[i]){ f[i * 3] = s[0] / c; f[i * 3 + 1] = s[1] / c; f[i * 3 + 2] = s[2] / c; }
+  const vueltas = Math.min(500, Math.max(80, Math.round(t.r * w * 4)));
+  for (let it = 0; it < vueltas; it++) for (let y = 1; y < H2 - 1; y++) for (let x = 1; x < W2 - 1; x++){
+    const i = y * W2 + x; if (!sel[i]) continue;
+    for (let k = 0; k < 3; k++) f[i * 3 + k] = (f[(i - 1) * 3 + k] + f[(i + 1) * 3 + k] + f[(i - W2) * 3 + k] + f[(i + W2) * 3 + k]) / 4;
+  }
+  // un poquito de textura de alrededor para que no se vea liso
+  let ruido = 0, cr = 0; for (let i = W2 + 1; i < W2 * H2 - W2 - 1; i++) if (!sel[i] && !sel[i + 1]){ ruido += Math.abs(d[i * 4] - d[(i + 1) * 4]); cr++; }
+  const amp = cr ? Math.min(14, ruido / cr) : 0;
+  for (let i = 0; i < W2 * H2; i++){
+    const a = mm[i * 4 + 3] / 255; if (!a) continue; const z = (Math.random() - 0.5) * amp;
+    for (let k = 0; k < 3; k++) d[i * 4 + k] = d[i * 4 + k] * (1 - a) + (f[i * 3 + k] + z) * a;
+  }
+  g.putImageData(id, X, Y);
+}
+// ---------- dibujar todo en un tamaño dado ----------
+function renderFoto(w, h, conAjustes = true){
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const g = cv.getContext('2d', { willReadFrequently:true }); g.imageSmoothingQuality = 'high'; g.drawImage(ef.fuente, 0, 0, w, h);
+  if (!conAjustes) return cv;
+  const a = ef.aj;
+  if (a.exp || a.con || a.sat || a.tem || a.luz || a.som || a.nit || a.vin || a.gra || a.modo){ const id = g.getImageData(0, 0, w, h); ajustarPixeles(id, a, w, h); g.putImageData(id, 0, 0); }
+  let alfa = null;
+  for (const t of ef.trazos){
+    if (t.h === 'borrar' || t.h === 'restaurar'){
+      if (!alfa){ alfa = document.createElement('canvas'); alfa.width = w; alfa.height = h; const ga = alfa.getContext('2d'); ga.fillStyle = '#fff'; ga.fillRect(0, 0, w, h); }
+      const ga = alfa.getContext('2d'); ga.globalCompositeOperation = t.h === 'borrar' ? 'destination-out' : 'source-over'; ga.drawImage(mascaraTrazo(t, w, h), 0, 0); ga.globalCompositeOperation = 'source-over';
+    } else if (t.h === 'corrector') corregir(cv, t);
+    else {
+      const m = mascaraTrazo(t, w, h), base = document.createElement('canvas'); base.width = w; base.height = h; base.getContext('2d').drawImage(cv, 0, 0);
+      const capa = t.h === 'desenfocar' ? desenfocado(base, w, h, Math.max(4, t.r * w * 0.6)) : pixelado(base, w, h, Math.max(6, t.r * w * 0.35));
+      ponerConMascara(cv, capa, m);
+    }
+  }
+  // fondo con IA
+  if (ef.fondo && ef.mascaraIA){
+    const suj = document.createElement('canvas'); suj.width = w; suj.height = h; const gs = suj.getContext('2d');
+    gs.drawImage(cv, 0, 0); gs.globalCompositeOperation = 'destination-in'; gs.imageSmoothingQuality = 'high'; gs.drawImage(ef.mascaraIA, 0, 0, w, h);
+    if (ef.fondo.tipo === 'quitar'){ g.clearRect(0, 0, w, h); }
+    else if (ef.fondo.tipo === 'color'){ g.globalCompositeOperation = 'source-over'; g.fillStyle = ef.fondo.color; g.fillRect(0, 0, w, h); }
+    else { const b = desenfocado(cv, w, h, Math.max(3, ef.fondo.cuanto / 100 * Math.max(w, h) / 40)); g.clearRect(0, 0, w, h); g.drawImage(b, 0, 0); }
+    g.drawImage(suj, 0, 0);
+  }
+  if (alfa){ g.globalCompositeOperation = 'destination-in'; g.drawImage(alfa, 0, 0); g.globalCompositeOperation = 'source-over'; }
+  return cv;
+}
+function usaTransparencia(){ return ef.trazos.some(t => t.h === 'borrar') || (ef.fondo && ef.fondo.tipo === 'quitar') || ef.transparente; }
+// ---------- ventana ----------
+(function(){
+  const d = document.createElement('div'); d.id = 'editorFoto'; d.hidden = true; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-labelledby', 'efTitulo');
+  d.innerHTML = `<header class="efCab">
+      <button type="button" class="efBtn" id="efCancelar">✕ <span>Cancelar</span></button>
+      <h2 id="efTitulo">Editar foto</h2>
+      <div class="efAcc">
+        <button type="button" class="efBtn" id="efDeshacer" title="Deshacer" aria-label="Deshacer">↶</button>
+        <button type="button" class="efBtn" id="efRehacer" title="Rehacer" aria-label="Rehacer">↷</button>
+        <button type="button" class="efBtn" id="efComparar" title="Mantén presionado para ver la original">👁 <span>Comparar</span></button>
+        <button type="button" class="efBtn efListo" id="efAplicar">✓ Aplicar</button>
+      </div>
+    </header>
+    <div class="efCuerpo">
+      <div class="efEscena" id="efEscena"><div class="efLienzo" id="efLienzo"><canvas id="efVista"></canvas><canvas id="efTrazo"></canvas><div class="efPunta" id="efPunta" hidden></div></div></div>
+      <aside class="efPanel">
+        <div class="efTabs" role="tablist">
+          <button type="button" role="tab" data-t="ajustar">🎚 Ajustar</button><button type="button" role="tab" data-t="filtros">🎨 Filtros</button>
+          <button type="button" role="tab" data-t="pinceles">🖌 Pinceles</button><button type="button" role="tab" data-t="fondo">🪄 Fondo</button>
+        </div>
+        <div class="efSec" data-s="ajustar">
+          <button type="button" class="efGrande" id="efAuto">✨ Mejorar automáticamente</button>
+          ${AJUSTES_FOTO.map(([k, n, mi, ma]) => `<label class="efDesl"><span>${n}<output id="efV_${k}">0</output></span><input type="range" min="${mi}" max="${ma}" value="0" data-aj="${k}" aria-label="${n}"></label>`).join('')}
+          <button type="button" class="efLink" id="efReiniciar">Quitar todos los ajustes</button>
+        </div>
+        <div class="efSec" data-s="filtros"><div class="efFiltros" id="efFiltros"></div>
+          <div class="efDuo" id="efDuo" hidden><span>Colores del duotono</span><input type="color" id="efDuo1" value="#1e3a8a" aria-label="Color de las sombras"><input type="color" id="efDuo2" value="#fbbf24" aria-label="Color de las luces"></div>
+        </div>
+        <div class="efSec" data-s="pinceles">
+          <div class="efPinceles">${PINCELES_FOTO.map(([k, ico, n, desc]) => `<button type="button" data-p="${k}"><span class="efIco" aria-hidden="true">${ico}</span><span><b>${n}</b><small>${desc}</small></span></button>`).join('')}</div>
+          <label class="efDesl"><span>Tamaño del pincel<output id="efVTam"></output></span><input type="range" id="efTam" min="1" max="25" value="4"></label>
+          <label class="efDesl"><span>Bordes suaves<output id="efVSuave"></output></span><input type="range" id="efSuave" min="0" max="100" value="60"></label>
+          <p class="efAyuda">Pinta sobre la foto con el dedo o el ratón. Lo que pintas se marca de color y se aplica al soltar.</p>
+        </div>
+        <div class="efSec" data-s="fondo">
+          <p class="efAyuda">La IA encuentra a la persona, mascota u objeto principal y cambia solo lo de atrás. La primera vez descarga unos 85 MB.</p>
+          <div class="efPinceles">
+            <button type="button" data-f="desenfocar"><span class="efIco" aria-hidden="true">💧</span><span><b>Desenfocar el fondo</b><small>Como cámara profesional</small></span></button>
+            <button type="button" data-f="color"><span class="efIco" aria-hidden="true">🎨</span><span><b>Fondo de color</b><small>Para fotos de credencial o productos</small></span></button>
+            <button type="button" data-f="quitar"><span class="efIco" aria-hidden="true">✂</span><span><b>Quitar el fondo</b><small>Queda transparente</small></span></button>
+            <button type="button" data-f="ninguno"><span class="efIco" aria-hidden="true">↺</span><span><b>Fondo original</b><small>Deshace el cambio de fondo</small></span></button>
+          </div>
+          <label class="efDesl" id="efFondoDes" hidden><span>Cuánto desenfocar<output id="efVFondo">50</output></span><input type="range" id="efFondoCuanto" min="10" max="100" value="50"></label>
+          <label class="efColorF" id="efFondoCol" hidden>Color del fondo <input type="color" id="efFondoColor" value="#ffffff"></label>
+        </div>
+      </aside>
+    </div>`;
+  document.body.appendChild(d);
+  const vista = $('efVista'), trazoCv = $('efTrazo');
+  let pintando = null, timer = 0;
+  const pintar = () => { cancelAnimationFrame(timer); timer = requestAnimationFrame(() => {
+    const cv = renderFoto(ef.prev.w, ef.prev.h); const g = vista.getContext('2d'); g.clearRect(0, 0, vista.width, vista.height); g.drawImage(cv, 0, 0); botonesHist(); }); };
+  ef.pintar = pintar;
+  const botonesHist = () => { $('efDeshacer').disabled = !ef.hist.length; $('efRehacer').disabled = !ef.rehacer.length; };
+  const recordar = () => { ef.hist.push(JSON.stringify({ aj:ef.aj, trazos:ef.trazos, fondo:ef.fondo })); if (ef.hist.length > 60) ef.hist.shift(); ef.rehacer = []; };
+  const volver = (de, a) => { if (!de.length) return; a.push(JSON.stringify({ aj:ef.aj, trazos:ef.trazos, fondo:ef.fondo })); const s = JSON.parse(de.pop()); ef.aj = s.aj; ef.trazos = s.trazos; ef.fondo = s.fondo; pintarControles(); pintar(); };
+  $('efDeshacer').onclick = () => volver(ef.hist, ef.rehacer);
+  $('efRehacer').onclick = () => volver(ef.rehacer, ef.hist);
+  function pintarControles(){
+    d.querySelectorAll('[data-aj]').forEach(i => { i.value = ef.aj[i.dataset.aj]; $('efV_' + i.dataset.aj).textContent = ef.aj[i.dataset.aj]; });
+    $('efDuo').hidden = ef.aj.modo !== 'duo'; $('efDuo1').value = ef.aj.duo[0]; $('efDuo2').value = ef.aj.duo[1];
+    d.querySelectorAll('[data-f]').forEach(b => b.setAttribute('aria-pressed', (ef.fondo ? ef.fondo.tipo : 'ninguno') === b.dataset.f ? 'true' : 'false'));
+    $('efFondoDes').hidden = !(ef.fondo && ef.fondo.tipo === 'desenfocar'); $('efFondoCol').hidden = !(ef.fondo && ef.fondo.tipo === 'color');
+  }
+  ef.pintarControles = pintarControles;
+  // pestañas
+  const ponerTab = t => { ef.tab = t; d.querySelectorAll('.efTabs [data-t]').forEach(b => b.setAttribute('aria-selected', b.dataset.t === t ? 'true' : 'false')); d.querySelectorAll('.efSec').forEach(s => s.hidden = s.dataset.s !== t); $('efEscena').classList.toggle('conPincel', t === 'pinceles'); if (t === 'filtros') miniFiltros(); };
+  ef.ponerTab = ponerTab;
+  d.querySelectorAll('.efTabs [data-t]').forEach(b => b.onclick = () => ponerTab(b.dataset.t));
+  // ajustes
+  d.querySelectorAll('[data-aj]').forEach(i => {
+    i.addEventListener('pointerdown', () => recordar()); i.addEventListener('keydown', () => recordar(), { once:false });
+    i.oninput = () => { ef.aj[i.dataset.aj] = +i.value; $('efV_' + i.dataset.aj).textContent = i.value; pintar(); };
+  });
+  $('efAuto').onclick = () => { recordar(); const id = renderFoto(Math.min(400, ef.prev.w), Math.min(400, ef.prev.h), false).getContext('2d').getImageData(0, 0, Math.min(400, ef.prev.w), Math.min(400, ef.prev.h)); ef.aj = { ...ajusteAutomatico(id), duo:ef.aj.duo }; pintarControles(); pintar(); toast('✨ Foto mejorada. Puedes afinar cada ajuste.'); };
+  $('efReiniciar').onclick = () => { recordar(); ef.aj = { ...AJ0(), duo:ef.aj.duo }; pintarControles(); pintar(); };
+  // filtros con su vista previa
+  function miniFiltros(){
+    const cont = $('efFiltros'); if (cont.dataset.listo === ef.id) return; cont.dataset.listo = ef.id; cont.innerHTML = '';
+    const k = 110 / Math.max(ef.w, ef.h), mw = Math.max(1, Math.round(ef.w * k)), mh = Math.max(1, Math.round(ef.h * k));
+    const base = document.createElement('canvas'); base.width = mw; base.height = mh; base.getContext('2d').drawImage(ef.fuente, 0, 0, mw, mh);
+    FILTROS_FOTO.forEach(([n, a]) => {
+      const b = document.createElement('button'); b.type = 'button';
+      const c = document.createElement('canvas'); c.width = mw; c.height = mh; const g = c.getContext('2d'); g.drawImage(base, 0, 0);
+      const aj = { ...AJ0(), ...a, duo:ef.aj.duo }; if (n !== 'Original'){ const id = g.getImageData(0, 0, mw, mh); ajustarPixeles(id, aj, mw, mh); g.putImageData(id, 0, 0); }
+      b.appendChild(c); b.insertAdjacentHTML('beforeend', `<span>${esc(n)}</span>`);
+      b.onclick = () => { recordar(); ef.aj = aj; pintarControles(); pintar(); };
+      cont.appendChild(b);
+    });
+  }
+  [$('efDuo1'), $('efDuo2')].forEach((x, i) => x.oninput = () => { ef.aj.duo = [$('efDuo1').value, $('efDuo2').value]; pintar(); });
+  // pinceles
+  const ponerPincel = p => { ef.herr = p; d.querySelectorAll('[data-p]').forEach(b => b.setAttribute('aria-pressed', b.dataset.p === p ? 'true' : 'false')); };
+  d.querySelectorAll('[data-p]').forEach(b => b.onclick = () => ponerPincel(b.dataset.p));
+  const tam = () => { ef.radio = +$('efTam').value / 100; $('efVTam').textContent = $('efTam').value; ef.suave = +$('efSuave').value / 100; $('efVSuave').textContent = $('efSuave').value + '%'; };
+  $('efTam').oninput = $('efSuave').oninput = tam; tam(); ponerPincel('borrar');
+  const punto = e => { const r = vista.getBoundingClientRect(); return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height]; };
+  const mostrarPunta = e => {
+    const p = $('efPunta'); if (ef.tab !== 'pinceles'){ p.hidden = true; return; }
+    const r = vista.getBoundingClientRect(), diam = ef.radio * r.width * 2;
+    p.hidden = false; p.style.width = p.style.height = diam + 'px'; p.style.left = (e.clientX - r.left) + 'px'; p.style.top = (e.clientY - r.top) + 'px';
+  };
+  const marcar = () => { const g = trazoCv.getContext('2d'); g.clearRect(0, 0, trazoCv.width, trazoCv.height); if (!pintando) return;
+    const m = mascaraTrazo(pintando, trazoCv.width, trazoCv.height); g.drawImage(m, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = PINCELES_FOTO.find(p => p[0] === pintando.h)[4]; g.fillRect(0, 0, trazoCv.width, trazoCv.height); g.globalCompositeOperation = 'source-over'; };
+  trazoCv.addEventListener('pointerdown', e => {
+    if (ef.tab !== 'pinceles') return; e.preventDefault(); trazoCv.setPointerCapture(e.pointerId);
+    pintando = { h:ef.herr, r:ef.radio, s:ef.suave, pts:[punto(e)] }; marcar(); mostrarPunta(e);
+  });
+  trazoCv.addEventListener('pointermove', e => { mostrarPunta(e); if (!pintando) return; pintando.pts.push(punto(e)); marcar(); });
+  const soltar = () => {
+    if (!pintando) return; const t = pintando; pintando = null;
+    t.pts = t.pts.map(([x, y]) => [Math.round(x * 10000) / 10000, Math.round(y * 10000) / 10000]);
+    recordar(); ef.trazos.push(t); marcar(); pintar();
+  };
+  trazoCv.addEventListener('pointerup', soltar); trazoCv.addEventListener('pointercancel', soltar);
+  trazoCv.addEventListener('pointerleave', () => { $('efPunta').hidden = true; });
+  // fondo con IA
+  d.querySelectorAll('[data-f]').forEach(b => b.onclick = async () => {
+    const tipo = b.dataset.f;
+    if (tipo === 'ninguno'){ recordar(); ef.fondo = null; pintarControles(); pintar(); return; }
+    if (!ef.mascaraIA){
+      if (typeof cargarSegmentador !== 'function') return toast('La IA no está disponible en esta versión');
+      try {
+        const seg = await cargarSegmentador(); avisoProgresoIA('Buscando lo principal de la foto…', 92);
+        const k = Math.min(1, 1600 / Math.max(ef.w, ef.h)), c = renderFoto(Math.round(ef.w * k), Math.round(ef.h * k), false);
+        const blob = await new Promise(ok => c.toBlob(ok, 'image/png')), url = URL.createObjectURL(blob);
+        let sal; try { sal = await seg(url); } finally { URL.revokeObjectURL(url); }
+        const m = (Array.isArray(sal) ? sal[0] : sal).mask, mc = document.createElement('canvas'); mc.width = m.width; mc.height = m.height;
+        const mg = mc.getContext('2d'), md = mg.createImageData(m.width, m.height), ch = m.channels || 1;
+        for (let i = 0, j = 0; i < m.width * m.height; i++, j += ch){ md.data[i * 4] = md.data[i * 4 + 1] = md.data[i * 4 + 2] = 255; md.data[i * 4 + 3] = m.data[j]; }
+        mg.putImageData(md, 0, 0); ef.mascaraIA = mc; avisoProgresoIA(null);
+      } catch (e) { avisoProgresoIA(null); return toast('No se pudo usar la IA: ' + ((e && e.message) || e)); }
+    }
+    recordar();
+    ef.fondo = tipo === 'color' ? { tipo, color:$('efFondoColor').value } : tipo === 'desenfocar' ? { tipo, cuanto:+$('efFondoCuanto').value } : { tipo };
+    pintarControles(); pintar();
+  });
+  $('efFondoCuanto').addEventListener('pointerdown', recordar);
+  $('efFondoCuanto').oninput = () => { if (ef.fondo) ef.fondo.cuanto = +$('efFondoCuanto').value; $('efVFondo').textContent = $('efFondoCuanto').value; pintar(); };
+  $('efFondoColor').oninput = () => { if (ef.fondo) ef.fondo.color = $('efFondoColor').value; pintar(); };
+  // comparar con la original
+  const ver = orig => { const g = vista.getContext('2d'); g.clearRect(0, 0, vista.width, vista.height); g.drawImage(orig ? renderFoto(ef.prev.w, ef.prev.h, false) : renderFoto(ef.prev.w, ef.prev.h), 0, 0); };
+  const cmp = $('efComparar');
+  cmp.addEventListener('pointerdown', () => ver(true)); ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => cmp.addEventListener(ev, () => ver(false)));
+  cmp.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); ver(true); } });
+  cmp.addEventListener('keyup', () => ver(false));
+  // cerrar y aplicar
+  $('efCancelar').onclick = () => { if ((ef.trazos.length || ef.hist.length) && !confirm('¿Salir sin guardar los cambios de la foto?')) return; cerrarEditorFoto(); };
+  $('efAplicar').onclick = aplicarEditorFoto;
+  document.addEventListener('keydown', e => {
+    if (d.hidden) return;
+    if (e.key === 'Escape'){ e.preventDefault(); $('efCancelar').click(); }
+    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z'){ e.preventDefault(); e.stopPropagation(); (e.shiftKey ? $('efRehacer') : $('efDeshacer')).click(); }
+    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y'){ e.preventDefault(); e.stopPropagation(); $('efRehacer').click(); }
+  }, true);
+  addEventListener('resize', () => { if (!d.hidden) acomodarEditorFoto(); });
+})();
+function acomodarEditorFoto(){
+  const esc2 = $('efEscena'), lz = $('efLienzo'), r = esc2.getBoundingClientRect(), pad = 24;
+  const k = Math.min((r.width - pad * 2) / ef.prev.w, (r.height - pad * 2) / ef.prev.h);
+  lz.style.width = Math.max(50, ef.prev.w * k) + 'px'; lz.style.height = Math.max(50, ef.prev.h * k) + 'px';
+}
+function abrirEditorFoto(){
+  const img = typeof imagenActiva === 'function' ? imagenActiva() : null;
+  if (!img) return toast('Primero toca una foto de tu diseño');
+  const src = img._originalElement || img._element, nw = src.naturalWidth || src.width, nh = src.naturalHeight || src.height;
+  try { const t = document.createElement('canvas'); t.width = t.height = 1; const g = t.getContext('2d'); g.drawImage(src, 0, 0, 1, 1); g.getImageData(0, 0, 1, 1); }
+  catch (e) { return toast('Esta imagen viene de otro sitio y no se puede editar. Descárgala y súbela desde tu equipo.'); }
+  // la fuente se guarda en su tamaño real (hasta 4000 px) y una copia chica para trabajar rápido
+  const k = Math.min(1, 4000 / Math.max(nw, nh)), f = document.createElement('canvas'); f.width = Math.round(nw * k); f.height = Math.round(nh * k);
+  f.getContext('2d').drawImage(src, 0, 0, f.width, f.height);
+  const kp = Math.min(1, 1100 / Math.max(f.width, f.height));
+  Object.assign(ef, { img, fuente:f, w:f.width, h:f.height, aj:AJ0(), trazos:[], hist:[], rehacer:[], fondo:null, mascaraIA:null, id:String(Date.now()),
+    prev:{ w:Math.round(f.width * kp), h:Math.round(f.height * kp) } });
+  // ¿la foto ya tenía partes transparentes? (PNG) — entonces se guarda en PNG
+  const pr = document.createElement('canvas'); pr.width = 64; pr.height = 64; const pg = pr.getContext('2d'); pg.drawImage(src, 0, 0, 64, 64);
+  const pd = pg.getImageData(0, 0, 64, 64).data; ef.transparente = false; for (let i = 3; i < pd.length; i += 4) if (pd[i] < 250){ ef.transparente = true; break; }
+  const v = $('efVista'), t = $('efTrazo'); v.width = t.width = ef.prev.w; v.height = t.height = ef.prev.h;
+  $('editorFoto').hidden = false; document.body.classList.add('conEditorFoto');
+  ef.pintarControles(); ef.ponerTab(modoSencilloFoto() ? 'filtros' : 'ajustar'); acomodarEditorFoto(); ef.pintar();
+  setTimeout(() => $('efAplicar').focus(), 30);
+}
+function modoSencilloFoto(){ return typeof modoSencillo === 'function' && modoSencillo(); }
+function cerrarEditorFoto(){ $('editorFoto').hidden = true; document.body.classList.remove('conEditorFoto'); ef.fuente = null; ef.mascaraIA = null; }
+async function aplicarEditorFoto(){
+  const img = ef.img; if (!img) return cerrarEditorFoto();
+  if (!ef.trazos.length && !ef.fondo && JSON.stringify({ ...ef.aj, duo:0 }) === JSON.stringify({ ...AJ0(), duo:0 })) return cerrarEditorFoto();
+  cargando && cargando(true);
+  await new Promise(r => setTimeout(r, 30));
+  try {
+    const cv = renderFoto(ef.w, ef.h), png = usaTransparencia();
+    const url = png ? cv.toDataURL('image/png') : cv.toDataURL('image/jpeg', 0.92);
+    const src = img._originalElement || img._element, k = ef.w / (src.naturalWidth || src.width);
+    const antes = { c:img.getCenterPoint(), cropX:img.cropX || 0, cropY:img.cropY || 0, width:img.width, height:img.height, sx:img.scaleX, sy:img.scaleY };
+    await new Promise(ok => img.setSrc(url, ok));
+    img.set({ cropX:antes.cropX * k, cropY:antes.cropY * k, width:antes.width * k, height:antes.height * k, scaleX:antes.sx / k, scaleY:antes.sy / k });
+    if (img.filters && img.filters.length) img.applyFilters();
+    img.setPositionByOrigin(antes.c, 'center', 'center'); img.setCoords(); img.dirty = true;
+    canvas.requestRenderAll(); guardarEstado(); if (typeof actualizarPanel === 'function') actualizarPanel();
+    cerrarEditorFoto(); toast('✓ Foto editada. Si no te gustó, toca Deshacer.');
+  } catch (e) { console.error(e); toast('No se pudo aplicar: ' + ((e && e.message) || e)); }
+  finally { cargando && cargando(false); }
+}
+// ---------- dónde aparece ----------
+{ const antes = construirBarraRapida;
+  construirBarraRapida = function(){
+    const r = antes.apply(this, arguments), bar = $('barraRapida');
+    if (bar && bar.dataset.tipo === 'imagen' && !bar.querySelector('[data-k="editarFoto"]')){
+      const b = document.createElement('button'); b.dataset.k = 'editarFoto'; b.className = 'brEditarFoto'; b.title = 'Editar foto: ajustes, filtros, pinceles y fondo'; b.setAttribute('aria-label', b.title);
+      b.innerHTML = '<span>🎨 Editar foto</span>'; b.onclick = () => abrirEditorFoto(); bar.prepend(b);
+    }
+    return r;
+  };
+}
+(function(){
+  const sec = $('secImagen'); if (!sec) return;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'bigbtn efAbrirPanel'; b.innerHTML = '🎨 <b>Editar foto</b> <small>ajustes, filtros, pinceles y fondo</small>';
+  b.onclick = () => abrirEditorFoto();
+  const h = sec.querySelector('h4'); if (h) h.after(b); else sec.prepend(b);
+})();
 /* =========================================================
    PESTAÑAS E INICIO
    ========================================================= */

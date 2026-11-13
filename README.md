@@ -262,6 +262,14 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - **Menos lecturas de Firestore** (plan gratis: 50,000 lecturas/día, 20,000 escrituras/día, 1 GiB): lo leído hace poco se reutiliza unos minutos; las actividades y exámenes que ya cerraron guardan su conteo de entregas; los pendientes del alumno se guardan 10 min. En un grupo de 30 alumnos con 10 actividades: abrir el grupo de nuevo pasó de ~450 a ~16 lecturas, y abrir la app como alumno de ~28 a ~2. El grupo muestra cuánto espacio ocupan sus trabajos.
 - **Reglas nuevas**: `buzon`, `auxSolicitudes`, `inicios`, `esMaestro()` con auxiliares, borrar partes de entregas (maestro) y `abiertas` protegido → volver a publicar `firestore.rules`.
 
+## v67: editor de fotos (estilo Photoshop / Canva)
+- `94-editor-de-fotos.js`: al tocar una foto, «🎨 Editar foto» (en la barra rápida, en el panel de la imagen y en Ctrl+K) abre un editor a pantalla completa con:
+  - **Ajustar:** ✨ Mejorar automáticamente, exposición, contraste, saturación, temperatura, luces, sombras, nitidez, viñeta y grano.
+  - **Filtros** de un toque con vista previa: Vívido, Cálido, Frío, Luminoso, Dramático, Vintage, Blanco y negro, B/N intenso, Sepia, Duotono (colores a elegir) y Película.
+  - **Pinceles:** Borrar, Restaurar, Corrector (quita manchas u objetos pequeños rellenando con lo de alrededor), Desenfocar y Pixelar (para ocultar caras o datos), con tamaño y bordes suaves.
+  - **Fondo con IA** (usa el mismo modelo de «Quitar fondo con IA»): desenfocar el fondo, ponerle un color o quitarlo.
+  - Deshacer/Rehacer propios, 👁 Comparar con la original (mantener presionado), Aplicar o Cancelar. Se trabaja sobre una copia de hasta 1100 px y al aplicar se repite todo sobre la foto real (hasta 4000 px); se guarda en PNG si quedó transparencia, si no en JPG.
+
 ## v66: reducir el peso de un PDF
 - `93-reducir-peso-de-pdf.js` (pdf-lib 1.17.1, se carga solo al usarla): elige uno o varios PDF y bájales el peso en el navegador; el archivo no sale del equipo. Las letras y dibujos se quedan como estaban (siguen siendo texto seleccionable): solo se vuelven a comprimir las fotos (JPG y PNG, también con ASCII85) a un tamaño máximo según el nivel (Poco 2400 px · Recomendado 1700 px · Lo más posible 1200 px) y se comprimen sin pérdida las partes que venían sin comprimir. Las imágenes CMYK, indexadas o con máscaras no se tocan para no cambiar sus colores. Si no baja, se avisa y no se descarga nada.
 - Está en la página de inicio («📉 Reducir un PDF»), en Archivo y en el buscador de herramientas (Ctrl+K).
