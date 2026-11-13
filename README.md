@@ -262,6 +262,10 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - **Menos lecturas de Firestore** (plan gratis: 50,000 lecturas/día, 20,000 escrituras/día, 1 GiB): lo leído hace poco se reutiliza unos minutos; las actividades y exámenes que ya cerraron guardan su conteo de entregas; los pendientes del alumno se guardan 10 min. En un grupo de 30 alumnos con 10 actividades: abrir el grupo de nuevo pasó de ~450 a ~16 lecturas, y abrir la app como alumno de ~28 a ~2. El grupo muestra cuánto espacio ocupan sus trabajos.
 - **Reglas nuevas**: `buzon`, `auxSolicitudes`, `inicios`, `esMaestro()` con auxiliares, borrar partes de entregas (maestro) y `abiertas` protegido → volver a publicar `firestore.rules`.
 
+## v63: pantalla de inicio «¿Qué quieres crear hoy?»
+- `91-pantalla-de-inicio.js`: al abrir la app sin diseño (y al tocar Nuevo, el logo o Archivo → 🏠 Inicio) aparece una pantalla amigable: buscar plantillas escribiendo o **dictando con la voz** (si el navegador lo permite), ideas rápidas, tamaños con su silueta real (publicación, historia, presentación, hoja carta, lona 2 × 1 m, taza 11 oz) y atajos a lo más usado (abrir, escuela, mapa mental, quitar fondo, QR, video). Se cierra con Esc o «Ir al lienzo»; no aparece si se llega por un enlace.
+- Idea tomada de la propuesta de Gemini (v63 «Bento Hub»), reescrita para que cada botón haga algo real dentro del Diseñador.
+
 ## v61: cartel de logros con fotos
 - Plantilla «Logros de la escuela con fotos» en 📣 Carteles escolares (`88-cartel-de-logros-con-fotos.js`): encabezado con 3 lugares para logos, franja con escena escolar, título con píldora y seis recuadros de colores con pestaña, marcos para soltar fotos y texto. Los textos se ajustan solos para no partirse (`CABE`).
 
