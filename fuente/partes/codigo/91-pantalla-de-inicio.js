@@ -3,7 +3,7 @@
    Una página completa, no una ventana encima del editor: buscar escribiendo o con la voz,
    todas las plantillas con su vista previa por categoría, tamaños en blanco y lo más usado.
    ========================================================= */
-const INICIO_IDEAS = ['Tarea', 'Mapa mental', 'Cartel escolar', 'Línea del tiempo', 'Presentación', 'Portada', 'Menú', 'Lona', 'Sublimación'];
+const INICIO_IDEAS = ['Tarea', 'Mapa mental', 'Cartel escolar', 'Invitación', 'Diploma', 'Línea del tiempo', 'Presentación', 'Portada', 'Menú', 'Lona'];
 // [título, detalle, ancho, alto, tipo de medida real o null (píxeles)]
 const INICIO_FORMATOS = [
   ['Publicación', '1080 × 1080', 1080, 1080, null],

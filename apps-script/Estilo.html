@@ -1092,4 +1092,22 @@ html:not(.claro) #editorFoto .efListo{color:#04121c}
   #editorFoto .efFiltros{grid-template-columns:repeat(4,1fr)}
 }
 
+/* ---------- descargar en un paso ---------- */
+#mDescargaFacil .caja{max-width:520px}
+#mDescargaFacil .dfPaginas{display:flex;gap:8px;margin:4px 0 12px;flex-wrap:wrap}
+#mDescargaFacil .dfPaginas[hidden]{display:none}
+#mDescargaFacil .dfPaginas label{flex:1;display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--borde);border-radius:12px;cursor:pointer;font-size:14px}
+#mDescargaFacil .dfPaginas label:has(input:checked){border-color:var(--morado);background:color-mix(in srgb,var(--morado) 10%,transparent)}
+#mDescargaFacil .dfPaginas input{accent-color:var(--morado)}
+#mDescargaFacil .dfOpciones{display:grid;gap:8px}
+#mDescargaFacil .dfOpcion{display:flex;align-items:center;gap:14px;padding:12px 14px;border:1px solid var(--borde);border-radius:14px;background:var(--panel);color:var(--texto);cursor:pointer;text-align:left;transition:border-color .12s,transform .12s}
+#mDescargaFacil .dfOpcion:hover:not(:disabled){border-color:var(--morado);transform:translateY(-1px)}
+#mDescargaFacil .dfOpcion:disabled{opacity:.55;cursor:wait}
+#mDescargaFacil .dfOpcion.trabajando{opacity:1;border-color:var(--morado)}
+#mDescargaFacil .dfIco{flex:none;width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-size:24px;background:var(--hover)}
+#mDescargaFacil .dfOpcion b{display:block;font-size:15.5px}
+#mDescargaFacil .dfOpcion small{display:block;font-size:13px;color:var(--suave);margin-top:2px}
+html.letraGrande #mDescargaFacil .dfOpcion b{font-size:18px}
+html.letraGrande #mDescargaFacil .dfOpcion small{font-size:15px}
+
 </style>

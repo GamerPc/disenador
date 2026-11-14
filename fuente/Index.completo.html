@@ -1377,13 +1377,31 @@ html:not(.claro) #editorFoto .efListo{color:#04121c}
   #editorFoto .efFiltros{grid-template-columns:repeat(4,1fr)}
 }
 
+/* ---------- descargar en un paso ---------- */
+#mDescargaFacil .caja{max-width:520px}
+#mDescargaFacil .dfPaginas{display:flex;gap:8px;margin:4px 0 12px;flex-wrap:wrap}
+#mDescargaFacil .dfPaginas[hidden]{display:none}
+#mDescargaFacil .dfPaginas label{flex:1;display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--borde);border-radius:12px;cursor:pointer;font-size:14px}
+#mDescargaFacil .dfPaginas label:has(input:checked){border-color:var(--morado);background:color-mix(in srgb,var(--morado) 10%,transparent)}
+#mDescargaFacil .dfPaginas input{accent-color:var(--morado)}
+#mDescargaFacil .dfOpciones{display:grid;gap:8px}
+#mDescargaFacil .dfOpcion{display:flex;align-items:center;gap:14px;padding:12px 14px;border:1px solid var(--borde);border-radius:14px;background:var(--panel);color:var(--texto);cursor:pointer;text-align:left;transition:border-color .12s,transform .12s}
+#mDescargaFacil .dfOpcion:hover:not(:disabled){border-color:var(--morado);transform:translateY(-1px)}
+#mDescargaFacil .dfOpcion:disabled{opacity:.55;cursor:wait}
+#mDescargaFacil .dfOpcion.trabajando{opacity:1;border-color:var(--morado)}
+#mDescargaFacil .dfIco{flex:none;width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-size:24px;background:var(--hover)}
+#mDescargaFacil .dfOpcion b{display:block;font-size:15.5px}
+#mDescargaFacil .dfOpcion small{display:block;font-size:13px;color:var(--suave);margin-top:2px}
+html.letraGrande #mDescargaFacil .dfOpcion b{font-size:18px}
+html.letraGrande #mDescargaFacil .dfOpcion small{font-size:15px}
+
 </style>
 </head>
 <body>
 
 <!-- ====== BARRA SUPERIOR ====== -->
 <div id="barra">
-  <div class="logo"><img class="logoImg" src="data:image/png;base64,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" alt=""><span class="logoTxt">Diseñador<small class="logoMarca">APIK-DESING</small></span><small class="ver">v68</small></div>
+  <div class="logo"><img class="logoImg" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAMAAAC5zwKfAAAAwFBMVEUHLGYDIRUAf/8TfsAFGR0EHyQAAP8k0tgACREAAAAAEhQD6/cG9v0Gtf0EqvoI2PQHx/sQaHAHJi4Ux9EFGCgLOFAMRk8AAAAOV3IUusgRh48Upq8AAQIQdq4KNTkMR24NVloPZpURiMgSk5kBAQIOWooAAQMAAgQSldMU09sReoUUs7oUmagJKUYShbEOm+QA//8QdnwTps8FFxYQbKMAAAAAOTcAJiYMPWQAVVUAf38CDSAAADIEEg4DFRQGIyT60TZkAAAAQHRSTlMFGwL/vNgB//4A/v7+/v7+/v7+/v7+/mz+/v7+Tv7+//3+/v4s/6/M/v7//v7+//0B//4p/5cLC/8EAv8FFNrEvWmOFQAAB8JJREFUeNqdmQd34jgQgLk+yEW23AtgSgyYkoT03b27//+vbsayjFxS9vTevsUYf56u0WQy/XjlURRBu/Ai/+SByQf3HvJtCSCCwr1PcVVuEQoG5TZ/+F/AzRPA3F17hmFel+Ed3YDB0+Zngc/RFuZpUrM0oLz20hC20ctPABHH4oOhANzzksMh8fZG+4LEZdvo+avADTDXkw/yQ+qGwmcMgDF/HrrrWmr8t68EbL4EnJRQSNz+WAjoLzZ3M17f5i6Uz58D863I6PfGwSUa6y+Cinv5xiTc5p8BI3A54bKQjdAYNNDGJsY9RB8CH0q2ph96hUZTunblZPRiwzyI8uF94C8gEnpvxUCDMTHHJViXioof6d37AB7eAz7AfI8/SeZXnCjSA4WLYey9rOqaAaCgnxtFhzjReQFHJY5XQxXkT315x5BptphLQ7o6caLLhzyjaoSQrjSNzpIh3fyApfiGjIixRrwCS4Fpi29rxIu9Pk0xk9pjZG7SZk3EsBwCI5YYHN/ViJeN0hpkNkfr4gtTAhORz6M+MIcj8kg+fD0EnnlVsq0MMrnpS8Ml8x2g1py0TljeBT5vY+RVUNsHQm5wSTO8LHVxpdm+wZnNDfw/BGnLA16tt7/80IGlcDg/ygAmZ3NOxMydq7AGEd7rVq2lapwtKHqKUpcQFeY8EVA/7iecePwYdEKZwijRkWkbriFe7UU+aYF3EHPHCWsegzNHafklGOQyMM/YS1MSsGrvQ2oS/64Foocdfm4UDh1aLkA3lenW0azEoXWXC9qb8CXS0wR82S4dxxLqKeItoCkttK+kGXom9ME1D/jd0RwAGRQoYrZtgN8i33acuJEjUDzpQnHkhtpJDC7oy0RGjg5kQHE7j36VEkLsOBe/EXDmWAhvSgveMbj0OFHrsKdI7kso/bKG6R0BN7CzLCWgf7Gcc2s0l8slCWsp9BiQRDS52JCEb0+BZdm+0tiyrFMjYK0+wSTRYx8ByYru0xsC/4alZc2UK2PtM+wQeEzPFylh2OS5AlbQDSnKRZIwJ40DxVjSZ6akdc71RiWqhOP2cQ26bmBfv57n08ndFrXcKY1hZt1ePzuVdA2AaxzbuHTHgeQWd3s3mZY3lvXYarmyzleNd9Akz9xxxGdA0jkrp5MchbIWLeQ3a9l+DtQ2zy7KgO8Dybamx/JJ5O8sW2gS3gx6BagMzQHvAt06tif5ybZW39unHwdAKo8XNgLMesA5fhejhIGtBQrc6BdNrFvOCdgQeOgBsSyaVTSBhaWZDa9WfeDZiYF9AYhJjsk0QZnshSaObYuuwrEzU6XiQ5Xr7MsQuOwA0eeLjnwni+rGGPDQB6KbEwTOLDvQAEFXZ4yBADptzfsS0sY/BGLgvGpXS6c1sJYSNdDr7xAVBeIQGGiJCK9a4vSBe7/nlftxIHppqblI1rJe0jbAcQkf+0A4t+V21lFfqfAeMJVO6XmZ5FL5F1uroFmhWkV4/x5wTRWxH4eKSDIGtm1balHxVpvBO0CMwyNMom6mtMRHjBi7WYrYQZpcwCBTUlkcBukL3x+tM3rrQ6ARwCCXXSpft9bKH5o+trWlK81b4LwLDHCnDVFCjGSMjcESV/Np8ul9Z19ClzZS7JjKx6FXZKWNr+sGL9xmVXxcQnJySZvUwtb2lJHoHlTwUWC9p6S0SeVoxF3fiMGIXdWjQike9hPIDHNqRYbJRxFzGpOtbsB9rzFit+5SrWG00b88LSy7Fziz4ValyZg09auAvsZPL3Wz5N/at50yjW/Y3fifAnUJIaYuvm6W/pxS/6FLdKpD73Z5GlGZkcojEuJRgFqbO9lwIuHW1yNGRrM9C4Yiwjwx3mlh4+iu6bG36JariMtrytmz1z4v5ubgGCAF9P6ZvqmmnURUVgw6OWevFr62BbLK4G4TNqoBbfYZ022b9umvVGUbR39fWXY3jWv/SPOJi5kIpmwoTz50uqG6cIBv3xTwGYPbbvIvRqF2iNGR9lLUfVjoGGldptrIBrb+C+/RATLMv+lHM4yU2i/+LaaIf1r8ZneR5J8l5zGB1UnV9Ao8W+EBLKbDXjn9cQU+/01+oZ5poZrZ02OLlNXmfDYudX3BzUg7quKReY7nfu/fBtUeb1FpqhGza3d8mkmkKmD8LPdNte3VxLQ+OaP2+eAAjt7F8F7pVeZ0tlpgfTSSMefvlc4mneAOrYd14A80Iz58c2t3ysICu1Gp8iUYNiMGDQvo/J2W05fBzGFD+x8J1CkU/lLyznqbIE8WNLKRvAw2byNjlk2TIzvWLY146iA7sC7RJPfKwVHGNuODICnjsHItd4OzM8ReRoHp9XndUdUGyI6rYLBNdzpONVUDdk+H0nV3jNgdpm3K11sUcukPGvfB5A9tUQ+B7svNx+M+Qbm8W3xQsJupWErieWH0+UDyhjyzWnzAo5EkTULM47/59OXTGWxJKUJFRowB6UOY1kM2ryi/MoO9Q9+8rij47HN8YoOOIqzkNNq7R+/efWVKjF9F28VZptxu5oaB8GkJERZV5snplef+gdZ7+/qkPdoGy0vd0eCyEloeV6MwnhX/RP9jdO8Hy52ltXDN8H5diJ8f3ZMpp5t8W4pweT5eEo9Wkh2rYv77Nt9MR4z3hb9WXP/8wdCAAj38hT9//AeaYVQBgkwsDAAAAABJRU5ErkJggg==" alt=""><span class="logoTxt">Diseñador<small class="logoMarca">APIK-DESING</small></span><small class="ver">v69</small></div>
   <input class="nombre" id="nombreDiseno" value="Mi diseño" title="Nombre del diseño">
   <span id="estadoGuardado" title="Estado del guardado en Drive">No guardado en Drive</span>
   <button class="tb" onclick="nuevoDiseno()">Nuevo</button>
@@ -16006,7 +16024,7 @@ document.addEventListener('keydown', e => {
    Una página completa, no una ventana encima del editor: buscar escribiendo o con la voz,
    todas las plantillas con su vista previa por categoría, tamaños en blanco y lo más usado.
    ========================================================= */
-const INICIO_IDEAS = ['Tarea', 'Mapa mental', 'Cartel escolar', 'Línea del tiempo', 'Presentación', 'Portada', 'Menú', 'Lona', 'Sublimación'];
+const INICIO_IDEAS = ['Tarea', 'Mapa mental', 'Cartel escolar', 'Invitación', 'Diploma', 'Línea del tiempo', 'Presentación', 'Portada', 'Menú', 'Lona'];
 // [título, detalle, ancho, alto, tipo de medida real o null (píxeles)]
 const INICIO_FORMATOS = [
   ['Publicación', '1080 × 1080', 1080, 1080, null],
@@ -16939,6 +16957,283 @@ async function aplicarEditorFoto(){
   b.onclick = () => abrirEditorFoto();
   const h = sec.querySelector('h4'); if (h) h.after(b); else sec.prepend(b);
 })();
+/* =========================================================
+   DESCARGAR EN UN PASO: «¿Para qué lo quieres?»
+   En lugar de hablar de PNG, JPG, PDF o escalas, se pregunta para qué es y se elige todo solo.
+   «Más opciones» abre la ventana completa de siempre (para quien ya sabe lo que quiere).
+   ========================================================= */
+function escalaPara(ladoMax){ return Math.max(0.25, Math.min(3, ladoMax / Math.max(W, H))); }
+async function blobDePagina(it, fmt, escala, transp){ return (await fetch(await renderPagina(it.p, fmt, escala, transp))).blob(); }
+function paginasElegidasDF(){
+  const todas = document.querySelector('#mDescargaFacil [name="dfPag"]:checked');
+  $('ePaginas').value = todas && todas.value === 'todas' ? 'todas' : 'actual';
+  return paginasAExportar();
+}
+const OPCIONES_DESCARGA = [
+  { id:'compartir', ico:'📱', t:'Para compartir', d:'WhatsApp, redes sociales o correo', async f(){
+      const lista = paginasElegidasDF(), esc = escalaPara(1600), archivos = [];
+      for (const it of lista){ const b = await blobDePagina(it, 'jpeg', esc, false); archivos.push(new File([b], nombreArchivo() + (lista.length > 1 ? '-' + (it.i + 1) : '') + '.jpg', { type:'image/jpeg' })); }
+      if (navigator.canShare && navigator.canShare({ files:archivos })){
+        try { await navigator.share({ files:archivos, title:nombreArchivo() }); return 'Listo para compartir'; }
+        catch (e) { if (e && e.name === 'AbortError') return ''; }
+      }
+      for (const f of archivos){ bajarBlob(f, f.name); await new Promise(r => setTimeout(r, 400)); }
+      return 'Imagen descargada: ya la puedes mandar por WhatsApp o subir a tus redes';
+    } },
+  { id:'imprimir', ico:'🖨', t:'Para imprimir', d:'PDF con buena calidad, listo para la impresora', async f(){
+      const lista = paginasElegidasDF(), pdf = await crearPDF(lista, escalaPara(3300));
+      bajarBlob(pdf.output('blob'), nombreArchivo() + '.pdf'); return 'PDF descargado: ábrelo y elige «Imprimir»';
+    } },
+  { id:'entregar', ico:'🎓', t:'Para entregar una tarea', d:'Un PDF ligero para subir a la plataforma', async f(){
+      const lista = paginasElegidasDF(), pdf = await crearPDF(lista, escalaPara(2000));
+      bajarBlob(pdf.output('blob'), nombreArchivo() + '.pdf'); return 'PDF descargado: ya lo puedes subir o mandar a tu maestro';
+    } },
+  { id:'calidad', ico:'🖼', t:'Imagen en alta calidad', d:'PNG nítido, para editar o usar en otro lado', async f(){
+      const lista = paginasElegidasDF(), esc = escalaPara(3000);
+      for (const it of lista){ bajarBlob(await blobDePagina(it, 'png', esc, false), nombreArchivo() + (lista.length > 1 ? '-' + (it.i + 1) : '') + '.png'); await new Promise(r => setTimeout(r, 400)); }
+      return 'Imagen descargada';
+    } },
+  { id:'presentar', ico:'📊', t:'Para presentar', d:'PowerPoint que se puede editar', soloVarias:true, async f(){
+      const lista = paginasElegidasDF(), pptx = await crearPPTX(lista, 1, true);
+      bajarBlob(await pptx.write({ outputType:'blob' }), nombreArchivo() + '.pptx'); return 'PowerPoint descargado';
+    } },
+  { id:'video', ico:'🎬', t:'Video', d:'MP4 con las animaciones, para reels o estados', async f(){
+      paginasElegidasDF(); $('eFormato').value = 'video';
+      const v = await obtenerVideo(); bajarBlob(v.blob, nombreArchivo() + '.' + v.ext); return avisoVideo(v);
+    } },
+  { id:'imprenta', ico:'🏭', t:'Para la imprenta', d:'Lona o sublimación a medida real (PDF, TIFF, PSD…)', soloMedida:true, async f(){
+      cerrarModal('mDescargaFacil'); abrirModal.directo('mExportar'); $('eFormato').value = 'imprenta'; $('eFormato').dispatchEvent(new Event('change')); return '';
+    } }
+];
+(function(){
+  const m = document.createElement('div'); m.className = 'modal'; m.id = 'mDescargaFacil';
+  m.innerHTML = `<div class="caja" role="dialog" aria-modal="true" aria-labelledby="dfTitulo">
+    <h3 id="dfTitulo">⬇ ¿Para qué lo quieres?</h3>
+    <div class="dfPaginas" id="dfPaginas" role="radiogroup" aria-label="Qué páginas">
+      <label><input type="radio" name="dfPag" value="actual"><span>Solo esta página</span></label>
+      <label><input type="radio" name="dfPag" value="todas" checked><span>Todas las páginas (<b id="dfNum"></b>)</span></label>
+    </div>
+    <div class="dfOpciones" id="dfOpciones"></div>
+    <div class="acciones"><button class="btnS" id="dfMas">⚙ Más opciones</button><button class="btnS" id="dfCerrar">Cerrar</button></div>
+  </div>`;
+  document.body.appendChild(m);
+  m.addEventListener('click', e => { if (e.target === m) cerrarModal('mDescargaFacil'); });
+  $('dfCerrar').onclick = () => cerrarModal('mDescargaFacil');
+  $('dfMas').onclick = () => { cerrarModal('mDescargaFacil'); abrirModal.directo('mExportar'); };
+})();
+function abrirDescargaFacil(){
+  canvas.discardActiveObject(); canvas.requestRenderAll();
+  const varias = paginas.length > 1;
+  $('dfPaginas').hidden = !varias; $('dfNum').textContent = paginas.length;
+  const cont = $('dfOpciones'); cont.innerHTML = '';
+  OPCIONES_DESCARGA.filter(o => (!o.soloVarias || varias) && (!o.soloMedida || (typeof medidaReal !== 'undefined' && medidaReal))).forEach(o => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'dfOpcion';
+    b.innerHTML = `<span class="dfIco" aria-hidden="true">${o.ico}</span><span><b>${esc(o.t)}</b><small>${esc(o.d)}</small></span>`;
+    b.onclick = async () => {
+      if (b.disabled) return;
+      cont.querySelectorAll('button').forEach(x => x.disabled = true); b.classList.add('trabajando');
+      const det = b.querySelector('small'), antes = det.textContent; det.textContent = 'Preparando…';
+      try { const msj = await o.f(); if (msj){ toast('✓ ' + msj); cerrarModal('mDescargaFacil'); if (typeof hechoPP === 'function') hechoPP('exportar'); } }
+      catch (e) { console.error(e); toast('No se pudo descargar: ' + ((e && e.message) || e)); }
+      finally { det.textContent = antes; b.classList.remove('trabajando'); cont.querySelectorAll('button').forEach(x => x.disabled = false); }
+    };
+    cont.appendChild(b);
+  });
+  abrirModal.directo('mDescargaFacil');
+  setTimeout(() => { const f = cont.querySelector('button'); f && f.focus(); }, 30);
+}
+// «Exportar» (botón, Ctrl+E y buscador) abre primero esta ventana; «Más opciones» abre la completa
+{ const orig = abrirModal;
+  abrirModal = function(id){ if (id === 'mExportar') return abrirDescargaFacil(); return orig.apply(this, arguments); };
+  abrirModal.directo = orig;
+}
+/* =========================================================
+   INVITACIONES, DIPLOMAS Y TARJETAS
+   Diploma, reconocimiento escolar, constancia, invitaciones (cumpleaños infantil, XV años,
+   boda, junta escolar) y tarjeta del Día del Maestro. Todo es editable.
+   ========================================================= */
+const CAT_FIESTA = 'Invitaciones, diplomas y tarjetas';
+['Dancing Script', 'Pacifico', 'Oswald'].forEach(f => { if (!FUENTES_CC.includes(f)) FUENTES_CC.push(f); });
+// marco doble con esquinas adornadas
+function MARCO_DOBLE(m, col, col2){
+  RECT(m, m, W - 2 * m, H - 2 * m, 'rgba(0,0,0,0)', { stroke:col, sw:10, nombre:'Marco' });
+  RECT(m + 22, m + 22, W - 2 * m - 44, H - 2 * m - 44, 'rgba(0,0,0,0)', { stroke:col2 || col, sw:3, nombre:'Marco interior' });
+  [[m + 22, m + 22, 1, 1], [W - m - 22, m + 22, -1, 1], [m + 22, H - m - 22, 1, -1], [W - m - 22, H - m - 22, -1, -1]].forEach(([x, y, sx, sy]) => {
+    N_P(`M${x} ${y + sy * 90}Q${x} ${y} ${x + sx * 90} ${y}M${x + sx * 30} ${y + sy * 60}Q${x + sx * 30} ${y + sy * 30} ${x + sx * 60} ${y + sy * 30}`, { stroke:col, sw:4, nombre:'Adorno' });
+    CIRC(x + sx * 14, y + sy * 14, 7, col, { nombre:'Adorno' });
+  });
+}
+// sello con estrella y listones
+function SELLO(x, y, r, col, col2, texto){
+  FIG(`M${x - r * 0.55} ${y + r * 0.6}l${-r * 0.25} ${r * 1.1}l${r * 0.32} ${-r * 0.22}l${r * 0.18} ${r * 0.34}l${r * 0.2} ${-r * 1.05}Z`, col2, { nombre:'Listón' });
+  FIG(`M${x + r * 0.55} ${y + r * 0.6}l${r * 0.25} ${r * 1.1}l${-r * 0.32} ${-r * 0.22}l${-r * 0.18} ${r * 0.34}l${-r * 0.2} ${-r * 1.05}Z`, col2, { nombre:'Listón' });
+  let d = ''; const n = 24;
+  for (let i = 0; i <= n * 2; i++){ const a = i / (n * 2) * Math.PI * 2, rr2 = i % 2 ? r : r * 0.9; d += (i ? 'L' : 'M') + (x + Math.cos(a) * rr2).toFixed(1) + ' ' + (y + Math.sin(a) * rr2).toFixed(1); }
+  FIG(d + 'Z', col, { nombre:'Sello' });
+  CIRC(x, y, r * 0.74, 'rgba(0,0,0,0)', { stroke:'#fff', sw:3, nombre:'Sello' });
+  DECO('estrella', x, y - (texto ? r * 0.12 : 0), r * 0.62, { c:'#fff' });
+  if (texto) T(texto, x, y + r * 0.42, { f:'Montserrat', s:r * 0.17, b:'800', c:'#fff', w:r * 1.3, cs:120 }).name = 'Texto del sello';
+}
+function FIRMA(x, y, nombre, cargo, col){
+  N_P(`M${x - 180} ${y}H${x + 180}`, { stroke:col, sw:2, nombre:'Línea de firma' });
+  T(nombre, x, y + 30, { f:'Poppins', s:24, b:'600', c:col, w:380 }).name = 'Nombre de quien firma';
+  T(cargo, x, y + 62, { f:'Poppins', s:19, c:col, w:380 }).name = 'Cargo';
+}
+function GLOBO_F(x, y, r, col){
+  N_P(`M${x} ${y + r * 1.15}C${x - r * 0.3} ${y + r * 1.8} ${x + r * 0.35} ${y + r * 2.3} ${x} ${y + r * 3}`, { stroke:'#94a3b8', sw:3, nombre:'Hilo del globo' });
+  FIG(`M${x} ${y - r * 1.15}C${x + r * 1.05} ${y - r * 1.15} ${x + r * 1.05} ${y + r * 0.55} ${x} ${y + r * 1.12}C${x - r * 1.05} ${y + r * 0.55} ${x - r * 1.05} ${y - r * 1.15} ${x} ${y - r * 1.15}Z`, col, { nombre:'Globo' });
+  FIG(`M${x - r * 0.14} ${y + r * 1.1}h${r * 0.28}l${-r * 0.14} ${r * 0.16}Z`, col, { nombre:'Nudo' });
+  FIG(`M${x - r * 0.45} ${y - r * 0.55}q${r * 0.12} ${-r * 0.32} ${r * 0.42} ${-r * 0.4}`, null, { stroke:'rgba(255,255,255,.7)', sw:r * 0.12, nombre:'Brillo' });
+}
+function CONFETI_F(n, cols, zona){
+  let s = 7;
+  const rnd = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+  for (let i = 0; i < n; i++){
+    const x = zona[0] + rnd() * (zona[2] - zona[0]), y = zona[1] + rnd() * (zona[3] - zona[1]), c = cols[i % cols.length];
+    if (i % 3 === 0) CIRC(x, y, 6 + rnd() * 6, c, { nombre:'Confeti' });
+    else RECT(x, y, 10 + rnd() * 10, 22 + rnd() * 10, c, { ang:rnd() * 180, r:3, nombre:'Confeti' });
+  }
+}
+function DATO_FIESTA(icono, texto, x, y, col, w = 760){
+  T(icono, x - w / 2 + 30, y, { s:38, w:60 }).name = 'Ícono';
+  TL(texto, x - w / 2 + 70, y, { f:'Poppins', s:34, b:'600', c:col, w:w - 80 });
+}
+function HOJAS(x, y, k, col, espejo){
+  const s = espejo ? -1 : 1;
+  N_P(`M${x} ${y}C${x + s * 60 * k} ${y - 40 * k} ${x + s * 120 * k} ${y - 30 * k} ${x + s * 170 * k} ${y - 90 * k}`, { stroke:col, sw:4, nombre:'Rama' });
+  [[0.35, -0.3], [0.6, -0.42], [0.85, -0.62]].forEach(([t, a], i) => {
+    const px = x + s * 170 * k * t, py = y - 90 * k * t * 0.8;
+    FIG(`M${px} ${py}q${s * 18 * k} ${-46 * k} ${s * 4 * k} ${-74 * k}q${-s * 30 * k} ${30 * k} ${-s * 4 * k} ${74 * k}Z`, col, { nombre:'Hoja' });
+    FIG(`M${px} ${py}q${s * 40 * k} ${18 * k} ${s * 74 * k} ${4 * k}q${-s * 30 * k} ${-28 * k} ${-s * 74 * k} ${-4 * k}Z`, col, { nombre:'Hoja', op:0.8 });
+  });
+}
+const PLANTILLAS_FIESTA = [
+  { nombre:'Diploma clásico', tam:[1650, 1275], crear(){
+    FONDO('#fffdf6'); MARCO_DOBLE(40, '#b8860b', '#d4af37');
+    T('DIPLOMA', W / 2, 230, { f:'Playfair Display', s:120, b:'700', c:'#1e293b', w:1200, cs:300 }).name = 'Título';
+    T('se otorga el presente a', W / 2, 360, { f:'Poppins', s:30, c:'#475569', w:900 }).name = 'Texto';
+    T('Nombre del Alumno', W / 2, 480, { f:'Dancing Script', s:118, b:'700', c:'#7c5a10', w:1300 }).name = 'Nombre';
+    N_P(`M${W / 2 - 480} 560H${W / 2 + 480}`, { stroke:'#d4af37', sw:3, nombre:'Línea' });
+    T('Por haber concluido satisfactoriamente sus estudios de Educación Primaria\ncon dedicación, esfuerzo y excelencia.', W / 2, 660, { f:'Poppins', s:30, c:'#334155', w:1150, lh:1.4 }).name = 'Motivo';
+    T('Ciudad de México, a 10 de julio de 2027', W / 2, 790, { f:'Poppins', s:26, it:true, c:'#475569', w:900 }).name = 'Lugar y fecha';
+    FIRMA(420, 1010, 'Nombre del Director(a)', 'Director(a)', '#334155'); FIRMA(W - 420, 1010, 'Nombre del Maestro(a)', 'Maestro(a) de grupo', '#334155');
+    SELLO(W / 2, 1000, 95, '#c9a227', '#9a7b16', 'EXCELENCIA');
+  } },
+  { nombre:'Reconocimiento escolar (colorido)', tam:[1650, 1275], crear(){
+    FONDO('#fff7ed');
+    FIG(`M0 0H${W}V180Q${W * 0.75} 260 ${W / 2} 190T0 210Z`, null, { grad:['#f97316', '#ec4899'], gradAng:0, nombre:'Franja' });
+    FIG(`M0 ${H}H${W}V${H - 150}Q${W * 0.7} ${H - 230} ${W * 0.4} ${H - 160}T0 ${H - 190}Z`, null, { grad:['#06b6d4', '#8b5cf6'], gradAng:0, nombre:'Franja' });
+    CONFETI_F(36, ['#facc15', '#22c55e', '#3b82f6', '#ec4899'], [60, 230, W - 60, 330]);
+    T('¡RECONOCIMIENTO!', W / 2, 110, { f:'Fredoka', s:96, b:'700', c:'#fff', w:1400 }).name = 'Título';
+    T('Para', W / 2, 400, { f:'Fredoka', s:40, b:'600', c:'#9a3412', w:600 }).name = 'Texto';
+    T('Nombre del Alumno', W / 2, 500, { f:'Pacifico', s:100, c:'#db2777', w:1300 }).name = 'Nombre';
+    T('por ser el mejor lector del grupo 3°B', W / 2, 640, { f:'Fredoka', s:46, b:'600', c:'#1e293b', w:1200 }).name = 'Motivo';
+    // trofeo
+    const tx = W / 2, ty = 820;
+    FIG(`M${tx - 80} ${ty - 70}H${tx + 80}V${ty - 10}Q${tx + 80} ${ty + 60} ${tx} ${ty + 70}Q${tx - 80} ${ty + 60} ${tx - 80} ${ty - 10}Z`, '#facc15', { nombre:'Trofeo' });
+    N_P(`M${tx - 80} ${ty - 50}Q${tx - 140} ${ty - 50} ${tx - 125} ${ty}Q${tx - 110} ${ty + 30} ${tx - 70} ${ty + 25}M${tx + 80} ${ty - 50}Q${tx + 140} ${ty - 50} ${tx + 125} ${ty}Q${tx + 110} ${ty + 30} ${tx + 70} ${ty + 25}`, { stroke:'#eab308', sw:12, nombre:'Asas' });
+    RECT(tx - 16, ty + 70, 32, 40, '#eab308', { nombre:'Trofeo' }); RECT(tx - 70, ty + 108, 140, 30, '#a16207', { r:6, nombre:'Base' });
+    DECO('estrella', tx, ty - 5, 60, { c:'#fff' });
+    FIRMA(380, 1010, 'Nombre del Maestro(a)', 'Maestro(a) de grupo', '#334155'); FIRMA(W - 380, 1010, 'Fecha', 'Junio 2027', '#334155');
+  } },
+  { nombre:'Constancia de participación', tam:[1275, 1650], crear(){
+    FONDO('#ffffff');
+    RECT(0, 0, W, 26, '#1e3a8a', { nombre:'Franja' }); RECT(0, H - 26, W, 26, '#1e3a8a', { nombre:'Franja' });
+    RECT(60, 70, 160, 160, '#e2e8f0', { r:80, nombre:'Lugar del logo' }); T('LOGO', 140, 150, { f:'Montserrat', s:28, b:'700', c:'#94a3b8', w:150 }).name = 'Logo';
+    TL('Nombre de la escuela o institución', 250, 130, { f:'Montserrat', s:34, b:'700', c:'#1e3a8a', w:950 });
+    TL('Clave 09DPR0000X · Ciudad de México', 250, 180, { f:'Poppins', s:24, c:'#64748b', w:950 });
+    N_P(`M60 270H${W - 60}`, { stroke:'#cbd5e1', sw:2, nombre:'Línea' });
+    T('CONSTANCIA', W / 2, 400, { f:'Playfair Display', s:96, b:'700', c:'#0f172a', w:1100, cs:200 }).name = 'Título';
+    T('La institución hace constar que', W / 2, 520, { f:'Poppins', s:30, c:'#475569', w:1000 }).name = 'Texto';
+    T('Nombre Completo', W / 2, 630, { f:'Dancing Script', s:100, b:'700', c:'#1e3a8a', w:1100 }).name = 'Nombre';
+    N_P(`M${W / 2 - 420} 700H${W / 2 + 420}`, { stroke:'#1e3a8a', sw:2, nombre:'Línea' });
+    T('participó en el Taller de Lectura y Redacción, con una duración de 20 horas, realizado del 3 al 28 de mayo de 2027.', W / 2, 820, { f:'Poppins', s:30, c:'#334155', w:1000, lh:1.45 }).name = 'Motivo';
+    T('Se extiende la presente para los fines que al interesado convengan.', W / 2, 960, { f:'Poppins', s:26, it:true, c:'#64748b', w:1000 }).name = 'Texto';
+    FIRMA(W / 2, 1330, 'Nombre de quien firma', 'Cargo', '#0f172a');
+    SELLO(W - 190, 1300, 80, '#1e3a8a', '#1e40af', '');
+  } },
+  { nombre:'Invitación de cumpleaños infantil', tam:[1080, 1350], crear(){
+    DEGRADADO('#fef3c7', '#fce7f3');
+    CONFETI_F(40, ['#f43f5e', '#3b82f6', '#22c55e', '#f59e0b', '#a855f7'], [40, 40, W - 40, 300]);
+    GLOBO_F(150, 230, 85, '#f43f5e'); GLOBO_F(285, 170, 70, '#3b82f6'); GLOBO_F(W - 150, 230, 85, '#22c55e'); GLOBO_F(W - 285, 170, 70, '#f59e0b');
+    T('¡Estás invitado a mi', W / 2, 470, { f:'Fredoka', s:58, b:'600', c:'#7c2d12', w:900 }).name = 'Texto';
+    T('CUMPLEAÑOS!', W / 2, 560, { f:'Fredoka', s:110, b:'700', c:'#db2777', w:1000 }).name = 'Título';
+    CIRC(W / 2, 740, 105, '#8b5cf6', { nombre:'Círculo de la edad' });
+    T('6', W / 2, 735, { f:'Fredoka', s:150, b:'700', c:'#fff', w:200 }).name = 'Edad';
+    T('Sofía', W / 2, 905, { f:'Pacifico', s:96, c:'#7c3aed', w:900 }).name = 'Nombre';
+    RECT(110, 990, W - 220, 280, 'rgba(255,255,255,.75)', { r:30, nombre:'Recuadro de datos' });
+    DATO_FIESTA('📅', 'Sábado 20 de marzo', W / 2, 1045, '#1e293b');
+    DATO_FIESTA('🕓', '4:00 p.m.', W / 2, 1125, '#1e293b');
+    DATO_FIESTA('📍', 'Salón de fiestas Arcoíris', W / 2, 1205, '#1e293b');
+  } },
+  { nombre:'Invitación de XV años', tam:[1080, 1350], crear(){
+    DEGRADADO('#2e1065', '#581c87');
+    MARCO_DOBLE(36, '#e9c46a', '#f5deb3');
+    CONFETI_F(18, ['#f5deb3', '#e9c46a'], [80, 80, W - 80, 260]);
+    T('Mis', W / 2, 250, { f:'Dancing Script', s:90, b:'700', c:'#f5deb3', w:600 }).name = 'Texto';
+    T('XV', W / 2, 400, { f:'Playfair Display', s:230, b:'700', c:'#e9c46a', w:700 }).name = 'Título';
+    T('años', W / 2, 545, { f:'Dancing Script', s:90, b:'700', c:'#f5deb3', w:600 }).name = 'Texto';
+    T('Valentina', W / 2, 700, { f:'Dancing Script', s:120, b:'700', c:'#ffffff', w:950 }).name = 'Nombre';
+    N_P(`M${W / 2 - 250} 790H${W / 2 - 30}M${W / 2 + 30} 790H${W / 2 + 250}`, { stroke:'#e9c46a', sw:3, nombre:'Adorno' });
+    DECO('estrella', W / 2, 790, 30, { c:'#e9c46a' });
+    T('Con la bendición de Dios y el amor de mis padres, te invito a celebrar conmigo este día tan especial.', W / 2, 890, { f:'Poppins', s:28, c:'#ede9fe', w:820, lh:1.45 }).name = 'Texto';
+    T('SÁBADO 15 DE MAYO · 8:00 P.M.', W / 2, 1030, { f:'Montserrat', s:32, b:'700', c:'#e9c46a', w:900, cs:100 }).name = 'Fecha';
+    T('Salón Jardín Real · Av. Principal 123', W / 2, 1090, { f:'Poppins', s:28, c:'#ffffff', w:900 }).name = 'Lugar';
+    T('Confirma tu asistencia: 55 1234 5678', W / 2, 1180, { f:'Poppins', s:24, it:true, c:'#d8b4fe', w:900 }).name = 'Confirmación';
+  } },
+  { nombre:'Invitación de boda', tam:[1080, 1350], crear(){
+    FONDO('#fbf8f3');
+    HOJAS(120, 300, 1.4, '#86a789'); HOJAS(W - 120, 300, 1.4, '#86a789', true); HOJAS(140, H - 140, 1.1, '#b5c99a'); HOJAS(W - 140, H - 140, 1.1, '#b5c99a', true);
+    T('NOS CASAMOS', W / 2, 330, { f:'Montserrat', s:34, b:'600', c:'#6b705c', w:800, cs:500 }).name = 'Texto';
+    T('Ana', W / 2, 470, { f:'Dancing Script', s:150, b:'700', c:'#3f4238', w:800 }).name = 'Nombre';
+    T('&', W / 2, 590, { f:'Playfair Display', s:80, it:true, c:'#a5a58d', w:300 }).name = 'Y';
+    T('Luis', W / 2, 700, { f:'Dancing Script', s:150, b:'700', c:'#3f4238', w:800 }).name = 'Nombre';
+    N_P(`M${W / 2 - 160} 820H${W / 2 + 160}`, { stroke:'#a5a58d', sw:2, nombre:'Línea' });
+    T('Tenemos el honor de invitarte a celebrar nuestra unión', W / 2, 890, { f:'Playfair Display', s:32, it:true, c:'#6b705c', w:820 }).name = 'Texto';
+    T('SÁBADO 12 · JUNIO · 2027', W / 2, 1000, { f:'Montserrat', s:34, b:'700', c:'#3f4238', w:900, cs:150 }).name = 'Fecha';
+    T('Ceremonia 5:00 p.m. · Hacienda Los Olivos', W / 2, 1060, { f:'Poppins', s:28, c:'#6b705c', w:900 }).name = 'Lugar';
+  } },
+  { nombre:'Invitación a junta de padres', tam:[1080, 1350], crear(){
+    FONDO('#f8fafc');
+    RECT(0, 0, W, 330, '#1d4ed8', { nombre:'Encabezado' });
+    FIG(`M0 330Q${W / 2} 420 ${W} 330V300H0Z`, '#1d4ed8', { nombre:'Curva' });
+    T('Nombre de la escuela', W / 2, 90, { f:'Montserrat', s:34, b:'700', c:'#bfdbfe', w:950 }).name = 'Escuela';
+    T('INVITACIÓN', W / 2, 190, { f:'Bebas Neue', s:120, c:'#ffffff', w:950, cs:80 }).name = 'Título';
+    T('Junta de padres de familia', W / 2, 270, { f:'Poppins', s:38, b:'600', c:'#dbeafe', w:950 }).name = 'Subtítulo';
+    T('Estimados padres y madres de familia del grupo 4°A: los invitamos a la reunión informativa del segundo trimestre.', W / 2, 520, { f:'Poppins', s:32, c:'#1e293b', w:880, lh:1.45 }).name = 'Texto';
+    [['📅', 'Fecha', 'Viernes 7 de febrero'], ['🕗', 'Hora', '8:00 a.m.'], ['📍', 'Lugar', 'Salón de usos múltiples']].forEach(([ic, et, v], i) => {
+      const y = 700 + i * 150;
+      RECT(110, y - 60, W - 220, 120, '#ffffff', { r:22, stroke:'#dbeafe', sw:3, nombre:'Recuadro' });
+      T(ic, 190, y, { s:52, w:90 }).name = 'Ícono';
+      TL(et, 260, y - 22, { f:'Poppins', s:24, b:'600', c:'#64748b', w:600 });
+      TL(v, 260, y + 18, { f:'Poppins', s:36, b:'700', c:'#1e3a8a', w:650 });
+    });
+    T('¡Su asistencia es muy importante!', W / 2, 1200, { f:'Fredoka', s:44, b:'600', c:'#1d4ed8', w:900 }).name = 'Cierre';
+  } },
+  { nombre:'Tarjeta: ¡Feliz Día del Maestro!', tam:[1080, 1080], crear(){
+    DEGRADADO('#ecfeff', '#fef9c3');
+    CONFETI_F(16, ['#06b6d4', '#f59e0b', '#ec4899', '#22c55e'], [40, 40, W - 40, 150]); CONFETI_F(10, ['#22c55e', '#ec4899', '#f59e0b'], [40, H - 80, W - 40, H - 30]);
+    CIRC(W / 2, 360, 190, '#ffffff', { nombre:'Círculo' });
+    // manzana
+    FIG(`M${W / 2} 300C${W / 2 - 60} 250 ${W / 2 - 150} 290 ${W / 2 - 140} 380C${W / 2 - 130} 470 ${W / 2 - 60} 500 ${W / 2} 470C${W / 2 + 60} 500 ${W / 2 + 130} 470 ${W / 2 + 140} 380C${W / 2 + 150} 290 ${W / 2 + 60} 250 ${W / 2} 300Z`, '#ef4444', { nombre:'Manzana' });
+    N_P(`M${W / 2} 300Q${W / 2 + 5} 260 ${W / 2 + 25} 235`, { stroke:'#78350f', sw:10, nombre:'Rabito' });
+    FIG(`M${W / 2 + 22} 262q40 -50 85 -30q-40 50 -85 30Z`, '#22c55e', { nombre:'Hoja' });
+    T('¡Feliz Día', W / 2, 640, { f:'Fredoka', s:96, b:'700', c:'#0e7490', w:1000 }).name = 'Título';
+    T('del Maestro!', W / 2, 740, { f:'Fredoka', s:96, b:'700', c:'#db2777', w:1000 }).name = 'Título';
+    T('Gracias por enseñarnos con paciencia y cariño todos los días.', W / 2, 870, { f:'Poppins', s:32, c:'#334155', w:820, lh:1.4 }).name = 'Mensaje';
+    T('— Tus alumnos de 2°C', W / 2, 960, { f:'Pacifico', s:38, c:'#7c3aed', w:800 }).name = 'Firma';
+  } }
+];
+PLANTILLAS_FIESTA.forEach(p => CATALOGO.push({ nombre:p.nombre, cat:CAT_FIESTA, tam:p.tam, crear:p.crear, usar:() => usarPlantillaCC(p) }));
+CATEGORIAS.splice(Math.max(0, CATEGORIAS.indexOf(CAT_CART) + 1), 0, CAT_FIESTA);
+ALIAS_CATALOGO[CAT_FIESTA] = 'invitación invitacion invitaciones fiesta cumpleaños cumple boda xv quince años diploma diplomas reconocimiento reconocimientos constancia certificado tarjeta felicitación felicitacion día del maestro graduación junta';
+(function(){
+  const despues = [...document.querySelectorAll('#chipsCat .chip')].find(x => x.textContent.includes('Carteles'));
+  const c = document.createElement('button'); c.className = 'chip'; c.setAttribute('aria-pressed', 'false'); c.textContent = '🎉 Invitaciones y diplomas';
+  c.onclick = () => { catActiva = CAT_FIESTA; document.querySelectorAll('#chipsCat .chip').forEach(x => { const a = x === c; x.classList.toggle('on', a); x.setAttribute('aria-pressed', a ? 'true' : 'false'); }); renderCatalogo(); };
+  if (despues) despues.after(c); else $('chipsCat').appendChild(c);
+})();
+if (typeof INICIO_CATS !== 'undefined') INICIO_CATS.splice(2, 0, [CAT_FIESTA, '🎉']);
 /* =========================================================
    PESTAÑAS E INICIO
    ========================================================= */
