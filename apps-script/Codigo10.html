@@ -683,7 +683,7 @@ function dibujarPluma(){
   const ctx = canvas.contextTop; canvas.clearContext(ctx);
   const pts = pluma.pts.slice();
   if (!pts.length) return;
-  ctx.save(); ctx.scale(zoom, zoom);
+  ctx.save(); ctx.translate(OX, OY); ctx.scale(zoom, zoom);
   const lw = 2 / zoom;
   // vista previa del tramo que sigue (hasta el mouse)
   const prev = pluma.mouse && !pluma.arrastre ? [...pts, { x:pluma.mouse.x, y:pluma.mouse.y, h:null }] : pts;

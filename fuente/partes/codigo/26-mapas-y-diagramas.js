@@ -125,7 +125,7 @@ function ladoHacia(r, q){
 }
 function puntoLienzo(e){
   const r = canvas.upperCanvasEl.getBoundingClientRect();
-  return { x: (e.clientX - r.left) / zoom, y: (e.clientY - r.top) / zoom };
+  return { x: (e.clientX - r.left - OX) / zoom, y: (e.clientY - r.top - OY) / zoom };
 }
 function objetivoEn(q, excluir, margen = 0){
   return canvas.getObjects().slice().reverse().find(o => {
@@ -140,7 +140,7 @@ function extremosConector(c){
 }
 function dibujarGuia(inicio, q, objetivo){
   const ctx = canvas.contextTop; canvas.clearContext(ctx);
-  ctx.save();
+  ctx.save(); ctx.translate(OX, OY);
   if (objetivo){
     const r = cajaAbs(objetivo);
     ctx.strokeStyle = '#ec4899'; ctx.lineWidth = 3; ctx.setLineDash([]);

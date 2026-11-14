@@ -92,7 +92,7 @@ function iniciarRecorteLibre(){
 }
 function dibujarLazo(){
   const ctx = canvas.contextTop, pts = recorte.pts; canvas.clearContext(ctx);
-  ctx.save(); ctx.beginPath();
+  ctx.save(); ctx.translate(OX, OY); ctx.beginPath();
   pts.forEach((p, i) => i ? ctx.lineTo(p.x * zoom, p.y * zoom) : ctx.moveTo(p.x * zoom, p.y * zoom));
   ctx.fillStyle = 'rgba(25,200,255,.12)'; ctx.fill();
   ctx.strokeStyle = '#19c8ff'; ctx.lineWidth = 3; ctx.setLineDash([7, 5]); ctx.stroke();

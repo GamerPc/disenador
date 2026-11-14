@@ -66,8 +66,8 @@ canvas.on('after:render', () => {
   ctx.save(); ctx.strokeStyle = '#ec4899'; ctx.lineWidth = 1; ctx.setLineDash([6, 4]);
   guias.forEach(g => {
     ctx.beginPath();
-    if (g.x !== undefined){ const x = Math.round(g.x*zoom) + 0.5; ctx.moveTo(x, 0); ctx.lineTo(x, H*zoom); }
-    else { const y = Math.round(g.y*zoom) + 0.5; ctx.moveTo(0, y); ctx.lineTo(W*zoom, y); }
+    if (g.x !== undefined){ const x = Math.round(g.x*zoom + OX) + 0.5; ctx.moveTo(x, OY); ctx.lineTo(x, OY + H*zoom); }
+    else { const y = Math.round(g.y*zoom + OY) + 0.5; ctx.moveTo(OX, y); ctx.lineTo(OX + W*zoom, y); }
     ctx.stroke();
   });
   ctx.restore();

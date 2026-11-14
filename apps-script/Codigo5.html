@@ -422,7 +422,7 @@ function crecerAlArrastrar(o){
   if (r.top + r.height > H) nh = Math.ceil(r.top + r.height + m);
   if (nw === W && nh === H) return;
   W = Math.min(8000, nw); H = Math.min(8000, nh);
-  canvas.setDimensions({ width: Math.round(W*zoom), height: Math.round(H*zoom) });
+  acomodarLienzo();
   $('tamTxt').textContent = W + ' × ' + H;
   const f = canvas.getObjects().find(x => x.esFondo); if (f) ajustarRectFondo(f);
   miniaturas = []; crecioArrastrando = true;
@@ -493,14 +493,13 @@ document.querySelectorAll('.asa').forEach(asa => {
     ini.ox = d.includes('w') ? w - ini.w : 0;
     ini.oy = d.includes('n') ? hh - ini.h : 0;
     W = w; H = hh;
-    canvas.setDimensions({ width: Math.round(W*zoom), height: Math.round(H*zoom) });
-    canvas.setViewportTransform([zoom, 0, 0, zoom, ini.ox*zoom, ini.oy*zoom]);
+    acomodarLienzo(ini.ox*zoom, ini.oy*zoom);
     $('tamTxt').textContent = W + ' × ' + H;
   });
   const soltar = () => {
     if (!ini) return;
     const { ox, oy } = ini; ini = null;
-    canvas.setViewportTransform([zoom, 0, 0, zoom, 0, 0]);
+    acomodarLienzo();
     if (ox || oy) moverTodo(ox, oy);
     cambiarTamano(W, H);
   };

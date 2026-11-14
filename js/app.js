@@ -126,11 +126,63 @@ fabric.Conector.fromObject = function(obj, cb){
   cb && cb(l); return l;
 };
 
+/* MESA DE TRABAJO: el lienzo de fabric ocupa también la zona gris alrededor de la hoja, para poder
+   tomar, mover, girar, dibujar y seleccionar aunque algo quede en la orilla o se salga de la hoja.
+   La hoja (#envoltura) sigue midiendo lo mismo; OX/OY dicen dónde empieza dentro del lienzo. */
+let OX = 0, OY = 0;
+const MARGEN_MESA = 120;          // espacio extra alrededor cuando la hoja es más grande que la pantalla
+function acomodarLienzo(extraX = 0, extraY = 0){
+  const a = $('area'), env = $('envoltura'), pw = Math.round(W*zoom), ph = Math.round(H*zoom);
+  env.style.width = pw + 'px'; env.style.height = ph + 'px';
+  const cs = getComputedStyle(a), padL = parseFloat(cs.paddingLeft) || 0, padR = parseFloat(cs.paddingRight) || 0, padT = parseFloat(cs.paddingTop) || 0, padB = parseFloat(cs.paddingBottom) || 0;
+  const anchoVis = a.clientWidth - padL - padR, altoVis = a.clientHeight - padT - padB;
+  const mx = pw > anchoVis ? MARGEN_MESA : 0, my = ph > altoVis ? MARGEN_MESA : 0;
+  env.style.margin = (my ? my + 'px' : 'auto') + ' ' + (mx ? mx + 'px' : 'auto');
+  const L = env.offsetLeft, T = env.offsetTop;
+  const R = Math.max(padR + mx, a.clientWidth - L - pw), B = Math.max(padB + my, a.clientHeight - T - ph);
+  OX = L; OY = T;
+  canvas.setDimensions({ width: pw + L + R, height: ph + T + B });
+  const cont = canvas.wrapperEl; if (cont){ cont.style.position = 'absolute'; cont.style.left = -L + 'px'; cont.style.top = -T + 'px'; }
+  canvas.setViewportTransform([zoom, 0, 0, zoom, OX + extraX, OY + extraY]);
+}
+// si el espacio de trabajo cambia de tamaño (se abre o cierra un panel), la mesa se vuelve a acomodar
+if (window.ResizeObserver){ let rafMesa = 0; new ResizeObserver(() => { cancelAnimationFrame(rafMesa); rafMesa = requestAnimationFrame(() => { acomodarLienzo(); canvas.requestRenderAll(); }); }).observe($('area')); }
 function establecerZoom(z){
   zoom = Math.max(0.05, Math.min(z, 4));
-  canvas.setZoom(zoom);
-  canvas.setDimensions({ width: Math.round(W*zoom), height: Math.round(H*zoom) });
+  acomodarLienzo();
   $('zoomTxt').textContent = Math.round(zoom*100) + '%';
+}
+// el color de la hoja solo se pinta dentro de la hoja (afuera se ve la mesa)
+{ const orig = canvas._renderBackgroundOrOverlay;
+  canvas._renderBackgroundOrOverlay = function(ctx, prop){
+    if (prop !== 'background' || !this.backgroundColor || ctx !== this.contextContainer) return orig.call(this, ctx, prop);
+    const v = this.viewportTransform, f = this.backgroundColor;
+    ctx.save(); ctx.transform(v[0], v[1], v[2], v[3], v[4], v[5]);
+    ctx.fillStyle = f.toLive ? f.toLive(ctx, this) : f; ctx.fillRect(0, 0, W, H); ctx.restore();
+    if (this.backgroundImage){ const c = this.backgroundColor; this.backgroundColor = null; orig.call(this, ctx, prop); this.backgroundColor = c; }
+  };
+}
+// lo que queda fuera de la hoja se ve deslavado (no sale al descargar); las manijas siguen viéndose bien
+canvas.controlsAboveOverlay = true;
+{ const orig = canvas._renderOverlay;
+  canvas._renderOverlay = function(ctx){
+    orig.call(this, ctx);
+    if (ctx !== this.contextContainer) return;
+    const w = this.width, h = this.height, v = this.viewportTransform;
+    if (w <= W*zoom + 1 && h <= H*zoom + 1) return;
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const r = this.getRetinaScaling ? this.getRetinaScaling() : 1; ctx.scale(r, r);
+    ctx.beginPath(); ctx.rect(0, 0, w, h); ctx.rect(v[4], v[5], W*v[0], H*v[3]);
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--fondo').trim() || '#eef0f4';
+    ctx.globalAlpha = 0.62; ctx.fill('evenodd'); ctx.restore();
+  };
+}
+// lo que se guarda como imagen del lienzo (miniaturas, vistas) es solo la hoja
+{ const orig = canvas.toDataURL.bind(canvas);
+  canvas.toDataURL = function(o = {}){
+    if (o.left == null && o.top == null && o.width == null && o.height == null) o = { ...o, left:canvas.viewportTransform[4], top:canvas.viewportTransform[5], width:W*zoom, height:H*zoom };
+    return orig(o);
+  };
 }
 function ajustarZoom(){
   const a = $('area');
@@ -958,8 +1010,8 @@ canvas.on('after:render', () => {
   ctx.save(); ctx.strokeStyle = '#ec4899'; ctx.lineWidth = 1; ctx.setLineDash([6, 4]);
   guias.forEach(g => {
     ctx.beginPath();
-    if (g.x !== undefined){ const x = Math.round(g.x*zoom) + 0.5; ctx.moveTo(x, 0); ctx.lineTo(x, H*zoom); }
-    else { const y = Math.round(g.y*zoom) + 0.5; ctx.moveTo(0, y); ctx.lineTo(W*zoom, y); }
+    if (g.x !== undefined){ const x = Math.round(g.x*zoom + OX) + 0.5; ctx.moveTo(x, OY); ctx.lineTo(x, OY + H*zoom); }
+    else { const y = Math.round(g.y*zoom + OY) + 0.5; ctx.moveTo(OX, y); ctx.lineTo(OX + W*zoom, y); }
     ctx.stroke();
   });
   ctx.restore();
@@ -1708,7 +1760,7 @@ function iniciarRecorteLibre(){
 }
 function dibujarLazo(){
   const ctx = canvas.contextTop, pts = recorte.pts; canvas.clearContext(ctx);
-  ctx.save(); ctx.beginPath();
+  ctx.save(); ctx.translate(OX, OY); ctx.beginPath();
   pts.forEach((p, i) => i ? ctx.lineTo(p.x * zoom, p.y * zoom) : ctx.moveTo(p.x * zoom, p.y * zoom));
   ctx.fillStyle = 'rgba(25,200,255,.12)'; ctx.fill();
   ctx.strokeStyle = '#19c8ff'; ctx.lineWidth = 3; ctx.setLineDash([7, 5]); ctx.stroke();
@@ -2312,7 +2364,7 @@ function ladoHacia(r, q){
 }
 function puntoLienzo(e){
   const r = canvas.upperCanvasEl.getBoundingClientRect();
-  return { x: (e.clientX - r.left) / zoom, y: (e.clientY - r.top) / zoom };
+  return { x: (e.clientX - r.left - OX) / zoom, y: (e.clientY - r.top - OY) / zoom };
 }
 function objetivoEn(q, excluir, margen = 0){
   return canvas.getObjects().slice().reverse().find(o => {
@@ -2327,7 +2379,7 @@ function extremosConector(c){
 }
 function dibujarGuia(inicio, q, objetivo){
   const ctx = canvas.contextTop; canvas.clearContext(ctx);
-  ctx.save();
+  ctx.save(); ctx.translate(OX, OY);
   if (objetivo){
     const r = cajaAbs(objetivo);
     ctx.strokeStyle = '#ec4899'; ctx.lineWidth = 3; ctx.setLineDash([]);
@@ -3286,7 +3338,7 @@ function crecerAlArrastrar(o){
   if (r.top + r.height > H) nh = Math.ceil(r.top + r.height + m);
   if (nw === W && nh === H) return;
   W = Math.min(8000, nw); H = Math.min(8000, nh);
-  canvas.setDimensions({ width: Math.round(W*zoom), height: Math.round(H*zoom) });
+  acomodarLienzo();
   $('tamTxt').textContent = W + ' × ' + H;
   const f = canvas.getObjects().find(x => x.esFondo); if (f) ajustarRectFondo(f);
   miniaturas = []; crecioArrastrando = true;
@@ -3357,14 +3409,13 @@ document.querySelectorAll('.asa').forEach(asa => {
     ini.ox = d.includes('w') ? w - ini.w : 0;
     ini.oy = d.includes('n') ? hh - ini.h : 0;
     W = w; H = hh;
-    canvas.setDimensions({ width: Math.round(W*zoom), height: Math.round(H*zoom) });
-    canvas.setViewportTransform([zoom, 0, 0, zoom, ini.ox*zoom, ini.oy*zoom]);
+    acomodarLienzo(ini.ox*zoom, ini.oy*zoom);
     $('tamTxt').textContent = W + ' × ' + H;
   });
   const soltar = () => {
     if (!ini) return;
     const { ox, oy } = ini; ini = null;
-    canvas.setViewportTransform([zoom, 0, 0, zoom, 0, 0]);
+    acomodarLienzo();
     if (ox || oy) moverTodo(ox, oy);
     cambiarTamano(W, H);
   };
@@ -6631,7 +6682,7 @@ function dibujarPluma(){
   const ctx = canvas.contextTop; canvas.clearContext(ctx);
   const pts = pluma.pts.slice();
   if (!pts.length) return;
-  ctx.save(); ctx.scale(zoom, zoom);
+  ctx.save(); ctx.translate(OX, OY); ctx.scale(zoom, zoom);
   const lw = 2 / zoom;
   // vista previa del tramo que sigue (hasta el mouse)
   const prev = pluma.mouse && !pluma.arrastre ? [...pts, { x:pluma.mouse.x, y:pluma.mouse.y, h:null }] : pts;
