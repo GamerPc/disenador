@@ -19,7 +19,7 @@ function renderPaginas(){
       const d = document.createElement('div');
       d.className = 'pag' + (i === actual ? ' act' : '');
       d.style.aspectRatio = W + ' / ' + H; d.title = 'Página ' + (i + 1);
-      const img = document.createElement('img');
+      const img = document.createElement('img'); img.alt = 'Página ' + (i + 1);
       if (miniaturas[i]) img.src = miniaturas[i];
       else miniDeJSON(p, u => { miniaturas[i] = u; img.src = u; });
       d.appendChild(img);

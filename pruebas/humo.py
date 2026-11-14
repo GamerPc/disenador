@@ -17,7 +17,7 @@ async def main():
                   cabeBarra: document.getElementById('barra').scrollWidth <= innerWidth + 1,
                   png: (()=>{ canvas.add(new fabric.Rect({width:50,height:50,fill:'red'})); return canvas.toDataURL().length > 1000; })(),
                   orientacion: document.getElementById('pestanas').getAttribute('aria-orientation'),
-                  pestanas: document.querySelectorAll('#pestanas [role="tab"]').length,
+                  pestanas: document.querySelectorAll('#pestanas [role="tab"][data-tab]').length,   // la pestaña de Video abre el estudio y no tiene panel
                   seleccionInicial: document.querySelector('#pestanas [role="tab"][aria-selected="true"]')?.dataset.tab,
                   panelVinculado: document.querySelector('#tPlantillas[role="tabpanel"][aria-labelledby="tabPlantillas"]') !== null })''')
                 print(w, r, errs[:3])

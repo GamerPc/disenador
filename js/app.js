@@ -1466,7 +1466,7 @@ function renderPaginas(){
       const d = document.createElement('div');
       d.className = 'pag' + (i === actual ? ' act' : '');
       d.style.aspectRatio = W + ' / ' + H; d.title = 'Página ' + (i + 1);
-      const img = document.createElement('img');
+      const img = document.createElement('img'); img.alt = 'Página ' + (i + 1);
       if (miniaturas[i]) img.src = miniaturas[i];
       else miniDeJSON(p, u => { miniaturas[i] = u; img.src = u; });
       d.appendChild(img);
@@ -8120,8 +8120,9 @@ renderCatalogo();
   const t = $('toast'); if (t){ t.setAttribute('role', 'status'); t.setAttribute('aria-live', 'polite'); }
   // pestañas: se anuncia cuál está abierta
   const nav = $('pestanas'); if (nav){ nav.setAttribute('aria-label', 'Herramientas');
-    const marcar = () => nav.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.classList.contains('activa') ? 'true' : 'false'));
-    marcar(); new MutationObserver(marcar).observe(nav, { attributes:true, subtree:true, attributeFilter:['class'] }); }
+    // es una lista de pestañas: cada botón es una pestaña (role=tab) y se marca la abierta con aria-selected
+    const marcar = () => nav.querySelectorAll('button').forEach(b => { b.setAttribute('role', 'tab'); b.removeAttribute('aria-pressed'); b.setAttribute('aria-selected', b.classList.contains('activa') ? 'true' : 'false'); if (b.dataset.tab && $(b.dataset.tab)) b.setAttribute('aria-controls', b.dataset.tab); });
+    marcar(); new MutationObserver(marcar).observe(nav, { attributes:true, childList:true, subtree:true, attributeFilter:['class'] }); }
   // los botones del celular no tapan la barra de páginas
   const ajustarFab = () => { const p = $('paginas'), a = $('accMovil'); if (!p || !a || innerWidth > 820) { if (a){ a.style.bottom = ''; a.style.visibility = ''; } return; }
     const n = $('barraNotas'), ref = n && n.offsetParent ? n : p, r = ref.getBoundingClientRect();

@@ -262,6 +262,14 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - **Menos lecturas de Firestore** (plan gratis: 50,000 lecturas/día, 20,000 escrituras/día, 1 GiB): lo leído hace poco se reutiliza unos minutos; las actividades y exámenes que ya cerraron guardan su conteo de entregas; los pendientes del alumno se guardan 10 min. En un grupo de 30 alumnos con 10 actividades: abrir el grupo de nuevo pasó de ~450 a ~16 lecturas, y abrir la app como alumno de ~28 a ~2. El grupo muestra cuánto espacio ocupan sus trabajos.
 - **Reglas nuevas**: `buzon`, `auxSolicitudes`, `inicios`, `esMaestro()` con auxiliares, borrar partes de entregas (maestro) y `abiertas` protegido → volver a publicar `firestore.rules`.
 
+## v72: revisión de accesibilidad y uso con el dedo
+- Revisión con las reglas de UI/UX (accesibilidad, tamaño de botones, letras, movimiento) y axe-core en inicio y editor, en computadora (claro y oscuro) y celular: de 3–4 fallas por pantalla a 0.
+- Pestañas del panel con `role="tab"`, `aria-selected` y `aria-controls` correctos (se actualizan solas); miniaturas de páginas con texto alternativo.
+- Modo claro: el azul de acento pasa a `#056fa3` para que se lea bien sobre blanco (contraste 4.5:1); el contorno de foco también.
+- Letras mínimas de 12 px en pestañas, tarjetas de plantillas y etiquetas del modo sencillo.
+- En celular, todos los botones de la barra, páginas, paneles, inicio, editor de fotos y descarga miden al menos 44×44 px.
+- Respeta «reducir movimiento» del sistema (sin animaciones ni transiciones largas).
+
 ## v71: reglas, historial de cambios, carpetas de capas, WEBP y ZIP
 - `97-reglas-historial-carpetas-y-webp.js`:
   - **Reglas** arriba y a la izquierda del lienzo (px, o cm si el diseño tiene medida real; la esquina cambia la unidad). Marcan la hoja, lo seleccionado y dónde está el ratón. Encendidas en el modo completo y apagadas en el sencillo; se cambian en Archivo → «📏 Mostrar/Ocultar reglas». No salen en celular.
