@@ -262,6 +262,10 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - **Menos lecturas de Firestore** (plan gratis: 50,000 lecturas/día, 20,000 escrituras/día, 1 GiB): lo leído hace poco se reutiliza unos minutos; las actividades y exámenes que ya cerraron guardan su conteo de entregas; los pendientes del alumno se guardan 10 min. En un grupo de 30 alumnos con 10 actividades: abrir el grupo de nuevo pasó de ~450 a ~16 lecturas, y abrir la app como alumno de ~28 a ~2. El grupo muestra cuánto espacio ocupan sus trabajos.
 - **Reglas nuevas**: `buzon`, `auxSolicitudes`, `inicios`, `esMaestro()` con auxiliares, borrar partes de entregas (maestro) y `abiertas` protegido → volver a publicar `firestore.rules`.
 
+## v73: íconos dibujados en lugar de emojis
+- `98-iconos-dibujados-en-inicio-y-ventanas.js`: la página de inicio (modos, accesos, ventajas, atajos, categorías), la descarga en un paso, el editor de fotos, «Reducir PDF», el historial y la ayuda del modo sencillo usan dibujos del mismo estilo que la barra en lugar de emojis, que cambian en cada celular y en equipos viejos salen como cuadritos.
+- Se agregaron 47 dibujos a `ICONOS_UI` y una tabla `EMOJI_ICONO`; los textos de esas ventanas se revisan solos cuando cambian. Lo que está dentro de los diseños (plantillas) no se toca.
+
 ## v72: revisión de accesibilidad y uso con el dedo
 - Revisión con las reglas de UI/UX (accesibilidad, tamaño de botones, letras, movimiento) y axe-core en inicio y editor, en computadora (claro y oscuro) y celular: de 3–4 fallas por pantalla a 0.
 - Pestañas del panel con `role="tab"`, `aria-selected` y `aria-controls` correctos (se actualizan solas); miniaturas de páginas con texto alternativo.
