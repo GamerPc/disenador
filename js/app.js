@@ -46,6 +46,8 @@ Object.assign(fabric.Object.prototype, {
   transparentCorners:false, cornerColor:'#0f1218', cornerStrokeColor:'#19c8ff',
   borderColor:'#19c8ff', cornerStyle:'circle', cornerSize:11, padding:4
 });
+// en celulares con pantalla muy fina (3 puntos por pixel) se dibuja con 2: se ve igual de nítido y se mueve mucho más rápido
+fabric.devicePixelRatio = Math.min(fabric.devicePixelRatio || 1, 2);
 let canvas = new fabric.Canvas('lienzo', {
   preserveObjectStacking:true, backgroundColor:'#ffffff', selectionColor:'rgba(25,200,255,.08)',
   selectionBorderColor:'#19c8ff'
@@ -130,6 +132,7 @@ fabric.Conector.fromObject = function(obj, cb){
    tomar, mover, girar, dibujar y seleccionar aunque algo quede en la orilla o se salga de la hoja.
    La hoja (#envoltura) sigue midiendo lo mismo; OX/OY dicen dónde empieza dentro del lienzo. */
 let OX = 0, OY = 0;
+const colorMesa = { tema:null, c:'#eef0f4' };
 const MARGEN_MESA = 120;          // espacio extra alrededor cuando la hoja es más grande que la pantalla
 function acomodarLienzo(extraX = 0, extraY = 0){
   const a = $('area'), env = $('envoltura'), pw = Math.round(W*zoom), ph = Math.round(H*zoom);
@@ -141,7 +144,7 @@ function acomodarLienzo(extraX = 0, extraY = 0){
   const L = env.offsetLeft, T = env.offsetTop;
   const R = Math.max(padR + mx, a.clientWidth - L - pw), B = Math.max(padB + my, a.clientHeight - T - ph);
   OX = L; OY = T;
-  canvas.setDimensions({ width: pw + L + R, height: ph + T + B });
+  if (canvas.width !== pw + L + R || canvas.height !== ph + T + B) canvas.setDimensions({ width: pw + L + R, height: ph + T + B });   // rehacer el lienzo es caro
   const cont = canvas.wrapperEl; if (cont){ cont.style.position = 'absolute'; cont.style.left = -L + 'px'; cont.style.top = -T + 'px'; }
   canvas.setViewportTransform([zoom, 0, 0, zoom, OX + extraX, OY + extraY]);
 }
@@ -173,7 +176,9 @@ canvas.controlsAboveOverlay = true;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     const r = this.getRetinaScaling ? this.getRetinaScaling() : 1; ctx.scale(r, r);
     ctx.beginPath(); ctx.rect(0, 0, w, h); ctx.rect(v[4], v[5], W*v[0], H*v[3]);
-    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--fondo').trim() || '#eef0f4';
+    const tema = document.documentElement.className;
+    if (colorMesa.tema !== tema){ colorMesa.tema = tema; colorMesa.c = getComputedStyle(document.documentElement).getPropertyValue('--fondo').trim() || '#eef0f4'; }
+    ctx.fillStyle = colorMesa.c;
     ctx.globalAlpha = 0.62; ctx.fill('evenodd'); ctx.restore();
   };
 }
@@ -4238,12 +4243,29 @@ function vistaDe(tam, crear){
   return url;
 }
 // Las miniaturas se dibujan solo cuando su tarjeta se ve en pantalla (antes se hacían todas al abrir y trababan el celular)
-let fuentesVistas = null;
+let fuentesVistas = null, fuentesVistasOk = false;
 function fuentesParaVistas(){   // las letras de las plantillas se bajan la primera vez que hace falta una miniatura
   if (!fuentesVistas) fuentesVistas = Promise.race([
-    Promise.all(FUENTES.filter(f => !['Arial','Georgia','Times New Roman','Courier New','Verdana'].includes(f)).flatMap(f => [document.fonts.load(`400 40px "${f}"`), document.fonts.load(`700 40px "${f}"`)])).catch(() => {}),
+    Promise.all(FUENTES.filter(f => !['Arial','Georgia','Times New Roman','Courier New','Verdana'].includes(f)).flatMap(f => [document.fonts.load(`400 40px "${f}"`), document.fonts.load(`700 40px "${f}"`)]))
+      .then(r => { fuentesVistasOk = r.every(x => x && x.length); }).catch(() => {}),
     new Promise(r => setTimeout(r, 6000))]);
   return fuentesVistas;
+}
+// las miniaturas ya dibujadas se guardan en el equipo (IndexedDB): la siguiente vez salen al instante.
+// La clave lleva una huella del código de la plantilla, así que si la plantilla cambia se vuelve a dibujar.
+const vistasGuardadas = (() => {
+  let db = null;
+  const abrir = () => db || (db = new Promise(ok => {
+    try { const r = indexedDB.open('disenador-vistas', 1); r.onupgradeneeded = () => r.result.createObjectStore('v'); r.onsuccess = () => ok(r.result); r.onerror = () => ok(null); }
+    catch (e) { ok(null); }
+  }));
+  const pedir = (modo, fn) => abrir().then(d => d ? new Promise(ok => { try { const t = d.transaction('v', modo), q = fn(t.objectStore('v')); t.oncomplete = () => ok(q && q.result); t.onerror = t.onabort = () => ok(null); } catch (e) { ok(null); } }) : null);
+  return { leer:k => pedir('readonly', s => s.get(k)), guardar:(k, v) => pedir('readwrite', s => { s.put(v, k); }) };
+})();
+function claveVista(it){
+  const s = it.nombre + '|' + (it.tam || []).join('x') + '|' + String(it.crear); let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return it.nombre + '|' + (h >>> 0).toString(36);
 }
 const colaVistas = [];
 let haciendoVistas = false;
@@ -4251,12 +4273,19 @@ const pausaVista = () => new Promise(r => ('requestIdleCallback' in window) ? re
 async function hacerVistas(){
   if (haciendoVistas) return; haciendoVistas = true;
   try {
-    await fuentesParaVistas();
+    let fuentesListas = false;
     while (colaVistas.length){
       const it = colaVistas.shift();
       if (it.vista || !it.crear) continue;
-      await pausaVista();
-      it.vista = vistaDe(it.tam, it.crear);
+      const clave = claveVista(it), guardada = await vistasGuardadas.leer(clave);
+      if (guardada) it.vista = guardada;
+      else {
+        if (!fuentesListas){ await fuentesParaVistas(); fuentesListas = true; }
+        await pausaVista();
+        it.vista = vistaDe(it.tam, it.crear);
+        // solo se guarda si las letras de la plantilla ya habían cargado (si no, saldría con otra letra)
+        if (it.vista && fuentesVistasOk) vistasGuardadas.guardar(clave, it.vista);
+      }
       if (it.boton && it.vista) it.boton.querySelector('.mini').innerHTML = `<img src="${it.vista}" alt="">`;
       if (it.botonInicio && it.vista){ const m = it.botonInicio.querySelector('.inTplMini'); if (m) m.innerHTML = `<img src="${it.vista}" alt="">`; }
     }
@@ -8123,11 +8152,21 @@ function svgIcono(n){ return `<svg class="ico${n === 'play' ? ' relleno' : ''}" 
     b.insertBefore(sp, n); n.textContent = resto.trim() ? ' ' + resto.trim() : '';
     if (!resto.trim() && !b.getAttribute('aria-label') && b.title) b.setAttribute('aria-label', b.title);
   }
-  const todos = raiz => raiz.querySelectorAll('button').forEach(b => { if (b.matches(ZONAS.split(',').map(z => z.trim() + ' button, ' + z.trim()).join(','))) convertir(b); });
+  const SEL = ZONAS.split(',').map(z => z.trim() + ' button, ' + z.trim()).join(',');      // se arma una sola vez
+  const revisar = b => { if (b.matches(SEL)) convertir(b); };
+  const todos = raiz => raiz.querySelectorAll('button').forEach(revisar);
   todos(document);
-  let pend = false;
-  new MutationObserver(() => { if (pend) return; pend = true; requestAnimationFrame(() => { pend = false; todos(document); }); })
-    .observe(document.body, { childList:true, subtree:true, characterData:true });
+  // solo se revisa lo que cambió (antes se recorría toda la página con cada cambio, y trababa al arrastrar en el celular)
+  let pend = new Set(), prog = false;
+  new MutationObserver(muts => {
+    for (const m of muts){
+      if (m.type === 'characterData'){ const b = m.target.parentElement && m.target.parentElement.closest('button'); if (b) pend.add(b); continue; }
+      m.addedNodes.forEach(n => { if (n.nodeType === 1) pend.add(n); else if (n.nodeType === 3 && n.parentElement){ const b = n.parentElement.closest('button'); if (b) pend.add(b); } });
+    }
+    if (prog || !pend.size) return; prog = true;
+    requestAnimationFrame(() => { const lista = [...pend]; pend = new Set(); prog = false;
+      lista.forEach(n => { if (!n.isConnected) return; if (n.tagName === 'BUTTON') revisar(n); else n.querySelectorAll('button').forEach(revisar); }); });
+  }).observe(document.body, { childList:true, subtree:true, characterData:true });
 })();
 
 /* =========================================================
@@ -12404,6 +12443,13 @@ function empezarNuevoInicio(que){
           <button type="button" class="inEntrar" id="inSeguirBtn">✏ Seguir con mi diseño</button>
         </div>
       </section>
+      <ul class="inVentajas" aria-label="Por qué el Diseñador">
+        <li title="Sin plan Pro, sin coronitas de pago y sin subidas de precio">💸 Gratis de verdad</li>
+        <li title="Se guardan en tu equipo, salvo que tú los subas a la nube">🔒 Tus diseños se quedan en tu equipo</li>
+        <li title="Instálalo como app y sigue diseñando sin internet (la escuela, la nube y la IA sí lo necesitan)">📶 Funciona sin internet</li>
+        <li title="No vendemos tus datos ni mostramos publicidad">🚫 Sin anuncios</li>
+        <li><a href="inicio.html#diferente" target="_blank" rel="noopener">¿Por qué es diferente? →</a></li>
+      </ul>
       <section class="inFila" aria-labelledby="inTitTam">
         <h2 id="inTitTam">Empieza en blanco</h2>
         <div class="inFormatos">${INICIO_FORMATOS.map(([t, s, w, h], i) => `<button type="button" class="inFormato" data-fmt="${i}">${inicioSilueta(w, h)}<span><b>${esc(t)}</b><small>${esc(s)}</small></span></button>`).join('')}

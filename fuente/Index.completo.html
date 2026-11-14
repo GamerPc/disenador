@@ -1395,13 +1395,19 @@ html:not(.claro) #editorFoto .efListo{color:#04121c}
 html.letraGrande #mDescargaFacil .dfOpcion b{font-size:18px}
 html.letraGrande #mDescargaFacil .dfOpcion small{font-size:15px}
 
+#inicioApp .inVentajas{list-style:none;margin:-14px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:center;color:var(--suave);font-size:13.5px;font-weight:600}
+#inicioApp .inVentajas li{display:flex;align-items:center;gap:6px}
+#inicioApp .inVentajas a{color:var(--morado);text-decoration:none}
+#inicioApp .inVentajas a:hover{text-decoration:underline}
+@media (max-width:820px){#inicioApp .inVentajas{justify-content:flex-start;gap:6px 14px;font-size:12.5px;margin-top:-10px}}
+
 </style>
 </head>
 <body>
 
 <!-- ====== BARRA SUPERIOR ====== -->
 <div id="barra">
-  <div class="logo"><img class="logoImg" src="data:image/png;base64,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" alt=""><span class="logoTxt">Diseñador<small class="logoMarca">APIK-DESING</small></span><small class="ver">v69</small></div>
+  <div class="logo"><img class="logoImg" src="data:image/png;base64,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" alt=""><span class="logoTxt">Diseñador<small class="logoMarca">APIK-DESING</small></span><small class="ver">v70</small></div>
   <input class="nombre" id="nombreDiseno" value="Mi diseño" title="Nombre del diseño">
   <span id="estadoGuardado" title="Estado del guardado en Drive">No guardado en Drive</span>
   <button class="tb" onclick="nuevoDiseno()">Nuevo</button>
@@ -2186,6 +2192,8 @@ Object.assign(fabric.Object.prototype, {
   transparentCorners:false, cornerColor:'#0f1218', cornerStrokeColor:'#19c8ff',
   borderColor:'#19c8ff', cornerStyle:'circle', cornerSize:11, padding:4
 });
+// en celulares con pantalla muy fina (3 puntos por pixel) se dibuja con 2: se ve igual de nítido y se mueve mucho más rápido
+fabric.devicePixelRatio = Math.min(fabric.devicePixelRatio || 1, 2);
 let canvas = new fabric.Canvas('lienzo', {
   preserveObjectStacking:true, backgroundColor:'#ffffff', selectionColor:'rgba(25,200,255,.08)',
   selectionBorderColor:'#19c8ff'
@@ -2270,6 +2278,7 @@ fabric.Conector.fromObject = function(obj, cb){
    tomar, mover, girar, dibujar y seleccionar aunque algo quede en la orilla o se salga de la hoja.
    La hoja (#envoltura) sigue midiendo lo mismo; OX/OY dicen dónde empieza dentro del lienzo. */
 let OX = 0, OY = 0;
+const colorMesa = { tema:null, c:'#eef0f4' };
 const MARGEN_MESA = 120;          // espacio extra alrededor cuando la hoja es más grande que la pantalla
 function acomodarLienzo(extraX = 0, extraY = 0){
   const a = $('area'), env = $('envoltura'), pw = Math.round(W*zoom), ph = Math.round(H*zoom);
@@ -2281,7 +2290,7 @@ function acomodarLienzo(extraX = 0, extraY = 0){
   const L = env.offsetLeft, T = env.offsetTop;
   const R = Math.max(padR + mx, a.clientWidth - L - pw), B = Math.max(padB + my, a.clientHeight - T - ph);
   OX = L; OY = T;
-  canvas.setDimensions({ width: pw + L + R, height: ph + T + B });
+  if (canvas.width !== pw + L + R || canvas.height !== ph + T + B) canvas.setDimensions({ width: pw + L + R, height: ph + T + B });   // rehacer el lienzo es caro
   const cont = canvas.wrapperEl; if (cont){ cont.style.position = 'absolute'; cont.style.left = -L + 'px'; cont.style.top = -T + 'px'; }
   canvas.setViewportTransform([zoom, 0, 0, zoom, OX + extraX, OY + extraY]);
 }
@@ -2313,7 +2322,9 @@ canvas.controlsAboveOverlay = true;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     const r = this.getRetinaScaling ? this.getRetinaScaling() : 1; ctx.scale(r, r);
     ctx.beginPath(); ctx.rect(0, 0, w, h); ctx.rect(v[4], v[5], W*v[0], H*v[3]);
-    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--fondo').trim() || '#eef0f4';
+    const tema = document.documentElement.className;
+    if (colorMesa.tema !== tema){ colorMesa.tema = tema; colorMesa.c = getComputedStyle(document.documentElement).getPropertyValue('--fondo').trim() || '#eef0f4'; }
+    ctx.fillStyle = colorMesa.c;
     ctx.globalAlpha = 0.62; ctx.fill('evenodd'); ctx.restore();
   };
 }
@@ -6378,12 +6389,29 @@ function vistaDe(tam, crear){
   return url;
 }
 // Las miniaturas se dibujan solo cuando su tarjeta se ve en pantalla (antes se hacían todas al abrir y trababan el celular)
-let fuentesVistas = null;
+let fuentesVistas = null, fuentesVistasOk = false;
 function fuentesParaVistas(){   // las letras de las plantillas se bajan la primera vez que hace falta una miniatura
   if (!fuentesVistas) fuentesVistas = Promise.race([
-    Promise.all(FUENTES.filter(f => !['Arial','Georgia','Times New Roman','Courier New','Verdana'].includes(f)).flatMap(f => [document.fonts.load(`400 40px "${f}"`), document.fonts.load(`700 40px "${f}"`)])).catch(() => {}),
+    Promise.all(FUENTES.filter(f => !['Arial','Georgia','Times New Roman','Courier New','Verdana'].includes(f)).flatMap(f => [document.fonts.load(`400 40px "${f}"`), document.fonts.load(`700 40px "${f}"`)]))
+      .then(r => { fuentesVistasOk = r.every(x => x && x.length); }).catch(() => {}),
     new Promise(r => setTimeout(r, 6000))]);
   return fuentesVistas;
+}
+// las miniaturas ya dibujadas se guardan en el equipo (IndexedDB): la siguiente vez salen al instante.
+// La clave lleva una huella del código de la plantilla, así que si la plantilla cambia se vuelve a dibujar.
+const vistasGuardadas = (() => {
+  let db = null;
+  const abrir = () => db || (db = new Promise(ok => {
+    try { const r = indexedDB.open('disenador-vistas', 1); r.onupgradeneeded = () => r.result.createObjectStore('v'); r.onsuccess = () => ok(r.result); r.onerror = () => ok(null); }
+    catch (e) { ok(null); }
+  }));
+  const pedir = (modo, fn) => abrir().then(d => d ? new Promise(ok => { try { const t = d.transaction('v', modo), q = fn(t.objectStore('v')); t.oncomplete = () => ok(q && q.result); t.onerror = t.onabort = () => ok(null); } catch (e) { ok(null); } }) : null);
+  return { leer:k => pedir('readonly', s => s.get(k)), guardar:(k, v) => pedir('readwrite', s => { s.put(v, k); }) };
+})();
+function claveVista(it){
+  const s = it.nombre + '|' + (it.tam || []).join('x') + '|' + String(it.crear); let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return it.nombre + '|' + (h >>> 0).toString(36);
 }
 const colaVistas = [];
 let haciendoVistas = false;
@@ -6391,12 +6419,19 @@ const pausaVista = () => new Promise(r => ('requestIdleCallback' in window) ? re
 async function hacerVistas(){
   if (haciendoVistas) return; haciendoVistas = true;
   try {
-    await fuentesParaVistas();
+    let fuentesListas = false;
     while (colaVistas.length){
       const it = colaVistas.shift();
       if (it.vista || !it.crear) continue;
-      await pausaVista();
-      it.vista = vistaDe(it.tam, it.crear);
+      const clave = claveVista(it), guardada = await vistasGuardadas.leer(clave);
+      if (guardada) it.vista = guardada;
+      else {
+        if (!fuentesListas){ await fuentesParaVistas(); fuentesListas = true; }
+        await pausaVista();
+        it.vista = vistaDe(it.tam, it.crear);
+        // solo se guarda si las letras de la plantilla ya habían cargado (si no, saldría con otra letra)
+        if (it.vista && fuentesVistasOk) vistasGuardadas.guardar(clave, it.vista);
+      }
       if (it.boton && it.vista) it.boton.querySelector('.mini').innerHTML = `<img src="${it.vista}" alt="">`;
       if (it.botonInicio && it.vista){ const m = it.botonInicio.querySelector('.inTplMini'); if (m) m.innerHTML = `<img src="${it.vista}" alt="">`; }
     }
@@ -10263,11 +10298,21 @@ function svgIcono(n){ return `<svg class="ico${n === 'play' ? ' relleno' : ''}" 
     b.insertBefore(sp, n); n.textContent = resto.trim() ? ' ' + resto.trim() : '';
     if (!resto.trim() && !b.getAttribute('aria-label') && b.title) b.setAttribute('aria-label', b.title);
   }
-  const todos = raiz => raiz.querySelectorAll('button').forEach(b => { if (b.matches(ZONAS.split(',').map(z => z.trim() + ' button, ' + z.trim()).join(','))) convertir(b); });
+  const SEL = ZONAS.split(',').map(z => z.trim() + ' button, ' + z.trim()).join(',');      // se arma una sola vez
+  const revisar = b => { if (b.matches(SEL)) convertir(b); };
+  const todos = raiz => raiz.querySelectorAll('button').forEach(revisar);
   todos(document);
-  let pend = false;
-  new MutationObserver(() => { if (pend) return; pend = true; requestAnimationFrame(() => { pend = false; todos(document); }); })
-    .observe(document.body, { childList:true, subtree:true, characterData:true });
+  // solo se revisa lo que cambió (antes se recorría toda la página con cada cambio, y trababa al arrastrar en el celular)
+  let pend = new Set(), prog = false;
+  new MutationObserver(muts => {
+    for (const m of muts){
+      if (m.type === 'characterData'){ const b = m.target.parentElement && m.target.parentElement.closest('button'); if (b) pend.add(b); continue; }
+      m.addedNodes.forEach(n => { if (n.nodeType === 1) pend.add(n); else if (n.nodeType === 3 && n.parentElement){ const b = n.parentElement.closest('button'); if (b) pend.add(b); } });
+    }
+    if (prog || !pend.size) return; prog = true;
+    requestAnimationFrame(() => { const lista = [...pend]; pend = new Set(); prog = false;
+      lista.forEach(n => { if (!n.isConnected) return; if (n.tagName === 'BUTTON') revisar(n); else n.querySelectorAll('button').forEach(revisar); }); });
+  }).observe(document.body, { childList:true, subtree:true, characterData:true });
 })();
 
 /* =========================================================
@@ -16114,6 +16159,13 @@ function empezarNuevoInicio(que){
           <button type="button" class="inEntrar" id="inSeguirBtn">✏ Seguir con mi diseño</button>
         </div>
       </section>
+      <ul class="inVentajas" aria-label="Por qué el Diseñador">
+        <li title="Sin plan Pro, sin coronitas de pago y sin subidas de precio">💸 Gratis de verdad</li>
+        <li title="Se guardan en tu equipo, salvo que tú los subas a la nube">🔒 Tus diseños se quedan en tu equipo</li>
+        <li title="Instálalo como app y sigue diseñando sin internet (la escuela, la nube y la IA sí lo necesitan)">📶 Funciona sin internet</li>
+        <li title="No vendemos tus datos ni mostramos publicidad">🚫 Sin anuncios</li>
+        <li><a href="inicio.html#diferente" target="_blank" rel="noopener">¿Por qué es diferente? →</a></li>
+      </ul>
       <section class="inFila" aria-labelledby="inTitTam">
         <h2 id="inTitTam">Empieza en blanco</h2>
         <div class="inFormatos">${INICIO_FORMATOS.map(([t, s, w, h], i) => `<button type="button" class="inFormato" data-fmt="${i}">${inicioSilueta(w, h)}<span><b>${esc(t)}</b><small>${esc(s)}</small></span></button>`).join('')}

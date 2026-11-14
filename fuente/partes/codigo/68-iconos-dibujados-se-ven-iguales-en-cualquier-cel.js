@@ -44,10 +44,20 @@ function svgIcono(n){ return `<svg class="ico${n === 'play' ? ' relleno' : ''}" 
     b.insertBefore(sp, n); n.textContent = resto.trim() ? ' ' + resto.trim() : '';
     if (!resto.trim() && !b.getAttribute('aria-label') && b.title) b.setAttribute('aria-label', b.title);
   }
-  const todos = raiz => raiz.querySelectorAll('button').forEach(b => { if (b.matches(ZONAS.split(',').map(z => z.trim() + ' button, ' + z.trim()).join(','))) convertir(b); });
+  const SEL = ZONAS.split(',').map(z => z.trim() + ' button, ' + z.trim()).join(',');      // se arma una sola vez
+  const revisar = b => { if (b.matches(SEL)) convertir(b); };
+  const todos = raiz => raiz.querySelectorAll('button').forEach(revisar);
   todos(document);
-  let pend = false;
-  new MutationObserver(() => { if (pend) return; pend = true; requestAnimationFrame(() => { pend = false; todos(document); }); })
-    .observe(document.body, { childList:true, subtree:true, characterData:true });
+  // solo se revisa lo que cambió (antes se recorría toda la página con cada cambio, y trababa al arrastrar en el celular)
+  let pend = new Set(), prog = false;
+  new MutationObserver(muts => {
+    for (const m of muts){
+      if (m.type === 'characterData'){ const b = m.target.parentElement && m.target.parentElement.closest('button'); if (b) pend.add(b); continue; }
+      m.addedNodes.forEach(n => { if (n.nodeType === 1) pend.add(n); else if (n.nodeType === 3 && n.parentElement){ const b = n.parentElement.closest('button'); if (b) pend.add(b); } });
+    }
+    if (prog || !pend.size) return; prog = true;
+    requestAnimationFrame(() => { const lista = [...pend]; pend = new Set(); prog = false;
+      lista.forEach(n => { if (!n.isConnected) return; if (n.tagName === 'BUTTON') revisar(n); else n.querySelectorAll('button').forEach(revisar); }); });
+  }).observe(document.body, { childList:true, subtree:true, characterData:true });
 })();
 

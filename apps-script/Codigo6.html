@@ -533,12 +533,29 @@ function vistaDe(tam, crear){
   return url;
 }
 // Las miniaturas se dibujan solo cuando su tarjeta se ve en pantalla (antes se hacían todas al abrir y trababan el celular)
-let fuentesVistas = null;
+let fuentesVistas = null, fuentesVistasOk = false;
 function fuentesParaVistas(){   // las letras de las plantillas se bajan la primera vez que hace falta una miniatura
   if (!fuentesVistas) fuentesVistas = Promise.race([
-    Promise.all(FUENTES.filter(f => !['Arial','Georgia','Times New Roman','Courier New','Verdana'].includes(f)).flatMap(f => [document.fonts.load(`400 40px "${f}"`), document.fonts.load(`700 40px "${f}"`)])).catch(() => {}),
+    Promise.all(FUENTES.filter(f => !['Arial','Georgia','Times New Roman','Courier New','Verdana'].includes(f)).flatMap(f => [document.fonts.load(`400 40px "${f}"`), document.fonts.load(`700 40px "${f}"`)]))
+      .then(r => { fuentesVistasOk = r.every(x => x && x.length); }).catch(() => {}),
     new Promise(r => setTimeout(r, 6000))]);
   return fuentesVistas;
+}
+// las miniaturas ya dibujadas se guardan en el equipo (IndexedDB): la siguiente vez salen al instante.
+// La clave lleva una huella del código de la plantilla, así que si la plantilla cambia se vuelve a dibujar.
+const vistasGuardadas = (() => {
+  let db = null;
+  const abrir = () => db || (db = new Promise(ok => {
+    try { const r = indexedDB.open('disenador-vistas', 1); r.onupgradeneeded = () => r.result.createObjectStore('v'); r.onsuccess = () => ok(r.result); r.onerror = () => ok(null); }
+    catch (e) { ok(null); }
+  }));
+  const pedir = (modo, fn) => abrir().then(d => d ? new Promise(ok => { try { const t = d.transaction('v', modo), q = fn(t.objectStore('v')); t.oncomplete = () => ok(q && q.result); t.onerror = t.onabort = () => ok(null); } catch (e) { ok(null); } }) : null);
+  return { leer:k => pedir('readonly', s => s.get(k)), guardar:(k, v) => pedir('readwrite', s => { s.put(v, k); }) };
+})();
+function claveVista(it){
+  const s = it.nombre + '|' + (it.tam || []).join('x') + '|' + String(it.crear); let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return it.nombre + '|' + (h >>> 0).toString(36);
 }
 const colaVistas = [];
 let haciendoVistas = false;
@@ -546,12 +563,19 @@ const pausaVista = () => new Promise(r => ('requestIdleCallback' in window) ? re
 async function hacerVistas(){
   if (haciendoVistas) return; haciendoVistas = true;
   try {
-    await fuentesParaVistas();
+    let fuentesListas = false;
     while (colaVistas.length){
       const it = colaVistas.shift();
       if (it.vista || !it.crear) continue;
-      await pausaVista();
-      it.vista = vistaDe(it.tam, it.crear);
+      const clave = claveVista(it), guardada = await vistasGuardadas.leer(clave);
+      if (guardada) it.vista = guardada;
+      else {
+        if (!fuentesListas){ await fuentesParaVistas(); fuentesListas = true; }
+        await pausaVista();
+        it.vista = vistaDe(it.tam, it.crear);
+        // solo se guarda si las letras de la plantilla ya habían cargado (si no, saldría con otra letra)
+        if (it.vista && fuentesVistasOk) vistasGuardadas.guardar(clave, it.vista);
+      }
       if (it.boton && it.vista) it.boton.querySelector('.mini').innerHTML = `<img src="${it.vista}" alt="">`;
       if (it.botonInicio && it.vista){ const m = it.botonInicio.querySelector('.inTplMini'); if (m) m.innerHTML = `<img src="${it.vista}" alt="">`; }
     }

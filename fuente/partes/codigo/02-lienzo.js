@@ -6,6 +6,8 @@ Object.assign(fabric.Object.prototype, {
   transparentCorners:false, cornerColor:'#0f1218', cornerStrokeColor:'#19c8ff',
   borderColor:'#19c8ff', cornerStyle:'circle', cornerSize:11, padding:4
 });
+// en celulares con pantalla muy fina (3 puntos por pixel) se dibuja con 2: se ve igual de nítido y se mueve mucho más rápido
+fabric.devicePixelRatio = Math.min(fabric.devicePixelRatio || 1, 2);
 let canvas = new fabric.Canvas('lienzo', {
   preserveObjectStacking:true, backgroundColor:'#ffffff', selectionColor:'rgba(25,200,255,.08)',
   selectionBorderColor:'#19c8ff'
@@ -90,6 +92,7 @@ fabric.Conector.fromObject = function(obj, cb){
    tomar, mover, girar, dibujar y seleccionar aunque algo quede en la orilla o se salga de la hoja.
    La hoja (#envoltura) sigue midiendo lo mismo; OX/OY dicen dónde empieza dentro del lienzo. */
 let OX = 0, OY = 0;
+const colorMesa = { tema:null, c:'#eef0f4' };
 const MARGEN_MESA = 120;          // espacio extra alrededor cuando la hoja es más grande que la pantalla
 function acomodarLienzo(extraX = 0, extraY = 0){
   const a = $('area'), env = $('envoltura'), pw = Math.round(W*zoom), ph = Math.round(H*zoom);
@@ -101,7 +104,7 @@ function acomodarLienzo(extraX = 0, extraY = 0){
   const L = env.offsetLeft, T = env.offsetTop;
   const R = Math.max(padR + mx, a.clientWidth - L - pw), B = Math.max(padB + my, a.clientHeight - T - ph);
   OX = L; OY = T;
-  canvas.setDimensions({ width: pw + L + R, height: ph + T + B });
+  if (canvas.width !== pw + L + R || canvas.height !== ph + T + B) canvas.setDimensions({ width: pw + L + R, height: ph + T + B });   // rehacer el lienzo es caro
   const cont = canvas.wrapperEl; if (cont){ cont.style.position = 'absolute'; cont.style.left = -L + 'px'; cont.style.top = -T + 'px'; }
   canvas.setViewportTransform([zoom, 0, 0, zoom, OX + extraX, OY + extraY]);
 }
@@ -133,7 +136,9 @@ canvas.controlsAboveOverlay = true;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     const r = this.getRetinaScaling ? this.getRetinaScaling() : 1; ctx.scale(r, r);
     ctx.beginPath(); ctx.rect(0, 0, w, h); ctx.rect(v[4], v[5], W*v[0], H*v[3]);
-    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--fondo').trim() || '#eef0f4';
+    const tema = document.documentElement.className;
+    if (colorMesa.tema !== tema){ colorMesa.tema = tema; colorMesa.c = getComputedStyle(document.documentElement).getPropertyValue('--fondo').trim() || '#eef0f4'; }
+    ctx.fillStyle = colorMesa.c;
     ctx.globalAlpha = 0.62; ctx.fill('evenodd'); ctx.restore();
   };
 }

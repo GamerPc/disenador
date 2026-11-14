@@ -262,6 +262,13 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - **Menos lecturas de Firestore** (plan gratis: 50,000 lecturas/día, 20,000 escrituras/día, 1 GiB): lo leído hace poco se reutiliza unos minutos; las actividades y exámenes que ya cerraron guardan su conteo de entregas; los pendientes del alumno se guardan 10 min. En un grupo de 30 alumnos con 10 actividades: abrir el grupo de nuevo pasó de ~450 a ~16 lecturas, y abrir la app como alumno de ~28 a ~2. El grupo muestra cuánto espacio ocupan sus trabajos.
 - **Reglas nuevas**: `buzon`, `auxSolicitudes`, `inicios`, `esMaestro()` con auxiliares, borrar partes de entregas (maestro) y `abiertas` protegido → volver a publicar `firestore.rules`.
 
+## v70: más rápido en equipos sencillos y ventajas a la vista
+- Las miniaturas de plantillas se guardan en el equipo (IndexedDB `disenador-vistas`, con una huella del código de cada plantilla para que se rehagan si cambia); solo se guardan si las letras ya cargaron.
+- El lienzo se dibuja con máximo 2 puntos por pixel (`fabric.devicePixelRatio`) y no se rehace si no cambió de tamaño; el color de la mesa se guarda en lugar de leerse en cada cuadro.
+- Los íconos dibujados (`68-…`) ya no recorren toda la página con cada cambio: solo revisan lo que se agregó o cambió.
+- Medido con el procesador 6 veces más lento y pantalla de celular: la página de inicio aparece en 3.0 s (antes 4.7 s) y en la segunda visita en 2.3 s, con la mitad de tareas largas.
+- Ventajas a la vista: franja en la página de inicio (gratis de verdad, tus diseños se quedan en tu equipo, funciona sin internet, sin anuncios) y sección «¿Por qué el Diseñador?» en `inicio.html#diferente`.
+
 ## v69: descargar en un paso y plantillas de invitaciones y diplomas
 - `95-descarga-facil.js`: «Exportar» (botón, Ctrl+E, buscador) pregunta primero «¿Para qué lo quieres?»: Para compartir (JPG; en celular abre el menú de compartir, por ejemplo WhatsApp), Para imprimir (PDF de buena calidad), Para entregar una tarea (PDF ligero), Imagen en alta calidad (PNG), Para presentar (PowerPoint, si hay varias páginas), Video y Para la imprenta (si el diseño tiene medida real). «⚙ Más opciones» abre la ventana completa (`abrirModal.directo('mExportar')`).
 - `96-invitaciones-y-diplomas.js`: nueva categoría «🎉 Invitaciones, diplomas y tarjetas» con 8 plantillas: diploma clásico, reconocimiento escolar, constancia de participación, invitación de cumpleaños infantil, de XV años, de boda, a junta de padres y tarjeta del Día del Maestro. «Invitación» y «Diploma» se agregaron a las ideas de la página de inicio.

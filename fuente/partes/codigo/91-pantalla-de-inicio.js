@@ -93,6 +93,13 @@ function empezarNuevoInicio(que){
           <button type="button" class="inEntrar" id="inSeguirBtn">✏ Seguir con mi diseño</button>
         </div>
       </section>
+      <ul class="inVentajas" aria-label="Por qué el Diseñador">
+        <li title="Sin plan Pro, sin coronitas de pago y sin subidas de precio">💸 Gratis de verdad</li>
+        <li title="Se guardan en tu equipo, salvo que tú los subas a la nube">🔒 Tus diseños se quedan en tu equipo</li>
+        <li title="Instálalo como app y sigue diseñando sin internet (la escuela, la nube y la IA sí lo necesitan)">📶 Funciona sin internet</li>
+        <li title="No vendemos tus datos ni mostramos publicidad">🚫 Sin anuncios</li>
+        <li><a href="inicio.html#diferente" target="_blank" rel="noopener">¿Por qué es diferente? →</a></li>
+      </ul>
       <section class="inFila" aria-labelledby="inTitTam">
         <h2 id="inTitTam">Empieza en blanco</h2>
         <div class="inFormatos">${INICIO_FORMATOS.map(([t, s, w, h], i) => `<button type="button" class="inFormato" data-fmt="${i}">${inicioSilueta(w, h)}<span><b>${esc(t)}</b><small>${esc(s)}</small></span></button>`).join('')}
