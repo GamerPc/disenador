@@ -30,6 +30,9 @@ function listarHerramientasBuscables(){
   agregar('Presentar o proyectar', 'Muestra tus diapositivas en pantalla completa', 'exposición exposición diapositivas clase', () => abrirModal('mPresentar'));
   agregar('Buscar texto en el diseño', 'Encuentra y reemplaza palabras', 'buscar reemplazar texto', () => abrirBuscar());
   if (typeof abrirEscuela === 'function') agregar('Modo escuela', 'Grupos, tareas, actividades y entregas', 'maestro alumno clase escolar', () => abrirEscuela());
+  if (typeof abrirHistorial === 'function') agregar('Historial de cambios', 'Ver los últimos pasos y regresar a cualquiera', 'historial deshacer pasos versiones regresar volver atras cambios', () => abrirHistorial());
+  if ($('bReglas')) agregar('Mostrar u ocultar las reglas', 'Reglas en px o cm en el borde del lienzo', 'reglas regla medidas centimetros cm pixeles medir', () => $('bReglas').click());
+  if (typeof nuevaCarpeta === 'function') agregar('Nueva carpeta de capas', 'Junta en una carpeta lo que tengas seleccionado', 'carpeta capas agrupar ordenar organizar', () => nuevaCarpeta());
   if (typeof abrirEditorFoto === 'function') agregar('Editar foto', 'Ajustes, filtros, pinceles y fondo con IA (toca una foto primero)', 'photoshop retocar foto filtro brillo borrar mancha desenfocar pixelar ocultar cara mejorar fondo borroso', () => abrirEditorFoto());
   if (typeof abrirReducirPDF === 'function') agregar('Reducir el peso de un PDF', 'Hazlo más ligero sin cambiar las letras', 'comprimir pdf pesado ligero whatsapp correo tamaño archivo bajar peso optimizar', () => abrirReducirPDF());
   if (typeof irAlEstudioEV === 'function') agregar('Estudio de video', 'Graba, edita y prepara videos', 'cámara grabar música reels mp4', () => irAlEstudioEV());

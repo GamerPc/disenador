@@ -30,11 +30,19 @@ function renderCapas(){
     ul.innerHTML = '';
     const sel = new Set(canvas.getActiveObjects().map(nodoBase).filter(Boolean));
     const tablasSel = new Set([...sel].map(x => x.tabla).filter(Boolean));
-    const tablasVistas = new Set(), conectores = [];
+    const tablasVistas = new Set(), conectores = [], carpetasVistas = new Set();
     let total = 0;
     canvas.getObjects().slice().reverse().forEach(o => {
       if (o.textoDe && porId(o.textoDe)) return;                 // el texto va junto con su forma
       if (o.type === 'conector'){ conectores.push(o); return; }
+      if (o.carpeta){                                             // las capas de una carpeta van juntas debajo de ella
+        if (carpetasVistas.has(o.carpeta)) return; carpetasVistas.add(o.carpeta);
+        const ts = new Set(), miembros = canvas.getObjects().slice().reverse().filter(x => x.carpeta === o.carpeta && !(x.textoDe && porId(x.textoDe)) && x.type !== 'conector' && !(x.tabla && (ts.has(x.tabla) || !ts.add(x.tabla))));
+        total += miembros.length;
+        if (typeof filaCarpeta === 'function') ul.appendChild(filaCarpeta(o.carpeta, miembros, sel));
+        if (typeof carpetasAbiertas === 'undefined' || carpetasAbiertas.has(o.carpeta) || miembros.some(m => sel.has(m))) miembros.forEach(m => { const f = filaCapa(m, sel.has(m) || (m.tabla && tablasSel.has(m.tabla))); f.classList.add('sub'); ul.appendChild(f); });
+        return;
+      }
       if (o.tabla){ if (tablasVistas.has(o.tabla)) return; tablasVistas.add(o.tabla); }
       total++;
       ul.appendChild(filaCapa(o, sel.has(o) || (o.tabla && tablasSel.has(o.tabla))));
@@ -90,7 +98,7 @@ function filaCapa(o, seleccionado){
   li.addEventListener('drop', e => {
     e.preventDefault(); li.classList.remove('destino');
     const mov = porId(e.dataTransfer.getData('text/plain'));
-    if (mov && mov !== o) moverCapaSobre(mov, o);
+    if (mov && mov !== o){ const c = o.carpeta || null; if ((mov.carpeta || null) !== c){ miembrosCapa(mov).forEach(x => x.carpeta = c); accionHist = c ? 'Meter a la carpeta «' + c + '»' : 'Sacar de la carpeta'; } moverCapaSobre(mov, o); }
   });
   return li;
 }

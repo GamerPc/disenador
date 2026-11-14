@@ -262,6 +262,13 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - **Menos lecturas de Firestore** (plan gratis: 50,000 lecturas/día, 20,000 escrituras/día, 1 GiB): lo leído hace poco se reutiliza unos minutos; las actividades y exámenes que ya cerraron guardan su conteo de entregas; los pendientes del alumno se guardan 10 min. En un grupo de 30 alumnos con 10 actividades: abrir el grupo de nuevo pasó de ~450 a ~16 lecturas, y abrir la app como alumno de ~28 a ~2. El grupo muestra cuánto espacio ocupan sus trabajos.
 - **Reglas nuevas**: `buzon`, `auxSolicitudes`, `inicios`, `esMaestro()` con auxiliares, borrar partes de entregas (maestro) y `abiertas` protegido → volver a publicar `firestore.rules`.
 
+## v71: reglas, historial de cambios, carpetas de capas, WEBP y ZIP
+- `97-reglas-historial-carpetas-y-webp.js`:
+  - **Reglas** arriba y a la izquierda del lienzo (px, o cm si el diseño tiene medida real; la esquina cambia la unidad). Marcan la hoja, lo seleccionado y dónde está el ratón. Encendidas en el modo completo y apagadas en el sencillo; se cambian en Archivo → «📏 Mostrar/Ocultar reglas». No salen en celular.
+  - **Historial de cambios** (Archivo, Ctrl+K): lista de pasos con lo que pasó en cada uno («Mover texto «Sofía»», «Borrar globo»…) y cuándo; toca uno para regresar. Ahora guarda hasta 200 pasos, con un tope de memoria para diseños con muchas fotos (`04-…`).
+  - **Carpetas de capas** (propiedad `carpeta`): «📁 Nueva carpeta con lo seleccionado» en Capas; la carpeta se abre y cierra, se renombra con doble clic, oculta o bloquea todo junto, se deshace con ✕, y al soltar una capa encima se mete en ella. Se guarda en el archivo.
+  - **WEBP** al descargar (ligero, con transparencia; en Safari baja PNG y avisa) y **«Juntar en un ZIP»** cuando se descargan varias páginas como imagen.
+
 ## v70: más rápido en equipos sencillos y ventajas a la vista
 - Las miniaturas de plantillas se guardan en el equipo (IndexedDB `disenador-vistas`, con una huella del código de cada plantilla para que se rehagan si cambia); solo se guardan si las letras ya cargaron.
 - El lienzo se dibuja con máximo 2 puntos por pixel (`fabric.devicePixelRatio`) y no se rehace si no cambió de tamaño; el color de la mesa se guarda en lugar de leerse en cada cuadro.

@@ -8,14 +8,24 @@ function serializar(){
   return JSON.stringify({ v:2, w:W, h:H, p:paginas, i:actual, pres:presConfig, ...(medidaReal ? { med:medidaReal } : {}) });
 }
 
+// qué pasó en cada paso del historial (para el panel «Historial de cambios»)
+let historialInfo = [], accionHist = '';
+function tomarAccion(){
+  let a = accionHist;
+  if (!a){ const o = typeof activo === 'function' && activo(); a = o && typeof nombreCorto === 'function' ? 'Cambiar ' + nombreCorto(o) : 'Cambio'; }
+  accionHist = ''; return a;
+}
 function guardarEstado(){
   if (restaurando || generandoVista || (typeof recorte !== 'undefined' && recorte)) return;   // durante un recorte no se guarda el recuadro temporal
   try { autoGuardado(); } catch(e){}
   const j = serializar();
   if (historial[hi] === j) return;
-  historial = historial.slice(0, hi+1);
-  historial.push(j);
-  if (historial.length > 60) historial.shift();
+  if (historialInfo.length !== historial.length) historialInfo = historial.map((_, i) => historialInfo[i] || { t:Date.now(), txt:'Cambio' });
+  historial = historial.slice(0, hi+1); historialInfo = historialInfo.slice(0, hi+1);
+  historial.push(j); historialInfo.push({ t:Date.now(), txt:tomarAccion() });
+  // hasta 200 pasos, pero sin pasar de unos 40 millones de letras guardadas (los diseños con muchas fotos pesan más)
+  let tam = 0; for (const x of historial) tam += x.length;
+  while (historial.length > 20 && (historial.length > 200 || tam > 4e7)){ tam -= historial[0].length; historial.shift(); historialInfo.shift(); }
   hi = historial.length - 1;
   botonesHist();
   renderPaginas();

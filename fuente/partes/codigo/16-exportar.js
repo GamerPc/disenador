@@ -63,7 +63,7 @@ function bajarBlob(blob, nombre){
 }
 function opcionesExport(){
   const fmt = $('eFormato').value;
-  return { fmt, escala: +$('eEscala').value, transp: $('eTransp').checked && fmt === 'png', lista: paginasAExportar() };
+  return { fmt, escala: +$('eEscala').value, transp: $('eTransp').checked && (fmt === 'png' || fmt === 'webp'), lista: paginasAExportar() };
 }
 let ultimoVideo = null;
 async function obtenerVideo(){
@@ -99,13 +99,20 @@ async function descargarImagen(){
       const pdf = await crearPDF(lista, escala);
       bajarBlob(pdf.output('blob'), nombreArchivo() + '.pdf');
     } else {
-      const ext = fmt === 'jpeg' ? 'jpg' : 'png';
+      const zip = lista.length > 1 && $('eZip') && $('eZip').checked ? new (await cargarJSZip())() : null;
+      let sinWebp = false;
       for (const it of lista){
         const url = await renderPagina(it.p, fmt, escala, transp);
-        const suf = lista.length > 1 ? '-' + (it.i + 1) : '';
-        bajarBlob(await (await fetch(url)).blob(), nombreArchivo() + suf + '.' + ext);
-        await new Promise(r => setTimeout(r, 500));
+        // Safari no sabe guardar WEBP: entrega PNG y se avisa
+        let ext = fmt === 'jpeg' ? 'jpg' : fmt === 'webp' ? 'webp' : 'png';
+        if (fmt === 'webp' && !url.startsWith('data:image/webp')){ ext = 'png'; sinWebp = true; }
+        const suf = lista.length > 1 ? '-' + String(it.i + 1).padStart(2, '0') : '';
+        const blob = await (await fetch(url)).blob();
+        if (zip) zip.file(nombreArchivo() + suf + '.' + ext, blob);
+        else { bajarBlob(blob, nombreArchivo() + suf + '.' + ext); await new Promise(r => setTimeout(r, 500)); }
       }
+      if (zip) bajarBlob(await zip.generateAsync({ type:'blob' }), nombreArchivo() + '.zip');
+      if (sinWebp) toast('Tu navegador no puede guardar WEBP; se descargó en PNG.');
     }
     toast('Descarga iniciada. Si no aparece, usa “Vista previa” o “Guardar en Drive”.');
   } catch (e) { toast('Error al exportar: ' + e.message); }
