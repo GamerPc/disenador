@@ -941,7 +941,7 @@ html:not(.claro) #inicioApp .inCats button[aria-pressed="true"]{color:#04121c}
 @media (max-width:1100px){#inicioApp .inUna{grid-template-columns:repeat(4,minmax(0,1fr))}#inicioApp .inUna .inTpl:nth-child(n+5){display:none}}
 @media (max-width:820px){
   #inicioApp .inCab{position:static;flex-wrap:wrap;gap:8px;padding:10px 12px}
-  #inicioApp .inMarca span,#inicioApp .inNav button:not(.inEntrar) span{display:none}
+  #inicioApp .inMarca span:not(.icoE),#inicioApp .inNav button:not(.inEntrar) span:not(.icoE){display:none}
   #inicioApp .inModos{order:3;flex-basis:100%}
   #inicioApp .inModos button{flex:1;padding:8px 10px}
   #inicioApp .inNav button{padding:8px 10px}
@@ -1085,7 +1085,7 @@ html:not(.claro) #editorFoto .efListo{color:#04121c}
 .efAbrirPanel small{color:var(--suave);font-weight:500}
 @media (max-width:820px){
   #editorFoto .efCab{padding:6px 8px;gap:6px}
-  #editorFoto .efCab h2,#editorFoto .efBtn span{display:none}
+  #editorFoto .efCab h2,#editorFoto .efBtn span:not(.icoE){display:none}
   #editorFoto .efBtn{padding:0 10px}
   #editorFoto .efCuerpo{flex-direction:column}
   #editorFoto .efPanel{width:auto;height:44%;border-left:0;border-top:1px solid var(--borde)}
@@ -1161,5 +1161,61 @@ html.letraGrande #mDescargaFacil .dfOpcion small{font-size:15px}
 #mDescargaFacil .dfIco .ico,#editorFoto .efIco .ico,#inicioApp .inGrupoCab h3 .ico,#inicioApp .inVentajas .ico{color:var(--morado)}
 #inicioApp .inAtajos .ico,#inicioApp .inCats .ico{width:1.15em;height:1.15em}
 #inicioApp .inCats button[aria-pressed="true"] .ico{color:inherit}
+
+/* v74: botones grandes al seleccionar en el celular (99-…) */
+@media (max-width:820px){
+  #accMovil.dedo.ver{left:8px;right:8px;gap:0;padding:6px;background:var(--panel);border:1px solid var(--borde);border-radius:16px;box-shadow:0 8px 28px rgba(0,0,0,.35)}
+  #accMovil.dedo .dedoDesliza{flex:1;min-width:0;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain;scroll-snap-type:x proximity;position:relative}
+  #accMovil.dedo .dedoDesliza::-webkit-scrollbar{display:none}
+  #accMovil.dedo .dedoFijo{flex:none;display:flex;gap:4px;padding-left:6px;margin-left:2px;border-left:1px solid var(--borde);position:relative}
+  #accMovil.dedo.hayMas .dedoFijo::before{content:'';position:absolute;left:-30px;top:0;bottom:0;width:28px;pointer-events:none;background:linear-gradient(90deg,transparent,var(--panel))}
+  #accMovil.dedo.hayMas .dedoFijo::after{content:'›';position:absolute;left:-16px;top:50%;transform:translateY(-50%);font:700 20px Inter,sans-serif;color:var(--suave);pointer-events:none}
+  #accMovil.dedo button{flex:none;min-width:64px;min-height:58px;padding:6px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:0;border-radius:12px;background:transparent;color:var(--texto);font:600 12px Inter,sans-serif;box-shadow:none;scroll-snap-align:start;transition:background .15s,transform .1s}
+  #accMovil.dedo button:active:not([disabled]){transform:scale(.94);background:var(--hover)}
+  #accMovil.dedo button .ico{width:24px;height:24px}
+  #accMovil.dedo button span{white-space:nowrap;line-height:1.1}
+  #accMovil.dedo button.principal{background:var(--morado);color:#04121c}
+  html.claro #accMovil.dedo button.principal{color:#fff}
+  #accMovil.dedo button.peligro{color:#ff6b57}
+  html.claro #accMovil.dedo button.peligro{color:#c0392b}
+  #accMovil.dedo button[disabled]{opacity:.35}
+  #accMovil.dedo #fabEditar{background:var(--panel2);color:var(--texto);border:1px solid var(--borde)}
+  #accMovil.dedo #fabEditar.on{background:var(--morado);color:#04121c}
+  html.claro #accMovil.dedo #fabEditar.on{color:#fff}
+  #accMovil.dedo.escribiendo{display:none !important}
+}
+
+/* v74: ayuda y reportar un problema (99-ayuda-…) */
+#mPreguntas,#mReporte,#mAyuda{z-index:120}
+#mPreguntas .caja,#mReporte .caja{width:min(620px,94vw);max-height:88vh;overflow:auto}
+#mPreguntas h3 .ico,#mReporte h3 .ico,.ayEnlaces .ico{width:22px;height:22px;vertical-align:-4px;color:var(--morado)}
+.ayBusca{display:flex;align-items:center;gap:8px;border:1px solid var(--borde);border-radius:12px;padding:0 12px;background:var(--panel2);margin:4px 0 12px}
+.ayBusca .ico{width:18px;height:18px;color:var(--suave);flex:none}
+.ayBusca input{flex:1;min-width:0;border:0;background:transparent;color:var(--texto);font:15px Inter,sans-serif;min-height:46px;outline:none}
+.ayBusca:focus-within{border-color:var(--morado)}
+.ayLista{display:flex;flex-direction:column;gap:6px}
+.ayPreg{border:1px solid var(--borde);border-radius:12px;background:var(--panel2)}
+.ayPreg summary{cursor:pointer;padding:12px 14px;font:600 15px Inter,sans-serif;min-height:44px;display:flex;align-items:center;list-style:none}
+.ayPreg summary::-webkit-details-marker{display:none}
+.ayPreg summary::after{content:'+';margin-left:auto;padding-left:10px;font-size:20px;color:var(--suave)}
+.ayPreg[open] summary::after{content:'−'}
+.ayResp{padding:0 14px 14px;font-size:14.5px;line-height:1.55}
+.ayResp p{margin:0 0 10px}
+.ayResp a{color:var(--morado)}
+.ayAccion{min-height:44px}
+.ayNada{color:var(--suave);font-size:14px}
+.rpNota{color:var(--suave);font-size:14px;margin:4px 0 10px}
+.rpCampo{display:block;font:600 14px Inter,sans-serif;margin:10px 0 6px}
+#rpQue,#rpTipo{width:100%;box-sizing:border-box;border:1px solid var(--borde);border-radius:10px;background:var(--panel2);color:var(--texto);font:15px Inter,sans-serif;padding:10px 12px;min-height:46px}
+#rpQue{resize:vertical}
+.rpOpcion{display:flex;gap:10px;align-items:flex-start;margin:10px 0;font-size:14px;line-height:1.4;cursor:pointer}
+.rpOpcion input{width:20px;height:20px;flex:none;margin:0}
+.rpVer summary{cursor:pointer;font-size:13.5px;color:var(--suave);min-height:32px;display:flex;align-items:center}
+.rpVer pre{white-space:pre-wrap;word-break:break-word;font:12px ui-monospace,monospace;background:var(--panel2);border:1px solid var(--borde);border-radius:8px;padding:10px;max-height:180px;overflow:auto;margin:6px 0 0}
+#rpAviso:empty{display:none}
+#rpAviso{color:var(--texto);background:rgba(25,200,255,.1);border-radius:8px;padding:8px 10px}
+.rpAcciones{flex-wrap:wrap}
+.rpAcciones .ico,#mPreguntas .acciones .ico{width:16px;height:16px;vertical-align:-3px}
+@media (max-width:820px){ .rpAcciones button,#mPreguntas .acciones button{flex:1 1 40%;min-height:46px} }
 
 </style>

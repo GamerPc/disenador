@@ -262,6 +262,14 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - **Menos lecturas de Firestore** (plan gratis: 50,000 lecturas/día, 20,000 escrituras/día, 1 GiB): lo leído hace poco se reutiliza unos minutos; las actividades y exámenes que ya cerraron guardan su conteo de entregas; los pendientes del alumno se guardan 10 min. En un grupo de 30 alumnos con 10 actividades: abrir el grupo de nuevo pasó de ~450 a ~16 lecturas, y abrir la app como alumno de ~28 a ~2. El grupo muestra cuánto espacio ocupan sus trabajos.
 - **Reglas nuevas**: `buzon`, `auxSolicitudes`, `inicios`, `esMaestro()` con auxiliares, borrar partes de entregas (maestro) y `abiertas` protegido → volver a publicar `firestore.rules`.
 
+## v74: botones grandes en el celular, preguntas frecuentes y reportar un problema
+- `99-botones-grandes-al-seleccionar-en-el-celular.js`: al tocar algo en el celular sale abajo una fila de botones grandes con dibujo y nombre, según lo que tocaste. Texto: Escribir, Color, Letra, Más grande, Más chico y Efectos. Foto: Editar foto, Recortar, Quitar fondo, Voltear y tamaño. Figura: Color, Borde y tamaño. En todos: Orden, Copiar, Fijar, Borrar y Todo. «Borrar» y «Todo» quedan fijos a la derecha; lo demás se desliza. Se esconde mientras escribes. La ayuda del modo sencillo ahora señala estos botones.
+- `99-ayuda-preguntas-y-reportar-un-problema.js`:
+  - 12 preguntas frecuentes con buscador y botón «Muéstrame» que lo hace.
+  - «Reportar un problema»: qué pasó, tipo, imagen del diseño y datos del equipo (versión, navegador, pantalla, últimos errores). Se manda por correo a la dirección de `config.js` o se comparte desde el celular con la imagen adjunta; no se sube nada a ningún servidor.
+  - Se abre desde la página de inicio («Ayuda»), Archivo, el buscador, F1 y la ventana de Ayuda de siempre.
+- Corrección de v73: en el celular no se veían los íconos de «Abrir» y «Mi escuela» del inicio ni los botones del editor de fotos.
+
 ## v73: íconos dibujados en lugar de emojis
 - `98-iconos-dibujados-en-inicio-y-ventanas.js`: la página de inicio (modos, accesos, ventajas, atajos, categorías), la descarga en un paso, el editor de fotos, «Reducir PDF», el historial y la ayuda del modo sencillo usan dibujos del mismo estilo que la barra en lugar de emojis, que cambian en cada celular y en equipos viejos salen como cuadritos.
 - Se agregaron 47 dibujos a `ICONOS_UI` y una tabla `EMOJI_ICONO`; los textos de esas ventanas se revisan solos cuando cambian. Lo que está dentro de los diseños (plantillas) no se toca.
