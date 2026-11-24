@@ -117,6 +117,7 @@ async def main():
                 await pg.get_by_role('button', name='Eliminar Publicación de prueba').click()
                 if await pg.locator('.prTarjeta').count() != 0:
                     fallas.append(f'{w}px: no se pudo limpiar la publicación temporal de prueba')
+                await pg.locator('#prCerrar').click()
                 await pg.evaluate("ponerModo('sencillo', false)")
                 await pg.evaluate("ponerInterfaz(false, false)")
                 if not await pg.locator('#bArchivo').is_visible():
