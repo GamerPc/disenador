@@ -34,6 +34,7 @@ function listarHerramientasBuscables(){
   if ($('bReglas')) agregar('Mostrar u ocultar las reglas', 'Reglas en px o cm en el borde del lienzo', 'reglas regla medidas centimetros cm pixeles medir', () => $('bReglas').click());
   if (typeof abrirPreguntas === 'function') agregar('Preguntas frecuentes', 'Dudas comunes con su respuesta', 'ayuda duda pregunta cómo no sé no entiendo tutorial', () => abrirPreguntas());
   if (typeof abrirReporte === 'function') agregar('Reportar un problema', 'Cuéntanos qué falló o qué te gustaría', 'error falla problema bug sugerencia idea queja reporte', () => abrirReporte());
+  if (typeof abrirPlanRedes === 'function') agregar('Calendario de contenido', 'Organiza campañas, ideas y publicaciones por red social', 'community manager calendario editorial campaña redes programar contenido social', () => abrirPlanRedes());
   if (typeof nuevaCarpeta === 'function') agregar('Nueva carpeta de capas', 'Junta en una carpeta lo que tengas seleccionado', 'carpeta capas agrupar ordenar organizar', () => nuevaCarpeta());
   if (typeof abrirEditorFoto === 'function') agregar('Editar foto', 'Ajustes, filtros, pinceles y fondo con IA (toca una foto primero)', 'photoshop retocar foto filtro brillo borrar mancha desenfocar pixelar ocultar cara mejorar fondo borroso', () => abrirEditorFoto());
   if (typeof abrirReducirPDF === 'function') agregar('Reducir el peso de un PDF', 'Hazlo más ligero sin cambiar las letras', 'comprimir pdf pesado ligero whatsapp correo tamaño archivo bajar peso optimizar', () => abrirReducirPDF());

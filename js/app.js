@@ -12374,6 +12374,7 @@ function listarHerramientasBuscables(){
   if ($('bReglas')) agregar('Mostrar u ocultar las reglas', 'Reglas en px o cm en el borde del lienzo', 'reglas regla medidas centimetros cm pixeles medir', () => $('bReglas').click());
   if (typeof abrirPreguntas === 'function') agregar('Preguntas frecuentes', 'Dudas comunes con su respuesta', 'ayuda duda pregunta cómo no sé no entiendo tutorial', () => abrirPreguntas());
   if (typeof abrirReporte === 'function') agregar('Reportar un problema', 'Cuéntanos qué falló o qué te gustaría', 'error falla problema bug sugerencia idea queja reporte', () => abrirReporte());
+  if (typeof abrirPlanRedes === 'function') agregar('Calendario de contenido', 'Organiza campañas, ideas y publicaciones por red social', 'community manager calendario editorial campaña redes programar contenido social', () => abrirPlanRedes());
   if (typeof nuevaCarpeta === 'function') agregar('Nueva carpeta de capas', 'Junta en una carpeta lo que tengas seleccionado', 'carpeta capas agrupar ordenar organizar', () => nuevaCarpeta());
   if (typeof abrirEditorFoto === 'function') agregar('Editar foto', 'Ajustes, filtros, pinceles y fondo con IA (toca una foto primero)', 'photoshop retocar foto filtro brillo borrar mancha desenfocar pixelar ocultar cara mejorar fondo borroso', () => abrirEditorFoto());
   if (typeof abrirReducirPDF === 'function') agregar('Reducir el peso de un PDF', 'Hazlo más ligero sin cambiar las letras', 'comprimir pdf pesado ligero whatsapp correo tamaño archivo bajar peso optimizar', () => abrirReducirPDF());
@@ -14317,5 +14318,151 @@ botonesPestanas.forEach(b => b.onclick = () => {   // solo las pestañas de pane
   } else {
     ajustarZoom(); guardarEstado();
   }
+})();
+/* =========================================================
+   PLANIFICADOR DE CONTENIDO PARA REDES
+   Planes privados en este navegador; prepara y exporta, no publica por su cuenta.
+   ========================================================= */
+const PR_KEY = 'apik_plan_redes_v1';
+const PR_PLATAFORMAS = ['Instagram','Facebook','TikTok','YouTube','LinkedIn','Pinterest','X','Otra'];
+const PR_ESTADOS = ['Idea','Borrador','En diseño','Listo','Publicado'];
+let prMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+let prFiltro = '';
+let prEditando = '';
+let prPlanes = [];
+try { const d = JSON.parse(localStorage.getItem(PR_KEY) || '[]'); if (Array.isArray(d)) prPlanes = d.filter(x => x && x.id && x.fecha); } catch(e) {}
+const prId = () => (crypto.randomUUID ? crypto.randomUUID() : 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2));
+const prLocalFecha = d => { const x = new Date(d.getTime() - d.getTimezoneOffset() * 60000); return x.toISOString().slice(0,10); };
+function prGuardar(){
+  try { localStorage.setItem(PR_KEY, JSON.stringify(prPlanes)); }
+  catch(e){ toast('No se pudo guardar. Libera espacio del navegador e inténtalo otra vez.'); return false; }
+  return true;
+}
+function prPreparar(){
+  if ($('mPlanRedes')) return;
+  const m = document.createElement('div'); m.className = 'modal'; m.id = 'mPlanRedes';
+  m.innerHTML = `<div class="caja prCaja" role="dialog" aria-modal="true" aria-labelledby="prTitulo">
+    <header class="prCabeza"><div><span class="prEyebrow">Espacio de trabajo</span><h2 id="prTitulo">Calendario de contenido</h2><p>Organiza ideas y publicaciones por campaña, fecha y red social.</p></div><button type="button" class="btnS" id="prCerrar" aria-label="Cerrar calendario">Cerrar</button></header>
+    <div class="prBarra"><div class="prMesControles"><button type="button" class="btnS" id="prAnterior" aria-label="Mes anterior">‹</button><h3 id="prMesTitulo"></h3><button type="button" class="btnS" id="prSiguiente" aria-label="Mes siguiente">›</button><button type="button" class="btnS" id="prHoy">Hoy</button></div><div class="prAcciones"><label class="srOnly" for="prFiltro">Filtrar por red</label><select id="prFiltro"><option value="">Todas las redes</option>${PR_PLATAFORMAS.map(x => `<option>${x}</option>`).join('')}</select><button type="button" class="btnS" id="prExportar">Exportar CSV</button><button type="button" class="btnP" id="prNuevo">＋ Nueva publicación</button></div></div>
+    <div class="prCuerpo"><section class="prCalendario" aria-label="Calendario del mes"><div class="prSemana" aria-hidden="true"><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span></div><div id="prDias" class="prDias"></div></section>
+      <section class="prLista" aria-labelledby="prListaTitulo"><div class="prListaHead"><h3 id="prListaTitulo">Publicaciones del mes</h3><span id="prConteo" role="status" aria-live="polite"></span></div><div id="prItems" class="prItems"></div></section></div>
+    <form id="prFormulario" class="prFormulario" hidden>
+      <div class="prFormHead"><h3 id="prFormTitulo">Nueva publicación</h3><button type="button" class="btnS" id="prCancelar">Volver al calendario</button></div>
+      <div class="prCampos">
+        <label>Campaña o cliente<input id="prCampana" maxlength="80" placeholder="Ej. Lanzamiento de temporada"></label>
+        <label>Red social<select id="prPlataforma">${PR_PLATAFORMAS.map(x => `<option>${x}</option>`).join('')}</select></label>
+        <label>Fecha<input id="prFecha" type="date" required></label>
+        <label>Hora<input id="prHora" type="time" value="12:00"></label>
+        <label>Formato<select id="prFormato"><option>Publicación</option><option>Historia</option><option>Reel o video corto</option><option>Carrusel</option><option>Video</option><option>Otro</option></select></label>
+        <label>Estado<select id="prEstado">${PR_ESTADOS.map(x => `<option>${x}</option>`).join('')}</select></label>
+        <label class="prAncho">Tema o idea<input id="prTema" maxlength="140" placeholder="¿De qué trata?" required></label>
+        <label class="prAncho">Texto de la publicación<textarea id="prTexto" rows="4" maxlength="2200" placeholder="Escribe el texto para acompañar tu diseño…"></textarea><small><span id="prCaracteres">0</span>/2200</small></label>
+        <label>Llamada a la acción<input id="prCTA" maxlength="120" placeholder="Ej. Conoce más en nuestra tienda"></label>
+        <label>Hashtags<input id="prTags" maxlength="300" placeholder="#TuMarca #Tema"></label>
+      </div>
+      <div class="prFormFoot"><span id="prPrivado">Se guarda solo en este navegador.</span><div><button type="button" class="btnS" id="prCopiar">Copiar texto</button><button type="submit" class="btnP">Guardar publicación</button></div></div>
+    </form>
+  </div>`;
+  document.body.appendChild(m);
+  $('prCerrar').onclick = () => cerrarModal('mPlanRedes');
+  $('prCancelar').onclick = () => prMostrarCalendario();
+  $('prAnterior').onclick = () => { prMes = new Date(prMes.getFullYear(), prMes.getMonth()-1, 1); prPintar(); };
+  $('prSiguiente').onclick = () => { prMes = new Date(prMes.getFullYear(), prMes.getMonth()+1, 1); prPintar(); };
+  $('prHoy').onclick = () => { prMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1); prPintar(); };
+  $('prFiltro').onchange = () => { prFiltro = $('prFiltro').value; prPintar(); };
+  $('prNuevo').onclick = () => prNueva();
+  $('prExportar').onclick = prExportarCSV;
+  $('prTexto').oninput = () => $('prCaracteres').textContent = $('prTexto').value.length;
+  $('prCopiar').onclick = prCopiarTexto;
+  $('prFormulario').onsubmit = prGuardarFormulario;
+  m.addEventListener('click', e => { if (e.target === m) cerrarModal('mPlanRedes'); });
+}
+function abrirPlanRedes(){ prPreparar(); prMostrarCalendario(); prPintar(); abrirModal('mPlanRedes'); }
+function prMostrarCalendario(){ $('prFormulario').hidden = true; document.querySelector('#mPlanRedes .prCuerpo').hidden = false; document.querySelector('#mPlanRedes .prBarra').hidden = false; $('prNuevo').focus(); }
+function prNueva(fecha){
+  prEditando = ''; $('prFormulario').reset(); $('prHora').value = '12:00'; $('prEstado').value = 'Idea'; $('prFecha').value = fecha || prLocalFecha(new Date());
+  $('prFormTitulo').textContent = 'Nueva publicación'; $('prCaracteres').textContent = '0';
+  document.querySelector('#mPlanRedes .prCuerpo').hidden = true; document.querySelector('#mPlanRedes .prBarra').hidden = true; $('prFormulario').hidden = false; $('prCampana').focus();
+}
+function prEditar(id){
+  const p = prPlanes.find(x => x.id === id); if (!p) return;
+  prEditando = id; $('prCampana').value = p.campana || ''; $('prPlataforma').value = p.plataforma; $('prFecha').value = p.fecha; $('prHora').value = p.hora || '12:00';
+  $('prFormato').value = p.formato || 'Publicación'; $('prEstado').value = p.estado || 'Idea'; $('prTema').value = p.tema || ''; $('prTexto').value = p.texto || ''; $('prCTA').value = p.cta || ''; $('prTags').value = p.tags || '';
+  $('prFormTitulo').textContent = 'Editar publicación'; $('prCaracteres').textContent = $('prTexto').value.length;
+  document.querySelector('#mPlanRedes .prCuerpo').hidden = true; document.querySelector('#mPlanRedes .prBarra').hidden = true; $('prFormulario').hidden = false; $('prCampana').focus();
+}
+function prGuardarFormulario(e){
+  e.preventDefault();
+  const p = { id:prEditando || prId(), campana:$('prCampana').value.trim(), plataforma:$('prPlataforma').value, fecha:$('prFecha').value, hora:$('prHora').value || '12:00', formato:$('prFormato').value, estado:$('prEstado').value, tema:$('prTema').value.trim(), texto:$('prTexto').value.trim(), cta:$('prCTA').value.trim(), tags:$('prTags').value.trim(), actualizado:new Date().toISOString() };
+  if (!p.fecha || !p.tema) return;
+  const i = prPlanes.findIndex(x => x.id === p.id); if (i < 0) prPlanes.push(p); else prPlanes[i] = p;
+  if (!prGuardar()) return;
+  prMes = new Date(p.fecha + 'T12:00:00'); prMostrarCalendario(); prPintar(); toast('Publicación guardada en este navegador');
+}
+function prMesNombre(){ return prMes.toLocaleDateString('es-MX', {month:'long', year:'numeric'}); }
+function prPorMes(){ const pref = `${prMes.getFullYear()}-${String(prMes.getMonth()+1).padStart(2,'0')}`; return prPlanes.filter(p => p.fecha.startsWith(pref) && (!prFiltro || p.plataforma === prFiltro)).sort((a,b) => (a.fecha+a.hora).localeCompare(b.fecha+b.hora)); }
+function prPintar(){
+  if (!$('prDias')) return;
+  $('prMesTitulo').textContent = prMesNombre();
+  const primero = new Date(prMes.getFullYear(),prMes.getMonth(),1), offset = (primero.getDay()+6)%7, dias = new Date(prMes.getFullYear(),prMes.getMonth()+1,0).getDate();
+  const mesItems = prPorMes(), hoy = prLocalFecha(new Date()), fragmento = document.createDocumentFragment();
+  for (let i=0; i<offset; i++){ const vacio=document.createElement('span'); vacio.className='prDia prVacio'; vacio.setAttribute('aria-hidden','true'); fragmento.appendChild(vacio); }
+  for (let d=1; d<=dias; d++){
+    const fecha=`${prMes.getFullYear()}-${String(prMes.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`, cuantos=mesItems.filter(p=>p.fecha===fecha).length;
+    const b=document.createElement('button'); b.type='button'; b.className='prDia'+(fecha===hoy?' prHoy':'')+(cuantos?' prConItems':''); b.setAttribute('aria-label',`${d} de ${prMesNombre()}${cuantos ? `, ${cuantos} publicaciones` : ''}`); b.innerHTML=`<span>${d}</span>${cuantos?`<small>${cuantos} ${cuantos===1?'publicación':'publicaciones'}</small>`:''}`; b.onclick=()=>prNueva(fecha); fragmento.appendChild(b);
+  }
+  $('prDias').replaceChildren(fragmento);
+  $('prConteo').textContent = `${mesItems.length} ${mesItems.length===1?'publicación':'publicaciones'}`;
+  const cont=$('prItems'); cont.replaceChildren();
+  if (!mesItems.length){ cont.innerHTML='<p class="prVacioTexto">Todavía no hay publicaciones este mes. Elige un día del calendario o crea una idea.</p>'; return; }
+  mesItems.forEach(p=>{
+    const card=document.createElement('article'); card.className='prTarjeta';
+    const head=document.createElement('div'); head.className='prTarjetaHead';
+    const fecha=document.createElement('strong'); fecha.textContent=new Date(p.fecha+'T12:00:00').toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'})+' · '+p.hora;
+    const estado=document.createElement('span'); estado.className='prEstado'; estado.dataset.estado=p.estado; estado.textContent=p.estado;
+    head.append(fecha,estado);
+    const titulo=document.createElement('h4'); titulo.textContent=p.tema;
+    const meta=document.createElement('p'); meta.className='prMeta'; meta.textContent=[p.plataforma,p.formato,p.campana].filter(Boolean).join(' · ');
+    card.append(head,titulo,meta);
+    if (p.texto){ const texto=document.createElement('p'); texto.className='prExtracto'; texto.textContent=p.texto; card.appendChild(texto); }
+    const acciones=document.createElement('div'); acciones.className='prTarjetaAcciones';
+    const editar=document.createElement('button'); editar.type='button'; editar.className='btnS'; editar.textContent='Editar'; editar.onclick=()=>prEditar(p.id);
+    const copiar=document.createElement('button'); copiar.type='button'; copiar.className='btnS'; copiar.textContent='Copiar texto'; copiar.onclick=()=>prCopiarTexto(p);
+    const disenar=document.createElement('button'); disenar.type='button'; disenar.className='btnP'; disenar.textContent='Diseñar'; disenar.onclick=()=>prDisenar(p.id);
+    const borrar=document.createElement('button'); borrar.type='button'; borrar.className='btnS'; borrar.textContent='Eliminar'; borrar.setAttribute('aria-label','Eliminar '+p.tema); borrar.onclick=()=>prEliminar(p.id);
+    acciones.append(editar,copiar,disenar,borrar); card.appendChild(acciones); cont.appendChild(card);
+  });
+}
+function prEliminar(id){
+  const p=prPlanes.find(x=>x.id===id); if (!p || !confirm(`¿Eliminar «${p.tema}» del calendario?`)) return;
+  const anterior=prPlanes; prPlanes=prPlanes.filter(x=>x.id!==id);
+  if (!prGuardar()){ prPlanes=anterior; return; }
+  prPintar(); toast('Publicación eliminada');
+}
+async function prDisenar(id){
+  const p=prPlanes.find(x=>x.id===id); if (!p) return;
+  if (p.estado!=='Publicado'){ p.estado='En diseño'; p.actualizado=new Date().toISOString(); if (!prGuardar()) return; }
+  const tieneTexto=!!prTextoCompleto(p);
+  if (tieneTexto) await prCopiarTexto(p);
+  cerrarModal('mPlanRedes');
+  const pestana=$('tabPlantillas'); if (pestana) pestana.click();
+  const chip=[...document.querySelectorAll('#chipsCat button')].find(b=>b.textContent.includes('Negocio y redes'));
+  if (chip) chip.click();
+  toast(tieneTexto ? 'Elige una plantilla de redes. El texto ya está copiado para pegarlo en tu diseño.' : 'Elige una plantilla de redes y completa el texto de tu publicación.');
+}
+function prTextoCompleto(p){ return [p.texto,p.cta,p.tags].filter(Boolean).join('\n\n'); }
+async function prCopiarTexto(p){
+  p=p || {texto:$('prTexto').value,cta:$('prCTA').value,tags:$('prTags').value}; const texto=prTextoCompleto(p); if (!texto) return toast('Agrega el texto, la llamada a la acción o los hashtags primero');
+  try { await navigator.clipboard.writeText(texto); toast('Texto copiado'); }
+  catch(e){ const t=document.createElement('textarea'); t.value=texto; t.style.position='fixed'; t.style.opacity='0'; document.body.appendChild(t); t.select(); const ok=document.execCommand('copy'); t.remove(); toast(ok?'Texto copiado':'No se pudo copiar; selecciona y copia el texto'); }
+}
+function prCSV(valor){ const t=String(valor ?? ''), seguro=/^[\t\r ]*[=+\-@]/.test(t) ? "'"+t : t; return '"'+seguro.replace(/"/g,'""')+'"'; }
+function prExportarCSV(){
+  const filas=[['Fecha','Hora','Campaña','Red social','Formato','Tema','Texto','Llamada a la acción','Hashtags','Estado'],...prPorMes().map(p=>[p.fecha,p.hora,p.campana,p.plataforma,p.formato,p.tema,p.texto,p.cta,p.tags,p.estado])];
+  const blob=new Blob(['\ufeff'+filas.map(f=>f.map(prCSV).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}), url=URL.createObjectURL(blob), a=document.createElement('a'); a.href=url; a.download=`calendario-redes-${prMes.getFullYear()}-${String(prMes.getMonth()+1).padStart(2,'0')}.csv`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000); toast('Calendario descargado como CSV');
+}
+(function(){
+  const cont=$('maPrincipal'); if (!cont || $('bPlanRedes')) return;
+  const b=document.createElement('button'); b.className='tb'; b.type='button'; b.id='bPlanRedes'; b.textContent='Calendario de contenido'; b.title='Planifica publicaciones para tus redes'; b.onclick=abrirPlanRedes; cont.appendChild(b);
 })();
 window.__appLista = true;

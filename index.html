@@ -1571,6 +1571,75 @@ html.letraGrande #mDescargaFacil .dfOpcion small{font-size:15px}
 .rpAcciones .ico,#mPreguntas .acciones .ico{width:16px;height:16px;vertical-align:-3px}
 @media (max-width:820px){ .rpAcciones button,#mPreguntas .acciones button{flex:1 1 40%;min-height:46px} }
 
+/* Calendario editorial para community managers */
+#mPlanRedes{z-index:130}
+#mPlanRedes .prCaja{width:min(1080px,96vw);max-height:92vh;overflow:auto;padding:20px}
+.prCabeza,.prBarra,.prMesControles,.prAcciones,.prFormHead,.prFormFoot,.prTarjetaHead,.prTarjetaAcciones,.prListaHead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.prCabeza{align-items:flex-start;border-bottom:1px solid var(--borde);padding-bottom:14px}
+.prCabeza h2{margin:2px 0 4px;font-size:clamp(21px,3vw,28px);color:var(--texto)}
+.prCabeza p{margin:0;color:var(--suave);font-size:14px}
+.prEyebrow{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--morado)}
+.prBarra{padding:14px 0;flex-wrap:wrap}
+.prMesControles{justify-content:flex-start}
+.prMesControles h3{min-width:145px;text-align:center;margin:0;color:var(--texto)}
+.prAcciones select,.prCampos input,.prCampos select,.prCampos textarea{box-sizing:border-box;min-height:44px;width:100%;padding:9px 11px;border:1px solid var(--borde);border-radius:9px;background:var(--panel2);color:var(--texto);font:inherit}
+.prAcciones select{width:auto;min-width:150px}
+.prCuerpo{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr);gap:18px;min-height:300px}
+.prCalendario,.prLista{background:var(--panel2);border:1px solid var(--borde);border-radius:12px;padding:12px}
+.prSemana,.prDias{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.prSemana{margin-bottom:5px;text-align:center;color:var(--suave);font-size:12px;font-weight:700}
+.prDia{min-width:0;min-height:58px;padding:5px;border:1px solid var(--borde);border-radius:8px;background:var(--panel);color:var(--texto);text-align:left;cursor:pointer;font:inherit}
+.prDia:hover,.prDia:focus-visible{border-color:var(--morado);outline:2px solid var(--morado)}
+.prDia small{display:block;margin-top:4px;color:var(--morado);font-size:10px;line-height:1.15}
+.prDia.prHoy{box-shadow:inset 0 0 0 2px var(--morado)}
+.prDia.prVacio{border-color:transparent;background:transparent;pointer-events:none}
+.prListaHead{margin:0 0 10px}
+.prListaHead h3,.prFormHead h3{margin:0;color:var(--texto);font-size:16px}
+.prListaHead span{font-size:12px;color:var(--suave)}
+.prItems{display:grid;gap:8px;max-height:410px;overflow:auto}
+.prTarjeta{padding:10px;border:1px solid var(--borde);border-radius:10px;background:var(--panel)}
+.prTarjetaHead strong{font-size:12px;color:var(--texto)}
+.prEstado{padding:3px 8px;border-radius:20px;background:var(--hover);color:var(--texto);font-size:11px;font-weight:700}
+.prEstado[data-estado="Publicado"]{background:#dcfce7;color:#166534}
+.prEstado[data-estado="Listo"]{background:#dbeafe;color:#1e40af}
+.prTarjeta h4{margin:7px 0 3px;color:var(--texto);font-size:15px}
+.prMeta,.prExtracto{margin:3px 0;color:var(--suave);font-size:12px;line-height:1.4}
+.prExtracto{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:13px}
+.prTarjetaAcciones{justify-content:flex-start;margin-top:8px}
+.prTarjetaAcciones button,.prFormFoot button,.prBarra button,.prCabeza button,.prMesControles button{min-height:42px}
+.prVacioTexto,.prPrivado{color:var(--suave);font-size:13px;line-height:1.45}
+.prFormulario{border-top:1px solid var(--borde);padding-top:14px}
+.prFormHead{margin-bottom:12px}
+.prCampos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.prCampos label{display:grid;gap:5px;color:var(--texto);font-size:13px;font-weight:600}
+.prCampos .prAncho{grid-column:1/-1}
+.prCampos textarea{resize:vertical;min-height:100px}
+.prCampos small{justify-self:end;color:var(--suave);font-weight:400}
+.prFormFoot{margin-top:12px;flex-wrap:wrap}
+.prFormFoot>div{display:flex;gap:8px}
+.srOnly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:760px){
+  #mPlanRedes .prCaja{padding:14px;max-height:94vh}
+  .prCuerpo{grid-template-columns:1fr}
+  .prLista{max-height:38vh;overflow:auto}
+  .prBarra{align-items:stretch}
+  .prAcciones{display:grid;grid-template-columns:1fr 1fr;width:100%}
+  .prAcciones select{width:100%;min-width:0}
+  .prDia{min-height:48px;padding:4px;font-size:13px}
+  .prDia small{font-size:9px}
+}
+@media(max-width:430px){
+  .prCabeza{gap:5px}
+  .prCabeza p{max-width:240px}
+  .prMesControles{gap:5px;flex-wrap:wrap}
+  .prMesControles h3{min-width:115px;font-size:15px}
+  .prSemana{font-size:10px}
+  .prDia{min-height:43px}
+  .prFormFoot{align-items:stretch}
+  .prFormFoot>div{width:100%}
+  .prFormFoot button{flex:1}
+}
+
 </style>
 </head>
 <body>
@@ -2315,7 +2384,7 @@ html.letraGrande #mDescargaFacil .dfOpcion small{font-size:15px}
 
 <script src="config.js?v=d42c06db"></script>
 <script src="js/almacen-local.js?v=648af80d"></script>
-<script src="js/app.js?v=f3d292ed"></script>
+<script src="js/app.js?v=7b3e2793"></script>
 <script src="js/nube.js?v=3379e3f5"></script>
 <script src="js/escuela.js?v=7ee351fa"></script>
 <script src="js/equipo.js?v=32f6bb8a"></script>
