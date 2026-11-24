@@ -84,6 +84,8 @@ async def main():
                 if not regreso_anidado: fallas.append(f'{w}px: al cerrar reporte desde Preguntas frecuentes, el foco no vuelve al menu visible')
                 await archivo.click()
                 await pg.get_by_role('button', name='Planifica publicaciones para tus redes').click()
+                debug_plan = await pg.evaluate('''()=>{const m=document.getElementById('mPlanRedes'),b=document.getElementById('prNuevo'),bar=m?.querySelector('.prBarra');return {modalAbierto:m?.classList.contains('abierto'),barraOculta:bar?.hidden,formularioOculto:document.getElementById('prFormulario')?.hidden,botonOculto:b?.hidden,botonVisible:!!b?.getClientRects().length,botonDisplay:b?getComputedStyle(b).display:null,focus:document.activeElement?.id,menuAbierto:document.getElementById('menuArchivo')?.hidden}}''')
+                print('PLANDEBUG', w, debug_plan)
                 await pg.locator('#prNuevo').click()
                 await pg.locator('#prCampana').fill('Prueba automática')
                 await pg.locator('#prPlataforma').select_option('Instagram')
