@@ -220,9 +220,76 @@ function toast(msg){
   clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('ver'), 2600);
 }
 function cargando(v){ $('cargando').style.display = v ? 'flex' : 'none'; }
-function abrirModal(id){ $(id).classList.add('abierto'); }
-function cerrarModal(id){ $(id).classList.remove('abierto'); }
-document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('abierto'); }));
+const focoOrigenModal = new WeakMap();
+function elementosEnFoco(contenedor){
+  return [...contenedor.querySelectorAll('a[href],area[href],button:not(:disabled),input:not(:disabled):not([type="hidden"]),select:not(:disabled),textarea:not(:disabled),summary,[tabindex]:not([tabindex="-1"]),[contenteditable="true"]')]
+    .filter(e => !e.closest('[hidden],[inert],[aria-hidden="true"]') && e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden');
+}
+function prepararDialogoModal(modal){
+  const dialogo = modal.querySelector('[role="dialog"],.caja') || modal.firstElementChild;
+  if (!dialogo) return null;
+  if (!dialogo.hasAttribute('role')) dialogo.setAttribute('role', 'dialog');
+  if (!dialogo.hasAttribute('aria-modal')) dialogo.setAttribute('aria-modal', 'true');
+  if (!dialogo.hasAttribute('aria-label') && !dialogo.hasAttribute('aria-labelledby')){
+    const titulo = dialogo.querySelector('h1,h2,h3,h4,[data-dialog-title]');
+    if (titulo && titulo.textContent.trim()){
+      if (!titulo.id) titulo.id = modal.id + '-titulo';
+      dialogo.setAttribute('aria-labelledby', titulo.id);
+    } else dialogo.setAttribute('aria-label', 'Ventana de diálogo');
+  }
+  return dialogo;
+}
+function focoVisible(el){
+  return !!el && el.isConnected && !el.disabled && !el.closest('[hidden],[inert],[aria-hidden="true"]') && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
+}
+function abrirModal(id){
+  const modal = $(id); if (!modal) return;
+  const dialogo = prepararDialogoModal(modal);
+  if (!modal.classList.contains('abierto') && document.activeElement !== document.body){
+    let origen = document.activeElement;
+    const modalCerrado = origen.closest('.modal');
+    if (modalCerrado && !modalCerrado.classList.contains('abierto')){
+      const origenAnterior = focoOrigenModal.get(modalCerrado);
+      if (focoVisible(origenAnterior)) origen = origenAnterior;
+    }
+    focoOrigenModal.set(modal, origen);
+  }
+  modal.classList.add('abierto');
+  requestAnimationFrame(() => {
+    if (!modal.classList.contains('abierto') || modal.contains(document.activeElement)) return;
+    const focables = dialogo && elementosEnFoco(dialogo);
+    if (focables && focables.length) focables[0].focus();
+    else if (dialogo){ dialogo.tabIndex = -1; dialogo.focus(); }
+  });
+}
+function cerrarModal(id){
+  const modal = $(id); if (!modal) return;
+  const estabaAbierto = modal.classList.contains('abierto');
+  modal.classList.remove('abierto');
+  if (!estabaAbierto) return;
+  const origen = focoOrigenModal.get(modal);
+  requestAnimationFrame(() => {
+    focoOrigenModal.delete(modal);
+    const abiertos = [...document.querySelectorAll('.modal.abierto')];
+    const destino = focoVisible(origen) ? origen : elementosEnFoco($('barra') || document.body)[0];
+    if (!destino || (abiertos.length && !abiertos.some(m => m.contains(destino)))) return;
+    destino.focus();
+  });
+}
+document.addEventListener('click', e => { const modal = e.target.closest('.modal'); if (modal && e.target === modal) cerrarModal(modal.id); });
+document.addEventListener('keydown', e => {
+  const modal = [...document.querySelectorAll('.modal.abierto')].pop(); if (!modal || e.key !== 'Tab') return;
+  const dialogo = prepararDialogoModal(modal), focables = dialogo && elementosEnFoco(dialogo);
+  if (!focables || !focables.length){ e.preventDefault(); if (dialogo){ dialogo.tabIndex = -1; dialogo.focus(); } return; }
+  const primero = focables[0], ultimo = focables[focables.length - 1];
+  if (e.shiftKey && (e.target === primero || !focables.includes(e.target))){ e.preventDefault(); ultimo.focus(); }
+  else if (!e.shiftKey && (e.target === ultimo || !focables.includes(e.target))){ e.preventDefault(); primero.focus(); }
+}, true);
+addEventListener('keydown', e => {
+  if (e.key !== 'Escape' || e.defaultPrevented) return;
+  const modal = [...document.querySelectorAll('.modal.abierto')].pop();
+  if (modal){ e.preventDefault(); cerrarModal(modal.id); }
+});
 // Relaciona las etiquetas visibles con su campo cuando una fila contiene un solo control.
 document.querySelectorAll('.fila').forEach(fila => {
   const campos = [...fila.querySelectorAll('input[id],select[id],textarea[id]')].filter(c => c.closest('.fila') === fila);
@@ -849,122 +916,5 @@ function pegarClon(c){
   canvas.setActiveObject(c); canvas.requestRenderAll(); renderCapas(); guardarEstado();
 }
 function duplicar(){ const o = activo(); if (o) clonar(o, pegarClon); }
-
-/* =========================================================
-   CAPAS
-   ========================================================= */
-const iconoCapa = o => o.esFondo ? '▧' : o.tabla ? '▦' : o.grafica ? '📊' : (o.marco || o.marcoVacio) ? '📷' : o.type === 'image' ? '🖼' :
-  o.trazoLibre ? '✎' : o.type === 'conector' ? '↗' : esTexto(o) ? 'T' : o.esDeco ? '✿' : o.type === 'group' ? '⧉' : '◆';
-function nombreCapa(o){
-  if (o.nombrePropio) return o.nombrePropio;
-  if (o.esFondo) return 'Fondo';
-  if (o.tabla){ const cs = celdasDe(o.tabla); return `Tabla ${Math.max(...cs.map(c => c.fila)) + 1} × ${Math.max(...cs.map(c => c.col)) + 1}`; }
-  if (o.grafica) return 'Gráfica: ' + (o.grafica.titulo || o.grafica.tipo);
-  if (o.type === 'conector'){
-    const t = id => { const f = porId(id); if (!f) return '?'; const tt = porId(f.formaTexto); return tt && tt.text ? tt.text.split('\n')[0].slice(0, 14) : nombreCapa(f); };
-    return `${t(o.conA)} → ${t(o.conB)}`;
-  }
-  const t = o.formaTexto ? porId(o.formaTexto) : (esTexto(o) ? o : null);
-  if (t && t.text && t.text.trim()) return t.text.replace(/\n/g, ' ').slice(0, 28);
-  return o.name || o.type;
-}
-// Lo que se mueve, oculta o bloquea junto con una capa (la forma con su texto, o la tabla completa)
-function miembrosCapa(o){
-  if (o.tabla) return celdasDe(o.tabla).flatMap(c => [c, porId(c.formaTexto)].filter(Boolean));
-  return [o, porId(o.formaTexto)].filter(Boolean);
-}
-let conectoresAbiertos = false;
-function renderCapas(){
-  if (generandoVista) return;
-  clearTimeout(renderCapas._t);
-  renderCapas._t = setTimeout(() => {
-    const ul = $('capas'); if (!ul) return;
-    ul.innerHTML = '';
-    const sel = new Set(canvas.getActiveObjects().map(nodoBase).filter(Boolean));
-    const tablasSel = new Set([...sel].map(x => x.tabla).filter(Boolean));
-    const tablasVistas = new Set(), conectores = [], carpetasVistas = new Set();
-    let total = 0;
-    canvas.getObjects().slice().reverse().forEach(o => {
-      if (o.textoDe && porId(o.textoDe)) return;                 // el texto va junto con su forma
-      if (o.type === 'conector'){ conectores.push(o); return; }
-      if (o.carpeta){                                             // las capas de una carpeta van juntas debajo de ella
-        if (carpetasVistas.has(o.carpeta)) return; carpetasVistas.add(o.carpeta);
-        const ts = new Set(), miembros = canvas.getObjects().slice().reverse().filter(x => x.carpeta === o.carpeta && !(x.textoDe && porId(x.textoDe)) && x.type !== 'conector' && !(x.tabla && (ts.has(x.tabla) || !ts.add(x.tabla))));
-        total += miembros.length;
-        if (typeof filaCarpeta === 'function') ul.appendChild(filaCarpeta(o.carpeta, miembros, sel));
-        if (typeof carpetasAbiertas === 'undefined' || carpetasAbiertas.has(o.carpeta) || miembros.some(m => sel.has(m))) miembros.forEach(m => { const f = filaCapa(m, sel.has(m) || (m.tabla && tablasSel.has(m.tabla))); f.classList.add('sub'); ul.appendChild(f); });
-        return;
-      }
-      if (o.tabla){ if (tablasVistas.has(o.tabla)) return; tablasVistas.add(o.tabla); }
-      total++;
-      ul.appendChild(filaCapa(o, sel.has(o) || (o.tabla && tablasSel.has(o.tabla))));
-    });
-    if (conectores.length){
-      const li = document.createElement('li'); li.className = 'grupoCapa';
-      li.innerHTML = `<span class="ic">${conectoresAbiertos ? '▾' : '▸'}</span><span class="cn">Líneas y conectores (${conectores.length})</span>`;
-      li.onclick = () => { conectoresAbiertos = !conectoresAbiertos; renderCapas(); };
-      ul.appendChild(li);
-      if (conectoresAbiertos || conectores.some(c => sel.has(c))) conectores.forEach(c => { const f = filaCapa(c, sel.has(c)); f.classList.add('sub'); f.draggable = false; ul.appendChild(f); });
-      total += conectores.length;
-    }
-    const n = $('numCapas'); if (n) n.textContent = `(${total})`;
-  }, 40);
-}
-function filaCapa(o, seleccionado){
-  o.id = o.id || nuevoId();
-  const li = document.createElement('li');
-  if (seleccionado) li.className = 'sel';
-  li.draggable = !o.esFondo;
-  li.innerHTML = `<span class="ic">${iconoCapa(o)}</span><span class="cn" title="Clic para seleccionar · doble clic para renombrar">${esc(nombreCapa(o))}</span>
-    <button title="Mostrar / ocultar">${o.visible ? '👁' : '◌'}</button>
-    <button title="${o.esFondo ? 'Quitar fondo' : 'Bloquear'}">${o.bloqueado || o.esFondo ? '🔒' : '🔓'}</button>`;
-  const cn = li.querySelector('.cn');
-  cn.onclick = () => {
-    if (!o.visible || o.esFondo) return;
-    if (o.tabla) seleccionarTabla(o.tabla); else { canvas.setActiveObject(o); canvas.requestRenderAll(); }
-  };
-  cn.ondblclick = () => {
-    const nombre = prompt('Nombre de la capa:', nombreCapa(o));
-    if (nombre === null) return;
-    o.nombrePropio = nombre.trim() || null; renderCapas(); guardarEstado();
-  };
-  const [bv, bl] = li.querySelectorAll('button');
-  bv.onclick = e => {
-    e.stopPropagation();
-    const v = !o.visible; miembrosCapa(o).forEach(x => x.visible = v);
-    if (!v) canvas.discardActiveObject();
-    canvas.requestRenderAll(); renderCapas(); guardarEstado();
-  };
-  bl.onclick = e => {
-    e.stopPropagation();
-    if (o.esFondo){ if (confirm('¿Quitar este fondo?')){ restaurando = true; canvas.remove(o); restaurando = false; renderCapas(); guardarEstado(); } return; }
-    const v = !o.bloqueado; miembrosCapa(o).forEach(x => bloquear(x, v));
-    canvas.requestRenderAll(); renderCapas(); actualizarPanel(); guardarEstado();
-  };
-  if (!o.esFondo){
-    li.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', o.id); e.dataTransfer.effectAllowed = 'move'; li.classList.add('arrastrando'); });
-    li.addEventListener('dragend', () => li.classList.remove('arrastrando'));
-  }
-  li.addEventListener('dragover', e => { e.preventDefault(); li.classList.add('destino'); });
-  li.addEventListener('dragleave', () => li.classList.remove('destino'));
-  li.addEventListener('drop', e => {
-    e.preventDefault(); li.classList.remove('destino');
-    const mov = porId(e.dataTransfer.getData('text/plain'));
-    if (mov && mov !== o){ const c = o.carpeta || null; if ((mov.carpeta || null) !== c){ miembrosCapa(mov).forEach(x => x.carpeta = c); accionHist = c ? 'Meter a la carpeta «' + c + '»' : 'Sacar de la carpeta'; } moverCapaSobre(mov, o); }
-  });
-  return li;
-}
-// Pone una capa (con su texto o su tabla completa) justo encima de otra
-function moverCapaSobre(mov, destino){
-  const grupo = miembrosCapa(mov), objs = canvas._objects;
-  if (destino.tabla && grupo.includes(destino)) return;
-  grupo.forEach(x => { const i = objs.indexOf(x); if (i >= 0) objs.splice(i, 1); });
-  const ref = miembrosCapa(destino).map(x => objs.indexOf(x)).filter(i => i >= 0);
-  const idx = destino.esFondo ? (ref.length ? Math.max(...ref) + 1 : 0) : Math.max(...ref) + 1;
-  objs.splice(idx, 0, ...grupo);
-  ordenarVinculos();
-  canvas.getObjects().filter(x => x.esFondo).forEach(x => canvas.sendToBack(x));
-  canvas.requestRenderAll(); renderCapas(); guardarEstado();
-}
 
 </script>
