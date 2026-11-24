@@ -12372,6 +12372,7 @@ function listarHerramientasBuscables(){
   if (typeof abrirEscuela === 'function') agregar('Modo escuela', 'Grupos, tareas, actividades y entregas', 'maestro alumno clase escolar', () => abrirEscuela());
   if (typeof abrirHistorial === 'function') agregar('Historial de cambios', 'Ver los últimos pasos y regresar a cualquiera', 'historial deshacer pasos versiones regresar volver atras cambios', () => abrirHistorial());
   if ($('bReglas')) agregar('Mostrar u ocultar las reglas', 'Reglas en px o cm en el borde del lienzo', 'reglas regla medidas centimetros cm pixeles medir', () => $('bReglas').click());
+  if (typeof abrirElegirIA === 'function') agregar('Elegir mi IA', 'Chrome, Gemini, Ollama, LM Studio, OpenRouter, Groq, ChatGPT o Claude', 'ia modelo ollama lm studio chatgpt openai claude anthropic gemini groq openrouter nemotron llama local clave api', () => abrirElegirIA());
   if (typeof abrirDisenoIA === 'function') agregar('Diseño con IA', 'Describe lo que necesitas y la IA arma el diseño', 'ia inteligencia artificial generar crear automático cartel invitación publicación gemini', () => abrirDisenoIA());
   if (typeof abrirPreguntas === 'function') agregar('Preguntas frecuentes', 'Dudas comunes con su respuesta', 'ayuda duda pregunta cómo no sé no entiendo tutorial', () => abrirPreguntas());
   if (typeof abrirReporte === 'function') agregar('Reportar un problema', 'Cuéntanos qué falló o qué te gustaría', 'error falla problema bug sugerencia idea queja reporte', () => abrirReporte());
@@ -14808,5 +14809,211 @@ function usarDisenoIA(k){
   }
   const mp = $('maPrincipal');
   if (mp){ const a = document.createElement('button'); a.className = 'tb'; a.type = 'button'; a.id = 'bDisenoIA'; a.innerHTML = `${svgIcono('varita')} Diseño con IA`; a.onclick = () => abrirDisenoIA(); mp.prepend(a); }
+})();
+/* =========================================================
+   ELEGIR MI IA: Chrome, Gemini, Ollama, LM Studio, OpenRouter, Groq, ChatGPT, Claude u otra
+   - «Automático» es lo de siempre: IA de Chrome y, si no hay, la clave de Gemini.
+   - Ollama y LM Studio corren en tu computadora (gratis, sin internet): ahí funcionan modelos
+     abiertos como Nemotron de Nvidia, Llama, Gemma, Qwen o Mistral.
+   - Las claves se guardan SOLO en este navegador y el texto se manda solo a la IA que elijas.
+   Todo lo que usa la IA para escribir (asistente de escritura, diseño con IA) pasa por aquí.
+   ========================================================= */
+const IA_PROV = 'disenador_ia_proveedor';
+const PROVEEDORES_IA = {
+  auto:      { nombre:'Automático', etq:'Chrome o Gemini', d:'Usa la IA de Chrome si tu navegador la trae; si no, tu clave de Gemini.' },
+  ollama:    { nombre:'Ollama', etq:'Gratis · en tu computadora', local:true, url:'http://localhost:11434', modelos:'/api/tags',
+               d:'Instala Ollama (ollama.com), descarga un modelo (por ejemplo, busca «nemotron», «llama» o «gemma» en ollama.com/library) y permite este sitio iniciando Ollama con OLLAMA_ORIGINS=' + location.origin + '. Tu texto no sale de tu computadora.' },
+  lmstudio:  { nombre:'LM Studio', etq:'Gratis · en tu computadora', local:true, url:'http://localhost:1234', modelos:'/v1/models',
+               d:'Instala LM Studio (lmstudio.ai), descarga un modelo, entra a «Developer», enciende el servidor y activa «Enable CORS». Tu texto no sale de tu computadora.' },
+  gemini:    { nombre:'Google Gemini', etq:'Plan gratis', clave:true, link:'https://aistudio.google.com/apikey', d:'Crea tu clave gratis en Google AI Studio.' },
+  openrouter:{ nombre:'OpenRouter', etq:'Tiene modelos gratis', clave:true, url:'https://openrouter.ai/api', modelos:'/v1/models', link:'https://openrouter.ai/keys', soloGratis:true,
+               d:'Una sola clave para muchos modelos. Los que terminan en «:free» no cuestan (con límite diario).' },
+  groq:      { nombre:'Groq', etq:'Plan gratis', clave:true, url:'https://api.groq.com/openai', modelos:'/v1/models', link:'https://console.groq.com/keys', d:'Muy rápida; tiene un plan gratuito con límites.' },
+  openai:    { nombre:'ChatGPT (OpenAI)', etq:'De pago', clave:true, url:'https://api.openai.com', modelos:'/v1/models', link:'https://platform.openai.com/api-keys',
+               d:'Necesita una clave de la API de OpenAI con saldo; la suscripción a ChatGPT Plus no incluye la API. Pon un límite de gasto en tu cuenta.' },
+  anthropic: { nombre:'Claude (Anthropic)', etq:'De pago', clave:true, url:'https://api.anthropic.com', modelos:'/v1/models', link:'https://console.anthropic.com/settings/keys', modelo:'claude-haiku-5-5',
+               d:'Necesita una clave de la API de Anthropic con saldo; la suscripción a Claude Pro no incluye la API. Pon un límite de gasto en tu cuenta.' },
+  compatible:{ nombre:'Otra compatible', etq:'Compatible con OpenAI', clave:'opcional', urlLibre:true, modelos:'/v1/models', d:'Cualquier servicio o programa con la API de OpenAI (vLLM, llama.cpp, Jan, Mistral, DeepSeek…). Escribe su dirección.' }
+};
+const SISTEMA_IA = 'Eres un asistente de redacción y diseño en español de México para estudiantes, maestros y pequeños negocios. Respondes solo con lo que se te pide.';
+function leerProv(){ try { const v = JSON.parse(localStorage.getItem(IA_PROV) || '{}'); return v && typeof v === 'object' ? v : {}; } catch (e) { return {}; } }
+function guardarProv(v){ try { localStorage.setItem(IA_PROV, JSON.stringify(v)); } catch (e) {} }
+const claveProv = t => t === 'gemini' ? leerLS(IA_CLAVE) : leerLS('disenador_ia_clave_' + t);
+const urlProv = (t, cfg) => String((cfg && cfg.url) || PROVEEDORES_IA[t].url || '').replace(/\/+$/, '').replace(/\/v1$/, '');
+const quitarPiensa = t => String(t || '').replace(/<think>[\s\S]*?<\/think>/gi, '').trim();   // modelos que «piensan en voz alta»
+{ const antesDisp = iaDisponible, antesPedir = pedirIA;
+  iaDisponible = async function(){
+    const cfg = leerProv(), t = cfg.tipo;
+    if (!t || t === 'auto' || !PROVEEDORES_IA[t]) return antesDisp();
+    if (t === 'gemini') return leerLS(IA_CLAVE) ? { tipo:'gemini' } : null;
+    const p = PROVEEDORES_IA[t];
+    if (p.clave === true && !claveProv(t)) return null;
+    if (!cfg.modelo && !p.modelo) return null;
+    if (p.urlLibre && !cfg.url) return null;
+    return { tipo:t };
+  };
+  pedirIA = async function(texto, instruccion, alProgreso){
+    const cfg = leerProv(), t = cfg.tipo;
+    if (!t || t === 'auto' || t === 'gemini' || !PROVEEDORES_IA[t]) return antesPedir(texto, instruccion, alProgreso);
+    if (!(await iaDisponible())) throw new Error('SIN_IA');
+    return llamarProveedor(t, cfg, instruccion + '\nResponde solo con el resultado, sin explicaciones ni comillas.\n\nTexto:\n' + texto);
+  };
+}
+async function llamarProveedor(t, cfg, prompt){
+  const p = PROVEEDORES_IA[t], base = urlProv(t, cfg), clave = claveProv(t), modelo = cfg.modelo || p.modelo;
+  let r;
+  try {
+    if (t === 'anthropic'){
+      r = await fetch(base + '/v1/messages', { method:'POST', headers:{ 'content-type':'application/json', 'x-api-key':clave, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
+        body:JSON.stringify({ model:modelo, max_tokens:1500, system:SISTEMA_IA, messages:[{ role:'user', content:prompt }] }) });
+    } else {
+      const h = { 'Content-Type':'application/json' };
+      if (clave) h.Authorization = 'Bearer ' + clave;
+      if (t === 'openrouter'){ h['HTTP-Referer'] = location.origin; h['X-Title'] = 'Disenador Apik'; }
+      r = await fetch(base + '/v1/chat/completions', { method:'POST', headers:h,
+        body:JSON.stringify({ model:modelo, temperature:0.7, max_tokens:1500, stream:false, messages:[{ role:'system', content:SISTEMA_IA }, { role:'user', content:prompt }] }) });
+    }
+  } catch (e) {
+    throw new Error(p.local ? `No pude conectar con ${p.nombre}. Revisa que esté abierto y que permita este sitio (ve «Elegir mi IA»). Si Chrome te pregunta por acceso a la red local, toca «Permitir».` : 'No hay conexión con ' + p.nombre + '.');
+  }
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok){
+    const msg = (d.error && (d.error.message || d.error)) || d.message || ('Error ' + r.status);
+    throw new Error(r.status === 401 || r.status === 403 ? `${p.nombre} dice que la clave no es válida o no tiene permiso.` : r.status === 429 ? `Se alcanzó el límite de ${p.nombre} por ahora. Intenta en unos minutos.` : r.status === 402 ? `Tu cuenta de ${p.nombre} no tiene saldo.` : String(msg).slice(0, 200));
+  }
+  const txt = t === 'anthropic' ? (d.content || []).map(x => x.text || '').join('') : d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+  if (!txt) throw new Error('La IA no devolvió texto. Prueba de nuevo o elige otro modelo.');
+  return quitarPiensa(txt).replace(/^["«“]|["»”]$/g, '');
+}
+async function listarModelosIA(t, cfg){
+  const p = PROVEEDORES_IA[t], base = urlProv(t, cfg), clave = claveProv(t), h = {};
+  if (t === 'anthropic'){ h['x-api-key'] = clave; h['anthropic-version'] = '2023-06-01'; h['anthropic-dangerous-direct-browser-access'] = 'true'; }
+  else if (clave) h.Authorization = 'Bearer ' + clave;
+  const r = await fetch(base + p.modelos, { headers:h });
+  if (!r.ok) throw new Error(r.status === 401 || r.status === 403 ? 'La clave no es válida.' : 'Error ' + r.status);
+  const d = await r.json();
+  let lista = t === 'ollama' ? (d.models || []).map(m => m.name || m.model) : (d.data || []).map(m => m.id);
+  if (p.soloGratis){ const gratis = lista.filter(x => /:free$/.test(x)); if (gratis.length) lista = gratis; }
+  return lista.filter(Boolean).sort((a, b) => a.localeCompare(b));
+}
+// ---------- Ventana «Elegir mi IA» ----------
+(function(){
+  const m = document.createElement('div'); m.className = 'modal'; m.id = 'mElegirIA';
+  m.innerHTML = `<div class="caja" role="dialog" aria-modal="true" aria-labelledby="eiTitulo">
+    <h3 id="eiTitulo">${svgIcono('cerebro')} Elegir mi IA</h3>
+    <p class="eiNota">Elige quién escribe cuando usas el asistente o el diseño con IA. Las claves se guardan solo en este navegador.</p>
+    <div class="eiLista" id="eiLista" role="radiogroup" aria-label="Proveedor de IA"></div>
+    <div class="eiDetalle" id="eiDetalle">
+      <p id="eiAyuda" class="eiAyuda"></p>
+      <div class="eiFila" id="eiFilaUrl"><label for="eiUrl">Dirección</label><input id="eiUrl" type="url" autocomplete="off" spellcheck="false"></div>
+      <div class="eiFila" id="eiFilaClave"><label for="eiClave">Clave</label><input id="eiClave" type="password" autocomplete="off" spellcheck="false"><a id="eiLink" target="_blank" rel="noopener">Conseguir clave</a></div>
+      <div class="eiFila" id="eiFilaModelo"><label for="eiModelo">Modelo</label><input id="eiModelo" list="eiModelos" autocomplete="off" spellcheck="false" placeholder="Toca «Buscar modelos» o escríbelo"><datalist id="eiModelos"></datalist><button type="button" class="btnS" id="eiBuscar">Buscar modelos</button></div>
+    </div>
+    <p id="eiEstado" class="eiEstado" role="status" aria-live="polite"></p>
+    <div class="acciones"><button type="button" class="btnS" id="eiQuitar">Quitar clave</button><button type="button" class="btnS" id="eiProbar">Probar</button><button type="button" class="btnS" id="eiCerrar">Cerrar</button><button type="button" class="btnP" id="eiGuardar">Guardar</button></div>
+  </div>`;
+  document.body.appendChild(m);
+  Object.entries(PROVEEDORES_IA).forEach(([k, p]) => {
+    const l = document.createElement('label'); l.className = 'eiOpcion';
+    l.innerHTML = `<input type="radio" name="eiProv" value="${k}"><span><b>${esc(p.nombre)}</b><small>${esc(p.etq)}</small></span>`;
+    $('eiLista').appendChild(l);
+  });
+  m.querySelectorAll('input').forEach(i => i.addEventListener('keydown', e => e.stopPropagation()));
+  $('eiLista').addEventListener('change', () => pintarElegirIA(false));
+  $('eiCerrar').onclick = () => cerrarModal('mElegirIA');
+  m.addEventListener('click', e => { if (e.target === m) cerrarModal('mElegirIA'); });
+  $('eiBuscar').onclick = async () => {
+    const t = eiTipo(); guardarCamposIA(t, true);
+    $('eiEstado').textContent = 'Buscando modelos…';
+    try {
+      const l = await listarModelosIA(t, { url:$('eiUrl').value.trim() });
+      $('eiModelos').innerHTML = l.map(x => `<option value="${esc(x)}"></option>`).join('');
+      if (l.length && !$('eiModelo').value) $('eiModelo').value = l[0];
+      $('eiEstado').textContent = l.length ? `Encontré ${l.length} modelo${l.length === 1 ? '' : 's'}. Elige uno en «Modelo».` : (t === 'ollama' ? 'Ollama no tiene modelos. En una terminal escribe: ollama pull <nombre-del-modelo>' : 'No encontré modelos.');
+      $('eiModelo').focus();
+    } catch (e) { $('eiEstado').textContent = 'No pude ver los modelos: ' + (e.message || e) + (PROVEEDORES_IA[t].local ? ' ¿Está abierto y permite este sitio?' : ''); }
+  };
+  $('eiProbar').onclick = async () => {
+    const t = eiTipo(), kc = t === 'gemini' ? IA_CLAVE : 'disenador_ia_clave_' + t;
+    const antesCfg = leerLS(IA_PROV), antesClave = leerLS(kc);          // si la prueba falla, se regresa a como estaba
+    if (!guardarCamposIA(t)) return;
+    $('eiEstado').textContent = 'Probando…'; $('eiProbar').disabled = true;
+    try { const r = await pedirIA('Hola', 'Contesta solo con la palabra: Listo'); $('eiEstado').textContent = '✓ Funciona. Respondió: «' + String(r).slice(0, 60) + '». Ya quedó como tu IA.'; refrescarIAVisibles(); }
+    catch (e) {
+      guardarLS(IA_PROV, antesCfg); guardarLS(kc, antesClave);
+      $('eiEstado').textContent = (e.message === 'SIN_IA' ? 'Falta llenar algún dato (clave, modelo o dirección).' : '✗ ' + e.message) + ' No se guardó.';
+    }
+    finally { $('eiProbar').disabled = false; $('eiQuitar').hidden = !PROVEEDORES_IA[t].clave || !claveProv(t); document.querySelectorAll('.eiOpcion').forEach(l => l.classList.toggle('activa', l.querySelector('input').value === (leerProv().tipo || 'auto'))); }
+  };
+  $('eiGuardar').onclick = () => { const t = eiTipo(); if (!guardarCamposIA(t)) return; toast('✓ Ahora la IA es: ' + PROVEEDORES_IA[t].nombre); cerrarModal('mElegirIA'); refrescarIAVisibles(); };
+  $('eiQuitar').onclick = () => { const t = eiTipo(); if (t === 'gemini') guardarLS(IA_CLAVE, ''); else guardarLS('disenador_ia_clave_' + t, ''); $('eiClave').value = ''; $('eiEstado').textContent = 'Clave quitada de este navegador.'; refrescarIAVisibles(); };
+})();
+const eiTipo = () => (document.querySelector('[name="eiProv"]:checked') || {}).value || 'auto';
+function guardarCamposIA(t, sinValidar){
+  const p = PROVEEDORES_IA[t], cfg = { tipo:t };
+  const clave = limpiarClaveIA($('eiClave').value);
+  if (p.clave && clave){
+    if (!claveIAValida(clave)){ $('eiEstado').textContent = 'Esa clave parece incompleta. Cópiala otra vez.'; return false; }
+    if (t === 'gemini') guardarLS(IA_CLAVE, clave); else guardarLS('disenador_ia_clave_' + t, clave);
+    $('eiClave').value = ''; $('eiClave').placeholder = '•••••••• (guardada)'; $('eiQuitar').hidden = false;
+  }
+  if (p.local || p.urlLibre){
+    const u = $('eiUrl').value.trim();
+    if (u && !/^https?:\/\/[^\s]+$/i.test(u)){ $('eiEstado').textContent = 'La dirección debe empezar con http:// o https://'; return false; }
+    if (u) cfg.url = u;
+  }
+  if (t !== 'auto' && t !== 'gemini'){ const mo = $('eiModelo').value.trim(); if (mo) cfg.modelo = mo; }
+  if (t === 'gemini'){ const mo = $('eiModelo').value.trim(); guardarLS(IA_MODELO, mo); }
+  if (!sinValidar && p.clave === true && !claveProv(t)){ $('eiEstado').textContent = 'Pega tu clave de ' + p.nombre + '.'; $('eiClave').focus(); return false; }
+  guardarProv(cfg); return true;
+}
+function pintarElegirIA(desdeGuardado){
+  const cfg = leerProv();
+  if (desdeGuardado){ const r = document.querySelector(`[name="eiProv"][value="${PROVEEDORES_IA[cfg.tipo] ? cfg.tipo : 'auto'}"]`); if (r) r.checked = true; }
+  const t = eiTipo(), p = PROVEEDORES_IA[t], mismo = cfg.tipo === t;
+  $('eiAyuda').textContent = p.d;
+  $('eiFilaUrl').hidden = !(p.local || p.urlLibre);
+  $('eiUrl').value = mismo && cfg.url ? cfg.url : (p.url || ''); $('eiUrl').placeholder = p.urlLibre ? 'https://tu-servidor/v1' : (p.url || '');
+  $('eiFilaClave').hidden = !p.clave; $('eiClave').value = '';
+  $('eiClave').placeholder = claveProv(t) ? '•••••••• (guardada)' : (p.clave === 'opcional' ? 'Clave (si tu servicio la pide)' : 'Pega aquí tu clave');
+  $('eiLink').hidden = !p.link; if (p.link) $('eiLink').href = p.link;
+  $('eiFilaModelo').hidden = t === 'auto';
+  $('eiBuscar').hidden = !p.modelos;
+  $('eiModelo').value = t === 'gemini' ? leerLS(IA_MODELO) : (mismo && cfg.modelo) || p.modelo || '';
+  $('eiModelo').placeholder = t === 'gemini' ? 'Opcional: gemini-flash-latest' : 'Toca «Buscar modelos» o escríbelo';
+  $('eiModelos').innerHTML = '';
+  $('eiQuitar').hidden = !p.clave || !claveProv(t);
+  $('eiProbar').hidden = t === 'auto';
+  $('eiEstado').textContent = '';
+  document.querySelectorAll('.eiOpcion').forEach(l => l.classList.toggle('activa', l.querySelector('input').value === (cfg.tipo || 'auto')));
+}
+function abrirElegirIA(){ pintarElegirIA(true); abrirModal('mElegirIA'); setTimeout(() => { const r = document.querySelector('[name="eiProv"]:checked'); r && r.focus(); }, 40); }
+function nombreIAActual(){ const t = leerProv().tipo; return t && t !== 'auto' && PROVEEDORES_IA[t] ? PROVEEDORES_IA[t].nombre + (leerProv().modelo ? ' · ' + leerProv().modelo : '') : ''; }
+function refrescarIAVisibles(){
+  if ($('mAsistente') && $('mAsistente').classList.contains('abierto') && typeof estadoIA === 'function') estadoIA();
+  if ($('mDisenoIA') && $('mDisenoIA').classList.contains('abierto') && typeof revisarIADiseno === 'function') revisarIADiseno();
+}
+// el asistente de escritura dice qué IA está usando y trae el botón para cambiarla
+{ const antes = estadoIA;
+  estadoIA = async function(){
+    await antes.apply(this, arguments);
+    const n = nombreIAActual();
+    if (n && await iaDisponible()) $('iaEstado').textContent = '🟢 Usando ' + n + '.';
+  };
+  const cfgIA = $('iaConfig');
+  if (cfgIA){ const b = document.createElement('button'); b.type = 'button'; b.className = 'pb eiAbrir'; b.innerHTML = `${svgIcono('cerebro')} Elegir otra IA (Ollama, ChatGPT, Claude…)`; b.onclick = () => abrirElegirIA(); cfgIA.before(b); }
+}
+// en «Diseño con IA»: botón para elegir otra IA y aviso de cuál se usa
+(function(){
+  const sin = $('diSinIA');
+  if (sin){ const b = document.createElement('button'); b.type = 'button'; b.className = 'btnS eiAbrir'; b.innerHTML = `${svgIcono('cerebro')} Usar otra IA: Ollama, LM Studio, ChatGPT, Claude…`; b.onclick = () => abrirElegirIA(); sin.appendChild(b); }
+  const acc = document.querySelector('#mDisenoIA .acciones');
+  if (acc){ const b = document.createElement('button'); b.type = 'button'; b.className = 'btnS'; b.id = 'diElegirIA'; b.innerHTML = `${svgIcono('cerebro')} Mi IA`; b.title = 'Elegir qué IA usar'; b.onclick = () => abrirElegirIA(); acc.prepend(b); }
+  if (typeof revisarIADiseno === 'function'){
+    const antes = revisarIADiseno;
+    revisarIADiseno = async function(){ const r = await antes.apply(this, arguments); const n = nombreIAActual(); $('diElegirIA').title = n ? 'Usando ' + n : 'Elegir qué IA usar'; return r; };
+  }
+  const mp = $('maPrincipal');
+  if (mp){ const a = document.createElement('button'); a.className = 'tb'; a.type = 'button'; a.id = 'bElegirIA'; a.innerHTML = `${svgIcono('cerebro')} Elegir mi IA`; a.onclick = () => abrirElegirIA(); mp.appendChild(a); }
 })();
 window.__appLista = true;

@@ -262,6 +262,19 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - **Menos lecturas de Firestore** (plan gratis: 50,000 lecturas/día, 20,000 escrituras/día, 1 GiB): lo leído hace poco se reutiliza unos minutos; las actividades y exámenes que ya cerraron guardan su conteo de entregas; los pendientes del alumno se guardan 10 min. En un grupo de 30 alumnos con 10 actividades: abrir el grupo de nuevo pasó de ~450 a ~16 lecturas, y abrir la app como alumno de ~28 a ~2. El grupo muestra cuánto espacio ocupan sus trabajos.
 - **Reglas nuevas**: `buzon`, `auxSolicitudes`, `inicios`, `esMaestro()` con auxiliares, borrar partes de entregas (maestro) y `abiertas` protegido → volver a publicar `firestore.rules`.
 
+## v81: elegir mi IA (Ollama, LM Studio, OpenRouter, Groq, ChatGPT, Claude…)
+- `99-zzzz-elegir-mi-ia.js`: ventana «Elegir mi IA» (Archivo, buscador, asistente de escritura y Diseño con IA). El asistente y el Diseño con IA usan la que elijas.
+- **Gratis en tu computadora:** Ollama (`http://localhost:11434`) y LM Studio (`http://localhost:1234`), con modelos abiertos como Nemotron 3.5 Bolt E4B de Nvidia (~4 GB), Llama, Gemma o Qwen. El texto no sale de la computadora.
+  - Ollama necesita permitir este sitio: iniciarlo con `OLLAMA_ORIGINS=https://gamerpc.github.io`.
+  - LM Studio necesita «Enable CORS» en el servidor.
+  - Chrome puede preguntar por acceso a la red local; hay que tocar «Permitir».
+- **Gratis en la nube:** Google Gemini, OpenRouter (solo lista los modelos `:free`) y Groq.
+- **De pago:** ChatGPT (API de OpenAI) y Claude (API de Anthropic; por defecto `claude-haiku-5-5`). Las suscripciones Plus o Pro no incluyen la API.
+- **Otra compatible:** cualquier servicio con la API de OpenAI (escribes su dirección).
+- «Buscar modelos» lista los modelos instalados o disponibles. «Probar» manda una pregunta corta: si falla, no cambia nada.
+- Las claves se guardan solo en este navegador (`localStorage`), nunca en el repositorio ni en la página.
+- «Automático» es lo de antes: IA de Chrome y, si no hay, la clave de Gemini. Convertir una imagen en diagrama sigue usando Chrome o Gemini, porque necesita ver imágenes.
+
 ## v80: diseño completo con IA
 - `99-zzz-diseno-con-ia.js`: describes lo que necesitas («cartel de la feria de ciencias de 2.º A, viernes 5 a las 10 en el patio») y la IA escribe el contenido: encabezado, título, subtítulo, texto, puntos, datos (fecha, hora, lugar), llamada a la acción y pie.
 - Se arma en 4 estilos a la vez (el sugerido por la IA primero) con vistas previas; tocas uno y queda en el lienzo, todo editable.

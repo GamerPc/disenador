@@ -1636,3 +1636,31 @@ html.letraGrande #mDescargaFacil .dfOpcion small{font-size:15px}
 .inDisenoIA .ico{width:22px;height:22px;flex:none;color:var(--morado)}
 .inDisenoIA:hover,.inDisenoIA:focus-visible{border-style:solid}
 @media (max-width:640px){#diFormatos{grid-template-columns:1fr 1fr}.diResultados{grid-template-columns:1fr 1fr}.diIdeas{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}.diIdeas .chip{flex:none}}
+
+/* v81: elegir mi IA (99-zzzz-…) */
+#mElegirIA{z-index:150}
+#mElegirIA .caja{width:min(700px,95vw);max-height:92vh;overflow:auto}
+#mElegirIA h3 .ico{width:22px;height:22px;vertical-align:-4px;color:var(--morado)}
+.eiNota{color:var(--suave);font-size:14px;margin:2px 0 12px;line-height:1.45}
+.eiLista{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.eiOpcion{display:flex;gap:8px;align-items:center;min-height:52px;padding:6px 10px;border:1px solid var(--borde);border-radius:10px;background:var(--panel2);cursor:pointer}
+.eiOpcion:has(input:checked){border-color:var(--morado);background:color-mix(in srgb,var(--morado) 14%,var(--panel2))}
+.eiOpcion.activa b::after{content:' ✓';color:var(--morado)}
+.eiOpcion input{width:18px;height:18px;margin:0;flex:none;accent-color:var(--morado)}
+.eiOpcion b{display:block;font-size:13.5px}
+.eiOpcion small{display:block;color:var(--suave);font-size:12px}
+.eiDetalle{margin-top:12px;padding:12px;border:1px solid var(--borde);border-radius:12px;background:color-mix(in srgb,var(--panel2) 60%,transparent)}
+.eiAyuda{margin:0 0 10px;font-size:14px;line-height:1.5}
+.eiFila{display:grid;grid-template-columns:90px 1fr auto;gap:8px;align-items:center;margin-top:8px}
+.eiFila[hidden]{display:none}
+.eiFila label{font:600 13.5px Inter,sans-serif}
+.eiFila input{min-width:0;min-height:44px;box-sizing:border-box;border:1px solid var(--borde);border-radius:10px;background:var(--panel2);color:var(--texto);padding:0 12px;font:14px Inter,sans-serif}
+.eiFila a{color:var(--morado);font-size:13.5px;white-space:nowrap}
+.eiFila button{min-height:44px;white-space:nowrap}
+.eiEstado{margin:10px 0 0;font-size:14px}
+.eiEstado:empty{display:none}
+#mElegirIA .acciones{flex-wrap:wrap}
+#mElegirIA .acciones button{min-height:44px}
+.eiAbrir{display:inline-flex;align-items:center;gap:6px;margin:8px 0;min-height:44px}
+.eiAbrir .ico,#diElegirIA .ico{width:16px;height:16px}
+@media (max-width:640px){.eiLista{grid-template-columns:1fr 1fr}.eiFila{grid-template-columns:1fr}.eiFila label{margin-bottom:-4px}}

@@ -32,6 +32,7 @@ function listarHerramientasBuscables(){
   if (typeof abrirEscuela === 'function') agregar('Modo escuela', 'Grupos, tareas, actividades y entregas', 'maestro alumno clase escolar', () => abrirEscuela());
   if (typeof abrirHistorial === 'function') agregar('Historial de cambios', 'Ver los últimos pasos y regresar a cualquiera', 'historial deshacer pasos versiones regresar volver atras cambios', () => abrirHistorial());
   if ($('bReglas')) agregar('Mostrar u ocultar las reglas', 'Reglas en px o cm en el borde del lienzo', 'reglas regla medidas centimetros cm pixeles medir', () => $('bReglas').click());
+  if (typeof abrirElegirIA === 'function') agregar('Elegir mi IA', 'Chrome, Gemini, Ollama, LM Studio, OpenRouter, Groq, ChatGPT o Claude', 'ia modelo ollama lm studio chatgpt openai claude anthropic gemini groq openrouter nemotron llama local clave api', () => abrirElegirIA());
   if (typeof abrirDisenoIA === 'function') agregar('Diseño con IA', 'Describe lo que necesitas y la IA arma el diseño', 'ia inteligencia artificial generar crear automático cartel invitación publicación gemini', () => abrirDisenoIA());
   if (typeof abrirPreguntas === 'function') agregar('Preguntas frecuentes', 'Dudas comunes con su respuesta', 'ayuda duda pregunta cómo no sé no entiendo tutorial', () => abrirPreguntas());
   if (typeof abrirReporte === 'function') agregar('Reportar un problema', 'Cuéntanos qué falló o qué te gustaría', 'error falla problema bug sugerencia idea queja reporte', () => abrirReporte());

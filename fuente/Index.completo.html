@@ -1650,13 +1650,41 @@ html.letraGrande #mDescargaFacil .dfOpcion small{font-size:15px}
 .inDisenoIA:hover,.inDisenoIA:focus-visible{border-style:solid}
 @media (max-width:640px){#diFormatos{grid-template-columns:1fr 1fr}.diResultados{grid-template-columns:1fr 1fr}.diIdeas{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}.diIdeas .chip{flex:none}}
 
+/* v81: elegir mi IA (99-zzzz-…) */
+#mElegirIA{z-index:150}
+#mElegirIA .caja{width:min(700px,95vw);max-height:92vh;overflow:auto}
+#mElegirIA h3 .ico{width:22px;height:22px;vertical-align:-4px;color:var(--morado)}
+.eiNota{color:var(--suave);font-size:14px;margin:2px 0 12px;line-height:1.45}
+.eiLista{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.eiOpcion{display:flex;gap:8px;align-items:center;min-height:52px;padding:6px 10px;border:1px solid var(--borde);border-radius:10px;background:var(--panel2);cursor:pointer}
+.eiOpcion:has(input:checked){border-color:var(--morado);background:color-mix(in srgb,var(--morado) 14%,var(--panel2))}
+.eiOpcion.activa b::after{content:' ✓';color:var(--morado)}
+.eiOpcion input{width:18px;height:18px;margin:0;flex:none;accent-color:var(--morado)}
+.eiOpcion b{display:block;font-size:13.5px}
+.eiOpcion small{display:block;color:var(--suave);font-size:12px}
+.eiDetalle{margin-top:12px;padding:12px;border:1px solid var(--borde);border-radius:12px;background:color-mix(in srgb,var(--panel2) 60%,transparent)}
+.eiAyuda{margin:0 0 10px;font-size:14px;line-height:1.5}
+.eiFila{display:grid;grid-template-columns:90px 1fr auto;gap:8px;align-items:center;margin-top:8px}
+.eiFila[hidden]{display:none}
+.eiFila label{font:600 13.5px Inter,sans-serif}
+.eiFila input{min-width:0;min-height:44px;box-sizing:border-box;border:1px solid var(--borde);border-radius:10px;background:var(--panel2);color:var(--texto);padding:0 12px;font:14px Inter,sans-serif}
+.eiFila a{color:var(--morado);font-size:13.5px;white-space:nowrap}
+.eiFila button{min-height:44px;white-space:nowrap}
+.eiEstado{margin:10px 0 0;font-size:14px}
+.eiEstado:empty{display:none}
+#mElegirIA .acciones{flex-wrap:wrap}
+#mElegirIA .acciones button{min-height:44px}
+.eiAbrir{display:inline-flex;align-items:center;gap:6px;margin:8px 0;min-height:44px}
+.eiAbrir .ico,#diElegirIA .ico{width:16px;height:16px}
+@media (max-width:640px){.eiLista{grid-template-columns:1fr 1fr}.eiFila{grid-template-columns:1fr}.eiFila label{margin-bottom:-4px}}
+
 </style>
 </head>
 <body>
 
 <!-- ====== BARRA SUPERIOR ====== -->
 <div id="barra">
-  <div class="logo"><img class="logoImg" src="data:image/png;base64,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" alt=""><span class="logoTxt">Diseñador<small class="logoMarca">APIK-DESING</small></span><small class="ver">v80</small></div>
+  <div class="logo"><img class="logoImg" src="data:image/png;base64,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" alt=""><span class="logoTxt">Diseñador<small class="logoMarca">APIK-DESING</small></span><small class="ver">v81</small></div>
   <input class="nombre" id="nombreDiseno" value="Mi diseño" title="Nombre del diseño">
   <span id="estadoGuardado" title="Estado del guardado en Drive">No guardado en Drive</span>
   <button class="tb" onclick="nuevoDiseno()">Nuevo</button>
@@ -16337,6 +16365,7 @@ function listarHerramientasBuscables(){
   if (typeof abrirEscuela === 'function') agregar('Modo escuela', 'Grupos, tareas, actividades y entregas', 'maestro alumno clase escolar', () => abrirEscuela());
   if (typeof abrirHistorial === 'function') agregar('Historial de cambios', 'Ver los últimos pasos y regresar a cualquiera', 'historial deshacer pasos versiones regresar volver atras cambios', () => abrirHistorial());
   if ($('bReglas')) agregar('Mostrar u ocultar las reglas', 'Reglas en px o cm en el borde del lienzo', 'reglas regla medidas centimetros cm pixeles medir', () => $('bReglas').click());
+  if (typeof abrirElegirIA === 'function') agregar('Elegir mi IA', 'Chrome, Gemini, Ollama, LM Studio, OpenRouter, Groq, ChatGPT o Claude', 'ia modelo ollama lm studio chatgpt openai claude anthropic gemini groq openrouter nemotron llama local clave api', () => abrirElegirIA());
   if (typeof abrirDisenoIA === 'function') agregar('Diseño con IA', 'Describe lo que necesitas y la IA arma el diseño', 'ia inteligencia artificial generar crear automático cartel invitación publicación gemini', () => abrirDisenoIA());
   if (typeof abrirPreguntas === 'function') agregar('Preguntas frecuentes', 'Dudas comunes con su respuesta', 'ayuda duda pregunta cómo no sé no entiendo tutorial', () => abrirPreguntas());
   if (typeof abrirReporte === 'function') agregar('Reportar un problema', 'Cuéntanos qué falló o qué te gustaría', 'error falla problema bug sugerencia idea queja reporte', () => abrirReporte());
@@ -18773,6 +18802,212 @@ function usarDisenoIA(k){
   }
   const mp = $('maPrincipal');
   if (mp){ const a = document.createElement('button'); a.className = 'tb'; a.type = 'button'; a.id = 'bDisenoIA'; a.innerHTML = `${svgIcono('varita')} Diseño con IA`; a.onclick = () => abrirDisenoIA(); mp.prepend(a); }
+})();
+/* =========================================================
+   ELEGIR MI IA: Chrome, Gemini, Ollama, LM Studio, OpenRouter, Groq, ChatGPT, Claude u otra
+   - «Automático» es lo de siempre: IA de Chrome y, si no hay, la clave de Gemini.
+   - Ollama y LM Studio corren en tu computadora (gratis, sin internet): ahí funcionan modelos
+     abiertos como Nemotron de Nvidia, Llama, Gemma, Qwen o Mistral.
+   - Las claves se guardan SOLO en este navegador y el texto se manda solo a la IA que elijas.
+   Todo lo que usa la IA para escribir (asistente de escritura, diseño con IA) pasa por aquí.
+   ========================================================= */
+const IA_PROV = 'disenador_ia_proveedor';
+const PROVEEDORES_IA = {
+  auto:      { nombre:'Automático', etq:'Chrome o Gemini', d:'Usa la IA de Chrome si tu navegador la trae; si no, tu clave de Gemini.' },
+  ollama:    { nombre:'Ollama', etq:'Gratis · en tu computadora', local:true, url:'http://localhost:11434', modelos:'/api/tags',
+               d:'Instala Ollama (ollama.com), descarga un modelo (por ejemplo, busca «nemotron», «llama» o «gemma» en ollama.com/library) y permite este sitio iniciando Ollama con OLLAMA_ORIGINS=' + location.origin + '. Tu texto no sale de tu computadora.' },
+  lmstudio:  { nombre:'LM Studio', etq:'Gratis · en tu computadora', local:true, url:'http://localhost:1234', modelos:'/v1/models',
+               d:'Instala LM Studio (lmstudio.ai), descarga un modelo, entra a «Developer», enciende el servidor y activa «Enable CORS». Tu texto no sale de tu computadora.' },
+  gemini:    { nombre:'Google Gemini', etq:'Plan gratis', clave:true, link:'https://aistudio.google.com/apikey', d:'Crea tu clave gratis en Google AI Studio.' },
+  openrouter:{ nombre:'OpenRouter', etq:'Tiene modelos gratis', clave:true, url:'https://openrouter.ai/api', modelos:'/v1/models', link:'https://openrouter.ai/keys', soloGratis:true,
+               d:'Una sola clave para muchos modelos. Los que terminan en «:free» no cuestan (con límite diario).' },
+  groq:      { nombre:'Groq', etq:'Plan gratis', clave:true, url:'https://api.groq.com/openai', modelos:'/v1/models', link:'https://console.groq.com/keys', d:'Muy rápida; tiene un plan gratuito con límites.' },
+  openai:    { nombre:'ChatGPT (OpenAI)', etq:'De pago', clave:true, url:'https://api.openai.com', modelos:'/v1/models', link:'https://platform.openai.com/api-keys',
+               d:'Necesita una clave de la API de OpenAI con saldo; la suscripción a ChatGPT Plus no incluye la API. Pon un límite de gasto en tu cuenta.' },
+  anthropic: { nombre:'Claude (Anthropic)', etq:'De pago', clave:true, url:'https://api.anthropic.com', modelos:'/v1/models', link:'https://console.anthropic.com/settings/keys', modelo:'claude-haiku-5-5',
+               d:'Necesita una clave de la API de Anthropic con saldo; la suscripción a Claude Pro no incluye la API. Pon un límite de gasto en tu cuenta.' },
+  compatible:{ nombre:'Otra compatible', etq:'Compatible con OpenAI', clave:'opcional', urlLibre:true, modelos:'/v1/models', d:'Cualquier servicio o programa con la API de OpenAI (vLLM, llama.cpp, Jan, Mistral, DeepSeek…). Escribe su dirección.' }
+};
+const SISTEMA_IA = 'Eres un asistente de redacción y diseño en español de México para estudiantes, maestros y pequeños negocios. Respondes solo con lo que se te pide.';
+function leerProv(){ try { const v = JSON.parse(localStorage.getItem(IA_PROV) || '{}'); return v && typeof v === 'object' ? v : {}; } catch (e) { return {}; } }
+function guardarProv(v){ try { localStorage.setItem(IA_PROV, JSON.stringify(v)); } catch (e) {} }
+const claveProv = t => t === 'gemini' ? leerLS(IA_CLAVE) : leerLS('disenador_ia_clave_' + t);
+const urlProv = (t, cfg) => String((cfg && cfg.url) || PROVEEDORES_IA[t].url || '').replace(/\/+$/, '').replace(/\/v1$/, '');
+const quitarPiensa = t => String(t || '').replace(/<think>[\s\S]*?<\/think>/gi, '').trim();   // modelos que «piensan en voz alta»
+{ const antesDisp = iaDisponible, antesPedir = pedirIA;
+  iaDisponible = async function(){
+    const cfg = leerProv(), t = cfg.tipo;
+    if (!t || t === 'auto' || !PROVEEDORES_IA[t]) return antesDisp();
+    if (t === 'gemini') return leerLS(IA_CLAVE) ? { tipo:'gemini' } : null;
+    const p = PROVEEDORES_IA[t];
+    if (p.clave === true && !claveProv(t)) return null;
+    if (!cfg.modelo && !p.modelo) return null;
+    if (p.urlLibre && !cfg.url) return null;
+    return { tipo:t };
+  };
+  pedirIA = async function(texto, instruccion, alProgreso){
+    const cfg = leerProv(), t = cfg.tipo;
+    if (!t || t === 'auto' || t === 'gemini' || !PROVEEDORES_IA[t]) return antesPedir(texto, instruccion, alProgreso);
+    if (!(await iaDisponible())) throw new Error('SIN_IA');
+    return llamarProveedor(t, cfg, instruccion + '\nResponde solo con el resultado, sin explicaciones ni comillas.\n\nTexto:\n' + texto);
+  };
+}
+async function llamarProveedor(t, cfg, prompt){
+  const p = PROVEEDORES_IA[t], base = urlProv(t, cfg), clave = claveProv(t), modelo = cfg.modelo || p.modelo;
+  let r;
+  try {
+    if (t === 'anthropic'){
+      r = await fetch(base + '/v1/messages', { method:'POST', headers:{ 'content-type':'application/json', 'x-api-key':clave, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
+        body:JSON.stringify({ model:modelo, max_tokens:1500, system:SISTEMA_IA, messages:[{ role:'user', content:prompt }] }) });
+    } else {
+      const h = { 'Content-Type':'application/json' };
+      if (clave) h.Authorization = 'Bearer ' + clave;
+      if (t === 'openrouter'){ h['HTTP-Referer'] = location.origin; h['X-Title'] = 'Disenador Apik'; }
+      r = await fetch(base + '/v1/chat/completions', { method:'POST', headers:h,
+        body:JSON.stringify({ model:modelo, temperature:0.7, max_tokens:1500, stream:false, messages:[{ role:'system', content:SISTEMA_IA }, { role:'user', content:prompt }] }) });
+    }
+  } catch (e) {
+    throw new Error(p.local ? `No pude conectar con ${p.nombre}. Revisa que esté abierto y que permita este sitio (ve «Elegir mi IA»). Si Chrome te pregunta por acceso a la red local, toca «Permitir».` : 'No hay conexión con ' + p.nombre + '.');
+  }
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok){
+    const msg = (d.error && (d.error.message || d.error)) || d.message || ('Error ' + r.status);
+    throw new Error(r.status === 401 || r.status === 403 ? `${p.nombre} dice que la clave no es válida o no tiene permiso.` : r.status === 429 ? `Se alcanzó el límite de ${p.nombre} por ahora. Intenta en unos minutos.` : r.status === 402 ? `Tu cuenta de ${p.nombre} no tiene saldo.` : String(msg).slice(0, 200));
+  }
+  const txt = t === 'anthropic' ? (d.content || []).map(x => x.text || '').join('') : d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+  if (!txt) throw new Error('La IA no devolvió texto. Prueba de nuevo o elige otro modelo.');
+  return quitarPiensa(txt).replace(/^["«“]|["»”]$/g, '');
+}
+async function listarModelosIA(t, cfg){
+  const p = PROVEEDORES_IA[t], base = urlProv(t, cfg), clave = claveProv(t), h = {};
+  if (t === 'anthropic'){ h['x-api-key'] = clave; h['anthropic-version'] = '2023-06-01'; h['anthropic-dangerous-direct-browser-access'] = 'true'; }
+  else if (clave) h.Authorization = 'Bearer ' + clave;
+  const r = await fetch(base + p.modelos, { headers:h });
+  if (!r.ok) throw new Error(r.status === 401 || r.status === 403 ? 'La clave no es válida.' : 'Error ' + r.status);
+  const d = await r.json();
+  let lista = t === 'ollama' ? (d.models || []).map(m => m.name || m.model) : (d.data || []).map(m => m.id);
+  if (p.soloGratis){ const gratis = lista.filter(x => /:free$/.test(x)); if (gratis.length) lista = gratis; }
+  return lista.filter(Boolean).sort((a, b) => a.localeCompare(b));
+}
+// ---------- Ventana «Elegir mi IA» ----------
+(function(){
+  const m = document.createElement('div'); m.className = 'modal'; m.id = 'mElegirIA';
+  m.innerHTML = `<div class="caja" role="dialog" aria-modal="true" aria-labelledby="eiTitulo">
+    <h3 id="eiTitulo">${svgIcono('cerebro')} Elegir mi IA</h3>
+    <p class="eiNota">Elige quién escribe cuando usas el asistente o el diseño con IA. Las claves se guardan solo en este navegador.</p>
+    <div class="eiLista" id="eiLista" role="radiogroup" aria-label="Proveedor de IA"></div>
+    <div class="eiDetalle" id="eiDetalle">
+      <p id="eiAyuda" class="eiAyuda"></p>
+      <div class="eiFila" id="eiFilaUrl"><label for="eiUrl">Dirección</label><input id="eiUrl" type="url" autocomplete="off" spellcheck="false"></div>
+      <div class="eiFila" id="eiFilaClave"><label for="eiClave">Clave</label><input id="eiClave" type="password" autocomplete="off" spellcheck="false"><a id="eiLink" target="_blank" rel="noopener">Conseguir clave</a></div>
+      <div class="eiFila" id="eiFilaModelo"><label for="eiModelo">Modelo</label><input id="eiModelo" list="eiModelos" autocomplete="off" spellcheck="false" placeholder="Toca «Buscar modelos» o escríbelo"><datalist id="eiModelos"></datalist><button type="button" class="btnS" id="eiBuscar">Buscar modelos</button></div>
+    </div>
+    <p id="eiEstado" class="eiEstado" role="status" aria-live="polite"></p>
+    <div class="acciones"><button type="button" class="btnS" id="eiQuitar">Quitar clave</button><button type="button" class="btnS" id="eiProbar">Probar</button><button type="button" class="btnS" id="eiCerrar">Cerrar</button><button type="button" class="btnP" id="eiGuardar">Guardar</button></div>
+  </div>`;
+  document.body.appendChild(m);
+  Object.entries(PROVEEDORES_IA).forEach(([k, p]) => {
+    const l = document.createElement('label'); l.className = 'eiOpcion';
+    l.innerHTML = `<input type="radio" name="eiProv" value="${k}"><span><b>${esc(p.nombre)}</b><small>${esc(p.etq)}</small></span>`;
+    $('eiLista').appendChild(l);
+  });
+  m.querySelectorAll('input').forEach(i => i.addEventListener('keydown', e => e.stopPropagation()));
+  $('eiLista').addEventListener('change', () => pintarElegirIA(false));
+  $('eiCerrar').onclick = () => cerrarModal('mElegirIA');
+  m.addEventListener('click', e => { if (e.target === m) cerrarModal('mElegirIA'); });
+  $('eiBuscar').onclick = async () => {
+    const t = eiTipo(); guardarCamposIA(t, true);
+    $('eiEstado').textContent = 'Buscando modelos…';
+    try {
+      const l = await listarModelosIA(t, { url:$('eiUrl').value.trim() });
+      $('eiModelos').innerHTML = l.map(x => `<option value="${esc(x)}"></option>`).join('');
+      if (l.length && !$('eiModelo').value) $('eiModelo').value = l[0];
+      $('eiEstado').textContent = l.length ? `Encontré ${l.length} modelo${l.length === 1 ? '' : 's'}. Elige uno en «Modelo».` : (t === 'ollama' ? 'Ollama no tiene modelos. En una terminal escribe: ollama pull <nombre-del-modelo>' : 'No encontré modelos.');
+      $('eiModelo').focus();
+    } catch (e) { $('eiEstado').textContent = 'No pude ver los modelos: ' + (e.message || e) + (PROVEEDORES_IA[t].local ? ' ¿Está abierto y permite este sitio?' : ''); }
+  };
+  $('eiProbar').onclick = async () => {
+    const t = eiTipo(), kc = t === 'gemini' ? IA_CLAVE : 'disenador_ia_clave_' + t;
+    const antesCfg = leerLS(IA_PROV), antesClave = leerLS(kc);          // si la prueba falla, se regresa a como estaba
+    if (!guardarCamposIA(t)) return;
+    $('eiEstado').textContent = 'Probando…'; $('eiProbar').disabled = true;
+    try { const r = await pedirIA('Hola', 'Contesta solo con la palabra: Listo'); $('eiEstado').textContent = '✓ Funciona. Respondió: «' + String(r).slice(0, 60) + '». Ya quedó como tu IA.'; refrescarIAVisibles(); }
+    catch (e) {
+      guardarLS(IA_PROV, antesCfg); guardarLS(kc, antesClave);
+      $('eiEstado').textContent = (e.message === 'SIN_IA' ? 'Falta llenar algún dato (clave, modelo o dirección).' : '✗ ' + e.message) + ' No se guardó.';
+    }
+    finally { $('eiProbar').disabled = false; $('eiQuitar').hidden = !PROVEEDORES_IA[t].clave || !claveProv(t); document.querySelectorAll('.eiOpcion').forEach(l => l.classList.toggle('activa', l.querySelector('input').value === (leerProv().tipo || 'auto'))); }
+  };
+  $('eiGuardar').onclick = () => { const t = eiTipo(); if (!guardarCamposIA(t)) return; toast('✓ Ahora la IA es: ' + PROVEEDORES_IA[t].nombre); cerrarModal('mElegirIA'); refrescarIAVisibles(); };
+  $('eiQuitar').onclick = () => { const t = eiTipo(); if (t === 'gemini') guardarLS(IA_CLAVE, ''); else guardarLS('disenador_ia_clave_' + t, ''); $('eiClave').value = ''; $('eiEstado').textContent = 'Clave quitada de este navegador.'; refrescarIAVisibles(); };
+})();
+const eiTipo = () => (document.querySelector('[name="eiProv"]:checked') || {}).value || 'auto';
+function guardarCamposIA(t, sinValidar){
+  const p = PROVEEDORES_IA[t], cfg = { tipo:t };
+  const clave = limpiarClaveIA($('eiClave').value);
+  if (p.clave && clave){
+    if (!claveIAValida(clave)){ $('eiEstado').textContent = 'Esa clave parece incompleta. Cópiala otra vez.'; return false; }
+    if (t === 'gemini') guardarLS(IA_CLAVE, clave); else guardarLS('disenador_ia_clave_' + t, clave);
+    $('eiClave').value = ''; $('eiClave').placeholder = '•••••••• (guardada)'; $('eiQuitar').hidden = false;
+  }
+  if (p.local || p.urlLibre){
+    const u = $('eiUrl').value.trim();
+    if (u && !/^https?:\/\/[^\s]+$/i.test(u)){ $('eiEstado').textContent = 'La dirección debe empezar con http:// o https://'; return false; }
+    if (u) cfg.url = u;
+  }
+  if (t !== 'auto' && t !== 'gemini'){ const mo = $('eiModelo').value.trim(); if (mo) cfg.modelo = mo; }
+  if (t === 'gemini'){ const mo = $('eiModelo').value.trim(); guardarLS(IA_MODELO, mo); }
+  if (!sinValidar && p.clave === true && !claveProv(t)){ $('eiEstado').textContent = 'Pega tu clave de ' + p.nombre + '.'; $('eiClave').focus(); return false; }
+  guardarProv(cfg); return true;
+}
+function pintarElegirIA(desdeGuardado){
+  const cfg = leerProv();
+  if (desdeGuardado){ const r = document.querySelector(`[name="eiProv"][value="${PROVEEDORES_IA[cfg.tipo] ? cfg.tipo : 'auto'}"]`); if (r) r.checked = true; }
+  const t = eiTipo(), p = PROVEEDORES_IA[t], mismo = cfg.tipo === t;
+  $('eiAyuda').textContent = p.d;
+  $('eiFilaUrl').hidden = !(p.local || p.urlLibre);
+  $('eiUrl').value = mismo && cfg.url ? cfg.url : (p.url || ''); $('eiUrl').placeholder = p.urlLibre ? 'https://tu-servidor/v1' : (p.url || '');
+  $('eiFilaClave').hidden = !p.clave; $('eiClave').value = '';
+  $('eiClave').placeholder = claveProv(t) ? '•••••••• (guardada)' : (p.clave === 'opcional' ? 'Clave (si tu servicio la pide)' : 'Pega aquí tu clave');
+  $('eiLink').hidden = !p.link; if (p.link) $('eiLink').href = p.link;
+  $('eiFilaModelo').hidden = t === 'auto';
+  $('eiBuscar').hidden = !p.modelos;
+  $('eiModelo').value = t === 'gemini' ? leerLS(IA_MODELO) : (mismo && cfg.modelo) || p.modelo || '';
+  $('eiModelo').placeholder = t === 'gemini' ? 'Opcional: gemini-flash-latest' : 'Toca «Buscar modelos» o escríbelo';
+  $('eiModelos').innerHTML = '';
+  $('eiQuitar').hidden = !p.clave || !claveProv(t);
+  $('eiProbar').hidden = t === 'auto';
+  $('eiEstado').textContent = '';
+  document.querySelectorAll('.eiOpcion').forEach(l => l.classList.toggle('activa', l.querySelector('input').value === (cfg.tipo || 'auto')));
+}
+function abrirElegirIA(){ pintarElegirIA(true); abrirModal('mElegirIA'); setTimeout(() => { const r = document.querySelector('[name="eiProv"]:checked'); r && r.focus(); }, 40); }
+function nombreIAActual(){ const t = leerProv().tipo; return t && t !== 'auto' && PROVEEDORES_IA[t] ? PROVEEDORES_IA[t].nombre + (leerProv().modelo ? ' · ' + leerProv().modelo : '') : ''; }
+function refrescarIAVisibles(){
+  if ($('mAsistente') && $('mAsistente').classList.contains('abierto') && typeof estadoIA === 'function') estadoIA();
+  if ($('mDisenoIA') && $('mDisenoIA').classList.contains('abierto') && typeof revisarIADiseno === 'function') revisarIADiseno();
+}
+// el asistente de escritura dice qué IA está usando y trae el botón para cambiarla
+{ const antes = estadoIA;
+  estadoIA = async function(){
+    await antes.apply(this, arguments);
+    const n = nombreIAActual();
+    if (n && await iaDisponible()) $('iaEstado').textContent = '🟢 Usando ' + n + '.';
+  };
+  const cfgIA = $('iaConfig');
+  if (cfgIA){ const b = document.createElement('button'); b.type = 'button'; b.className = 'pb eiAbrir'; b.innerHTML = `${svgIcono('cerebro')} Elegir otra IA (Ollama, ChatGPT, Claude…)`; b.onclick = () => abrirElegirIA(); cfgIA.before(b); }
+}
+// en «Diseño con IA»: botón para elegir otra IA y aviso de cuál se usa
+(function(){
+  const sin = $('diSinIA');
+  if (sin){ const b = document.createElement('button'); b.type = 'button'; b.className = 'btnS eiAbrir'; b.innerHTML = `${svgIcono('cerebro')} Usar otra IA: Ollama, LM Studio, ChatGPT, Claude…`; b.onclick = () => abrirElegirIA(); sin.appendChild(b); }
+  const acc = document.querySelector('#mDisenoIA .acciones');
+  if (acc){ const b = document.createElement('button'); b.type = 'button'; b.className = 'btnS'; b.id = 'diElegirIA'; b.innerHTML = `${svgIcono('cerebro')} Mi IA`; b.title = 'Elegir qué IA usar'; b.onclick = () => abrirElegirIA(); acc.prepend(b); }
+  if (typeof revisarIADiseno === 'function'){
+    const antes = revisarIADiseno;
+    revisarIADiseno = async function(){ const r = await antes.apply(this, arguments); const n = nombreIAActual(); $('diElegirIA').title = n ? 'Usando ' + n : 'Elegir qué IA usar'; return r; };
+  }
+  const mp = $('maPrincipal');
+  if (mp){ const a = document.createElement('button'); a.className = 'tb'; a.type = 'button'; a.id = 'bElegirIA'; a.innerHTML = `${svgIcono('cerebro')} Elegir mi IA`; a.onclick = () => abrirElegirIA(); mp.appendChild(a); }
 })();
 
 </script>
