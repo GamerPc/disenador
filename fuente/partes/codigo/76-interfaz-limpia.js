@@ -228,7 +228,7 @@ function ponerInterfaz(limpia, guardar = true){
   const bi = $('bInterfaz');
   bi.innerHTML = `${icoUI('interfaz')}<span class="etqMenu"> ${limpia ? 'Interfaz clásica (todo a la vista)' : 'Interfaz limpia (más espacio)'}</span>`;
   bi.title = limpia ? 'Volver a ver todos los botones y paneles como antes' : 'Más espacio para el diseño: menos botones a la vista';
-  $('bArchivo').hidden = !limpia;
+  $('bArchivo').hidden = !limpia && !(typeof modoSencillo === 'function' && modoSencillo());
   revisarProps(); medirPie(); pedirBarraSel();
   setTimeout(() => { if (window.acomodarBarra) acomodarBarra(); ajustarZoom(); }, 40);
 }

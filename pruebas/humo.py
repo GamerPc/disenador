@@ -84,7 +84,7 @@ async def main():
                 if not regreso_anidado: fallas.append(f'{w}px: al cerrar reporte desde Preguntas frecuentes, el foco no vuelve al menu visible')
                 await archivo.click()
                 await pg.get_by_role('button', name='Planifica publicaciones para tus redes').click()
-                await pg.get_by_role('button', name='＋ Nueva publicación').click()
+                await pg.locator('#prNuevo').click()
                 await pg.locator('#prCampana').fill('Prueba automática')
                 await pg.locator('#prPlataforma').select_option('Instagram')
                 await pg.locator('#prTema').fill('Publicación de prueba')
@@ -96,11 +96,42 @@ async def main():
                 if await pg.locator('.prTarjeta').count() != 0:
                     fallas.append(f'{w}px: el filtro del calendario no funciona')
                 await pg.locator('#prFiltro').select_option('')
+                await pg.get_by_role('button', name='Ideas y revisión').click()
+                if await pg.locator('.prTarjeta').count() != 1:
+                    fallas.append(f'{w}px: la bandeja no muestra la publicación nueva')
+                await pg.get_by_role('button', name='Enviar a revisión').click()
+                if 'En revisión' not in await pg.locator('.prTarjeta').inner_text():
+                    fallas.append(f'{w}px: no se pudo enviar la idea a revisión')
+                await pg.get_by_role('button', name='Aprobar').click()
+                if 'Aprobado' not in await pg.locator('.prTarjeta').inner_text():
+                    fallas.append(f'{w}px: no se pudo aprobar la publicación')
+                await pg.get_by_role('button', name='Programar').click()
+                if 'Programado' not in await pg.locator('.prTarjeta').inner_text():
+                    fallas.append(f'{w}px: no se pudo programar la publicación aprobada')
+                await pg.locator('#prFiltroEstado').select_option('En revisión')
+                if await pg.locator('.prTarjeta').count() != 0:
+                    fallas.append(f'{w}px: el filtro de estado de la bandeja no funciona')
+                await pg.locator('#prFiltroEstado').select_option('')
                 async def aceptar_confirmacion(d): await d.accept()
                 pg.on('dialog', aceptar_confirmacion)
                 await pg.get_by_role('button', name='Eliminar Publicación de prueba').click()
                 if await pg.locator('.prTarjeta').count() != 0:
                     fallas.append(f'{w}px: no se pudo limpiar la publicación temporal de prueba')
+                await pg.locator('#prCerrar').click()
+                await pg.evaluate("ponerModo('sencillo', false)")
+                await pg.evaluate("ponerInterfaz(false, false)")
+                if not await pg.locator('#bArchivo').is_visible():
+                    fallas.append(f'{w}px: el menú Archivo no queda accesible en modo sencillo')
+                else:
+                    await pg.locator('#bArchivo').click()
+                    await pg.get_by_role('button', name='Planifica publicaciones para tus redes').click()
+                    if not await pg.locator('#mPlanRedes .prCaja').is_visible():
+                        fallas.append(f'{w}px: no se puede abrir el calendario desde modo sencillo')
+                    await pg.locator('#prCerrar').click()
+                await pg.evaluate("ponerModo('completo', false)")
+                if await pg.locator('#bArchivo').is_visible():
+                    fallas.append(f'{w}px: al volver al modo completo la interfaz clásica cambia el menú inesperadamente')
+                await pg.evaluate("ponerInterfaz(true, false)")
             await b.close()
     finally:
         srv.terminate()

@@ -495,6 +495,7 @@ function ponerModo(m, avisar = true){
   });
   const b = $('bModo');
   if (b){ b.innerHTML = s ? '😊<span> Sencillo</span>' : '🎨<span> Completo</span>'; b.title = s ? 'Estás en el modo sencillo. Toca para ver todas las herramientas' : 'Estás en el modo completo. Toca para usar el modo sencillo'; b.setAttribute('aria-pressed', s ? 'true' : 'false'); b.setAttribute('aria-label', b.title); }
+  const archivo = $('bArchivo'); if (archivo) archivo.hidden = !(s || document.documentElement.classList.contains('limpia'));
   document.querySelectorAll('[data-modo]').forEach(x => x.setAttribute('aria-pressed', x.dataset.modo === (s ? 'sencillo' : 'completo') ? 'true' : 'false'));
   if (s){                                     // en sencillo no se ven las herramientas escondidas: si estabas en una, vuelves a Plantillas
     const act = document.querySelector('#pestanas button.activa');
