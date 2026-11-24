@@ -262,9 +262,16 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - **Menos lecturas de Firestore** (plan gratis: 50,000 lecturas/día, 20,000 escrituras/día, 1 GiB): lo leído hace poco se reutiliza unos minutos; las actividades y exámenes que ya cerraron guardan su conteo de entregas; los pendientes del alumno se guardan 10 min. En un grupo de 30 alumnos con 10 actividades: abrir el grupo de nuevo pasó de ~450 a ~16 lecturas, y abrir la app como alumno de ~28 a ~2. El grupo muestra cuánto espacio ocupan sus trabajos.
 - **Reglas nuevas**: `buzon`, `auxSolicitudes`, `inicios`, `esMaestro()` con auxiliares, borrar partes de entregas (maestro) y `abiertas` protegido → volver a publicar `firestore.rules`.
 
+## v76: bandeja de ideas y aprobaciones para community managers
+- La vista **Ideas y revisión** reúne publicaciones de todas las fechas y permite filtrarlas por red y estado.
+- Flujo de trabajo: idea o borrador → revisión → aprobada o cambios solicitados → programada. La opción **Diseñar** lleva al editor sin saltarse la revisión.
+- **Archivo** queda visible también en modo sencillo para que no se pierda el acceso al calendario.
+- La revisión es local en este navegador; para que varias personas aprueben juntas hará falta sincronizar el espacio de trabajo.
+
 ## v75: calendario de contenido para community managers
-- Desde **Archivo → Calendario de contenido** o **Ctrl+K**, organiza publicaciones por fecha, cliente/campaña, red social, formato y estado.
-- Guarda las ideas en el navegador, edítalas, copia el texto con llamada a la acción y hashtags, y descarga el mes en CSV.
+- Desde **Archivo → Calendario de contenido** o **Ctrl+K**, organiza ideas y publicaciones por fecha, cliente/campaña, red social y formato.
+- La vista **Ideas y revisión** reúne todo el trabajo pendiente, con filtros por red y estado. El flujo permite enviar una idea a revisión, aprobarla, pedir cambios y marcarla como programada.
+- Guarda el trabajo en el navegador, edítalo, copia el texto con llamada a la acción y hashtags, y descarga el mes en CSV.
 - El planificador ayuda a preparar el contenido junto al editor; no conecta ni publica directamente en cuentas sociales.
 
 ## v74: botones grandes en el celular, preguntas frecuentes y reportar un problema

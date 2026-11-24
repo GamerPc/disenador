@@ -4,9 +4,11 @@
    ========================================================= */
 const PR_KEY = 'apik_plan_redes_v1';
 const PR_PLATAFORMAS = ['Instagram','Facebook','TikTok','YouTube','LinkedIn','Pinterest','X','Otra'];
-const PR_ESTADOS = ['Idea','Borrador','En diseño','Listo','Publicado'];
+const PR_ESTADOS = ['Idea','Borrador','En diseño','En revisión','Cambios solicitados','Aprobado','Programado','Publicado'];
 let prMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 let prFiltro = '';
+let prFiltroEstado = '';
+let prVista = 'calendario';
 let prEditando = '';
 let prPlanes = [];
 try { const d = JSON.parse(localStorage.getItem(PR_KEY) || '[]'); if (Array.isArray(d)) prPlanes = d.filter(x => x && x.id && x.fecha); } catch(e) {}
@@ -22,8 +24,8 @@ function prPreparar(){
   const m = document.createElement('div'); m.className = 'modal'; m.id = 'mPlanRedes';
   m.innerHTML = `<div class="caja prCaja" role="dialog" aria-modal="true" aria-labelledby="prTitulo">
     <header class="prCabeza"><div><span class="prEyebrow">Espacio de trabajo</span><h2 id="prTitulo">Calendario de contenido</h2><p>Organiza ideas y publicaciones por campaña, fecha y red social.</p></div><button type="button" class="btnS" id="prCerrar" aria-label="Cerrar calendario">Cerrar</button></header>
-    <div class="prBarra"><div class="prMesControles"><button type="button" class="btnS" id="prAnterior" aria-label="Mes anterior">‹</button><h3 id="prMesTitulo"></h3><button type="button" class="btnS" id="prSiguiente" aria-label="Mes siguiente">›</button><button type="button" class="btnS" id="prHoy">Hoy</button></div><div class="prAcciones"><label class="srOnly" for="prFiltro">Filtrar por red</label><select id="prFiltro"><option value="">Todas las redes</option>${PR_PLATAFORMAS.map(x => `<option>${x}</option>`).join('')}</select><button type="button" class="btnS" id="prExportar">Exportar CSV</button><button type="button" class="btnP" id="prNuevo">＋ Nueva publicación</button></div></div>
-    <div class="prCuerpo"><section class="prCalendario" aria-label="Calendario del mes"><div class="prSemana" aria-hidden="true"><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span></div><div id="prDias" class="prDias"></div></section>
+    <div class="prBarra"><div class="prVistas" aria-label="Vistas del contenido"><button type="button" class="prVista activa" id="prVistaCalendario" aria-pressed="true">Calendario</button><button type="button" class="prVista" id="prVistaBandeja" aria-pressed="false">Ideas y revisión <span id="prPendientes" class="prPildora">0</span></button></div><div class="prControlesVista"><div class="prMesControles"><button type="button" class="btnS" id="prAnterior" aria-label="Mes anterior">‹</button><h3 id="prMesTitulo"></h3><button type="button" class="btnS" id="prSiguiente" aria-label="Mes siguiente">›</button><button type="button" class="btnS" id="prHoy">Hoy</button></div><div class="prAcciones"><label class="srOnly" for="prFiltro">Filtrar por red</label><select id="prFiltro"><option value="">Todas las redes</option>${PR_PLATAFORMAS.map(x => `<option>${x}</option>`).join('')}</select><label class="srOnly" for="prFiltroEstado">Filtrar por estado</label><select id="prFiltroEstado"><option value="">Todos los estados</option>${PR_ESTADOS.map(x => `<option>${x}</option>`).join('')}</select><button type="button" class="btnS" id="prExportar">Exportar CSV</button><button type="button" class="btnP" id="prNuevo">＋ Nueva publicación</button></div></div></div>
+    <div class="prCuerpo"><section id="prCalendario" class="prCalendario" aria-label="Calendario del mes"><div class="prSemana" aria-hidden="true"><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span></div><div id="prDias" class="prDias"></div></section>
       <section class="prLista" aria-labelledby="prListaTitulo"><div class="prListaHead"><h3 id="prListaTitulo">Publicaciones del mes</h3><span id="prConteo" role="status" aria-live="polite"></span></div><div id="prItems" class="prItems"></div></section></div>
     <form id="prFormulario" class="prFormulario" hidden>
       <div class="prFormHead"><h3 id="prFormTitulo">Nueva publicación</h3><button type="button" class="btnS" id="prCancelar">Volver al calendario</button></div>
@@ -49,6 +51,9 @@ function prPreparar(){
   $('prSiguiente').onclick = () => { prMes = new Date(prMes.getFullYear(), prMes.getMonth()+1, 1); prPintar(); };
   $('prHoy').onclick = () => { prMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1); prPintar(); };
   $('prFiltro').onchange = () => { prFiltro = $('prFiltro').value; prPintar(); };
+  $('prFiltroEstado').onchange = () => { prFiltroEstado = $('prFiltroEstado').value; prPintar(); };
+  $('prVistaCalendario').onclick = () => prCambiarVista('calendario');
+  $('prVistaBandeja').onclick = () => prCambiarVista('bandeja');
   $('prNuevo').onclick = () => prNueva();
   $('prExportar').onclick = prExportarCSV;
   $('prTexto').oninput = () => $('prCaracteres').textContent = $('prTexto').value.length;
@@ -57,7 +62,18 @@ function prPreparar(){
   m.addEventListener('click', e => { if (e.target === m) cerrarModal('mPlanRedes'); });
 }
 function abrirPlanRedes(){ prPreparar(); prMostrarCalendario(); prPintar(); abrirModal('mPlanRedes'); }
-function prMostrarCalendario(){ $('prFormulario').hidden = true; document.querySelector('#mPlanRedes .prCuerpo').hidden = false; document.querySelector('#mPlanRedes .prBarra').hidden = false; $('prNuevo').focus(); }
+function prMostrarCalendario(){ $('prFormulario').hidden = true; document.querySelector('#mPlanRedes .prCuerpo').hidden = false; document.querySelector('#mPlanRedes .prBarra').hidden = false; prAplicarVista(); $('prNuevo').focus(); }
+function prCambiarVista(vista){ prVista=vista; prAplicarVista(); prPintar(); }
+function prAplicarVista(){
+  const bandeja=prVista==='bandeja';
+  $('prVistaCalendario').classList.toggle('activa',!bandeja); $('prVistaCalendario').setAttribute('aria-pressed',String(!bandeja));
+  $('prVistaBandeja').classList.toggle('activa',bandeja); $('prVistaBandeja').setAttribute('aria-pressed',String(bandeja));
+  document.querySelector('#mPlanRedes .prMesControles').hidden=bandeja;
+  $('prFiltroEstado').hidden=!bandeja;
+  $('prCalendario').hidden=bandeja;
+  $('prLista').classList.toggle('prListaCompleta',bandeja);
+  $('prListaTitulo').textContent=bandeja?'Bandeja de ideas y revisión':'Publicaciones del mes';
+}
 function prNueva(fecha){
   prEditando = ''; $('prFormulario').reset(); $('prHora').value = '12:00'; $('prEstado').value = 'Idea'; $('prFecha').value = fecha || prLocalFecha(new Date());
   $('prFormTitulo').textContent = 'Nueva publicación'; $('prCaracteres').textContent = '0';
@@ -66,7 +82,7 @@ function prNueva(fecha){
 function prEditar(id){
   const p = prPlanes.find(x => x.id === id); if (!p) return;
   prEditando = id; $('prCampana').value = p.campana || ''; $('prPlataforma').value = p.plataforma; $('prFecha').value = p.fecha; $('prHora').value = p.hora || '12:00';
-  $('prFormato').value = p.formato || 'Publicación'; $('prEstado').value = p.estado || 'Idea'; $('prTema').value = p.tema || ''; $('prTexto').value = p.texto || ''; $('prCTA').value = p.cta || ''; $('prTags').value = p.tags || '';
+  $('prFormato').value = p.formato || 'Publicación'; $('prEstado').value = prEstadoNormal(p.estado); $('prTema').value = p.tema || ''; $('prTexto').value = p.texto || ''; $('prCTA').value = p.cta || ''; $('prTags').value = p.tags || '';
   $('prFormTitulo').textContent = 'Editar publicación'; $('prCaracteres').textContent = $('prTexto').value.length;
   document.querySelector('#mPlanRedes .prCuerpo').hidden = true; document.querySelector('#mPlanRedes .prBarra').hidden = true; $('prFormulario').hidden = false; $('prCampana').focus();
 }
@@ -84,34 +100,41 @@ function prPintar(){
   if (!$('prDias')) return;
   $('prMesTitulo').textContent = prMesNombre();
   const primero = new Date(prMes.getFullYear(),prMes.getMonth(),1), offset = (primero.getDay()+6)%7, dias = new Date(prMes.getFullYear(),prMes.getMonth()+1,0).getDate();
-  const mesItems = prPorMes(), hoy = prLocalFecha(new Date()), fragmento = document.createDocumentFragment();
+  const mesItems = prPorMes(), pendientes=prPlanes.filter(p=>['Idea','Borrador','En diseño','En revisión','Cambios solicitados'].includes(prEstadoNormal(p.estado))), activos=prPlanes.filter(p=>prEstadoNormal(p.estado)!=='Publicado'), items=prVista==='bandeja' ? activos.filter(p=>(!prFiltro||p.plataforma===prFiltro)&&(!prFiltroEstado||prEstadoNormal(p.estado)===prFiltroEstado)).sort((a,b)=>(b.actualizado||'').localeCompare(a.actualizado||'')) : mesItems, hoy = prLocalFecha(new Date()), fragmento = document.createDocumentFragment();
+  $('prPendientes').textContent=pendientes.length;
   for (let i=0; i<offset; i++){ const vacio=document.createElement('span'); vacio.className='prDia prVacio'; vacio.setAttribute('aria-hidden','true'); fragmento.appendChild(vacio); }
   for (let d=1; d<=dias; d++){
     const fecha=`${prMes.getFullYear()}-${String(prMes.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`, cuantos=mesItems.filter(p=>p.fecha===fecha).length;
     const b=document.createElement('button'); b.type='button'; b.className='prDia'+(fecha===hoy?' prHoy':'')+(cuantos?' prConItems':''); b.setAttribute('aria-label',`${d} de ${prMesNombre()}${cuantos ? `, ${cuantos} publicaciones` : ''}`); b.innerHTML=`<span>${d}</span>${cuantos?`<small>${cuantos} ${cuantos===1?'publicación':'publicaciones'}</small>`:''}`; b.onclick=()=>prNueva(fecha); fragmento.appendChild(b);
   }
   $('prDias').replaceChildren(fragmento);
-  $('prConteo').textContent = `${mesItems.length} ${mesItems.length===1?'publicación':'publicaciones'}`;
+  $('prConteo').textContent = prVista==='bandeja' ? `${items.length} ${items.length===1?'elemento':'elementos'} · ${pendientes.filter(p=>['Idea','Borrador','Cambios solicitados'].includes(prEstadoNormal(p.estado))).length} por revisar` : `${mesItems.length} ${mesItems.length===1?'publicación':'publicaciones'}`;
   const cont=$('prItems'); cont.replaceChildren();
-  if (!mesItems.length){ cont.innerHTML='<p class="prVacioTexto">Todavía no hay publicaciones este mes. Elige un día del calendario o crea una idea.</p>'; return; }
-  mesItems.forEach(p=>{
+  if (!items.length){ cont.innerHTML=prVista==='bandeja'?'<p class="prVacioTexto">La bandeja está vacía. Guarda una idea o publicación para iniciar el flujo de revisión.</p>':'<p class="prVacioTexto">Todavía no hay publicaciones este mes. Elige un día del calendario o crea una idea.</p>'; return; }
+  items.forEach(p=>{
     const card=document.createElement('article'); card.className='prTarjeta';
     const head=document.createElement('div'); head.className='prTarjetaHead';
     const fecha=document.createElement('strong'); fecha.textContent=new Date(p.fecha+'T12:00:00').toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'})+' · '+p.hora;
-    const estado=document.createElement('span'); estado.className='prEstado'; estado.dataset.estado=p.estado; estado.textContent=p.estado;
+    const estadoActual=prEstadoNormal(p.estado); const estado=document.createElement('span'); estado.className='prEstado'; estado.dataset.estado=estadoActual; estado.textContent=estadoActual;
     head.append(fecha,estado);
     const titulo=document.createElement('h4'); titulo.textContent=p.tema;
-    const meta=document.createElement('p'); meta.className='prMeta'; meta.textContent=[p.plataforma,p.formato,p.campana].filter(Boolean).join(' · ');
+    const meta=document.createElement('p'); meta.className='prMeta'; meta.textContent=[p.fecha,p.plataforma,p.formato,p.campana].filter(Boolean).join(' · ');
     card.append(head,titulo,meta);
     if (p.texto){ const texto=document.createElement('p'); texto.className='prExtracto'; texto.textContent=p.texto; card.appendChild(texto); }
     const acciones=document.createElement('div'); acciones.className='prTarjetaAcciones';
     const editar=document.createElement('button'); editar.type='button'; editar.className='btnS'; editar.textContent='Editar'; editar.onclick=()=>prEditar(p.id);
     const copiar=document.createElement('button'); copiar.type='button'; copiar.className='btnS'; copiar.textContent='Copiar texto'; copiar.onclick=()=>prCopiarTexto(p);
+    const estadoBtn=(texto,estadoNuevo,clase='btnS')=>{const b=document.createElement('button');b.type='button';b.className=clase;b.textContent=texto;b.onclick=()=>prCambiarEstado(p.id,estadoNuevo);return b;};
+    if(['Idea','Borrador','Cambios solicitados'].includes(estadoActual)) acciones.append(estadoBtn('Enviar a revisión','En revisión'));
+    if(estadoActual==='En revisión') acciones.append(estadoBtn('Aprobar','Aprobado','btnP'),estadoBtn('Pedir cambios','Cambios solicitados'));
+    if(estadoActual==='Aprobado') acciones.append(estadoBtn('Programar','Programado','btnP'));
     const disenar=document.createElement('button'); disenar.type='button'; disenar.className='btnP'; disenar.textContent='Diseñar'; disenar.onclick=()=>prDisenar(p.id);
     const borrar=document.createElement('button'); borrar.type='button'; borrar.className='btnS'; borrar.textContent='Eliminar'; borrar.setAttribute('aria-label','Eliminar '+p.tema); borrar.onclick=()=>prEliminar(p.id);
     acciones.append(editar,copiar,disenar,borrar); card.appendChild(acciones); cont.appendChild(card);
   });
 }
+function prEstadoNormal(estado){ return estado==='Listo'?'Aprobado':(['Idea','Borrador','En diseño','En revisión','Cambios solicitados','Aprobado','Programado','Publicado'].includes(estado)?estado:'Idea'); }
+function prCambiarEstado(id,estado){ const p=prPlanes.find(x=>x.id===id); if(!p)return; const anterior=p.estado; p.estado=estado; p.actualizado=new Date().toISOString(); if(!prGuardar()){p.estado=anterior;return;} prPintar(); toast('Estado actualizado: '+estado); }
 function prEliminar(id){
   const p=prPlanes.find(x=>x.id===id); if (!p || !confirm(`¿Eliminar «${p.tema}» del calendario?`)) return;
   const anterior=prPlanes; prPlanes=prPlanes.filter(x=>x.id!==id);
@@ -120,7 +143,7 @@ function prEliminar(id){
 }
 async function prDisenar(id){
   const p=prPlanes.find(x=>x.id===id); if (!p) return;
-  if (p.estado!=='Publicado'){ p.estado='En diseño'; p.actualizado=new Date().toISOString(); if (!prGuardar()) return; }
+  if (['Idea','Borrador','Cambios solicitados'].includes(prEstadoNormal(p.estado))){ p.estado='En diseño'; p.actualizado=new Date().toISOString(); if (!prGuardar()) return; }
   const tieneTexto=!!prTextoCompleto(p);
   if (tieneTexto) await prCopiarTexto(p);
   cerrarModal('mPlanRedes');
