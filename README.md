@@ -262,6 +262,11 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - **Menos lecturas de Firestore** (plan gratis: 50,000 lecturas/día, 20,000 escrituras/día, 1 GiB): lo leído hace poco se reutiliza unos minutos; las actividades y exámenes que ya cerraron guardan su conteo de entregas; los pendientes del alumno se guardan 10 min. En un grupo de 30 alumnos con 10 actividades: abrir el grupo de nuevo pasó de ~450 a ~16 lecturas, y abrir la app como alumno de ~28 a ~2. El grupo muestra cuánto espacio ocupan sus trabajos.
 - **Reglas nuevas**: `buzon`, `auxSolicitudes`, `inicios`, `esMaestro()` con auxiliares, borrar partes de entregas (maestro) y `abiertas` protegido → volver a publicar `firestore.rules`.
 
+## v75: calendario de contenido para community managers
+- Desde **Archivo → Calendario de contenido** o **Ctrl+K**, organiza publicaciones por fecha, cliente/campaña, red social, formato y estado.
+- Guarda las ideas en el navegador, edítalas, copia el texto con llamada a la acción y hashtags, y descarga el mes en CSV.
+- El planificador ayuda a preparar el contenido junto al editor; no conecta ni publica directamente en cuentas sociales.
+
 ## v74: botones grandes en el celular, preguntas frecuentes y reportar un problema
 - `99-botones-grandes-al-seleccionar-en-el-celular.js`: al tocar algo en el celular sale abajo una fila de botones grandes con dibujo y nombre, según lo que tocaste. Texto: Escribir, Color, Letra, Más grande, Más chico y Efectos. Foto: Editar foto, Recortar, Quitar fondo, Voltear y tamaño. Figura: Color, Borde y tamaño. En todos: Orden, Copiar, Fijar, Borrar y Todo. «Borrar» y «Todo» quedan fijos a la derecha; lo demás se desliza. Se esconde mientras escribes. La ayuda del modo sencillo ahora señala estos botones.
 - `99-ayuda-preguntas-y-reportar-un-problema.js`:
