@@ -11,7 +11,7 @@ async def main():
             b = await p.chromium.launch()
             for w, h in [(1440, 900), (390, 844)]:
                 pg = await b.new_page(viewport={'width': w, 'height': h}); errs = []
-                pg.on('pageerror', lambda e: errs.append(str(e)))
+                pg.on('pageerror', lambda e: errs.append(e.stack or str(e)))
                 await pg.goto('http://localhost:8799/index.html'); await pg.wait_for_timeout(4000)
                 if await pg.locator('#inicioApp').is_visible():
                     await pg.get_by_role('button', name='Ir al diseñador →').click()
@@ -88,7 +88,8 @@ async def main():
                 print('PLANDEBUG', w, debug_plan, 'PAGEERR', errs)
                 if not debug_plan['modalAbierto']:
                     fallas.append(f'{w}px: el botón Archivo no abrió el calendario de contenido')
-                    await pg.evaluate('abrirPlanRedes()')
+                    direct_error = await pg.evaluate('''()=>{try{abrirPlanRedes();return ''}catch(e){return e.stack||String(e)}}''')
+                    print('DIRECTOPEN', w, direct_error)
                 if await pg.locator('#prNuevo').is_visible():
                     await pg.locator('#prNuevo').click()
                 await pg.locator('#prCampana').fill('Prueba automática')
