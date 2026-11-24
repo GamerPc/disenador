@@ -44,7 +44,11 @@ function ponerModo(m, avisar = true){
   // botón en la barra de arriba (en la compu) y en el menú Archivo
   const b = document.createElement('button'); b.className = 'tb'; b.id = 'bModo'; b.type = 'button';
   b.onclick = () => ponerModo(modoSencillo() ? 'completo' : 'sencillo');
-  const nombre = $('nombreDiseno'); if (nombre) nombre.after(b);
+  const nombre = $('nombreDiseno');
+  // El acceso al modo debe seguir disponible en Archivo, también en celulares
+  // donde la barra superior oculta los controles secundarios.
+  const menuVista = $('maVista');
+  if (menuVista) menuVista.appendChild(b); else if (nombre) nombre.after(b);
   const vista = $('maVista');
   if (vista){ ['sencillo', 'completo'].forEach(m => { const x = document.createElement('button'); x.className = 'tb'; x.type = 'button'; x.dataset.modo = m;
     x.textContent = m === 'sencillo' ? '😊 Modo sencillo (lo básico, con ayuda)' : '🎨 Modo completo (todas las herramientas)'; x.onclick = () => ponerModo(m); vista.prepend(x); }); }

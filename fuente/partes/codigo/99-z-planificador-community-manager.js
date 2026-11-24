@@ -10,6 +10,7 @@ let prFiltro = '';
 let prFiltroEstado = '';
 let prVista = 'calendario';
 let prEditando = '';
+let prFechaSeleccionada = '';
 let prPlanes = [];
 try { const d = JSON.parse(localStorage.getItem(PR_KEY) || '[]'); if (Array.isArray(d)) prPlanes = d.filter(x => x && x.id && x.fecha); } catch(e) {}
 const prId = () => (crypto.randomUUID ? crypto.randomUUID() : 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2));
@@ -24,7 +25,7 @@ function prPreparar(){
   const m = document.createElement('div'); m.className = 'modal'; m.id = 'mPlanRedes';
   m.innerHTML = `<div class="caja prCaja" role="dialog" aria-modal="true" aria-labelledby="prTitulo">
     <header class="prCabeza"><div><span class="prEyebrow">Espacio de trabajo</span><h2 id="prTitulo">Calendario de contenido</h2><p>Organiza ideas y publicaciones por campaña, fecha y red social.</p></div><button type="button" class="btnS" id="prCerrar" aria-label="Cerrar calendario">Cerrar</button></header>
-    <div class="prBarra"><div class="prVistas" aria-label="Vistas del contenido"><button type="button" class="prVista activa" id="prVistaCalendario" aria-pressed="true">Calendario</button><button type="button" class="prVista" id="prVistaBandeja" aria-pressed="false">Ideas y revisión <span id="prPendientes" class="prPildora">0</span></button></div><div class="prControlesVista"><div class="prMesControles"><button type="button" class="btnS" id="prAnterior" aria-label="Mes anterior">‹</button><h3 id="prMesTitulo"></h3><button type="button" class="btnS" id="prSiguiente" aria-label="Mes siguiente">›</button><button type="button" class="btnS" id="prHoy">Hoy</button></div><div class="prAcciones"><label class="srOnly" for="prFiltro">Filtrar por red</label><select id="prFiltro"><option value="">Todas las redes</option>${PR_PLATAFORMAS.map(x => `<option>${x}</option>`).join('')}</select><label class="srOnly" for="prFiltroEstado">Filtrar por estado</label><select id="prFiltroEstado"><option value="">Todos los estados</option>${PR_ESTADOS.map(x => `<option>${x}</option>`).join('')}</select><button type="button" class="btnS" id="prExportar">Exportar CSV</button><button type="button" class="btnP" id="prNuevo">＋ Nueva publicación</button></div></div></div>
+    <div class="prBarra"><div class="prVistas" aria-label="Vistas del contenido"><button type="button" class="prVista activa" id="prVistaCalendario" aria-pressed="true">Calendario</button><button type="button" class="prVista" id="prVistaBandeja" aria-pressed="false">Ideas y revisión <span id="prPendientes" class="prPildora">0</span></button></div><div class="prControlesVista"><div class="prMesControles"><button type="button" class="btnS" id="prAnterior" aria-label="Mes anterior">‹</button><h3 id="prMesTitulo"></h3><button type="button" class="btnS" id="prSiguiente" aria-label="Mes siguiente">›</button><button type="button" class="btnS" id="prHoy">Hoy</button></div><div class="prAcciones"><label class="srOnly" for="prFiltro">Filtrar por red</label><select id="prFiltro"><option value="">Todas las redes</option>${PR_PLATAFORMAS.map(x => `<option>${x}</option>`).join('')}</select><label class="srOnly" for="prFiltroEstado">Filtrar por estado</label><select id="prFiltroEstado"><option value="">Todos los estados</option>${PR_ESTADOS.map(x => `<option>${x}</option>`).join('')}</select><button type="button" class="btnS" id="prExportar">Exportar CSV</button><button type="button" class="btnS" id="prRespaldo">Descargar respaldo</button><button type="button" class="btnS" id="prRestaurar">Restaurar respaldo</button><input id="prArchivoRespaldo" type="file" accept="application/json,.json" hidden><button type="button" class="btnP" id="prNuevo">＋ Nueva publicación</button></div></div></div>
     <div class="prCuerpo"><section id="prCalendario" class="prCalendario" aria-label="Calendario del mes"><div class="prSemana" aria-hidden="true"><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span></div><div id="prDias" class="prDias"></div></section>
       <section id="prLista" class="prLista" aria-labelledby="prListaTitulo"><div class="prListaHead"><h3 id="prListaTitulo">Publicaciones del mes</h3><span id="prConteo" role="status" aria-live="polite"></span></div><div id="prItems" class="prItems"></div></section></div>
     <form id="prFormulario" class="prFormulario" hidden>
@@ -47,15 +48,18 @@ function prPreparar(){
   document.body.appendChild(m);
   $('prCerrar').onclick = () => cerrarModal('mPlanRedes');
   $('prCancelar').onclick = () => prMostrarCalendario();
-  $('prAnterior').onclick = () => { prMes = new Date(prMes.getFullYear(), prMes.getMonth()-1, 1); prPintar(); };
-  $('prSiguiente').onclick = () => { prMes = new Date(prMes.getFullYear(), prMes.getMonth()+1, 1); prPintar(); };
-  $('prHoy').onclick = () => { prMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1); prPintar(); };
+  $('prAnterior').onclick = () => { prMes = new Date(prMes.getFullYear(), prMes.getMonth()-1, 1); prFechaSeleccionada=''; prPintar(); };
+  $('prSiguiente').onclick = () => { prMes = new Date(prMes.getFullYear(), prMes.getMonth()+1, 1); prFechaSeleccionada=''; prPintar(); };
+  $('prHoy').onclick = () => { prMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1); prFechaSeleccionada=''; prPintar(); };
   $('prFiltro').onchange = () => { prFiltro = $('prFiltro').value; prPintar(); };
   $('prFiltroEstado').onchange = () => { prFiltroEstado = $('prFiltroEstado').value; prPintar(); };
   $('prVistaCalendario').onclick = () => prCambiarVista('calendario');
   $('prVistaBandeja').onclick = () => prCambiarVista('bandeja');
   $('prNuevo').onclick = () => prNueva();
   $('prExportar').onclick = prExportarCSV;
+  $('prRespaldo').onclick = prExportarRespaldo;
+  $('prRestaurar').onclick = () => $('prArchivoRespaldo').click();
+  $('prArchivoRespaldo').onchange = prImportarRespaldo;
   $('prTexto').oninput = () => $('prCaracteres').textContent = $('prTexto').value.length;
   $('prCopiar').onclick = prCopiarTexto;
   $('prFormulario').onsubmit = prGuardarFormulario;
@@ -100,17 +104,18 @@ function prPintar(){
   if (!$('prDias')) return;
   $('prMesTitulo').textContent = prMesNombre();
   const primero = new Date(prMes.getFullYear(),prMes.getMonth(),1), offset = (primero.getDay()+6)%7, dias = new Date(prMes.getFullYear(),prMes.getMonth()+1,0).getDate();
-  const mesItems = prPorMes(), pendientes=prPlanes.filter(p=>['Idea','Borrador','En diseño','En revisión','Cambios solicitados'].includes(prEstadoNormal(p.estado))), activos=prPlanes.filter(p=>prEstadoNormal(p.estado)!=='Publicado'), items=prVista==='bandeja' ? activos.filter(p=>(!prFiltro||p.plataforma===prFiltro)&&(!prFiltroEstado||prEstadoNormal(p.estado)===prFiltroEstado)).sort((a,b)=>(b.actualizado||'').localeCompare(a.actualizado||'')) : mesItems, hoy = prLocalFecha(new Date()), fragmento = document.createDocumentFragment();
+  const mesItems = prPorMes(), pendientes=prPlanes.filter(p=>['Idea','Borrador','En diseño','En revisión','Cambios solicitados'].includes(prEstadoNormal(p.estado))), activos=prPlanes.filter(p=>prEstadoNormal(p.estado)!=='Publicado'), listaMes=prFechaSeleccionada?mesItems.filter(p=>p.fecha===prFechaSeleccionada):mesItems, items=prVista==='bandeja' ? activos.filter(p=>(!prFiltro||p.plataforma===prFiltro)&&(!prFiltroEstado||prEstadoNormal(p.estado)===prFiltroEstado)).sort((a,b)=>(b.actualizado||'').localeCompare(a.actualizado||'')) : listaMes, hoy = prLocalFecha(new Date()), fragmento = document.createDocumentFragment();
   $('prPendientes').textContent=pendientes.length;
   for (let i=0; i<offset; i++){ const vacio=document.createElement('span'); vacio.className='prDia prVacio'; vacio.setAttribute('aria-hidden','true'); fragmento.appendChild(vacio); }
   for (let d=1; d<=dias; d++){
     const fecha=`${prMes.getFullYear()}-${String(prMes.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`, cuantos=mesItems.filter(p=>p.fecha===fecha).length;
-    const b=document.createElement('button'); b.type='button'; b.className='prDia'+(fecha===hoy?' prHoy':'')+(cuantos?' prConItems':''); b.setAttribute('aria-label',`${d} de ${prMesNombre()}${cuantos ? `, ${cuantos} publicaciones` : ''}`); b.innerHTML=`<span>${d}</span>${cuantos?`<small>${cuantos} ${cuantos===1?'publicación':'publicaciones'}</small>`:''}`; b.onclick=()=>prNueva(fecha); fragmento.appendChild(b);
+    const b=document.createElement('button'); b.type='button'; b.className='prDia'+(fecha===hoy?' prHoy':'')+(fecha===prFechaSeleccionada?' prSeleccionado':'')+(cuantos?' prConItems':''); b.setAttribute('aria-label',`${d} de ${prMesNombre()}${cuantos ? `, ${cuantos} publicaciones. Toca para verlas` : '. Toca para crear una publicación'}`); b.setAttribute('aria-pressed',String(fecha===prFechaSeleccionada)); b.innerHTML=`<span>${d}</span>${cuantos?`<small>${cuantos} ${cuantos===1?'publicación':'publicaciones'}</small>`:''}`; b.onclick=()=>{if(cuantos){prFechaSeleccionada=fecha;prPintar();$('prLista').scrollIntoView({block:'nearest',behavior:'smooth'});}else prNueva(fecha);}; fragmento.appendChild(b);
   }
   $('prDias').replaceChildren(fragmento);
-  $('prConteo').textContent = prVista==='bandeja' ? `${items.length} ${items.length===1?'elemento':'elementos'} · ${pendientes.filter(p=>['Idea','Borrador','Cambios solicitados'].includes(prEstadoNormal(p.estado))).length} por revisar` : `${mesItems.length} ${mesItems.length===1?'publicación':'publicaciones'}`;
+  $('prListaTitulo').textContent=prVista==='bandeja'?'Bandeja de ideas y revisión':(prFechaSeleccionada?'Publicaciones del '+new Date(prFechaSeleccionada+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'long'}):'Publicaciones del mes');
+  $('prConteo').textContent = prVista==='bandeja' ? `${items.length} ${items.length===1?'elemento':'elementos'} · ${pendientes.filter(p=>['Idea','Borrador','Cambios solicitados'].includes(prEstadoNormal(p.estado))).length} por revisar` : `${items.length} ${items.length===1?'publicación':'publicaciones'}${prFechaSeleccionada?' · '+mesItems.length+' en el mes':''}`;
   const cont=$('prItems'); cont.replaceChildren();
-  if (!items.length){ cont.innerHTML=prVista==='bandeja'?'<p class="prVacioTexto">La bandeja está vacía. Guarda una idea o publicación para iniciar el flujo de revisión.</p>':'<p class="prVacioTexto">Todavía no hay publicaciones este mes. Elige un día del calendario o crea una idea.</p>'; return; }
+  if (!items.length){ cont.innerHTML=prVista==='bandeja'?'<p class="prVacioTexto">La bandeja está vacía. Guarda una idea o publicación para iniciar el flujo de revisión.</p>':(prFechaSeleccionada?'<p class="prVacioTexto">No hay publicaciones en este día. Elige otro día o crea una nueva.</p>':'<p class="prVacioTexto">Todavía no hay publicaciones este mes. Elige un día del calendario o crea una idea.</p>'); return; }
   items.forEach(p=>{
     const card=document.createElement('article'); card.className='prTarjeta';
     const head=document.createElement('div'); head.className='prTarjetaHead';
@@ -163,7 +168,20 @@ function prExportarCSV(){
   const filas=[['Fecha','Hora','Campaña','Red social','Formato','Tema','Texto','Llamada a la acción','Hashtags','Estado'],...prPorMes().map(p=>[p.fecha,p.hora,p.campana,p.plataforma,p.formato,p.tema,p.texto,p.cta,p.tags,p.estado])];
   const blob=new Blob(['\ufeff'+filas.map(f=>f.map(prCSV).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}), url=URL.createObjectURL(blob), a=document.createElement('a'); a.href=url; a.download=`calendario-redes-${prMes.getFullYear()}-${String(prMes.getMonth()+1).padStart(2,'0')}.csv`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000); toast('Calendario descargado como CSV');
 }
+function prExportarRespaldo(){
+  const datos={tipo:'apik-calendario-redes',version:1,exportado:new Date().toISOString(),publicaciones:prPlanes};
+  const url=URL.createObjectURL(new Blob([JSON.stringify(datos,null,2)],{type:'application/json;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='respaldo-calendario-redes.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Respaldo completo descargado');
+}
+async function prImportarRespaldo(e){
+  const archivo=e.target.files&&e.target.files[0];e.target.value='';if(!archivo)return;
+  try{
+    const datos=JSON.parse(await archivo.text()),lista=Array.isArray(datos)?datos:datos&&datos.tipo==='apik-calendario-redes'&&Array.isArray(datos.publicaciones)?datos.publicaciones:null;
+    if(!lista||lista.some(p=>!p||typeof p!=='object'||typeof p.id!=='string'||typeof p.fecha!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(p.fecha)||typeof p.tema!=='string'))throw new Error('formato');
+    if(!confirm(`Se reemplazarán ${prPlanes.length} publicaciones por ${lista.length} del respaldo. Descarga un respaldo actual si quieres conservarlo. ¿Continuar?`))return;
+    const anterior=prPlanes;prPlanes=lista.map(p=>({...p,estado:prEstadoNormal(p.estado)}));if(!prGuardar()){prPlanes=anterior;return;}prFechaSeleccionada='';prVista='calendario';prMostrarCalendario();prPintar();toast('Respaldo restaurado');
+  }catch(err){toast('No pude leer ese respaldo. Elige un JSON exportado desde el calendario.');}
+}
 (function(){
   const cont=$('maPrincipal'); if (!cont || $('bPlanRedes')) return;
-  const b=document.createElement('button'); b.className='tb'; b.type='button'; b.id='bPlanRedes'; b.textContent='Calendario de contenido'; b.title='Planifica publicaciones para tus redes'; b.onclick=abrirPlanRedes; cont.appendChild(b);
+  const b=document.createElement('button'); b.className='tb'; b.type='button'; b.id='bPlanRedes'; b.innerHTML='<span aria-hidden="true">🗓️</span> Calendario de contenido'; b.title='Planifica publicaciones para tus redes'; b.onclick=abrirPlanRedes; cont.appendChild(b);
 })();

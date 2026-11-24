@@ -1252,6 +1252,7 @@ html.letraGrande #mDescargaFacil .dfOpcion small{font-size:15px}
 .prDia:hover,.prDia:focus-visible{border-color:var(--morado);outline:2px solid var(--morado)}
 .prDia small{display:block;margin-top:4px;color:var(--morado);font-size:10px;line-height:1.15}
 .prDia.prHoy{box-shadow:inset 0 0 0 2px var(--morado)}
+.prDia.prSeleccionado{border-color:var(--morado);background:color-mix(in srgb,var(--morado) 16%,var(--panel));}
 .prDia.prVacio{border-color:transparent;background:transparent;pointer-events:none}
 .prListaHead{margin:0 0 10px}
 .prListaHead h3,.prFormHead h3{margin:0;color:var(--texto);font-size:16px}
@@ -1266,7 +1267,7 @@ html.letraGrande #mDescargaFacil .dfOpcion small{font-size:15px}
 .prMeta,.prExtracto{margin:3px 0;color:var(--suave);font-size:12px;line-height:1.4}
 .prExtracto{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:13px}
 .prTarjetaAcciones{justify-content:flex-start;margin-top:8px}
-.prTarjetaAcciones button,.prFormFoot button,.prBarra button,.prCabeza button,.prMesControles button{min-height:42px}
+.prTarjetaAcciones button,.prFormFoot button,.prBarra button,.prCabeza button,.prMesControles button{min-width:44px;min-height:44px}
 .prVacioTexto,.prPrivado{color:var(--suave);font-size:13px;line-height:1.45}
 .prFormulario{border-top:1px solid var(--borde);padding-top:14px}
 .prFormHead{margin-bottom:12px}
@@ -1281,7 +1282,8 @@ html.letraGrande #mDescargaFacil .dfOpcion small{font-size:15px}
 @media(max-width:760px){
   #mPlanRedes .prCaja{padding:14px;max-height:94vh}
   .prCuerpo{grid-template-columns:1fr}
-  .prLista{max-height:38vh;overflow:auto}
+  .prLista{max-height:38vh;overflow:auto;order:0}
+  .prCalendario{order:1}
   .prBarra{align-items:stretch}
   .prControlesVista{align-items:stretch}
   .prMesControles{flex-wrap:wrap}
@@ -1297,7 +1299,7 @@ html.letraGrande #mDescargaFacil .dfOpcion small{font-size:15px}
   .prMesControles{gap:5px;flex-wrap:wrap}
   .prMesControles h3{min-width:115px;font-size:15px}
   .prSemana{font-size:10px}
-  .prDia{min-height:43px}
+  .prDia{min-height:44px}
   .prFormFoot{align-items:stretch}
   .prFormFoot>div{width:100%}
   .prFormFoot button{flex:1}

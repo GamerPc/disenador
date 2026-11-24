@@ -18,7 +18,8 @@ const INICIO_ATAJOS = [
   ['🪄', 'Quitar fondo', () => abrirInicioPestana('tImagenes')],
   ['🔳', 'Código QR', () => abrirInicioPestana('tElementos')],
   ['🎬', 'Video', () => { if (typeof irAlEstudioEV === 'function') irAlEstudioEV(); }],
-  ['📉', 'Reducir un PDF', () => abrirReducirPDF()]
+  ['📉', 'Reducir un PDF', () => abrirReducirPDF()],
+  ['🗓️', 'Calendario de contenido', () => abrirPlanRedes()]
 ];
 // orden y nombre con dibujito de cada categoría en la página de inicio
 const INICIO_CATS = [

@@ -92,6 +92,14 @@ async def main():
                 await pg.get_by_role('button', name='Guardar publicación').click()
                 if await pg.locator('.prTarjeta').count() != 1:
                     fallas.append(f'{w}px: el calendario no guarda una publicación')
+                await pg.locator('#prDias button.prConItems').click()
+                if await pg.locator('.prTarjeta').count() != 1 or not (await pg.locator('#prListaTitulo').inner_text()).startswith('Publicaciones del '):
+                    fallas.append(f'{w}px: tocar un día ocupado no muestra sus publicaciones')
+                medidas = await pg.locator('#mPlanRedes .prBarra button, #mPlanRedes .prCabeza button, #mPlanRedes .prMesControles button, #mPlanRedes .prTarjetaAcciones button').evaluate_all("es => es.filter(e => e.getClientRects().length).map(e => Math.min(e.getBoundingClientRect().width,e.getBoundingClientRect().height))")
+                if medidas and min(medidas) < 44:
+                    fallas.append(f'{w}px: hay controles del calendario menores a 44 px')
+                if not await pg.locator('#prRespaldo').is_visible() or not await pg.locator('#prRestaurar').is_visible():
+                    fallas.append(f'{w}px: faltan controles de respaldo del calendario')
                 await pg.locator('#prFiltro').select_option('TikTok')
                 if await pg.locator('.prTarjeta').count() != 0:
                     fallas.append(f'{w}px: el filtro del calendario no funciona')
@@ -124,6 +132,8 @@ async def main():
                     fallas.append(f'{w}px: el menú Archivo no queda accesible en modo sencillo')
                 else:
                     await pg.locator('#bArchivo').click()
+                    if not await pg.locator('#maVista #bModo').is_visible():
+                        fallas.append(f'{w}px: el cambio de modo no queda disponible desde Archivo')
                     await pg.get_by_role('button', name='Planifica publicaciones para tus redes').click()
                     if not await pg.locator('#mPlanRedes .prCaja').is_visible():
                         fallas.append(f'{w}px: no se puede abrir el calendario desde modo sencillo')
