@@ -1327,4 +1327,42 @@ html.letraGrande #mDescargaFacil .dfOpcion small{font-size:15px}
 #mEstiloPost .acciones button{min-height:44px}
 @media (max-width:520px){.epLista{grid-template-columns:1fr}}
 
+/* v79: diseño completo con IA (99-zzz-…) */
+#mDisenoIA{z-index:120}
+#mDisenoIA .caja{width:min(760px,95vw);max-height:92vh;overflow:auto}
+#mDisenoIA h3 .ico{width:22px;height:22px;vertical-align:-4px;color:var(--morado)}
+.diCampo{display:block;font:600 14px Inter,sans-serif;margin:6px 0 8px;line-height:1.4}
+#diPeticion{width:100%;box-sizing:border-box;border:1px solid var(--borde);border-radius:12px;background:var(--panel2);color:var(--texto);font:15px/1.45 Inter,sans-serif;padding:12px;min-height:96px;resize:vertical}
+#diPeticion:focus{outline:2px solid var(--morado);outline-offset:1px}
+.diIdeas{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px}
+.diIdeas .chip{min-height:36px}
+.diFormatos{border:0;padding:0;margin:12px 0 0}
+.diFormatos legend{font:600 14px Inter,sans-serif;margin-bottom:8px;padding:0}
+#diFormatos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.diFormato{display:flex;gap:8px;align-items:center;min-height:48px;padding:6px 10px;border:1px solid var(--borde);border-radius:10px;background:var(--panel2);cursor:pointer}
+.diFormato:has(input:checked){border-color:var(--morado);background:color-mix(in srgb,var(--morado) 14%,var(--panel2))}
+.diFormato input{width:18px;height:18px;margin:0;flex:none;accent-color:var(--morado)}
+.diFormato b{display:block;font-size:13.5px}
+.diFormato small{display:block;color:var(--suave);font-size:12px}
+.diSinIA{margin-top:12px;padding:12px;border:1px dashed var(--borde);border-radius:12px;font-size:14px;line-height:1.45}
+.diSinIA p{margin:0 0 8px}
+.diSinIA a{color:var(--morado)}
+.diClave{display:flex;gap:6px}
+.diClave input{flex:1;min-width:0;min-height:44px;border:1px solid var(--borde);border-radius:10px;background:var(--panel2);color:var(--texto);padding:0 12px;font:14px Inter,sans-serif}
+.diClave button{min-height:44px}
+.diNota{color:var(--suave);font-size:13px}
+.diEstado{margin:12px 0 0;font-size:14px;color:var(--texto)}
+.diEstado:empty{display:none}
+.diResultados{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+.diResultado{display:flex;flex-direction:column;gap:6px;align-items:stretch;padding:6px;border:1px solid var(--borde);border-radius:12px;background:var(--panel2);color:var(--texto);font:600 13px Inter,sans-serif;cursor:pointer;transition:border-color .15s,transform .1s}
+.diResultado:hover,.diResultado:focus-visible{border-color:var(--morado)}
+.diResultado:active{transform:scale(.98)}
+.diResultado img{width:100%;height:auto;max-height:240px;object-fit:contain;border-radius:8px;background:#0001}
+#mDisenoIA .acciones button{min-height:44px}
+#mDisenoIA .acciones .ico{width:16px;height:16px;vertical-align:-3px}
+.inDisenoIA{display:flex;align-items:center;gap:10px;margin:10px 0 0;padding:10px 14px;min-height:48px;width:100%;box-sizing:border-box;text-align:left;border:1px dashed color-mix(in srgb,var(--morado) 60%,var(--borde));border-radius:14px;background:color-mix(in srgb,var(--morado) 8%,transparent);color:var(--texto);font:14px/1.35 Inter,sans-serif;cursor:pointer}
+.inDisenoIA .ico{width:22px;height:22px;flex:none;color:var(--morado)}
+.inDisenoIA:hover,.inDisenoIA:focus-visible{border-style:solid}
+@media (max-width:640px){#diFormatos{grid-template-columns:1fr 1fr}.diResultados{grid-template-columns:1fr 1fr}.diIdeas{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}.diIdeas .chip{flex:none}}
+
 </style>

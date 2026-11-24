@@ -262,6 +262,15 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - **Menos lecturas de Firestore** (plan gratis: 50,000 lecturas/día, 20,000 escrituras/día, 1 GiB): lo leído hace poco se reutiliza unos minutos; las actividades y exámenes que ya cerraron guardan su conteo de entregas; los pendientes del alumno se guardan 10 min. En un grupo de 30 alumnos con 10 actividades: abrir el grupo de nuevo pasó de ~450 a ~16 lecturas, y abrir la app como alumno de ~28 a ~2. El grupo muestra cuánto espacio ocupan sus trabajos.
 - **Reglas nuevas**: `buzon`, `auxSolicitudes`, `inicios`, `esMaestro()` con auxiliares, borrar partes de entregas (maestro) y `abiertas` protegido → volver a publicar `firestore.rules`.
 
+## v80: diseño completo con IA
+- `99-zzz-diseno-con-ia.js`: describes lo que necesitas («cartel de la feria de ciencias de 2.º A, viernes 5 a las 10 en el patio») y la IA escribe el contenido: encabezado, título, subtítulo, texto, puntos, datos (fecha, hora, lugar), llamada a la acción y pie.
+- Se arma en 4 estilos a la vez (el sugerido por la IA primero) con vistas previas; tocas uno y queda en el lienzo, todo editable.
+- Formatos: que la IA decida, cartel 1240×1754, publicación 1080×1350, historia 1080×1920, invitación 1500×2100 y horizontal 1920×1080.
+- Se le pide a la IA no inventar fechas, lugares, precios ni teléfonos. Usa la IA de Chrome o la clave de Gemini (que se puede pegar en la misma ventana).
+- Sin IA también funciona: la primera frase va de título, el resto de texto, y el formato se adivina por palabras como «cartel» o «invitación».
+- Entradas: botón «¿No encuentras lo que buscas?» bajo el buscador de la página de inicio (lleva lo que escribiste), atajo «Diseño con IA», Archivo y el buscador de herramientas.
+- `armarDiseno()` (en `99-zz-…`) es ahora el armador común para el calendario y la IA; tiene modo «solo vista» para dibujar miniaturas sin tocar el diseño abierto.
+
 ## v79: «Diseñar» desde el calendario arma la publicación
 - `99-zz-disenar-desde-el-calendario.js`: al tocar «Diseñar» en una publicación del calendario se elige un estilo (Mi marca, Neón, Elegante o Colorido) y se arma un diseño editable con el tema como título, el texto, la llamada a la acción y los hashtags.
 - La medida sale de la red y el formato: historia, reel o TikTok 1080×1920; Instagram 1080×1350; X 1600×900; YouTube 1280×720; Pinterest 1000×1500; LinkedIn 1200×1200; Facebook y otras 1080×1080.
