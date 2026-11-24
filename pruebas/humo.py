@@ -11,7 +11,7 @@ async def main():
             b = await p.chromium.launch()
             for w, h in [(1440, 900), (390, 844)]:
                 pg = await b.new_page(viewport={'width': w, 'height': h}); errs = []
-                pg.on('pageerror', lambda e: errs.append(e.stack or str(e)))
+                pg.on('pageerror', lambda e: errs.append(str(e)))
                 await pg.goto('http://localhost:8799/index.html'); await pg.wait_for_timeout(4000)
                 if await pg.locator('#inicioApp').is_visible():
                     await pg.get_by_role('button', name='Ir al diseñador →').click()
@@ -84,14 +84,7 @@ async def main():
                 if not regreso_anidado: fallas.append(f'{w}px: al cerrar reporte desde Preguntas frecuentes, el foco no vuelve al menu visible')
                 await archivo.click()
                 await pg.get_by_role('button', name='Planifica publicaciones para tus redes').click()
-                debug_plan = await pg.evaluate('''()=>{const m=document.getElementById('mPlanRedes'),b=document.getElementById('prNuevo'),bar=m?.querySelector('.prBarra'),plan=document.getElementById('bPlanRedes');return {modalExiste:!!m,modalAbierto:m?.classList.contains('abierto'),barraOculta:bar?.hidden,formularioOculto:document.getElementById('prFormulario')?.hidden,botonOculto:b?.hidden,botonVisible:!!b?.getClientRects().length,focus:document.activeElement?.id,menuOculto:document.getElementById('menuArchivo')?.hidden,handler:typeof plan?.onclick,handlerTexto:String(plan?.onclick),abrirPlan:typeof abrirPlanRedes,preparar:typeof prPreparar}}''')
-                print('PLANDEBUG', w, debug_plan, 'PAGEERR', errs)
-                if not debug_plan['modalAbierto']:
-                    fallas.append(f'{w}px: el botón Archivo no abrió el calendario de contenido')
-                    direct_error = await pg.evaluate('''()=>{try{abrirPlanRedes();return ''}catch(e){return e.stack||String(e)}}''')
-                    print('DIRECTOPEN', w, direct_error)
-                if await pg.locator('#prNuevo').is_visible():
-                    await pg.locator('#prNuevo').click()
+                await pg.locator('#prNuevo').click()
                 await pg.locator('#prCampana').fill('Prueba automática')
                 await pg.locator('#prPlataforma').select_option('Instagram')
                 await pg.locator('#prTema').fill('Publicación de prueba')
