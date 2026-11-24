@@ -10546,7 +10546,7 @@ agruparToggle = function(){
    En la versión web el estudio (grabar, editar, plantillas de video, cámara del teléfono)
    vive en js/video.js y se descarga hasta que alguien lo abre: así el Diseñador abre más rápido.
    ========================================================= */
-const URL_VIDEO_EV = 'js/video.js?v=a582357d';
+const URL_VIDEO_EV = 'js/video.js?v=bc0c4aba';
 let cargaVideoEV = null;
 function cargarEstudioVideo(){
   if (typeof abrirEstudioVideo === 'function') return Promise.resolve();
@@ -13962,7 +13962,7 @@ const EMOJI_ICONO = {
   '👇':'flechaAbajo', '👈':'flechaIzq', '💡':'foco', '⌨':'teclado', '👥':'personas', '📄':'documento', '💧':'gota', '🧽':'borrador',
   '🩹':'curita', '👁':'ojo', '🎚':'deslizador', '🖌':'pincel', '✂':'tijeras', '↺':'girar', '↩':'girar', '📱':'celular', '🏭':'fabrica',
   '⚙':'engrane', '📅':'calendario', '🎉':'fiesta', '📏':'regla', '⬇':'descargar', '✓':'listo', '✕':'cerrar', '↶':'deshacer', '↷':'rehacer',
-  '▦':'plantillas', '🗑':'basura', '🔍':'buscar'
+  '▦':'plantillas', '🗑':'basura', '🔍':'buscar', '🗓':'calendario'
 };
 const ZONAS_EMOJI = ['#inicioApp', '#mDescargaFacil', '#editorFoto', '#mReducirPDF', '#mHistorial', '#ayudaS', '#bModo'];
 const RX_EMOJI = new RegExp('(' + Object.keys(EMOJI_ICONO).sort((a, b) => b.length - a.length).join('|') + ')️?', 'gu');
@@ -14510,6 +14510,6 @@ async function prImportarRespaldo(e){
 }
 (function(){
   const cont=$('maPrincipal'); if (!cont || $('bPlanRedes')) return;
-  const b=document.createElement('button'); b.className='tb'; b.type='button'; b.id='bPlanRedes'; b.innerHTML='<span aria-hidden="true">🗓️</span> Calendario de contenido'; b.title='Planifica publicaciones para tus redes'; b.onclick=abrirPlanRedes; cont.appendChild(b);
+  const b=document.createElement('button'); b.className='tb'; b.type='button'; b.id='bPlanRedes'; b.innerHTML=(typeof svgIcono==='function'?svgIcono('calendario'):'<span aria-hidden="true">🗓️</span>')+' Calendario de contenido'; b.title='Planifica publicaciones para tus redes'; b.onclick=abrirPlanRedes; cont.appendChild(b);
 })();
 window.__appLista = true;

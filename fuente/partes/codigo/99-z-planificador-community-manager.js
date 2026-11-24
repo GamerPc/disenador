@@ -183,5 +183,5 @@ async function prImportarRespaldo(e){
 }
 (function(){
   const cont=$('maPrincipal'); if (!cont || $('bPlanRedes')) return;
-  const b=document.createElement('button'); b.className='tb'; b.type='button'; b.id='bPlanRedes'; b.innerHTML='<span aria-hidden="true">🗓️</span> Calendario de contenido'; b.title='Planifica publicaciones para tus redes'; b.onclick=abrirPlanRedes; cont.appendChild(b);
+  const b=document.createElement('button'); b.className='tb'; b.type='button'; b.id='bPlanRedes'; b.innerHTML=(typeof svgIcono==='function'?svgIcono('calendario'):'<span aria-hidden="true">🗓️</span>')+' Calendario de contenido'; b.title='Planifica publicaciones para tus redes'; b.onclick=abrirPlanRedes; cont.appendChild(b);
 })();

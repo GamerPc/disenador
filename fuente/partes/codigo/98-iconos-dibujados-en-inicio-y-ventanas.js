@@ -61,7 +61,7 @@ const EMOJI_ICONO = {
   '👇':'flechaAbajo', '👈':'flechaIzq', '💡':'foco', '⌨':'teclado', '👥':'personas', '📄':'documento', '💧':'gota', '🧽':'borrador',
   '🩹':'curita', '👁':'ojo', '🎚':'deslizador', '🖌':'pincel', '✂':'tijeras', '↺':'girar', '↩':'girar', '📱':'celular', '🏭':'fabrica',
   '⚙':'engrane', '📅':'calendario', '🎉':'fiesta', '📏':'regla', '⬇':'descargar', '✓':'listo', '✕':'cerrar', '↶':'deshacer', '↷':'rehacer',
-  '▦':'plantillas', '🗑':'basura', '🔍':'buscar'
+  '▦':'plantillas', '🗑':'basura', '🔍':'buscar', '🗓':'calendario'
 };
 const ZONAS_EMOJI = ['#inicioApp', '#mDescargaFacil', '#editorFoto', '#mReducirPDF', '#mHistorial', '#ayudaS', '#bModo'];
 const RX_EMOJI = new RegExp('(' + Object.keys(EMOJI_ICONO).sort((a, b) => b.length - a.length).join('|') + ')️?', 'gu');

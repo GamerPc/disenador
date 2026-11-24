@@ -262,6 +262,11 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - **Menos lecturas de Firestore** (plan gratis: 50,000 lecturas/día, 20,000 escrituras/día, 1 GiB): lo leído hace poco se reutiliza unos minutos; las actividades y exámenes que ya cerraron guardan su conteo de entregas; los pendientes del alumno se guardan 10 min. En un grupo de 30 alumnos con 10 actividades: abrir el grupo de nuevo pasó de ~450 a ~16 lecturas, y abrir la app como alumno de ~28 a ~2. El grupo muestra cuánto espacio ocupan sus trabajos.
 - **Reglas nuevas**: `buzon`, `auxSolicitudes`, `inicios`, `esMaestro()` con auxiliares, borrar partes de entregas (maestro) y `abiertas` protegido → volver a publicar `firestore.rules`.
 
+## v78: ajustes al calendario de contenido
+- En «Ideas y revisión» ya no aparecen los controles del mes (esa vista reúne todas las fechas): el CSS del calendario ignoraba el atributo `hidden`.
+- Los botones de cada tarjeta (Enviar a revisión, Aprobar, Diseñar, Eliminar…) pasan a otra línea cuando no caben, en lugar de cortarse o salirse de la tarjeta.
+- El calendario usa el ícono dibujado de calendario en Archivo y en la página de inicio, como el resto de la app.
+
 ## v76: bandeja de ideas y aprobaciones para community managers
 - La vista **Ideas y revisión** reúne publicaciones de todas las fechas y permite filtrarlas por red y estado.
 - Flujo de trabajo: idea o borrador → revisión → aprobada o cambios solicitados → programada. La opción **Diseñar** lleva al editor sin saltarse la revisión.
