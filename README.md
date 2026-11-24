@@ -262,6 +262,13 @@ Aún no se ha elegido una licencia. Mientras no agreguen un archivo `LICENSE`, e
 - **Menos lecturas de Firestore** (plan gratis: 50,000 lecturas/día, 20,000 escrituras/día, 1 GiB): lo leído hace poco se reutiliza unos minutos; las actividades y exámenes que ya cerraron guardan su conteo de entregas; los pendientes del alumno se guardan 10 min. En un grupo de 30 alumnos con 10 actividades: abrir el grupo de nuevo pasó de ~450 a ~16 lecturas, y abrir la app como alumno de ~28 a ~2. El grupo muestra cuánto espacio ocupan sus trabajos.
 - **Reglas nuevas**: `buzon`, `auxSolicitudes`, `inicios`, `esMaestro()` con auxiliares, borrar partes de entregas (maestro) y `abiertas` protegido → volver a publicar `firestore.rules`.
 
+## v79: «Diseñar» desde el calendario arma la publicación
+- `99-zz-disenar-desde-el-calendario.js`: al tocar «Diseñar» en una publicación del calendario se elige un estilo (Mi marca, Neón, Elegante o Colorido) y se arma un diseño editable con el tema como título, el texto, la llamada a la acción y los hashtags.
+- La medida sale de la red y el formato: historia, reel o TikTok 1080×1920; Instagram 1080×1350; X 1600×900; YouTube 1280×720; Pinterest 1000×1500; LinkedIn 1200×1200; Facebook y otras 1080×1080.
+- Las letras se achican solas hasta caber (ni muy altas ni con palabras más anchas que la caja). «Mi marca» usa los colores, letras y logo del Kit de marca.
+- «Prefiero elegir una plantilla» conserva lo de antes: copia el texto y abre las plantillas de redes.
+- El botón Sencillo/Completo vuelve a estar a la vista en la barra de arriba en la computadora. En el celular se sigue cambiando desde Vista.
+
 ## v78: ajustes al calendario de contenido
 - En «Ideas y revisión» ya no aparecen los controles del mes (esa vista reúne todas las fechas): el CSS del calendario ignoraba el atributo `hidden`.
 - Los botones de cada tarjeta (Enviar a revisión, Aprobar, Diseñar, Eliminar…) pasan a otra línea cuando no caben, en lugar de cortarse o salirse de la tarjeta.

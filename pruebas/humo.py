@@ -132,7 +132,7 @@ async def main():
                     fallas.append(f'{w}px: el menú Archivo no queda accesible en modo sencillo')
                 else:
                     await pg.locator('#bArchivo').click()
-                    if not await pg.locator('#maVista #bModo').is_visible():
+                    if not await pg.locator('#maVista [data-modo="completo"]').is_visible():   # el botón grande de Sencillo/Completo vive en la barra (compu); en Archivo están las dos opciones
                         fallas.append(f'{w}px: el cambio de modo no queda disponible desde Archivo')
                     await pg.get_by_role('button', name='Planifica publicaciones para tus redes').click()
                     if not await pg.locator('#mPlanRedes .prCaja').is_visible():

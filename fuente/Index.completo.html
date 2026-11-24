@@ -1596,13 +1596,29 @@ html.letraGrande #mDescargaFacil .dfOpcion small{font-size:15px}
 #mPlanRedes .prTarjetaAcciones button{flex:1 1 auto;white-space:nowrap;padding-inline:12px}
 #bPlanRedes .ico{width:18px;height:18px;vertical-align:-4px}
 
+/* v79: «Diseñar» desde el calendario arma la publicación (99-zz-…) */
+#mEstiloPost{z-index:140}
+#mEstiloPost .caja{width:min(560px,94vw)}
+.epNota{color:var(--suave);font-size:14px;margin:2px 0 14px}
+.epLista{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.epEstilo{display:flex;align-items:center;gap:12px;text-align:left;min-height:76px;padding:10px;border:1px solid var(--borde);border-radius:14px;background:var(--panel2);color:var(--texto);font:inherit;cursor:pointer;transition:border-color .15s,transform .1s}
+.epEstilo:hover,.epEstilo:focus-visible{border-color:var(--morado)}
+.epEstilo:active{transform:scale(.98)}
+.epEstilo b{display:block;font-size:15px}
+.epEstilo small{display:block;color:var(--suave);font-size:12.5px;margin-top:2px}
+.epMuestra{flex:none;width:56px;height:56px;border-radius:10px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:0 9px;box-sizing:border-box;border:1px solid rgba(127,127,127,.25)}
+.epMuestra b{font-size:22px;line-height:1}
+.epMuestra i{display:block;width:22px;height:4px;border-radius:2px;margin-top:5px}
+#mEstiloPost .acciones button{min-height:44px}
+@media (max-width:520px){.epLista{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
 
 <!-- ====== BARRA SUPERIOR ====== -->
 <div id="barra">
-  <div class="logo"><img class="logoImg" src="data:image/png;base64,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" alt=""><span class="logoTxt">Diseñador<small class="logoMarca">APIK-DESING</small></span><small class="ver">v78</small></div>
+  <div class="logo"><img class="logoImg" src="data:image/png;base64,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" alt=""><span class="logoTxt">Diseñador<small class="logoMarca">APIK-DESING</small></span><small class="ver">v79</small></div>
   <input class="nombre" id="nombreDiseno" value="Mi diseño" title="Nombre del diseño">
   <span id="estadoGuardado" title="Estado del guardado en Drive">No guardado en Drive</span>
   <button class="tb" onclick="nuevoDiseno()">Nuevo</button>
@@ -18423,6 +18439,135 @@ async function prImportarRespaldo(e){
   const cont=$('maPrincipal'); if (!cont || $('bPlanRedes')) return;
   const b=document.createElement('button'); b.className='tb'; b.type='button'; b.id='bPlanRedes'; b.innerHTML=(typeof svgIcono==='function'?svgIcono('calendario'):'<span aria-hidden="true">🗓️</span>')+' Calendario de contenido'; b.title='Planifica publicaciones para tus redes'; b.onclick=abrirPlanRedes; cont.appendChild(b);
 })();
+/* =========================================================
+   «DISEÑAR» DESDE EL CALENDARIO: EL DISEÑO SALE ARMADO
+   Antes solo se copiaba el texto y había que pegarlo en una plantilla.
+   Ahora se elige un estilo y se arma un diseño editable con:
+   - la medida de la red y el formato (historia 1080×1920, Instagram 1080×1350, X 1600×900…),
+   - el tema como título, el texto, la llamada a la acción y los hashtags, ya acomodados.
+   «Mi marca» usa los colores, letras y logo del Kit de marca.
+   También regresa el botón Sencillo/Completo a la barra de arriba en la computadora.
+   ========================================================= */
+function medidaPost(p){
+  const f = p.formato || '', r = p.plataforma || '';
+  if (/Historia|Reel/.test(f) || r === 'TikTok') return [1080, 1920];
+  if (r === 'YouTube') return [1280, 720];
+  if (r === 'X') return [1600, 900];
+  if (r === 'Pinterest') return [1000, 1500];
+  if (r === 'LinkedIn') return [1200, 1200];
+  if (r === 'Instagram') return [1080, 1350];
+  return [1080, 1080];
+}
+const ESTILOS_POST = {
+  marca:   { nombre:'Mi marca', d:'Tus colores, letras y logo', tema(){ const [p, s, a, o, f] = kit.colores, osc = luzDe(f) < 0.45;
+             return { fondo:f, titulo:o, texto:osc ? mezclar(o, f, 0.25) : mezclar(o, f, 0.25), acento:p, acento2:s, cta:p, ctaTxt:luzDe(p) > 0.6 ? '#111827' : '#ffffff', fTit:kit.titulo || 'Fredoka', fTxt:kit.texto || 'Poppins', peso:'700', logo:true }; } },
+  neon:    { nombre:'Neón', d:'Oscuro y llamativo', tema:() => ({ fondo:'#05070d', titulo:'#ffffff', texto:'#cfe9ff', acento:'#19c8ff', acento2:'#ff3b30', cta:'#19c8ff', ctaTxt:'#05070d', fTit:'Montserrat', fTxt:'Poppins', peso:'900', brillo:true }) },
+  elegante:{ nombre:'Elegante', d:'Claro y limpio', tema:() => ({ fondo:'#f6f1ea', titulo:'#1f2330', texto:'#4b5563', acento:'#c2410c', acento2:'#e7d8c6', cta:'#1f2330', ctaTxt:'#ffffff', fTit:'Playfair Display', fTxt:'Inter', peso:'700' }) },
+  colorido:{ nombre:'Colorido', d:'Alegre, con degradado', tema:() => ({ degradado:['#7c3aed', '#f97316'], fondo:'#7c3aed', titulo:'#ffffff', texto:'#fff7ed', acento:'#fde047', acento2:'#ffffff', cta:'#fde047', ctaTxt:'#1f2330', fTit:'Fredoka', fTxt:'Poppins', peso:'700' }) }
+};
+// achica la letra hasta que el texto quepa en el alto que le toca
+function caberTexto(t, altoMax, tamMax, tamMin){
+  const ancho = t.width, noCabe = () => t.height > altoMax || (t.dynamicMinWidth || 0) > ancho + 0.5;   // ni muy alto ni una palabra más ancha que la caja
+  let s = tamMax; t.set('fontSize', s); t.initDimensions();
+  while (noCabe() && s > tamMin){ s = Math.max(tamMin, Math.floor(s * 0.92)); t.set({ fontSize:s, width:ancho }); t.initDimensions(); }
+  t.set('width', ancho); t.initDimensions();
+  return t;
+}
+function crearPostDesdePlan(p, clave){
+  const e = ESTILOS_POST[clave].tema(), [w, h] = medidaPost(p), horizontal = w > h, base = Math.min(w, h) * (h / w > 1.6 ? 1.3 : 1);   // historias: todo más grande
+  const m = Math.round(Math.min(w, h) * 0.08), ancho = horizontal ? Math.round(w * 0.62) : w - 2 * m, x0 = m;
+  fijarTamano(w, h);
+  restaurando = true; canvas.clear();
+  if (e.degradado) DEGRADADO(e.degradado[0], e.degradado[1]); else FONDO(e.fondo);
+  const forma = (o, nombre) => { o.set({ selectable:true, name:nombre, id:nuevoId() }); canvas.add(o); return o; };
+  // adornos según el estilo
+  if (clave === 'neon'){
+    forma(new fabric.Circle({ left:w - base * 0.18, top:-base * 0.2, radius:base * 0.32, fill:'transparent', stroke:e.acento, strokeWidth:base * 0.012, opacity:0.9,
+      shadow:new fabric.Shadow({ color:e.acento, blur:base * 0.05 }) }), 'Anillo');
+    forma(new fabric.Rect({ left:0, top:h - base * 0.025, width:w, height:base * 0.025, fill:e.acento2 }), 'Franja');
+  } else if (clave === 'elegante'){
+    forma(new fabric.Rect({ left:m * 0.5, top:m * 0.5, width:w - m, height:h - m, fill:'transparent', stroke:e.acento2, strokeWidth:base * 0.006 }), 'Marco');
+  } else if (clave === 'colorido'){
+    forma(new fabric.Circle({ left:w - base * 0.35, top:-base * 0.12, radius:base * 0.3, fill:'#ffffff', opacity:0.12 }), 'Círculo');
+    forma(new fabric.Circle({ left:-base * 0.15, top:h - base * 0.35, radius:base * 0.25, fill:e.acento, opacity:0.25 }), 'Círculo');
+  } else {
+    forma(new fabric.Rect({ left:0, top:0, width:w, height:base * 0.02, fill:e.acento }), 'Franja');
+    forma(new fabric.Circle({ left:w - base * 0.3, top:h - base * 0.3, radius:base * 0.36, fill:e.acento2, opacity:0.18 }), 'Círculo');
+  }
+  if (horizontal && clave !== 'elegante') forma(new fabric.Circle({ left:w * 0.7, top:h * 0.18, radius:h * 0.32, fill:e.acento, opacity:0.16 }), 'Círculo');
+  // textos, de arriba hacia abajo; luego se centra el bloque en el alto libre
+  const txt = (texto, o) => { const t = new fabric.Textbox(texto, { left:x0, top:0, width:ancho, fontFamily:o.f, fontWeight:o.b || '400', fill:o.c, textAlign:horizontal ? 'left' : (o.al || 'left'),
+    lineHeight:o.lh || 1.2, charSpacing:o.cs || 0, name:o.n, id:nuevoId() }); return caberTexto(t, o.alto, o.max, o.min); };
+  const piezas = [];
+  if (p.campana) piezas.push([txt(p.campana.toUpperCase(), { f:e.fTxt, b:'700', c:e.acento, n:'Campaña', alto:base * 0.06, max:Math.round(base * 0.03), min:16, cs:120 }), base * 0.025]);
+  piezas.push([txt(p.tema, { f:e.fTit, b:e.peso, c:e.titulo, n:'Título', alto:h * (p.texto ? 0.3 : 0.45), max:Math.round(base * 0.11), min:Math.round(base * 0.045), lh:1.05 }), base * 0.03]);
+  const linea = new fabric.Rect({ left:x0, top:0, width:base * 0.12, height:Math.max(6, base * 0.008), fill:e.acento, rx:4, ry:4, name:'Línea', id:nuevoId() });
+  piezas.push([linea, base * 0.035]);
+  if (p.texto) piezas.push([txt(p.texto, { f:e.fTxt, c:e.texto, n:'Texto', alto:h * (horizontal ? 0.3 : 0.28), max:Math.round(base * 0.042), min:Math.round(base * 0.022), lh:1.35 }), base * 0.045]);
+  if (p.cta){                                  // la píldora se crea ya en su lugar (su texto va vinculado)
+    const tam = Math.round(base * 0.034), anchoP = Math.min(ancho, Math.max(base * 0.4, p.cta.length * tam * 0.62 + tam * 2.4)), altoP = Math.round(tam * 2.5);
+    piezas.push([{ alto:altoP, colocar:yy => nodo('pildora', p.cta, x0 + anchoP / 2, yy + altoP / 2, { w:anchoP, h:altoP, fill:e.cta, color:e.ctaTxt, tam, fuente:e.fTxt, peso:'700', nombre:'Llamada a la acción' }) }, base * 0.04]);
+  }
+  const reservaAbajo = p.tags ? base * 0.12 : m;
+  const altoDe = o => o.colocar ? o.alto : o.getScaledHeight();
+  const altoTotal = piezas.reduce((s, [o, g], i) => s + altoDe(o) + (i < piezas.length - 1 ? g : 0), 0);
+  let y = Math.max(m + (e.logo ? base * 0.1 : 0), (h - reservaAbajo - altoTotal) / 2);
+  piezas.forEach(([o, g]) => {
+    const alto = altoDe(o);
+    if (o.colocar) o.colocar(y);
+    else { o.set({ originX:'left', originY:'top', left:x0, top:y }); o.setCoords(); canvas.add(o); }
+    y += alto + g;
+  });
+  if (p.tags) canvas.add(txt(p.tags, { f:e.fTxt, b:'600', c:e.acento, n:'Hashtags', alto:base * 0.07, max:Math.round(base * 0.028), min:16 }).set({ top:h - m - base * 0.04 }));
+  if (e.logo && typeof logoEn === 'function') logoEn(w - m - base * 0.08, m + base * 0.05, base * 0.16);
+  if (typeof ordenarVinculos === 'function') ordenarVinculos();
+  canvas.getObjects().filter(o => o.textoDe).forEach(t => { try { ajustarFormaATexto(t); } catch (er) {} });
+  restaurando = false;
+  $('nombreDiseno').value = (p.tema || 'Publicación').slice(0, 60);
+  canvas.discardActiveObject(); canvas.requestRenderAll(); renderCapas(); actualizarPanel(); guardarEstado();
+}
+(function(){
+  const m = document.createElement('div'); m.className = 'modal'; m.id = 'mEstiloPost';
+  m.innerHTML = `<div class="caja" role="dialog" aria-modal="true" aria-labelledby="epTitulo">
+    <h3 id="epTitulo">¿Con qué estilo armo tu publicación?</h3>
+    <p class="epNota" id="epNota"></p>
+    <div class="epLista" id="epLista"></div>
+    <div class="acciones"><button class="btnS" id="epPlantillas">Prefiero elegir una plantilla</button><button class="btnS" id="epCerrar">Cancelar</button></div>
+  </div>`;
+  document.body.appendChild(m);
+  $('epCerrar').onclick = () => cerrarModal('mEstiloPost');
+  m.addEventListener('click', ev => { if (ev.target === m) cerrarModal('mEstiloPost'); });
+})();
+{ const original = prDisenar;
+  prDisenar = async function(id){
+    const p = prPlanes.find(x => x.id === id); if (!p) return;
+    const [w, h] = medidaPost(p);
+    $('epNota').textContent = `${p.plataforma} · ${p.formato || 'Publicación'} · ${w} × ${h} px. Todo queda editable.`;
+    const lista = $('epLista'); lista.innerHTML = '';
+    Object.entries(ESTILOS_POST).forEach(([k, est]) => {
+      const t = est.tema(), b = document.createElement('button'); b.type = 'button'; b.className = 'epEstilo';
+      const fondo = t.degradado ? `linear-gradient(135deg,${t.degradado[0]},${t.degradado[1]})` : t.fondo;
+      b.innerHTML = `<span class="epMuestra" style="background:${fondo}"><b style="color:${t.titulo};font-family:'${t.fTit}'">Aa</b><i style="background:${t.acento}"></i></span><span><b>${esc(est.nombre)}</b><small>${esc(est.d)}</small></span>`;
+      b.onclick = () => {
+        cerrarModal('mEstiloPost'); cerrarModal('mPlanRedes');
+        if (typeof hayDisenoInicio === 'function' && hayDisenoInicio()){
+          const nom = ($('nombreDiseno').value || 'Mi diseño').trim();
+          if (!confirm(`Se va a armar «${p.tema}» en una hoja nueva.\n\nTu diseño «${nom}» se va a cambiar. Si lo quieres conservar, toca «Cancelar» y guárdalo primero.`)) return;
+        }
+        if (typeof disenoEnBlanco === 'function') disenoEnBlanco();
+        if (typeof cerrarInicio === 'function' && $('inicioApp') && !$('inicioApp').hidden) cerrarInicio();
+        crearPostDesdePlan(p, k);
+        if (['Idea', 'Borrador', 'Cambios solicitados'].includes(prEstadoNormal(p.estado))){ p.estado = 'En diseño'; p.actualizado = new Date().toISOString(); prGuardar(); }
+        toast('✓ Listo: tu publicación ya está armada. Toca cualquier texto para cambiarlo.');
+      };
+      lista.appendChild(b);
+    });
+    $('epPlantillas').onclick = () => { cerrarModal('mEstiloPost'); original(id); };
+    abrirModal('mEstiloPost');
+  };
+}
+// Sencillo/Completo otra vez a la vista en la barra de arriba (en el celular se cambia desde Vista)
+(function(){ const b = $('bModo'), n = $('nombreDiseno'); if (b && n && b.parentElement && b.parentElement.id === 'maVista') n.after(b); })();
 
 </script>
 </body>
