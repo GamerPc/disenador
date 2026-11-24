@@ -48,14 +48,27 @@ async def main():
                 semantica = await dialogo.evaluate("e => ({role:e.getAttribute('role'),modal:e.getAttribute('aria-modal'),nombre:e.getAttribute('aria-labelledby')})")
                 if semantica['role'] != 'dialog' or semantica['modal'] != 'true' or not semantica['nombre']:
                     fallas.append(f'{w}px: el dialogo de exportacion no tiene nombre accesible')
-                await dialogo.locator('button:not(:disabled)').last.focus()
+                await pg.evaluate('''()=>{
+                  const d=document.querySelector('#mDescargaFacil .caja');
+                  const s='a[href],area[href],button:not(:disabled),input:not(:disabled):not([type="hidden"]),select:not(:disabled),textarea:not(:disabled),summary,[tabindex]:not([tabindex="-1"]),[contenteditable="true"]';
+                  [...d.querySelectorAll(s)].filter(e=>!e.closest('[hidden],[inert],[aria-hidden="true"]')&&e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden').at(-1)?.focus();
+                }''')
                 await pg.keyboard.press('Tab')
-                tab_envuelto = await pg.evaluate("document.activeElement === document.querySelector('#mDescargaFacil .caja').querySelector('button:not(:disabled)')")
+                tab_envuelto = await pg.evaluate('''()=>{
+                  const d=document.querySelector('#mDescargaFacil .caja');
+                  const s='a[href],area[href],button:not(:disabled),input:not(:disabled):not([type="hidden"]),select:not(:disabled),textarea:not(:disabled),summary,[tabindex]:not([tabindex="-1"]),[contenteditable="true"]';
+                  const f=[...d.querySelectorAll(s)].filter(e=>!e.closest('[hidden],[inert],[aria-hidden="true"]')&&e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden'); return document.activeElement===f[0];
+                }''')
                 if not tab_envuelto: fallas.append(f'{w}px: Tab no permanece dentro del dialogo')
                 await pg.keyboard.press('Shift+Tab')
-                shift_envuelto = await pg.evaluate("document.activeElement === [...document.querySelectorAll('#mDescargaFacil .caja button:not(:disabled)')].at(-1)")
+                shift_envuelto = await pg.evaluate('''()=>{
+                  const d=document.querySelector('#mDescargaFacil .caja');
+                  const s='a[href],area[href],button:not(:disabled),input:not(:disabled):not([type="hidden"]),select:not(:disabled),textarea:not(:disabled),summary,[tabindex]:not([tabindex="-1"]),[contenteditable="true"]';
+                  const f=[...d.querySelectorAll(s)].filter(e=>!e.closest('[hidden],[inert],[aria-hidden="true"]')&&e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden'); return document.activeElement===f.at(-1);
+                }''')
                 if not shift_envuelto: fallas.append(f'{w}px: Shift+Tab no permanece dentro del dialogo')
                 await pg.keyboard.press('Escape')
+                await pg.wait_for_timeout(80)
                 cerrado = await pg.evaluate("!document.getElementById('mDescargaFacil').classList.contains('abierto') && document.activeElement.matches('#barra button[onclick*=\"mExportar\"]')")
                 if not cerrado: fallas.append(f'{w}px: Escape no cierra el dialogo o no devuelve el foco')
                 archivo = pg.locator('#barra button[title^="Archivo:"]')
@@ -66,6 +79,7 @@ async def main():
                 if reporte['role'] != 'dialog' or reporte['modal'] != 'true' or not reporte['nombre']:
                     fallas.append(f'{w}px: el reporte no tiene semantica accesible de dialogo')
                 await pg.locator('#rpQue').press('Escape')
+                await pg.wait_for_timeout(80)
                 regreso_anidado = await pg.evaluate("!document.getElementById('mReporte').classList.contains('abierto') && !document.getElementById('mPreguntas').classList.contains('abierto') && document.activeElement.matches('#barra button[title^=\"Archivo:\"]')")
                 if not regreso_anidado: fallas.append(f'{w}px: al cerrar reporte desde Preguntas frecuentes, el foco no vuelve al menu visible')
                 await archivo.click()
